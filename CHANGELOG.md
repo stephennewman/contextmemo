@@ -8,9 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Stripe billing integration
 - Email notifications for visibility changes
 - Additional memo templates (best-of, what-is)
+
+---
+
+## [0.10.0] - 2026-02-01
+
+### Added
+- **Google AI Overviews Integration**: Check brand visibility in Google's AI-generated summaries
+  - Manual trigger button in dashboard header
+  - Automated weekly scans (Mon + Thu) via SerpAPI
+  - Detects brand mentions, organic rankings, and source citations
+- **AI Traffic Attribution**: Track visits from AI platforms (ChatGPT, Perplexity, Claude, Gemini, etc.)
+  - Auto-tracking on memo pages
+  - Dashboard view with source breakdown and top pages
+  - Embed code for external website tracking
+- **Data Export**: CSV and JSON exports for scans, prompts, memos, competitors, visibility history
+- **Multi-seat Teams Foundation**: Organizations with roles (owner, admin, member, viewer)
+  - Invite flow with email tokens
+  - Team management UI
+- **Stripe Billing Foundation**: Checkout, customer portal, webhooks, plan definitions
+  - Starter, Growth, Enterprise tiers
+  - Usage tracking foundation
+- **3 New AI Models**: DeepSeek V3, Qwen 2.5 72B, Grok 2 (9 total models now)
+
+### Changed
+- Upgraded to 9-model AI scanning coverage
+- Weekly automation now includes AI Overview scans (quota-conscious: Mon + Thu only)
 
 ---
 
@@ -164,6 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.10.0 | Feb 1, 2026 | Google AI Overviews, AI traffic attribution, exports, teams, billing foundation |
+| 0.9.0 | Feb 1, 2026 | Terminal-style onboarding |
 | 0.8.0 | Feb 1, 2026 | Google Search Console, loading UIs |
 | 0.7.0 | Feb 1, 2026 | Bing Webmaster integration |
 | 0.6.0 | Feb 1, 2026 | Competitive intelligence dashboard |

@@ -1,7 +1,7 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 1, 2026  
-> **Version:** 0.9.0  
+> **Version:** 0.10.0  
 > **Status:** MVP Complete + Active Development
 
 ---
@@ -41,10 +41,11 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | Database | Supabase (Postgres) | Project: ncrclfpiremxmqpvmavx |
 | Auth | Supabase Auth | Email verification + domain verification |
 | Job Queue | Inngest | v3.50.0 |
-| AI Providers | OpenAI, Anthropic, OpenRouter | GPT-4o, Claude, Gemini, Llama, Mistral, Perplexity |
+| AI Providers | OpenAI, Anthropic, OpenRouter | GPT-4o, Claude, Gemini, Llama, Mistral, Perplexity, DeepSeek, Qwen, Grok |
 | Web Scraping | Jina Reader API | - |
 | Hosting | Vercel | Connected to GitHub main |
-| Payments | Stripe | ⏳ Planned |
+| Payments | Stripe | Foundation built |
+| Search API | SerpAPI | Google AI Overviews |
 
 ---
 
@@ -59,9 +60,11 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 - Public memo pages (`[subdomain].contextmemo.com`)
 
 ### AI Visibility Monitoring
-- **6 AI models scanned**: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar
+- **9 AI models scanned**: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar, DeepSeek V3, Qwen 2.5 72B, Grok 2
+- **Google AI Overviews**: SerpAPI integration checks brand mentions in Google's AI summaries
 - Visibility score tracking over time
 - Win/tie/loss analysis vs competitors
+- AI traffic attribution (track visits from ChatGPT, Perplexity, Claude, etc.)
 
 ### Competitive Intelligence
 - Auto-discovered competitors
@@ -104,6 +107,7 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | `competitor/content-respond` | Generates response content |
 | `google-search-console/sync` | Syncs GSC data weekly |
 | `bing/sync` | Syncs Bing Webmaster data weekly |
+| `ai-overview/scan` | Checks Google AI Overviews via SerpAPI |
 | `daily/run` | Main scheduler (6 AM ET) |
 
 ### Automation Schedule
@@ -114,6 +118,7 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | Competitor discovery | Weekly | No new competitors in 7 days |
 | Query generation | Weekly | No new queries in 7 days |
 | Visibility scan | Daily | No scan in 24 hours |
+| Google AI Overview scan | Mon + Thu | If SERPAPI_KEY set |
 | Memo generation | On-demand | Gaps detected in scans |
 | Competitor content scan | Daily | Part of daily run |
 | Search console sync | Weekly | Sundays 9 AM UTC |
@@ -124,7 +129,14 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 |-------|---------|
 | `/api/inngest` | Inngest webhook endpoint |
 | `/api/brands/[brandId]/actions` | Trigger background jobs |
+| `/api/brands/[brandId]/export` | Export data (CSV/JSON) |
 | `/api/auth/google-search-console/*` | GSC OAuth flow |
+| `/api/billing/checkout` | Stripe checkout session |
+| `/api/billing/portal` | Stripe customer portal |
+| `/api/billing/webhook` | Stripe webhooks |
+| `/api/track` | AI traffic attribution |
+| `/api/organizations/*` | Team/org management |
+| `/api/invites/[token]` | Invite acceptance |
 | `/auth/callback` | Email verification links |
 
 ### Database Schema
@@ -164,6 +176,14 @@ INNGEST_EVENT_KEY=[required for production]
 # Google Search Console (OAuth)
 GOOGLE_CLIENT_ID=[for GSC integration]
 GOOGLE_CLIENT_SECRET=[for GSC integration]
+
+# SerpAPI (Google AI Overviews)
+SERPAPI_KEY=[for AI Overview scans - 100 free/month]
+
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=[from Stripe dashboard]
+STRIPE_SECRET_KEY=[from Stripe dashboard]
+STRIPE_WEBHOOK_SECRET=[from webhook config]
 ```
 
 ---
@@ -197,7 +217,10 @@ lib/
 
 ### Completed ✅
 - [x] Core platform (auth, dashboard, brand management)
-- [x] Multi-model AI scanning (6 models)
+- [x] Multi-model AI scanning (9 models including DeepSeek, Qwen, Grok)
+- [x] Google AI Overviews integration (SerpAPI)
+- [x] AI traffic attribution (track visits from AI platforms)
+- [x] Data export (CSV/JSON)
 - [x] Automated memo generation
 - [x] Competitive intelligence dashboard
 - [x] Search console integrations (Bing + Google)
@@ -205,16 +228,19 @@ lib/
 - [x] Persona-based targeting
 - [x] Daily automation pipeline
 - [x] Vercel deployment
+- [x] Team/organization foundation (roles, invites)
+- [x] Stripe billing foundation (checkout, portal, webhooks)
 
 ### In Progress 🔄
+- [ ] Set Stripe environment variables
+- [ ] Create Stripe products/prices in dashboard
+- [ ] Configure Stripe webhook endpoint
 - [ ] Production environment variables setup
-- [ ] Custom domain configuration (contextmemo.com)
 
 ### Planned 📋
-- [ ] Stripe billing integration
+- [ ] Usage enforcement (plan limits)
 - [ ] Email notifications for visibility changes
 - [ ] Additional memo templates (best-of, what-is)
-- [ ] Team/organization features
 
 ---
 
@@ -224,19 +250,20 @@ lib/
 
 | Issue | Priority | Status |
 |-------|----------|--------|
-| Stripe not configured | High | Blocks monetization |
-| Production Inngest keys needed | High | For production jobs |
-| Service role key needed | High | For background jobs |
+| Stripe env vars not set | High | Blocks live billing |
+| Stripe products/prices needed | High | Create in dashboard |
+| Stripe webhook endpoint | High | Configure URL |
+| Usage enforcement | Medium | Limits not enforced yet |
 
 ### Opportunities (Scored 0-100)
 
 | Opportunity | Score | Impact |
 |-------------|-------|--------|
-| Stripe billing | 95 | Revenue enablement |
-| Email notifications | 70 | User engagement |
-| Team features | 65 | Enterprise expansion |
-| More memo types | 60 | Content depth |
-| API access for brands | 55 | Developer market |
+| Complete Stripe setup | 95 | Revenue enablement |
+| Email notifications | 75 | User engagement + retention |
+| API access for brands | 65 | Developer market |
+| More memo types | 55 | Content depth |
+| White-label option | 50 | Agency market |
 
 ---
 
