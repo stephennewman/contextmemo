@@ -113,7 +113,8 @@ export async function GET(request: NextRequest) {
                      request.headers.get('cf-ipcountry') ||
                      null
                      
-      supabase.from('ai_traffic').insert({
+      // Fire and forget - don't block the pixel response
+      void supabase.from('ai_traffic').insert({
         brand_id: brandId,
         memo_id: memoId || null,
         page_url: decodeURIComponent(pageUrl),
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
         user_agent: userAgent,
         country,
         timestamp: new Date().toISOString(),
-      }).then(() => {}).catch(() => {})
+      })
     }
   }
 
