@@ -213,6 +213,7 @@ export interface Database {
           id: string
           brand_id: string
           source_query_id: string | null
+          source_competitor_content_id: string | null
           memo_type: string
           slug: string
           title: string
@@ -233,6 +234,7 @@ export interface Database {
           id?: string
           brand_id: string
           source_query_id?: string | null
+          source_competitor_content_id?: string | null
           memo_type: string
           slug: string
           title: string
@@ -253,6 +255,7 @@ export interface Database {
           id?: string
           brand_id?: string
           source_query_id?: string | null
+          source_competitor_content_id?: string | null
           memo_type?: string
           slug?: string
           title?: string
@@ -360,6 +363,59 @@ export interface Database {
           recorded_at?: string
         }
       }
+      competitor_content: {
+        Row: {
+          id: string
+          competitor_id: string
+          url: string
+          title: string
+          content_hash: string
+          content_summary: string | null
+          topics: string[] | null
+          content_type: string | null
+          is_competitor_specific: boolean
+          universal_topic: string | null
+          relevance_score: number | null
+          first_seen_at: string
+          response_memo_id: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          competitor_id: string
+          url: string
+          title: string
+          content_hash: string
+          content_summary?: string | null
+          topics?: string[] | null
+          content_type?: string | null
+          is_competitor_specific?: boolean
+          universal_topic?: string | null
+          relevance_score?: number | null
+          first_seen_at?: string
+          response_memo_id?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          competitor_id?: string
+          url?: string
+          title?: string
+          content_hash?: string
+          content_summary?: string | null
+          topics?: string[] | null
+          content_type?: string | null
+          is_competitor_specific?: boolean
+          universal_topic?: string | null
+          relevance_score?: number | null
+          first_seen_at?: string
+          response_memo_id?: string | null
+          status?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -413,6 +469,17 @@ export interface BrandContext {
   brand_tone?: BrandTone
   // Integration configurations
   hubspot?: HubSpotConfig
+  // Raw homepage content for intent-based query generation
+  homepage_content?: string
+  // Extracted user intents/pain points from homepage
+  user_intents?: UserIntent[]
+}
+
+// User intent extracted from homepage content
+export interface UserIntent {
+  pain_point: string  // The problem the user is experiencing
+  desired_outcome: string  // What they want to achieve
+  trigger_phrase: string  // How they'd describe it to an AI
 }
 
 // Helper types
@@ -425,3 +492,4 @@ export type Memo = Database['public']['Tables']['memos']['Row']
 export type MemoVersion = Database['public']['Tables']['memo_versions']['Row']
 export type Alert = Database['public']['Tables']['alerts']['Row']
 export type VisibilityHistory = Database['public']['Tables']['visibility_history']['Row']
+export type CompetitorContent = Database['public']['Tables']['competitor_content']['Row']

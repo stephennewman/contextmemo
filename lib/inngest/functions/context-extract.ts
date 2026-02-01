@@ -136,12 +136,18 @@ export const contextExtract = inngest.createFunction(
       }
     })
 
-    // Step 3: Save context to database
+    // Step 3: Save context to database (including raw homepage content for intent-based queries)
     await step.run('save-context', async () => {
+      // Store homepage content (truncated) for later query generation
+      const contextWithContent = {
+        ...extractedContext,
+        homepage_content: websiteContent.content.slice(0, 15000), // Keep first 15k chars for intent extraction
+      }
+      
       const { error } = await supabase
         .from('brands')
         .update({
-          context: extractedContext,
+          context: contextWithContent,
           context_extracted_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

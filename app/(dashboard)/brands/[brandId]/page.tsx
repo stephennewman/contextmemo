@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-  FileText, 
   AlertCircle,
   ExternalLink,
   Settings
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
-import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton } from '@/components/dashboard/brand-actions'
+import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton } from '@/components/dashboard/brand-actions'
+import { ScanResultsView, QueryVisibilityList } from '@/components/dashboard/scan-results-view'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -76,16 +76,53 @@ export default async function BrandPage({ params }: Props) {
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
-  // Calculate visibility score from recent scans
-  const mentionedCount = recentScans.filter(s => s.brand_mentioned).length
-  const totalScans = recentScans.length
+  // Get latest discovery scan result
+  const { data: discoveryAlert } = await supabase
+    .from('alerts')
+    .select('*')
+    .eq('brand_id', brandId)
+    .eq('alert_type', 'discovery_complete')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+  
+  const discoveryResults = discoveryAlert?.data as {
+    totalQueries?: number
+    totalScans?: number
+    totalMentions?: number
+    mentionRate?: number
+    byCategory?: Array<{ category: string; mentions: number; total: number; rate: number }>
+    winningQueries?: Array<{ query: string; category: string; model: string; context: string | null }>
+    sampleFailures?: Array<{ query: string; category: string }>
+  } | null
+
+  // Helper to check if a query contains the brand name (case-insensitive)
+  // These queries skew visibility data since they'll always mention the brand
+  const brandNameLower = brand.name.toLowerCase()
+  const queryContainsBrand = (queryText: string) => {
+    return queryText.toLowerCase().includes(brandNameLower)
+  }
+
+  // Create a set of query IDs that contain the brand name
+  const brandedQueryIds = new Set(
+    (queries || [])
+      .filter(q => queryContainsBrand(q.query_text))
+      .map(q => q.id)
+  )
+
+  // Filter scans to exclude branded queries for visibility calculation
+  const unbiasedScans = recentScans.filter(s => !brandedQueryIds.has(s.query_id))
+
+  // Calculate visibility score from unbiased scans only
+  const mentionedCount = unbiasedScans.filter(s => s.brand_mentioned).length
+  const totalScans = unbiasedScans.length
   const visibilityScore = totalScans > 0 
     ? Math.round((mentionedCount / totalScans) * 100)
     : 0
 
-  // Calculate visibility per query to find low-performers
+  // Calculate visibility per query to find low-performers (exclude branded queries)
   const queryVisibility = new Map<string, { mentioned: number; total: number }>()
-  recentScans.forEach(scan => {
+  unbiasedScans.forEach(scan => {
     if (!scan.query_id) return
     const current = queryVisibility.get(scan.query_id) || { mentioned: 0, total: 0 }
     current.total++
@@ -93,8 +130,9 @@ export default async function BrandPage({ params }: Props) {
     queryVisibility.set(scan.query_id, current)
   })
 
-  // Find queries with low visibility (< 30%) that need memos
+  // Find queries with low visibility (< 30%) that need memos (exclude branded queries)
   const lowVisibilityQueries = (queries || [])
+    .filter(q => !queryContainsBrand(q.query_text)) // Exclude branded queries
     .map(q => {
       const stats = queryVisibility.get(q.id)
       const visibility = stats && stats.total > 0 
@@ -149,6 +187,7 @@ export default async function BrandPage({ params }: Props) {
               <Settings className="h-4 w-4" />
             </Link>
           </Button>
+          <DiscoveryScanButton brandId={brandId} />
           <ScanButton brandId={brandId} />
         </div>
       </div>
@@ -175,6 +214,7 @@ export default async function BrandPage({ params }: Props) {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="scans">Scans{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
           <TabsTrigger value="memos">Memos{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="queries">Queries{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="competitors">Competitors{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
@@ -182,7 +222,109 @@ export default async function BrandPage({ params }: Props) {
 
         <TabsContent value="overview" className="space-y-4">
           {/* Visibility Chart - the main focus */}
-          <VisibilityChart scanResults={allScans || []} />
+          <VisibilityChart 
+            scanResults={allScans || []} 
+            brandName={brand.name}
+            queries={queries || []}
+          />
+
+          {/* Discovery Scan Results */}
+          {discoveryResults && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Discovery Scan Results</CardTitle>
+                    <CardDescription>
+                      Where is {brand.name} being mentioned in AI responses?
+                    </CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold">{discoveryResults.mentionRate}%</div>
+                    <div className="text-xs text-muted-foreground">mention rate</div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-semibold">{discoveryResults.totalQueries}</div>
+                    <div className="text-xs text-muted-foreground">Queries tested</div>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-semibold">{discoveryResults.totalMentions}</div>
+                    <div className="text-xs text-muted-foreground">Brand mentions</div>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-semibold">{discoveryResults.totalScans}</div>
+                    <div className="text-xs text-muted-foreground">Total scans</div>
+                  </div>
+                </div>
+
+                {/* Winning Queries */}
+                {discoveryResults.winningQueries && discoveryResults.winningQueries.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2 text-green-600">Winning Queries (Brand Mentioned)</h4>
+                    <div className="space-y-2">
+                      {discoveryResults.winningQueries.slice(0, 5).map((q, i) => (
+                        <div key={i} className="p-3 border border-green-200 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                          <p className="font-medium text-sm">&quot;{q.query}&quot;</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {q.category} • {q.model}
+                          </p>
+                          {q.context && (
+                            <p className="text-xs mt-2 text-green-700 dark:text-green-400 italic">
+                              ...{q.context}...
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Failed Queries */}
+                {discoveryResults.sampleFailures && discoveryResults.sampleFailures.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2 text-red-600">Queries Where Not Mentioned (samples)</h4>
+                    <div className="space-y-1">
+                      {discoveryResults.sampleFailures.slice(0, 5).map((q, i) => (
+                        <div key={i} className="p-2 text-sm text-muted-foreground border rounded">
+                          &quot;{q.query}&quot;
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* By Category */}
+                {discoveryResults.byCategory && discoveryResults.byCategory.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Performance by Category</h4>
+                    <div className="space-y-1">
+                      {discoveryResults.byCategory.map((cat, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span className="capitalize">{cat.category.replace('_', ' ')}</span>
+                          <span className={cat.rate > 0 ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
+                            {cat.mentions}/{cat.total} ({cat.rate}%)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="scans">
+          <ScanResultsView 
+            scanResults={recentScans} 
+            queries={queries || []} 
+            brandName={brand.name}
+          />
         </TabsContent>
 
         <TabsContent value="memos">
@@ -255,42 +397,11 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="queries">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Monitored Queries</CardTitle>
-                  <CardDescription>
-                    Search queries your prospects ask AI
-                  </CardDescription>
-                </div>
-                <Button variant="outline">Add Query</Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {queries && queries.length > 0 ? (
-                <div className="space-y-2">
-                  {queries.map((query) => (
-                    <div key={query.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">&quot;{query.query_text}&quot;</p>
-                        <p className="text-sm text-muted-foreground">
-                          {query.query_type}
-                        </p>
-                      </div>
-                      <Badge variant="outline">
-                        Priority: {query.priority}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  No queries generated yet. Complete the setup to auto-generate relevant queries.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <QueryVisibilityList 
+            queries={queries || []} 
+            scanResults={recentScans}
+            brandName={brand.name}
+          />
         </TabsContent>
 
         <TabsContent value="competitors">

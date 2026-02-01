@@ -40,11 +40,17 @@
 ### Background Jobs (Inngest)
 
 **Core Workflow:**
-- `context/extract` - Crawls website, extracts brand context using Jina + GPT-4
+- `context/extract` - Crawls website, extracts brand context using Jina + GPT-4 (now stores raw homepage content)
 - `competitor/discover` - Identifies competitors using AI
-- `query/generate` - Generates search queries to monitor
+- `query/generate` - Generates search queries (high-intent buyer queries + intent-based queries from homepage)
 - `scan/run` - Queries OpenAI and Anthropic to check brand mentions (supports `autoGenerateMemos` flag)
-- `memo/generate` - Creates factual memos (comparison, industry, how-to, alternative)
+- `memo/generate` - Creates factual memos (comparison, industry, how-to, alternative) → auto-triggers backlinking
+- `discovery/scan` - Tests 50+ query variations to find WHERE the brand IS being mentioned (baseline discovery)
+
+**Backlinking Automation:**
+- `memo/backlink` - Injects contextual internal links into a single memo + adds "Related Reading" section
+- `memo/batch-backlink` - Updates all memos for a brand (triggered after new memo creation)
+- `dailyBacklinkRefresh` - Runs at 7 AM UTC, refreshes backlinks for brands with new content in last 24 hours
 
 **Daily Automation (runs at 6 AM ET):**
 - `daily/run` - **Main scheduler** - Analyzes all brands and triggers appropriate workflows:
@@ -107,6 +113,9 @@ INNGEST_EVENT_KEY=[required for production]
 
 | Date | Activity | Details |
 |------|----------|---------|
+| Feb 1, 2026 | **Automated backlinking system** | New continuous backlinking: auto-runs after memo generation, daily refresh at 7 AM UTC, injects contextual links + "Related Reading" section. Functions: `memo/backlink`, `memo/batch-backlink`, `dailyBacklinkRefresh`. |
+| Jan 31, 2026 | **High-intent query generation + Discovery scan** | Added intent-based query generation from homepage content, filtering for buyer signals. New Discovery Scan feature tests 50+ query variations to find where brand IS being mentioned. |
+| Jan 31, 2026 | **Subdomain link fix** | Fixed link generation to use relative paths on subdomain access, preventing double-rewrite 404 errors |
 | Jan 31, 2026 | **Subdomain routing fix** | Improved middleware to check x-forwarded-host for Vercel, better subdomain detection. Requires Vercel wildcard domain config (`*.contextmemo.com`) |
 | Jan 31, 2026 | **Deployed to GitHub** | Complete MVP with daily automation pushed to production |
 | Jan 31, 2026 | **Comprehensive Daily Automation** | Smart scheduling: weekly context refresh, competitor discovery, query generation; daily scans; auto memo generation for gaps; visibility trend tracking |

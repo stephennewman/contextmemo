@@ -31,19 +31,36 @@ export default async function DashboardPage() {
     redirect('/brands/new')
   }
 
-  // Calculate visibility score for each brand
+  // Calculate visibility score for each brand (excluding branded queries)
   const brandsWithStats = await Promise.all(
     brands.map(async (brand) => {
-      // Get latest scan results
+      // Get queries to identify branded ones
+      const { data: queries } = await supabase
+        .from('queries')
+        .select('id, query_text')
+        .eq('brand_id', brand.id)
+        .eq('is_active', true)
+
+      // Create set of branded query IDs (queries containing the brand name)
+      const brandNameLower = brand.name.toLowerCase()
+      const brandedQueryIds = new Set(
+        (queries || [])
+          .filter(q => q.query_text.toLowerCase().includes(brandNameLower))
+          .map(q => q.id)
+      )
+
+      // Get latest scan results with query_id
       const { data: scans } = await supabase
         .from('scan_results')
-        .select('brand_mentioned')
+        .select('brand_mentioned, query_id')
         .eq('brand_id', brand.id)
         .order('scanned_at', { ascending: false })
         .limit(100)
 
-      const mentionedCount = scans?.filter(s => s.brand_mentioned).length || 0
-      const totalScans = scans?.length || 0
+      // Filter out branded queries for unbiased visibility calculation
+      const unbiasedScans = (scans || []).filter(s => !brandedQueryIds.has(s.query_id))
+      const mentionedCount = unbiasedScans.filter(s => s.brand_mentioned).length
+      const totalScans = unbiasedScans.length
       const visibilityScore = totalScans > 0 
         ? Math.round((mentionedCount / totalScans) * 100)
         : 0

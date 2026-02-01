@@ -257,6 +257,25 @@ export const scanRun = inngest.createFunction(
               }
               break
 
+            case 'solution':
+            case 'implementation':
+            case 'intent_based':
+              // High-intent buyer queries - generate solution-focused memos
+              key = `solution-${query.query_text?.slice(0, 30)}`
+              if (!queuedTypes.has(key)) {
+                memoType = 'industry' // Repurpose industry memo type for solution content
+                memoEvents.push({
+                  name: 'memo/generate',
+                  data: {
+                    brandId,
+                    queryId: query.id,
+                    memoType,
+                  },
+                })
+                queuedTypes.add(key)
+              }
+              break
+
             case 'industry':
             case 'best':
               key = `industry-${query.query_text?.slice(0, 30)}`

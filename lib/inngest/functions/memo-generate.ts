@@ -260,6 +260,19 @@ export const memoGenerate = inngest.createFunction(
       })
     })
 
+    // Step 8: Trigger backlinking for this memo AND batch update all brand memos
+    // This ensures new memos get linked, and existing memos link to the new one
+    await step.sendEvent('trigger-backlinks', [
+      {
+        name: 'memo/backlink',
+        data: { memoId: memo.id, brandId },
+      },
+      {
+        name: 'memo/batch-backlink',
+        data: { brandId },
+      },
+    ])
+
     return {
       success: true,
       memoId: memo.id,

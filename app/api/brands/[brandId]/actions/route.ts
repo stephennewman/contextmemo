@@ -144,6 +144,28 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Scan started with auto memo generation' 
         })
 
+      case 'discovery_scan':
+        // Discovery scan - find where brand IS being mentioned
+        await inngest.send({
+          name: 'discovery/scan',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Discovery scan started - testing 50+ query variations to find brand mentions' 
+        })
+
+      case 'update_backlinks':
+        // Batch update backlinks for all memos
+        await inngest.send({
+          name: 'memo/batch-backlink',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Backlink update started for all memos' 
+        })
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

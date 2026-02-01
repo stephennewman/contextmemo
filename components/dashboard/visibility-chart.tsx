@@ -23,11 +23,19 @@ interface ScanResult {
   scanned_at: string
   brand_mentioned: boolean
   model: string
+  query_id: string
+}
+
+interface Query {
+  id: string
+  query_text: string
 }
 
 interface VisibilityChartProps {
   scanResults: ScanResult[]
   industryCategory?: string // e.g., 'saas', 'ecommerce', 'services'
+  brandName?: string
+  queries?: Query[]
 }
 
 interface DataPoint {
@@ -87,8 +95,25 @@ function formatCurrency(num: number): string {
   return `$${num.toFixed(0)}`
 }
 
-export function VisibilityChart({ scanResults, industryCategory = 'default' }: VisibilityChartProps) {
+export function VisibilityChart({ scanResults, industryCategory = 'default', brandName, queries }: VisibilityChartProps) {
   const benchmarks = INDUSTRY_BENCHMARKS[industryCategory as keyof typeof INDUSTRY_BENCHMARKS] || INDUSTRY_BENCHMARKS.default
+
+  // Create set of branded query IDs to exclude from visibility calculation
+  const brandedQueryIds = useMemo(() => {
+    if (!brandName || !queries) return new Set<string>()
+    const brandNameLower = brandName.toLowerCase()
+    return new Set(
+      queries
+        .filter(q => q.query_text.toLowerCase().includes(brandNameLower))
+        .map(q => q.id)
+    )
+  }, [brandName, queries])
+
+  // Filter out branded queries from scan results
+  const filteredScanResults = useMemo(() => {
+    if (brandedQueryIds.size === 0) return scanResults
+    return scanResults.filter(s => !brandedQueryIds.has(s.query_id))
+  }, [scanResults, brandedQueryIds])
 
   const { chartData, metrics, todayIndex } = useMemo(() => {
     const today = new Date()
@@ -109,7 +134,7 @@ export function VisibilityChart({ scanResults, industryCategory = 'default' }: V
     }
     
     // If no scan data, show demo data with projections
-    if (!scanResults || scanResults.length === 0) {
+    if (!filteredScanResults || filteredScanResults.length === 0) {
       const demoData: DataPoint[] = []
       
       // Historical: 60 days back (show ~2 months of baseline)
@@ -175,7 +200,7 @@ export function VisibilityChart({ scanResults, industryCategory = 'default' }: V
     // Group scans by date
     const scansByDate = new Map<string, ScanResult[]>()
     
-    scanResults.forEach(scan => {
+    filteredScanResults.forEach(scan => {
       const date = new Date(scan.scanned_at).toISOString().split('T')[0]
       if (!scansByDate.has(date)) {
         scansByDate.set(date, [])
@@ -306,7 +331,7 @@ export function VisibilityChart({ scanResults, industryCategory = 'default' }: V
       metrics: calculateMetrics(dataPoints, benchmarks, daysUntilEOY),
       todayIndex: todayIdx
     }
-  }, [scanResults, benchmarks])
+  }, [filteredScanResults, benchmarks])
 
   // Calculate aggregate metrics
   function calculateMetrics(data: DataPoint[], bench: typeof benchmarks, daysUntilEOY: number = 180) {
@@ -562,7 +587,7 @@ export function VisibilityChart({ scanResults, industryCategory = 'default' }: V
           </div>
           
           {/* Model breakdown - only show if we have actual data */}
-          {scanResults && scanResults.length > 0 && (
+          {filteredScanResults && filteredScanResults.length > 0 && (
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm font-medium mb-2">Visibility by Model</p>
               <div className="h-[150px]">

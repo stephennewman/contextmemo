@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Loader2, Play, RefreshCw, FileText, Upload } from 'lucide-react'
+import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface BrandActionsProps {
@@ -400,5 +400,102 @@ export function PushToHubSpotButton({
         </span>
       </Button>
     </div>
+  )
+}
+
+// Discovery Scan - find where brand IS being mentioned
+export function DiscoveryScanButton({ brandId }: { brandId: string }) {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const runDiscoveryScan = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'discovery_scan' }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Discovery scan failed')
+      }
+
+      toast.success('Discovery scan started - testing 50+ query variations. Results will appear in alerts.', {
+        duration: 8000,
+      })
+      
+      // Refresh after a delay to show results
+      setTimeout(() => router.refresh(), 60000)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Discovery scan failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button 
+      onClick={runDiscoveryScan} 
+      disabled={loading}
+      variant="outline"
+      className="gap-2"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Search className="h-4 w-4" />
+      )}
+      Discovery Scan
+    </Button>
+  )
+}
+
+// Update backlinks across all memos
+export function UpdateBacklinksButton({ brandId, memoCount }: { brandId: string; memoCount?: number }) {
+  const [loading, setLoading] = useState(false)
+
+  const updateBacklinks = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_backlinks' }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Backlink update failed')
+      }
+
+      toast.success(`Backlink update started${memoCount ? ` for ${memoCount} memos` : ''}. Internal links will be refreshed.`, {
+        duration: 5000,
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Backlink update failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button 
+      onClick={updateBacklinks} 
+      disabled={loading}
+      variant="outline"
+      size="sm"
+      className="gap-2"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Link2 className="h-4 w-4" />
+      )}
+      Update Backlinks
+    </Button>
   )
 }

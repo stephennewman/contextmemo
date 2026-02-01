@@ -5,6 +5,12 @@ import { competitorDiscover } from '@/lib/inngest/functions/competitor-discover'
 import { queryGenerate } from '@/lib/inngest/functions/query-generate'
 import { scanRun } from '@/lib/inngest/functions/scan-run'
 import { memoGenerate } from '@/lib/inngest/functions/memo-generate'
+import { discoveryScan } from '@/lib/inngest/functions/discovery-scan'
+import { 
+  memoBacklink, 
+  memoBatchBacklink, 
+  dailyBacklinkRefresh 
+} from '@/lib/inngest/functions/memo-backlink'
 import { 
   dailyRun, 
   dailyBrandFullRefresh,
@@ -21,6 +27,12 @@ export const { GET, POST, PUT } = serve({
     queryGenerate,       // Generate search queries to monitor
     scanRun,            // Run AI scans, track visibility
     memoGenerate,       // Generate context memos
+    discoveryScan,      // Discovery scan - find where brand is mentioned
+    
+    // Backlinking functions
+    memoBacklink,           // Add backlinks to individual memo
+    memoBatchBacklink,      // Batch update all memos for a brand
+    dailyBacklinkRefresh,   // Daily refresh - 7 AM UTC
     
     // Daily automation functions
     dailyRun,               // Main scheduler - 6 AM ET daily
