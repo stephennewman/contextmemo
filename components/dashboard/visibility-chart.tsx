@@ -129,6 +129,33 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
     return scanResults.filter(s => !brandedQueryIds.has(s.query_id))
   }, [scanResults, brandedQueryIds])
 
+  // If no scan data, show empty state instead of fake data
+  if (!filteredScanResults || filteredScanResults.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-medium">Visibility Over Time</CardTitle>
+          <CardDescription>
+            Track how often AI assistants mention your brand
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-lg mb-2">No scan data yet</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Run your first visibility scan to see how often AI assistants mention {brandName || 'your brand'} when users ask relevant questions.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const { chartData, metrics, todayIndex } = useMemo(() => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
@@ -145,74 +172,6 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
       const potential = targetMax - currentVisibility
       const growth = potential * Math.pow(progress, exponent)
       return Math.min(targetMax, Math.round(currentVisibility + growth))
-    }
-    
-    // If no scan data, show demo data with projections
-    if (!filteredScanResults || filteredScanResults.length === 0) {
-      const demoData: DataPoint[] = []
-      
-      // Historical: 60 days back (show ~2 months of baseline)
-      // Future: to end of year
-      const historicalDays = 60
-      const totalProjectionDays = Math.max(daysUntilEOY, 90) // At least 90 days projection
-      
-      // Sample weekly for cleaner chart
-      const sampleInterval = 7 // days between points
-      
-      for (let i = -historicalDays; i <= totalProjectionDays; i += sampleInterval) {
-        // Always include today
-        if (i > 0 && i < sampleInterval) continue
-        const actualDay = i === 0 ? 0 : i
-        
-        const date = new Date()
-        date.setDate(date.getDate() + actualDay)
-        const dateStr = date.toISOString().split('T')[0]
-        const isToday = actualDay === 0
-        const isProjection = actualDay > 0
-        const isHistorical = actualDay < 0
-        
-        let visibility: number
-        
-        if (isHistorical) {
-          // Historical: flat around baseline with slight noise
-          const noise = (Math.random() - 0.5) * 3
-          visibility = Math.max(0, Math.min(100, Math.round(benchmarks.avgVisibility + noise)))
-        } else if (isToday) {
-          visibility = benchmarks.avgVisibility
-        } else {
-          // Projection: logarithmic growth curve
-          visibility = calculateProjectedVisibility(benchmarks.avgVisibility, actualDay)
-        }
-        
-        demoData.push({
-          date: dateStr,
-          displayDate: new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          visibility: isToday ? visibility : null,
-          visibilityHistorical: isHistorical ? visibility : (isToday ? visibility : null),
-          visibilityProjection: isProjection ? visibility : (isToday ? visibility : null),
-          openai: 0,
-          claude: 0,
-          gemini: 0,
-          llama: 0,
-          mistral: 0,
-          perplexity: 0,
-          totalScans: 0,
-          mentionedScans: 0,
-          isToday,
-          isProjection,
-          isHistorical,
-          estimatedQueries: Math.round((benchmarks.queryVolume / 30) * (visibility / 100)),
-          estimatedValue: Math.round((benchmarks.queryVolume / 30) * (visibility / 100) * benchmarks.valuePerQuery),
-        })
-      }
-      
-      const todayIdx = demoData.findIndex(d => d.isToday)
-      
-      return { 
-        chartData: demoData, 
-        metrics: calculateMetrics(demoData, benchmarks, daysUntilEOY),
-        todayIndex: todayIdx
-      }
     }
 
     // Group scans by date
