@@ -42,9 +42,13 @@ const SCAN_MODELS: ModelConfig[] = [
   // Perplexity - using direct API to get citations (not OpenRouter)
   { id: 'perplexity-sonar', displayName: 'Perplexity Sonar', provider: 'perplexity-direct', modelId: 'sonar', enabled: true },
   
+  // Additional models for broader coverage
+  { id: 'deepseek-v3', displayName: 'DeepSeek V3', provider: 'openrouter', modelId: 'deepseek/deepseek-chat', enabled: true },
+  { id: 'qwen-72b', displayName: 'Qwen 2.5 72B', provider: 'openrouter', modelId: 'qwen/qwen-2.5-72b-instruct', enabled: true },
+  { id: 'grok-2', displayName: 'Grok 2', provider: 'openrouter', modelId: 'x-ai/grok-2-1212', enabled: true },
+  
   // Optional: more models (disabled by default for cost control)
-  { id: 'qwen-72b', displayName: 'Qwen 2.5 72B', provider: 'openrouter', modelId: 'qwen/qwen-2.5-72b-instruct', enabled: false },
-  { id: 'deepseek-v3', displayName: 'DeepSeek V3', provider: 'openrouter', modelId: 'deepseek/deepseek-chat', enabled: false },
+  { id: 'cohere-command-r-plus', displayName: 'Cohere Command R+', provider: 'openrouter', modelId: 'cohere/command-r-plus', enabled: false },
 ]
 
 // Get model instance based on config
@@ -385,6 +389,12 @@ export const scanRun = inngest.createFunction(
         return { memosQueued: memoEvents.length }
       })
     }
+
+    // Step 7: Trigger prompt enrichment to mine scan results for new prompts/competitors
+    await step.sendEvent('trigger-prompt-enrichment', {
+      name: 'prompt/enrich',
+      data: { brandId },
+    })
 
     return {
       success: true,

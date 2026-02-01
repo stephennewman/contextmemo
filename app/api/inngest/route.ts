@@ -6,6 +6,7 @@ import { queryGenerate } from '@/lib/inngest/functions/query-generate'
 import { scanRun } from '@/lib/inngest/functions/scan-run'
 import { memoGenerate } from '@/lib/inngest/functions/memo-generate'
 import { discoveryScan } from '@/lib/inngest/functions/discovery-scan'
+import { promptEnrich } from '@/lib/inngest/functions/prompt-enrich'
 import { 
   competitorContentScan,
   competitorContentClassify,
@@ -24,6 +25,7 @@ import {
 } from '@/lib/inngest/functions/daily-run'
 import { bingSync, bingWeeklySync } from '@/lib/inngest/functions/bing-sync'
 import { googleSearchConsoleSync, googleWeeklySync } from '@/lib/inngest/functions/google-search-console-sync'
+import { aiOverviewScan } from '@/lib/inngest/functions/ai-overview-scan'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -35,6 +37,7 @@ export const { GET, POST, PUT } = serve({
     scanRun,            // Run AI scans, track visibility
     memoGenerate,       // Generate context memos
     discoveryScan,      // Discovery scan - find where brand is mentioned
+    promptEnrich,       // Feedback loop - mine scan results for new prompts/competitors
     
     // Competitor content intelligence
     competitorContentScan,     // Scan competitor sites for new content
@@ -57,5 +60,8 @@ export const { GET, POST, PUT } = serve({
     bingWeeklySync,         // Weekly sync for all brands - Sundays 8 AM UTC
     googleSearchConsoleSync, // Sync Google Search Console data for a brand
     googleWeeklySync,        // Weekly sync for all brands - Sundays 9 AM UTC
+    
+    // Google AI Overviews (requires SERPAPI_KEY)
+    aiOverviewScan,          // Scan Google AI Overviews for brand queries
   ],
 })

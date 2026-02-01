@@ -231,20 +231,55 @@ export const discoveryScan = inngest.createFunction(
       }
     })
 
-    // Step 5: Save discovery results
+    // Step 5: Save winning queries to the queries table for future scans
+    const savedQueries = await step.run('save-winning-queries', async () => {
+      if (analysis.winningQueries.length === 0) {
+        return { saved: 0, skipped: 0 }
+      }
+
+      // Prepare queries for insertion - these are queries where the brand WAS mentioned
+      const queriesToInsert = analysis.winningQueries.map(wq => ({
+        brand_id: brandId,
+        query_text: wq.query,
+        query_type: `discovery_${wq.category}`,
+        priority: 80, // High priority since these queries already mention the brand
+        auto_discovered: true,
+        is_active: true,
+        persona: null,
+      }))
+
+      // Upsert to avoid duplicates
+      const { data, error } = await supabase
+        .from('queries')
+        .upsert(queriesToInsert, {
+          onConflict: 'brand_id,query_text',
+          ignoreDuplicates: true,
+        })
+        .select()
+
+      if (error) {
+        console.error('Failed to save winning queries:', error)
+        return { saved: 0, skipped: queriesToInsert.length }
+      }
+
+      return { saved: data?.length || 0, skipped: queriesToInsert.length - (data?.length || 0) }
+    })
+
+    // Step 6: Save discovery results alert
     await step.run('save-results', async () => {
       await supabase.from('alerts').insert({
         brand_id: brandId,
         alert_type: 'discovery_complete',
         title: 'Discovery Scan Complete',
-        message: `Found ${analysis.totalMentions} mentions across ${analysis.totalScans} queries (${analysis.mentionRate}% hit rate)`,
-        data: analysis,
+        message: `Found ${analysis.totalMentions} mentions across ${analysis.totalScans} queries (${analysis.mentionRate}% hit rate). Added ${savedQueries.saved} new queries.`,
+        data: { ...analysis, queriesSaved: savedQueries.saved },
       })
     })
 
     return {
       success: true,
       ...analysis,
+      queriesSaved: savedQueries.saved,
     }
   }
 )

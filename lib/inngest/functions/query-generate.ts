@@ -293,10 +293,10 @@ export const queryGenerate = inngest.createFunction(
       })
     }
 
-    // Step 8: Trigger initial scan
+    // Step 8: Trigger initial scan with auto memo generation
     await step.sendEvent('trigger-initial-scan', {
       name: 'scan/run',
-      data: { brandId },
+      data: { brandId, autoGenerateMemos: true },
     })
 
     // Create alert for user

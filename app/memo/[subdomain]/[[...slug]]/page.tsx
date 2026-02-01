@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { marked } from 'marked'
 import { headers } from 'next/headers'
+import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
 
 // Use service role client for public access
 const supabase = createClient(
@@ -206,6 +207,9 @@ export default async function MemoPage({ params }: Props) {
             </div>
           </div>
         </footer>
+        
+        {/* AI Traffic Tracking */}
+        <AITrafficTracker brandId={brand.id} />
       </div>
     )
   }
@@ -400,6 +404,9 @@ export default async function MemoPage({ params }: Props) {
           </div>
         </div>
       </footer>
+      
+      {/* AI Traffic Tracking */}
+      <AITrafficTracker brandId={brand.id} memoId={memo.id} />
     </div>
   )
 }

@@ -673,6 +673,64 @@ export interface UserIntent {
   trigger_phrase: string  // How they'd describe it to an AI
 }
 
+// Organization types for teams/multi-user
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  owner_id: string
+  plan: string
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  plan_limits: {
+    prompts: number
+    memos_per_month: number
+    brands: number
+    seats: number // -1 = unlimited
+  }
+  settings: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface OrganizationMember {
+  id: string
+  organization_id: string
+  user_id: string
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+  invited_by: string | null
+  invited_at: string | null
+  joined_at: string
+  created_at: string
+}
+
+export interface OrganizationInvite {
+  id: string
+  organization_id: string
+  email: string
+  role: 'admin' | 'member' | 'viewer'
+  invited_by: string
+  token: string
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
+// Role permissions
+export const ROLE_PERMISSIONS = {
+  owner: ['read', 'write', 'delete', 'manage_members', 'manage_billing', 'transfer_ownership'],
+  admin: ['read', 'write', 'delete', 'manage_members'],
+  member: ['read', 'write'],
+  viewer: ['read'],
+} as const
+
+export type OrgRole = keyof typeof ROLE_PERMISSIONS
+export type Permission = typeof ROLE_PERMISSIONS[OrgRole][number]
+
+export function hasPermission(role: OrgRole, permission: Permission): boolean {
+  return ROLE_PERMISSIONS[role].includes(permission as never)
+}
+
 // Helper types
 export type Tenant = Database['public']['Tables']['tenants']['Row']
 export type Brand = Database['public']['Tables']['brands']['Row']
@@ -686,3 +744,102 @@ export type Alert = Database['public']['Tables']['alerts']['Row']
 export type VisibilityHistory = Database['public']['Tables']['visibility_history']['Row']
 export type CompetitorContent = Database['public']['Tables']['competitor_content']['Row']
 export type SearchConsoleStat = Database['public']['Tables']['search_console_stats']['Row']
+
+// AI Traffic tracking - detect visits from AI platforms
+export interface AITrafficEvent {
+  id?: string
+  brand_id: string
+  memo_id?: string | null
+  page_url: string
+  referrer: string | null
+  referrer_source: AIReferrerSource
+  user_agent: string | null
+  country?: string | null
+  timestamp: string
+}
+
+// Known AI referrer sources
+export type AIReferrerSource = 
+  | 'chatgpt'      // chat.openai.com
+  | 'perplexity'   // perplexity.ai
+  | 'claude'       // claude.ai
+  | 'gemini'       // gemini.google.com
+  | 'copilot'      // copilot.microsoft.com
+  | 'meta_ai'      // meta.ai
+  | 'poe'          // poe.com
+  | 'you'          // you.com
+  | 'phind'        // phind.com
+  | 'direct'       // No referrer but AI user agent
+  | 'unknown_ai'   // AI-like patterns
+  | 'organic'      // Regular search/social
+  | 'direct_nav'   // Direct navigation
+
+// Helper to detect AI source from referrer/UA
+export function detectAISource(referrer: string | null, userAgent: string | null): AIReferrerSource {
+  const ref = referrer?.toLowerCase() || ''
+  const ua = userAgent?.toLowerCase() || ''
+  
+  // Check referrer first
+  if (ref.includes('chat.openai.com') || ref.includes('chatgpt.com')) return 'chatgpt'
+  if (ref.includes('perplexity.ai')) return 'perplexity'
+  if (ref.includes('claude.ai')) return 'claude'
+  if (ref.includes('gemini.google.com') || ref.includes('bard.google.com')) return 'gemini'
+  if (ref.includes('copilot.microsoft.com') || ref.includes('bing.com/chat')) return 'copilot'
+  if (ref.includes('meta.ai') || ref.includes('facebook.com/ai')) return 'meta_ai'
+  if (ref.includes('poe.com')) return 'poe'
+  if (ref.includes('you.com')) return 'you'
+  if (ref.includes('phind.com')) return 'phind'
+  
+  // Check user agent for AI bot patterns
+  if (ua.includes('chatgpt') || ua.includes('openai')) return 'chatgpt'
+  if (ua.includes('perplexitybot') || ua.includes('perplexity')) return 'perplexity'
+  if (ua.includes('anthropic') || ua.includes('claude')) return 'claude'
+  if (ua.includes('google-extended') || ua.includes('gemini')) return 'gemini'
+  if (ua.includes('bingbot') && ua.includes('ai')) return 'copilot'
+  
+  // Check for AI-like patterns in referrer
+  if (ref.includes('ai.') || ref.includes('/ai/') || ref.includes('chat.')) return 'unknown_ai'
+  
+  // Organic sources
+  if (ref.includes('google.') || ref.includes('bing.') || ref.includes('duckduckgo')) return 'organic'
+  if (ref.includes('twitter.') || ref.includes('linkedin.') || ref.includes('facebook.')) return 'organic'
+  
+  // No referrer = direct navigation
+  if (!ref || ref === '') return 'direct_nav'
+  
+  return 'organic'
+}
+
+// AI source display names
+export const AI_SOURCE_LABELS: Record<AIReferrerSource, string> = {
+  chatgpt: 'ChatGPT',
+  perplexity: 'Perplexity',
+  claude: 'Claude',
+  gemini: 'Gemini',
+  copilot: 'Microsoft Copilot',
+  meta_ai: 'Meta AI',
+  poe: 'Poe',
+  you: 'You.com',
+  phind: 'Phind',
+  direct: 'Direct (AI UA)',
+  unknown_ai: 'Unknown AI',
+  organic: 'Organic Search/Social',
+  direct_nav: 'Direct Navigation',
+}
+
+// AI source colors for charts
+export const AI_SOURCE_COLORS: Record<AIReferrerSource, string> = {
+  chatgpt: '#10B981',
+  perplexity: '#8B5CF6',
+  claude: '#F97316',
+  gemini: '#3B82F6',
+  copilot: '#0EA5E9',
+  meta_ai: '#1877F2',
+  poe: '#7C3AED',
+  you: '#EC4899',
+  phind: '#14B8A6',
+  direct: '#6B7280',
+  unknown_ai: '#9CA3AF',
+  organic: '#D1D5DB',
+  direct_nav: '#E5E7EB',
+}

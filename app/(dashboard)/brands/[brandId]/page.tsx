@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
-import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, RefreshContextButton } from '@/components/dashboard/brand-actions'
+import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, RefreshContextButton, AIOverviewScanButton } from '@/components/dashboard/brand-actions'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
@@ -21,6 +21,8 @@ import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { CompetitorList } from '@/components/dashboard/competitor-list'
 import { CitationAnalysis } from '@/components/dashboard/citation-analysis'
+import { ExportDropdown } from '@/components/dashboard/export-dropdown'
+import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -103,6 +105,15 @@ export default async function BrandPage({ params }: Props) {
         .order('first_seen_at', { ascending: false })
         .limit(50)
     : { data: [] }
+
+  // Get AI traffic data (last 90 days)
+  const { data: aiTraffic } = await supabase
+    .from('ai_traffic')
+    .select('*, memo:memo_id(title, slug)')
+    .eq('brand_id', brandId)
+    .gte('timestamp', ninetyDaysAgo.toISOString())
+    .order('timestamp', { ascending: false })
+    .limit(500)
 
   // Get latest discovery scan result
   const { data: discoveryAlert } = await supabase
@@ -222,10 +233,11 @@ export default async function BrandPage({ params }: Props) {
           </Button>
         </div>
 
-        {/* Onboarding Flow with Terminal */}
+        {/* Onboarding Flow - Auto-runs full pipeline */}
         <OnboardingFlow
           brandId={brandId}
           brandName={brand.name}
+          brandDomain={brand.domain}
           hasContext={hasContext}
           hasCompetitors={!!competitors?.length}
           hasQueries={!!queries?.length}
@@ -263,6 +275,8 @@ export default async function BrandPage({ params }: Props) {
           </a>
         </div>
         <div className="flex gap-2">
+          <ExportDropdown brandId={brandId} />
+          <AIOverviewScanButton brandId={brandId} />
           <Button variant="outline" size="sm" asChild className="rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white">
             <Link href={`/brands/${brandId}/settings`}>
               <Settings className="h-4 w-4" strokeWidth={2.5} />
@@ -328,6 +342,7 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
           <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
+          <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC{(aiTraffic?.length || 0) > 0 && ` (${aiTraffic?.length})`}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -577,6 +592,21 @@ export default async function BrandPage({ params }: Props) {
             bingLastSyncedAt={context?.search_console?.bing?.last_synced_at}
             googleEnabled={!!(context?.search_console?.google?.enabled && context?.search_console?.google?.refresh_token)}
             googleLastSyncedAt={context?.search_console?.google?.last_synced_at}
+          />
+        </TabsContent>
+
+        <TabsContent value="traffic">
+          <AITrafficView
+            traffic={(aiTraffic || []) as Array<{
+              id: string
+              memo_id: string | null
+              page_url: string
+              referrer: string | null
+              referrer_source: 'chatgpt' | 'perplexity' | 'claude' | 'gemini' | 'copilot' | 'meta_ai' | 'poe' | 'you' | 'phind' | 'direct' | 'unknown_ai' | 'organic' | 'direct_nav'
+              timestamp: string
+              memo?: { title: string; slug: string } | null
+            }>}
+            brandName={brand.name}
           />
         </TabsContent>
       </Tabs>

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       case 'run_scan':
         await inngest.send({
           name: 'scan/run',
-          data: { brandId, queryIds: body.queryIds },
+          data: { brandId, queryIds: body.queryIds, autoGenerateMemos: true },
         })
         return NextResponse.json({ 
           success: true, 
@@ -197,6 +197,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ 
           success: true, 
           message: 'Competitor content scan started' 
+        })
+
+      case 'ai_overview_scan':
+        // Scan Google AI Overviews (requires SERPAPI_KEY)
+        await inngest.send({
+          name: 'ai-overview/scan',
+          data: { brandId, maxQueries: body.maxQueries || 10 },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Google AI Overview scan started (checking top queries)' 
         })
 
       case 'check_status': {

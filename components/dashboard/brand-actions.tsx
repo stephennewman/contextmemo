@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2 } from 'lucide-react'
+import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2, Globe } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface BrandActionsProps {
@@ -606,6 +606,56 @@ export function UpdateBacklinksButton({ brandId, memoCount }: { brandId: string;
         <Link2 className="h-4 w-4" />
       )}
       Update Backlinks
+    </Button>
+  )
+}
+
+// Google AI Overview scan - check if brand appears in Google's AI summaries
+export function AIOverviewScanButton({ brandId }: { brandId: string }) {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const runAIOverviewScan = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'ai_overview_scan', maxQueries: 10 }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'AI Overview scan failed')
+      }
+
+      toast.success('Google AI Overview scan started - checking your top 10 queries. Results will appear in scans.', {
+        duration: 8000,
+      })
+      
+      // Refresh after scan completes
+      setTimeout(() => router.refresh(), 30000)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'AI Overview scan failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button 
+      onClick={runAIOverviewScan} 
+      disabled={loading}
+      variant="outline"
+      className="gap-2"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Globe className="h-4 w-4" />
+      )}
+      AI Overview Scan
     </Button>
   )
 }

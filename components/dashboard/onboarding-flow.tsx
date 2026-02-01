@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { OnboardingTerminal } from './onboarding-terminal'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Circle, Zap } from 'lucide-react'
 
 interface OnboardingFlowProps {
   brandId: string
   brandName: string
+  brandDomain: string
   hasContext: boolean
   hasCompetitors: boolean
   hasQueries: boolean
@@ -15,149 +16,379 @@ interface OnboardingFlowProps {
   queryCount: number
 }
 
-type OnboardingStep = 'extract' | 'competitors' | 'queries'
+type OnboardingStep = 'extract' | 'competitors' | 'queries' | 'scan'
+
+interface ProgressLine {
+  text: string
+  type: 'info' | 'success' | 'working'
+}
+
+// Step configurations
+const STEP_CONFIGS: Record<OnboardingStep, {
+  action: string
+  title: string
+  shortTitle: string
+  progressMessages: string[]
+}> = {
+  extract: {
+    action: 'extract_context',
+    title: 'Extracting Brand Context',
+    shortTitle: 'Brand Profile',
+    progressMessages: [
+      'Connecting to website...',
+      'Scanning homepage content...',
+      'Extracting products & services...',
+      'Identifying target personas...',
+      'Analyzing brand positioning...',
+      'Processing with AI...',
+    ],
+  },
+  competitors: {
+    action: 'discover_competitors',
+    title: 'Discovering Competitors',
+    shortTitle: 'Competitors',
+    progressMessages: [
+      'Analyzing market positioning...',
+      'Identifying key competitors...',
+      'Cross-referencing industry data...',
+      'Validating competitor profiles...',
+    ],
+  },
+  queries: {
+    action: 'generate_queries',
+    title: 'Generating Search Prompts',
+    shortTitle: 'Prompts',
+    progressMessages: [
+      'Analyzing buyer intent patterns...',
+      'Generating non-branded queries...',
+      'Creating persona-based prompts...',
+      'Building comparison queries...',
+      'Prioritizing by relevance...',
+    ],
+  },
+  scan: {
+    action: 'run_scan',
+    title: 'Running First AI Scan',
+    shortTitle: 'AI Scan',
+    progressMessages: [
+      'Querying ChatGPT...',
+      'Querying Claude...',
+      'Querying Gemini...',
+      'Querying Perplexity...',
+      'Analyzing visibility...',
+      'Generating content recommendations...',
+    ],
+  },
+}
 
 export function OnboardingFlow({
   brandId,
   brandName,
+  brandDomain,
   hasContext,
   hasCompetitors,
   hasQueries,
   competitorCount,
   queryCount,
 }: OnboardingFlowProps) {
-  // Track which step is currently showing the terminal
-  const [activeTerminal, setActiveTerminal] = useState<OnboardingStep | null>(null)
+  const router = useRouter()
+  const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null)
+  const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(new Set())
+  const [progressLines, setProgressLines] = useState<ProgressLine[]>([])
+  const [isComplete, setIsComplete] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false)
+  const progressRef = useRef<HTMLDivElement>(null)
+  const messageIndexRef = useRef(0)
 
-  // Determine current step
-  const getCurrentStep = (): OnboardingStep => {
-    if (!hasContext) return 'extract'
-    if (!hasCompetitors) return 'competitors'
-    if (!hasQueries) return 'queries'
-    return 'queries' // All done (shouldn't happen in onboarding flow)
-  }
-
-  const currentStep = getCurrentStep()
-
-  const steps: {
-    id: OnboardingStep
-    title: string
-    description: string
-    completedDescription: string
-  }[] = [
-    {
-      id: 'extract',
-      title: 'Extract Brand Context',
-      description: `Scan ${brandName}'s website to understand products and target audience`,
-      completedDescription: 'Extracted products, personas, and positioning',
-    },
-    {
-      id: 'competitors',
-      title: 'Discover Competitors',
-      description: 'Find who you\'re competing with in AI conversations',
-      completedDescription: `Found ${competitorCount} competitors to track`,
-    },
-    {
-      id: 'queries',
-      title: 'Generate Prompts',
-      description: 'Create the prompts your buyers ask AI assistants',
-      completedDescription: `Generated ${queryCount} prompts to monitor`,
-    },
-  ]
-
-  const isStepComplete = (stepId: OnboardingStep): boolean => {
-    switch (stepId) {
-      case 'extract': return hasContext
-      case 'competitors': return hasCompetitors
-      case 'queries': return hasQueries
-      default: return false
+  // Determine initial completed state
+  useEffect(() => {
+    const completed = new Set<OnboardingStep>()
+    if (hasContext) completed.add('extract')
+    if (hasCompetitors) completed.add('competitors')
+    if (hasQueries) completed.add('queries')
+    setCompletedSteps(completed)
+    
+    // If all steps are complete, mark as complete
+    if (hasContext && hasCompetitors && hasQueries) {
+      setIsComplete(true)
     }
+  }, [hasContext, hasCompetitors, hasQueries])
+
+  // Auto-scroll progress
+  useEffect(() => {
+    if (progressRef.current) {
+      progressRef.current.scrollTop = progressRef.current.scrollHeight
+    }
+  }, [progressLines])
+
+  // Auto-start the pipeline when component mounts (if not already started)
+  useEffect(() => {
+    if (!hasStarted && !hasContext) {
+      startPipeline()
+    }
+  }, [hasStarted, hasContext])
+
+  const addProgressLine = (text: string, type: ProgressLine['type'] = 'working') => {
+    setProgressLines(prev => [...prev, { text, type }])
   }
 
-  const isStepActive = (stepId: OnboardingStep): boolean => {
-    return stepId === currentStep
+  const startPipeline = async () => {
+    setHasStarted(true)
+    addProgressLine(`Starting setup for ${brandName}...`, 'info')
+    
+    // Run the pipeline: extract → competitors → queries → scan
+    const steps: OnboardingStep[] = ['extract', 'competitors', 'queries', 'scan']
+    
+    for (const step of steps) {
+      // Skip already completed steps (except scan which we always run)
+      if (step !== 'scan' && completedSteps.has(step)) {
+        addProgressLine(`✓ ${STEP_CONFIGS[step].shortTitle} already complete`, 'success')
+        continue
+      }
+
+      setCurrentStep(step)
+      const config = STEP_CONFIGS[step]
+      addProgressLine(``, 'info') // Empty line for spacing
+      addProgressLine(`▶ ${config.title}`, 'info')
+
+      // Trigger the action
+      try {
+        const response = await fetch(`/api/brands/${brandId}/actions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: config.action }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || 'Action failed')
+        }
+
+        // Show progress messages while polling
+        messageIndexRef.current = 0
+        const showNextMessage = () => {
+          if (messageIndexRef.current < config.progressMessages.length) {
+            addProgressLine(config.progressMessages[messageIndexRef.current], 'working')
+            messageIndexRef.current++
+          }
+        }
+
+        // Show first message immediately
+        showNextMessage()
+
+        // Poll for completion with progress messages
+        const pollStart = Date.now()
+        const maxPollTime = step === 'extract' ? 90000 : 60000 // Context extraction can take longer
+
+        while (Date.now() - pollStart < maxPollTime) {
+          await new Promise(r => setTimeout(r, 3000))
+          
+          // Show next progress message
+          showNextMessage()
+
+          // Check status
+          const statusResponse = await fetch(`/api/brands/${brandId}/actions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'check_status' }),
+          })
+
+          if (statusResponse.ok) {
+            const status = await statusResponse.json()
+            
+            let stepComplete = false
+            let summary = ''
+
+            if (step === 'extract' && status.hasContext) {
+              stepComplete = true
+              summary = status.contextSummary || 'Profile extracted'
+            } else if (step === 'competitors' && status.hasCompetitors) {
+              stepComplete = true
+              summary = `Found ${status.competitorCount || 0} competitors`
+            } else if (step === 'queries' && status.hasQueries) {
+              stepComplete = true
+              summary = `Generated ${status.queryCount || 0} prompts`
+            } else if (step === 'scan') {
+              // Scan doesn't have a simple "complete" check, use timeout
+              if (Date.now() - pollStart > 30000) {
+                stepComplete = true
+                summary = 'Visibility scan initiated'
+              }
+            }
+
+            if (stepComplete) {
+              addProgressLine(`✓ ${summary}`, 'success')
+              setCompletedSteps(prev => new Set([...prev, step]))
+              break
+            }
+          }
+        }
+
+        // If we hit max time, assume success and continue
+        if (!completedSteps.has(step)) {
+          addProgressLine(`✓ ${config.shortTitle} processing...`, 'success')
+          setCompletedSteps(prev => new Set([...prev, step]))
+        }
+
+      } catch (error) {
+        addProgressLine(`⚠ Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'info')
+        // Continue with next step even on error
+      }
+    }
+
+    // All done
+    setCurrentStep(null)
+    setIsComplete(true)
+    addProgressLine(``, 'info')
+    addProgressLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+    addProgressLine(`✓ Setup complete! Redirecting to dashboard...`, 'success')
+
+    // Refresh the page after a short delay
+    setTimeout(() => {
+      router.refresh()
+    }, 2000)
   }
 
-  const isStepLocked = (stepId: OnboardingStep): boolean => {
-    const stepOrder: OnboardingStep[] = ['extract', 'competitors', 'queries']
-    const stepIndex = stepOrder.indexOf(stepId)
-    const currentIndex = stepOrder.indexOf(currentStep)
-    return stepIndex > currentIndex
-  }
+  const steps: { id: OnboardingStep; label: string }[] = [
+    { id: 'extract', label: 'Profile' },
+    { id: 'competitors', label: 'Competitors' },
+    { id: 'queries', label: 'Prompts' },
+    { id: 'scan', label: 'Scan' },
+  ]
 
   return (
     <div className="max-w-3xl mx-auto">
       <Card className="border-[3px] border-[#0F172A] overflow-hidden">
         <CardHeader className="border-b-[3px] border-[#0F172A] bg-[#0F172A] text-white">
-          <CardTitle className="text-lg tracking-wide">GET STARTED</CardTitle>
-          <CardDescription className="text-slate-300">
-            Complete these steps to start tracking your AI visibility
-          </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#F59E0B] rounded-lg">
+              <Zap className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-lg tracking-wide">SETTING UP {brandName.toUpperCase()}</CardTitle>
+              <CardDescription className="text-slate-300">
+                {brandDomain}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
+        
         <CardContent className="p-0">
-          {steps.map((step, index) => {
-            const complete = isStepComplete(step.id)
-            const active = isStepActive(step.id)
-            const locked = isStepLocked(step.id)
-            const showTerminal = activeTerminal === step.id || (active && activeTerminal === null)
+          {/* Progress Steps Indicator */}
+          <div className="p-4 border-b-2 border-[#0F172A] bg-zinc-50">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => {
+                const isCompleted = completedSteps.has(step.id)
+                const isCurrent = currentStep === step.id
+                const isPending = !isCompleted && !isCurrent
 
-            return (
-              <div
-                key={step.id}
-                className={`border-b-2 last:border-b-0 border-[#0F172A] transition-all ${
-                  complete ? 'bg-[#F0FDF4]' :
-                  active ? 'bg-[#FFFBEB]' :
-                  'bg-zinc-50 opacity-50'
-                }`}
-              >
-                {/* Step Header */}
-                <div className="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${
-                      complete ? 'bg-[#10B981] text-white' :
-                      active ? 'bg-[#F59E0B] text-white' :
-                      'bg-zinc-200 text-zinc-400'
-                    }`}>
-                      {complete ? <CheckCircle2 className="h-6 w-6" /> : index + 1}
+                return (
+                  <div key={step.id} className="flex items-center">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        isCompleted ? 'bg-[#10B981] text-white' :
+                        isCurrent ? 'bg-[#F59E0B] text-white' :
+                        'bg-zinc-200 text-zinc-400'
+                      }`}>
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : isCurrent ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Circle className="h-4 w-4" />
+                        )}
+                      </div>
+                      <span className={`text-xs mt-1 font-medium ${
+                        isCompleted ? 'text-[#10B981]' :
+                        isCurrent ? 'text-[#F59E0B]' :
+                        'text-zinc-400'
+                      }`}>
+                        {step.label}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-[#0F172A] text-lg">{step.title}</p>
-                      <p className="text-sm text-zinc-600">
-                        {complete ? step.completedDescription : step.description}
-                      </p>
-                    </div>
-                    {complete && (
-                      <span className="text-sm font-medium text-[#10B981]">Complete</span>
-                    )}
-                    {active && !complete && !showTerminal && (
-                      <span className="text-sm font-medium text-[#F59E0B]">Ready</span>
-                    )}
-                    {locked && (
-                      <span className="text-sm text-zinc-400">Waiting</span>
+                    {index < steps.length - 1 && (
+                      <div className={`w-12 h-0.5 mx-2 ${
+                        completedSteps.has(steps[index + 1].id) || currentStep === steps[index + 1].id
+                          ? 'bg-[#10B981]'
+                          : 'bg-zinc-200'
+                      }`} />
                     )}
                   </div>
-                </div>
+                )
+              })}
+            </div>
+          </div>
 
-                {/* Terminal (only for active step) */}
-                {active && !complete && (
-                  <div className="px-5 pb-5">
-                    <OnboardingTerminal
-                      brandId={brandId}
-                      step={step.id}
-                      onComplete={() => setActiveTerminal(null)}
-                    />
-                  </div>
-                )}
+          {/* Progress Log */}
+          <div 
+            ref={progressRef}
+            className="h-64 overflow-y-auto bg-[#1a1b26] p-4 font-mono text-sm"
+          >
+            {progressLines.length === 0 ? (
+              <div className="flex items-center gap-2 text-slate-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Initializing...</span>
               </div>
-            )
-          })}
+            ) : (
+              progressLines.map((line, i) => (
+                <div key={i} className="flex items-start gap-2 py-0.5">
+                  {line.type === 'working' && (
+                    <Loader2 className="h-4 w-4 text-[#0EA5E9] animate-spin shrink-0 mt-0.5" />
+                  )}
+                  {line.type === 'success' && (
+                    <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
+                  )}
+                  {line.type === 'info' && line.text && (
+                    <span className="text-slate-500 shrink-0">→</span>
+                  )}
+                  <span className={
+                    line.type === 'success' ? 'text-[#10B981]' :
+                    line.type === 'info' && line.text.startsWith('▶') ? 'text-[#7aa2f7] font-bold' :
+                    line.type === 'info' && line.text.startsWith('━') ? 'text-[#7aa2f7]' :
+                    line.type === 'info' ? 'text-slate-400' :
+                    'text-slate-300'
+                  }>
+                    {line.text}
+                  </span>
+                </div>
+              ))
+            )}
+            
+            {/* Blinking cursor when running */}
+            {currentStep && !isComplete && (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="w-2 h-4 bg-[#0EA5E9] animate-pulse" />
+              </div>
+            )}
+          </div>
+
+          {/* Status Footer */}
+          <div className="bg-[#0F172A] px-4 py-3 border-t border-slate-700">
+            <div className="flex items-center justify-between text-sm">
+              <span className={`font-mono ${
+                isComplete ? 'text-[#10B981]' : 'text-[#0EA5E9]'
+              }`}>
+                {isComplete ? '● SETUP COMPLETE' : '● PROCESSING'}
+              </span>
+              {!isComplete && (
+                <span className="text-slate-400">
+                  Fully automated - no action needed
+                </span>
+              )}
+              {isComplete && (
+                <span className="text-slate-400">
+                  Dashboard loading...
+                </span>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* What happens next */}
+      {/* Info */}
       <div className="mt-6 p-4 bg-zinc-50 border-2 border-zinc-200 rounded-lg">
         <p className="text-sm text-zinc-600">
-          <strong>What happens next?</strong> After setup, we&apos;ll run your first visibility scan across 6 AI models (ChatGPT, Claude, Gemini, Perplexity, Llama, Mistral) to see how often your brand is mentioned.
+          <strong>What&apos;s happening?</strong> We&apos;re scanning your website, identifying competitors, generating search prompts, and running your first visibility scan across 6 AI models. This typically takes 2-3 minutes.
         </p>
       </div>
     </div>

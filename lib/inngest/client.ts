@@ -116,4 +116,16 @@ export type InngestEvents = {
       brandId: string
     }
   }
+  // Discovery scan for exploring new query patterns
+  'discovery/scan': {
+    data: {
+      brandId: string
+    }
+  }
+  // Prompt enrichment - feedback loop from scan results
+  'prompt/enrich': {
+    data: {
+      brandId: string
+    }
+  }
 }

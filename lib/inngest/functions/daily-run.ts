@@ -63,6 +63,7 @@ export const dailyRun = inngest.createFunction(
         needsCompetitorDiscovery: boolean
         needsQueryGeneration: boolean
         needsScan: boolean
+        needsDiscoveryScan: boolean
         isNewBrand: boolean
       }> = []
 
@@ -72,8 +73,8 @@ export const dailyRun = inngest.createFunction(
           ? Math.floor((Date.now() - new Date(brand.context_extracted_at).getTime()) / (1000 * 60 * 60 * 24))
           : 999
 
-        // Get last competitor discovery and query generation times
-        const [competitorsResult, queriesResult, lastScanResult] = await Promise.all([
+        // Get last competitor discovery, query generation, scan, and discovery scan times
+        const [competitorsResult, queriesResult, lastScanResult, lastDiscoveryScanResult] = await Promise.all([
           supabase
             .from('competitors')
             .select('created_at')
@@ -93,11 +94,20 @@ export const dailyRun = inngest.createFunction(
             .eq('brand_id', brand.id)
             .order('scanned_at', { ascending: false })
             .limit(1),
+          // Check last discovery scan via alerts table
+          supabase
+            .from('alerts')
+            .select('created_at')
+            .eq('brand_id', brand.id)
+            .eq('alert_type', 'discovery_complete')
+            .order('created_at', { ascending: false })
+            .limit(1),
         ])
 
         const lastCompetitorDiscovery = competitorsResult.data?.[0]?.created_at
         const lastQueryGeneration = queriesResult.data?.[0]?.created_at
         const lastScan = lastScanResult.data?.[0]?.scanned_at
+        const lastDiscoveryScan = lastDiscoveryScanResult.data?.[0]?.created_at
 
         tasks.push({
           brandId: brand.id,
@@ -111,6 +121,8 @@ export const dailyRun = inngest.createFunction(
           needsQueryGeneration: isOlderThanDays(lastQueryGeneration, 7),
           // Scan daily (or if never scanned)
           needsScan: isOlderThanDays(lastScan, 1),
+          // Discovery scan weekly (or if never done) - explores new query patterns
+          needsDiscoveryScan: isOlderThanDays(lastDiscoveryScan, 7),
         })
       }
 
@@ -183,6 +195,40 @@ export const dailyRun = inngest.createFunction(
       return events.length
     })
 
+    // Step 6b: Trigger discovery scans for brands that need them (weekly)
+    // Discovery scans explore new query patterns and add winning queries to the database
+    const discoveryBrands = brandTasks.filter(b => 
+      b.needsDiscoveryScan && 
+      !b.isNewBrand && // Skip new brands - they'll get discovery after initial setup
+      !b.needsContextRefresh // Skip brands getting full refresh
+    )
+
+    if (discoveryBrands.length > 0) {
+      await step.run('trigger-discovery-scans', async () => {
+        const events = discoveryBrands.map(brand => ({
+          name: 'discovery/scan' as const,
+          data: { brandId: brand.brandId },
+        }))
+        await inngest.send(events)
+        return events.length
+      })
+    }
+
+    // Step 6c: Trigger Google AI Overview scans (weekly, if SERPAPI_KEY is configured)
+    // Only runs on specific days to conserve API quota (100 free/month)
+    // Runs on Mondays and Thursdays for twice-weekly coverage
+    if (process.env.SERPAPI_KEY && (dayOfWeek === 1 || dayOfWeek === 4)) {
+      await step.run('trigger-ai-overview-scans', async () => {
+        // Only scan top 10 queries per brand to conserve quota
+        const events = brands.map(brand => ({
+          name: 'ai-overview/scan' as const,
+          data: { brandId: brand.id, maxQueries: 10 },
+        }))
+        await inngest.send(events)
+        return events.length
+      })
+    }
+
     // Step 7: Record daily snapshot for trend tracking
     await step.run('record-daily-snapshot', async () => {
       const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
@@ -250,6 +296,7 @@ export const dailyRun = inngest.createFunction(
         fullRefresh: fullRefreshBrands.length,
         updates: updateBrands.length,
         scansOnly: scanOnlyBrands.length,
+        discoveryScans: discoveryBrands.length,
         total: brands.length,
       }
 
@@ -258,7 +305,7 @@ export const dailyRun = inngest.createFunction(
           brand_id: brands[0].id,
           alert_type: 'system',
           title: 'Daily Automation Complete',
-          message: `Processed ${brands.length} brands: ${summary.fullRefresh} full refresh, ${summary.updates} updates, ${summary.scansOnly} scans.`,
+          message: `Processed ${brands.length} brands: ${summary.fullRefresh} full refresh, ${summary.updates} updates, ${summary.scansOnly} scans, ${summary.discoveryScans} discovery scans.`,
           data: { ...summary, timestamp: new Date().toISOString() },
         })
       }
@@ -272,6 +319,7 @@ export const dailyRun = inngest.createFunction(
       fullRefresh: fullRefreshBrands.length,
       updates: updateBrands.length,
       scansOnly: scanOnlyBrands.length,
+      discoveryScans: discoveryBrands.length,
       timestamp: new Date().toISOString(),
     }
   }
