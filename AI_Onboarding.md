@@ -297,6 +297,16 @@ interface SearchConsoleConfig {
 
 ---
 
+## Deploy Log
+
+**2026-02-01 - Add instant loading feedback with skeleton UIs**
+- Added `loading.tsx` files for dashboard layout, dashboard page, brand page, settings, memo edit, new brand, and auth pages
+- Updated Button component with `active:scale-[0.97]` for instant visual feedback on click
+- Replaced generic spinner loading states with layout-matching skeleton loaders
+- Commit: `bef4cda`
+
+---
+
 ## Next Steps
 
 1. Add SUPABASE_SERVICE_ROLE_KEY to .env.local
