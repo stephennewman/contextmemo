@@ -17,6 +17,7 @@ import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, Di
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
+import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -86,6 +87,17 @@ export default async function BrandPage({ params }: Props) {
     .eq('brand_id', brandId)
     .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
     .order('date', { ascending: false })
+
+  // Get competitor content (for content intelligence)
+  const competitorIds = (competitors || []).map(c => c.id)
+  const { data: competitorContent } = competitorIds.length > 0 
+    ? await supabase
+        .from('competitor_content')
+        .select('*, response_memo:response_memo_id(id, title, slug, status)')
+        .in('competitor_id', competitorIds)
+        .order('first_seen_at', { ascending: false })
+        .limit(50)
+    : { data: [] }
 
   // Get latest discovery scan result
   const { data: discoveryAlert } = await supabase
@@ -525,6 +537,13 @@ export default async function BrandPage({ params }: Props) {
             competitors={competitors || []}
             scanResults={recentScans}
             queries={queries || []}
+          />
+
+          {/* Competitor Content Intelligence */}
+          <CompetitorContentFeed
+            brandId={brandId}
+            content={competitorContent || []}
+            competitors={competitors || []}
           />
           
           {/* Competitor List */}

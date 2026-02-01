@@ -188,6 +188,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Google Search Console sync started' 
         })
 
+      case 'content-scan':
+        // Scan competitor content
+        await inngest.send({
+          name: 'competitor/content-scan',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Competitor content scan started' 
+        })
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

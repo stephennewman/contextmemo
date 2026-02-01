@@ -6,6 +6,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Perplexity search result structure for citations (stored as JSONB)
+export interface PerplexitySearchResultJson {
+  url: string
+  title: string | null
+  date: string | null
+  snippet: string | null
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -184,6 +192,10 @@ export interface Database {
           brand_position: number | null
           brand_context: string | null
           competitors_mentioned: string[] | null
+          // Perplexity citation fields
+          citations: string[] | null
+          search_results: PerplexitySearchResultJson[] | null
+          brand_in_citations: boolean | null
           scanned_at: string
         }
         Insert: {
@@ -196,6 +208,10 @@ export interface Database {
           brand_position?: number | null
           brand_context?: string | null
           competitors_mentioned?: string[] | null
+          // Perplexity citation fields
+          citations?: string[] | null
+          search_results?: PerplexitySearchResultJson[] | null
+          brand_in_citations?: boolean | null
           scanned_at?: string
         }
         Update: {
@@ -208,6 +224,10 @@ export interface Database {
           brand_position?: number | null
           brand_context?: string | null
           competitors_mentioned?: string[] | null
+          // Perplexity citation fields
+          citations?: string[] | null
+          search_results?: PerplexitySearchResultJson[] | null
+          brand_in_citations?: boolean | null
           scanned_at?: string
         }
       }
