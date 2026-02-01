@@ -21,7 +21,7 @@
 | Job Queue | Inngest | ✅ Complete |
 | AI Providers | OpenAI (GPT-4o) + Anthropic (Claude 3.5 Haiku) | ✅ Complete |
 | Web Scraping | Jina Reader API | ✅ Complete |
-| Hosting | Vercel | ⏳ Not deployed |
+| Hosting | Vercel | ✅ Pushed to GitHub (awaiting Vercel connection) |
 | Payments | Stripe | ⏳ Not configured (post-MVP) |
 
 ---
@@ -107,6 +107,7 @@ INNGEST_EVENT_KEY=[required for production]
 
 | Date | Activity | Details |
 |------|----------|---------|
+| Jan 31, 2026 | **Deployed to GitHub** | Complete MVP with daily automation pushed to production |
 | Jan 31, 2026 | **Comprehensive Daily Automation** | Smart scheduling: weekly context refresh, competitor discovery, query generation; daily scans; auto memo generation for gaps; visibility trend tracking |
 | Jan 31, 2026 | Brand Tone feature added | Comprehensive brand tone system for memo generation - personality, formality, technical level, audience type, writing style, jargon usage, custom notes |
 | Jan 31, 2026 | Project initialized | Fresh Next.js 16 + React 19 + Tailwind CSS 4 setup |
