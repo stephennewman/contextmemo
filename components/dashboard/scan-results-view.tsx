@@ -14,17 +14,34 @@ import {
   Users,
   AlertTriangle
 } from 'lucide-react'
-import type { ScanResult, Query, PromptPersona, PERSONA_CONFIGS } from '@/lib/supabase/types'
+import type { ScanResult, Query, PromptPersona, CorePersona } from '@/lib/supabase/types'
 import { PERSONA_CONFIGS as PersonaConfigs } from '@/lib/supabase/types'
 
-// Persona display configuration
-const PERSONA_DISPLAY: Record<PromptPersona, { label: string; color: string }> = {
+// Core persona display configuration
+const CORE_PERSONA_DISPLAY: Record<CorePersona, { label: string; color: string }> = {
   b2b_marketer: { label: 'B2B Marketer', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
   developer: { label: 'Developer', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
   product_leader: { label: 'Product Leader', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' },
   enterprise_buyer: { label: 'Enterprise', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
   smb_owner: { label: 'SMB Owner', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
   student: { label: 'Student', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
+}
+
+// Get display info for any persona (core or custom)
+function getPersonaDisplay(persona: string): { label: string; color: string } {
+  // Check if it's a core persona
+  if (persona in CORE_PERSONA_DISPLAY) {
+    return CORE_PERSONA_DISPLAY[persona as CorePersona]
+  }
+  // Custom persona - generate a nice label and use a neutral color
+  const label = persona
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+  return { 
+    label, 
+    color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200' 
+  }
 }
 
 interface ScanResultWithQuery extends ScanResult {
@@ -441,7 +458,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
             All ({promptsWithVisibility.length})
           </Button>
           {Object.entries(personaCounts).map(([persona, count]) => {
-            const display = PERSONA_DISPLAY[persona as PromptPersona]
+            const display = getPersonaDisplay(persona)
             return (
               <Button
                 key={persona}
@@ -449,7 +466,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
                 size="sm"
                 onClick={() => setPersonaFilter(persona as PromptPersona)}
               >
-                {display?.label || persona} ({count})
+                {display.label} ({count})
               </Button>
             )
           })}
@@ -467,9 +484,9 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium truncate">&quot;{prompt.query_text}&quot;</p>
-                    {prompt.persona && PERSONA_DISPLAY[prompt.persona] && (
-                      <Badge className={`text-xs ${PERSONA_DISPLAY[prompt.persona].color}`}>
-                        {PERSONA_DISPLAY[prompt.persona].label}
+                    {prompt.persona && (
+                      <Badge className={`text-xs ${getPersonaDisplay(prompt.persona).color}`}>
+                        {getPersonaDisplay(prompt.persona).label}
                       </Badge>
                     )}
                     {prompt.isBranded && (

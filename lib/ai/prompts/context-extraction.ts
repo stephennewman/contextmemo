@@ -13,7 +13,17 @@ Analyze the provided website content and extract the following information in JS
   "certifications": ["Any certifications, accreditations, or compliance standards"],
   "customers": ["Named customers or notable clients (if publicly listed)"],
   "brand_voice": "professional" | "casual" | "technical",
-  "target_personas": ["Array of persona IDs this brand targets"]
+  "target_personas": ["Array of persona IDs this brand targets - can include core personas AND custom"],
+  "custom_personas": [
+    {
+      "id": "snake_case_id",
+      "name": "Display Name",
+      "description": "Who this persona is",
+      "phrasing_style": "How they phrase AI questions",
+      "priorities": ["What they care about"],
+      "detected_from": "What signal on the website indicated this"
+    }
+  ]
 }
 
 TARGET PERSONAS - Identify which of these personas the brand is clearly targeting. Look for BOTH explicit and implicit signals:
@@ -50,7 +60,27 @@ INFERENCE RULES:
 5. Freemium + educational content = likely targets student
 6. Multiple pricing tiers usually means multiple personas
 
-Include 2-5 personas that the brand CLEARLY targets based on the content.
+CUSTOM PERSONAS - If the website clearly targets an industry-specific persona that doesn't fit the 6 core types, CREATE A CUSTOM PERSONA:
+
+Examples of custom personas:
+- Healthcare software → "healthcare_administrator", "physician", "nurse"
+- Restaurant POS → "restaurant_owner", "franchise_operator" 
+- Legal tech → "solo_attorney", "paralegal", "law_firm_partner"
+- Real estate → "realtor", "property_manager", "broker"
+- Education → "teacher", "school_administrator", "instructional_designer"
+- HR software → "hr_manager", "recruiter", "people_ops"
+- E-commerce → "ecommerce_merchant", "dropshipper", "marketplace_seller"
+
+For custom personas, you MUST provide:
+- id: snake_case identifier
+- name: Human-readable name
+- description: 1 sentence about who they are
+- phrasing_style: How they would phrase questions to AI (their vocabulary, concerns)
+- priorities: 3-5 things they care most about
+- detected_from: The specific text/signal on the website that indicated this persona
+
+Include core personas from the list above AND any relevant custom personas.
+Total should be 2-6 personas that the brand CLEARLY targets.
 
 Rules:
 1. Only include information explicitly stated in the content

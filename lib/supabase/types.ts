@@ -514,13 +514,27 @@ export interface BrandTone {
 }
 
 // Prompt personas - how different user types phrase AI queries
-export type PromptPersona = 
+// Core personas (predefined)
+export type CorePersona = 
   | 'b2b_marketer'      // Marketing leader, ROI-focused
   | 'developer'         // Technical IC, API/integration focused
   | 'product_leader'    // PM/Director, team workflows
   | 'enterprise_buyer'  // Procurement/IT, security/compliance
   | 'smb_owner'         // Small business, cost-conscious
   | 'student'           // Early career, free tiers, learning
+
+// PromptPersona can be a core persona OR a custom string for industry-specific personas
+export type PromptPersona = CorePersona | string
+
+// Custom persona detected from website
+export interface CustomPersona {
+  id: string                    // slug identifier (e.g., "restaurant_owner")
+  name: string                  // Display name (e.g., "Restaurant Owner")
+  description: string           // Who this persona is
+  phrasing_style: string        // How they phrase questions
+  priorities: string[]          // What they care about
+  detected_from: string         // What website signal detected this
+}
 
 // Persona configuration for prompt generation
 export interface PersonaConfig {
@@ -618,8 +632,10 @@ export interface BrandContext {
   user_intents?: UserIntent[]
   // Social links for Schema.org sameAs references
   social_links?: SocialLinks
-  // Target personas identified from website analysis
+  // Target personas identified from website analysis (core + custom)
   target_personas?: PromptPersona[]
+  // Custom industry-specific personas detected from website
+  custom_personas?: CustomPersona[]
 }
 
 // User intent extracted from homepage content

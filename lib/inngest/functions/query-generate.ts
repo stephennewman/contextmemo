@@ -8,7 +8,7 @@ import {
   INTENT_BASED_QUERY_PROMPT,
   PERSONA_PROMPT_GENERATION,
 } from '@/lib/ai/prompts/context-extraction'
-import { BrandContext, UserIntent, PERSONA_CONFIGS, PromptPersona } from '@/lib/supabase/types'
+import { BrandContext, UserIntent, PERSONA_CONFIGS, PromptPersona, CustomPersona, PersonaConfig } from '@/lib/supabase/types'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -154,22 +154,41 @@ export const queryGenerate = inngest.createFunction(
       }
     })
 
-    // Step 5: Generate persona-based prompts for the brand's target personas
+    // Step 5: Generate persona-based prompts for the brand's target personas (core + custom)
     const personaQueries = await step.run('generate-persona-prompts', async () => {
       const allPersonaQueries: GeneratedQuery[] = []
       const competitorNames = competitors.map(c => c.name).join(', ')
 
-      // Use brand's extracted target personas, or fall back to top 3 generic if none extracted
+      // Use brand's extracted target personas, or fall back to sensible defaults
       const targetPersonaIds = context.target_personas && context.target_personas.length > 0
         ? context.target_personas
-        : ['b2b_marketer', 'developer', 'smb_owner'] as PromptPersona[] // sensible defaults
+        : ['b2b_marketer', 'developer', 'smb_owner'] as PromptPersona[]
       
-      // Get the full persona configs for the target personas
-      const relevantPersonas = PERSONA_CONFIGS.filter(p => targetPersonaIds.includes(p.id))
+      // Get core persona configs that match target personas
+      const corePersonas = PERSONA_CONFIGS.filter(p => targetPersonaIds.includes(p.id))
       
-      console.log(`Generating prompts for ${relevantPersonas.length} target personas:`, targetPersonaIds)
+      // Get custom personas from brand context
+      const customPersonas = context.custom_personas || []
+      
+      // Convert custom personas to the same format as core personas
+      const customAsConfigs: PersonaConfig[] = customPersonas
+        .filter(cp => targetPersonaIds.includes(cp.id))
+        .map(cp => ({
+          id: cp.id as PromptPersona,
+          name: cp.name,
+          description: cp.description,
+          phrasingSyle: cp.phrasing_style,
+          priorities: cp.priorities,
+          examplePhrasing: `${cp.phrasing_style} - e.g., asking about ${cp.priorities[0] || 'their needs'}`,
+        }))
+      
+      // Combine core + custom personas
+      const allPersonas = [...corePersonas, ...customAsConfigs]
+      
+      console.log(`Generating prompts for ${allPersonas.length} personas (${corePersonas.length} core, ${customAsConfigs.length} custom):`, 
+        allPersonas.map(p => p.id))
 
-      for (const persona of relevantPersonas) {
+      for (const persona of allPersonas) {
         try {
           const prompt = PERSONA_PROMPT_GENERATION
             .replace(/\{\{company_name\}\}/g, context.company_name || brand.name)
