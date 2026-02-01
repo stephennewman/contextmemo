@@ -85,7 +85,10 @@ export default async function DashboardLayout({
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-9 h-9 flex items-center justify-center text-sm font-bold bg-[#0EA5E9] text-white">
+                <button 
+                  className="w-9 h-9 flex items-center justify-center text-sm font-bold bg-[#0EA5E9] text-white"
+                  suppressHydrationWarning
+                >
                   {initials}
                 </button>
               </DropdownMenuTrigger>

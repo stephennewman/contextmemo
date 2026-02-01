@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Public changelog page** at `/changelog` - renders CHANGELOG.md automatically
+- **Updated landing page** - rewritten for B2B marketers with feature highlights
+- **Project documentation** - AI_Onboarding.md restructured as comprehensive project doc
+
 ### Planned
 - Stripe billing integration
 - Email notifications for visibility changes

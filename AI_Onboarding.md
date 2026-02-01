@@ -280,7 +280,66 @@ git log --oneline -10
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for detailed version history and deployment notes.
+The changelog is public-facing at [contextmemo.com/changelog](/changelog) and automatically renders from [CHANGELOG.md](./CHANGELOG.md).
+
+### How to Update the Changelog
+
+**On every deploy, update CHANGELOG.md with the following process:**
+
+1. **During development**: Add changes to the `[Unreleased]` section as you work
+2. **Before deploying**: Move unreleased items to a new version section
+3. **After deploying**: Commit the changelog update with the deploy
+
+#### Changelog Entry Format
+
+```markdown
+## [X.Y.Z] - YYYY-MM-DD
+
+### Added
+- New features (use **bold** for feature names)
+
+### Changed
+- Changes to existing functionality
+
+### Fixed
+- Bug fixes
+
+### Removed
+- Removed features
+```
+
+#### Version Numbering
+
+- **Major (X.0.0)**: Breaking changes or major new capabilities
+- **Minor (0.X.0)**: New features, backwards compatible
+- **Patch (0.0.X)**: Bug fixes, small improvements
+
+#### Example Workflow
+
+```bash
+# 1. Before starting work, add to [Unreleased]:
+## [Unreleased]
+### Added
+- New email notification system
+
+# 2. When ready to deploy, create new version:
+## [0.9.0] - 2026-02-02
+### Added
+- New email notification system
+
+# 3. Deploy with changelog update:
+git add CHANGELOG.md [other files]
+git commit -m "Add email notifications"
+git push
+```
+
+#### Auto-Update Reminder
+
+When the AI assistant deploys changes, it should:
+1. Check what features/fixes are being deployed
+2. Add appropriate entries to CHANGELOG.md
+3. If significant changes, bump the version number
+4. Include changelog update in the deploy commit
 
 ---
 
@@ -290,5 +349,6 @@ See [CHANGELOG.md](./CHANGELOG.md) for detailed version history and deployment n
 2. Make changes
 3. Test locally with `npm run dev`
 4. Test Inngest jobs with `npm run dev:inngest`
-5. Deploy: `git add . && git commit -m "message" && git push`
-6. Vercel auto-deploys from main branch
+5. **Update CHANGELOG.md** with your changes
+6. Deploy: `git add . && git commit -m "message" && git push`
+7. Vercel auto-deploys from main branch
