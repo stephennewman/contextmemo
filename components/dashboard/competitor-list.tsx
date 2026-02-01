@@ -4,12 +4,23 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { 
-  Trash2, 
   Loader2,
   Globe,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Plus
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -31,6 +42,59 @@ interface CompetitorListProps {
 export function CompetitorList({ brandId, competitors: initialCompetitors }: CompetitorListProps) {
   const [competitors, setCompetitors] = useState(initialCompetitors)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newDomain, setNewDomain] = useState('')
+
+  const handleAddCompetitor = async () => {
+    if (!newName.trim()) {
+      toast.error('Competitor name is required')
+      return
+    }
+
+    setAdding(true)
+    try {
+      const supabase = createClient()
+      
+      // Clean domain (remove http/https, trailing slashes)
+      let cleanDomain = newDomain.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/$/, '')
+      
+      const { data, error } = await supabase
+        .from('competitors')
+        .insert({
+          brand_id: brandId,
+          name: newName.trim(),
+          domain: cleanDomain || null,
+          auto_discovered: false,
+          is_active: true,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Add to local state
+      setCompetitors(prev => [...prev, data])
+      
+      toast.success(`Added ${newName}`)
+      setNewName('')
+      setNewDomain('')
+      setDialogOpen(false)
+    } catch (error: unknown) {
+      const err = error as { code?: string }
+      if (err.code === '23505') {
+        toast.error('This competitor already exists')
+      } else {
+        toast.error('Failed to add competitor')
+      }
+      console.error(error)
+    } finally {
+      setAdding(false)
+    }
+  }
 
   const handleToggle = async (competitorId: string, currentlyActive: boolean) => {
     setTogglingId(competitorId)
@@ -81,7 +145,54 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
               {activeCompetitors.length} active • {excludedCompetitors.length} excluded
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm">Add Competitor</Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Competitor
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Competitor</DialogTitle>
+                <DialogDescription>
+                  Add a competitor to track in visibility scans and content monitoring.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Competitor Name *</Label>
+                  <Input
+                    id="name"
+                    placeholder="e.g., Profound"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="domain">Domain (optional)</Label>
+                  <Input
+                    id="domain"
+                    placeholder="e.g., profound.ai"
+                    value={newDomain}
+                    onChange={(e) => setNewDomain(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used for content monitoring and comparison memos
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddCompetitor} disabled={adding}>
+                  {adding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Add Competitor
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
