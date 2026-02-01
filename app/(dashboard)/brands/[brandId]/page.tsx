@@ -18,6 +18,8 @@ import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/sc
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
+import { CompetitorList } from '@/components/dashboard/competitor-list'
+import { CitationAnalysis } from '@/components/dashboard/citation-analysis'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -44,12 +46,14 @@ export default async function BrandPage({ params }: Props) {
     notFound()
   }
 
-  // Get competitors
-  const { data: competitors } = await supabase
+  // Get all competitors (including excluded for display)
+  const { data: allCompetitors } = await supabase
     .from('competitors')
     .select('*')
     .eq('brand_id', brandId)
-    .eq('is_active', true)
+  
+  // Filter for active competitors (used in scans and content monitoring)
+  const competitors = allCompetitors?.filter(c => c.is_active) || []
 
   // Get queries
   const { data: queries } = await supabase
@@ -445,11 +449,19 @@ export default async function BrandPage({ params }: Props) {
           )}
         </TabsContent>
 
-        <TabsContent value="scans">
+        <TabsContent value="scans" className="space-y-4">
+          {/* Citation Analysis - Perplexity-specific insights */}
+          <CitationAnalysis
+            scanResults={recentScans}
+            brandDomain={brand.domain}
+            brandName={brand.name}
+          />
+          
           <ScanResultsView 
             scanResults={recentScans} 
             queries={queries || []} 
             brandName={brand.name}
+            brandDomain={brand.domain}
           />
         </TabsContent>
 
@@ -547,44 +559,10 @@ export default async function BrandPage({ params }: Props) {
           />
           
           {/* Competitor List */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Tracked Competitors</CardTitle>
-                  <CardDescription>
-                    Brands being monitored in your scans
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm">Add Competitor</Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {competitors && competitors.length > 0 ? (
-                <div className="space-y-2">
-                  {competitors.map((competitor) => (
-                    <div key={competitor.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{competitor.name}</p>
-                        {competitor.domain && (
-                          <p className="text-sm text-muted-foreground">
-                            {competitor.domain}
-                          </p>
-                        )}
-                      </div>
-                      {competitor.auto_discovered && (
-                        <Badge variant="secondary" className="text-xs">Auto-discovered</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  No competitors identified yet. Run competitor discovery to find them.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <CompetitorList 
+            brandId={brandId} 
+            competitors={allCompetitors || []} 
+          />
         </TabsContent>
 
         <TabsContent value="search">

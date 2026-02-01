@@ -12,7 +12,9 @@ import {
   Bot,
   MessageSquare,
   Users,
-  AlertTriangle
+  AlertTriangle,
+  Link,
+  ExternalLink
 } from 'lucide-react'
 import type { ScanResult, Query, PromptPersona, CorePersona } from '@/lib/supabase/types'
 import { PERSONA_CONFIGS as PersonaConfigs } from '@/lib/supabase/types'
@@ -49,10 +51,21 @@ interface ScanResultWithQuery extends ScanResult {
   isBrandedQuery?: boolean
 }
 
+// Helper to extract domain from URL for display
+function getDomainFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
 interface ScanResultsViewProps {
   scanResults: ScanResultWithQuery[]
   queries: Query[]
   brandName: string
+  brandDomain?: string
 }
 
 // Grouped scans by query
@@ -102,9 +115,18 @@ function getModelDisplay(model: string) {
 }
 
 // Single model result row within a grouped card
-function ModelResult({ scan }: { scan: ScanResultWithQuery }) {
+function ModelResult({ scan, brandDomain }: { scan: ScanResultWithQuery; brandDomain?: string }) {
   const [expanded, setExpanded] = useState(false)
   const modelInfo = getModelDisplay(scan.model)
+  const isPerplexity = modelInfo.key === 'perplexity'
+  
+  // Check if a citation URL contains the brand's domain
+  const isBrandCitation = (url: string): boolean => {
+    if (!brandDomain) return false
+    const normalizedDomain = brandDomain.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '')
+    const citationDomain = getDomainFromUrl(url).toLowerCase()
+    return citationDomain.includes(normalizedDomain) || normalizedDomain.includes(citationDomain)
+  }
   
   return (
     <div className="space-y-2">
@@ -130,6 +152,20 @@ function ModelResult({ scan }: { scan: ScanResultWithQuery }) {
               Position #{scan.brand_position}
             </span>
           )}
+          {/* Perplexity citation status */}
+          {isPerplexity && scan.brand_in_citations !== null && (
+            scan.brand_in_citations ? (
+              <Badge className="bg-cyan-500 text-white" title="Your domain was cited as a source">
+                <Link className="h-3 w-3 mr-1" />
+                Cited
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground" title="Your domain was not cited as a source">
+                <Link className="h-3 w-3 mr-1" />
+                Not Cited
+              </Badge>
+            )
+          )}
         </div>
         {scan.competitors_mentioned && scan.competitors_mentioned.length > 0 && (
           <div className="flex items-center gap-1 text-sm">
@@ -145,6 +181,41 @@ function ModelResult({ scan }: { scan: ScanResultWithQuery }) {
           <p className="text-sm text-green-800 dark:text-green-200">
             {scan.brand_context}
           </p>
+        </div>
+      )}
+
+      {/* Perplexity Citations Display */}
+      {isPerplexity && scan.citations && scan.citations.length > 0 && (
+        <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900 rounded p-2">
+          <div className="flex items-center gap-1 mb-2">
+            <Link className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+            <span className="text-xs font-medium text-cyan-800 dark:text-cyan-200">
+              Sources Cited ({scan.citations.length})
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {scan.citations.map((url, i) => {
+              const domain = getDomainFromUrl(url)
+              const isBrand = isBrandCitation(url)
+              return (
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
+                    isBrand
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                      : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300 hover:bg-cyan-200 dark:hover:bg-cyan-800'
+                  }`}
+                  title={url}
+                >
+                  {domain}
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -172,7 +243,7 @@ function ModelResult({ scan }: { scan: ScanResultWithQuery }) {
 }
 
 // Grouped card showing all model results for one query
-function GroupedScanCard({ group }: { group: GroupedScan }) {
+function GroupedScanCard({ group, brandDomain }: { group: GroupedScan; brandDomain?: string }) {
   return (
     <div className={`border rounded-lg p-4 space-y-4 ${group.isBranded ? 'opacity-60 border-dashed' : ''}`}>
       {/* Header */}
@@ -201,7 +272,7 @@ function GroupedScanCard({ group }: { group: GroupedScan }) {
       <div className="space-y-3 divide-y">
         {group.scans.map((scan, idx) => (
           <div key={scan.id} className={idx > 0 ? 'pt-3' : ''}>
-            <ModelResult scan={scan} />
+            <ModelResult scan={scan} brandDomain={brandDomain} />
           </div>
         ))}
       </div>
@@ -209,7 +280,7 @@ function GroupedScanCard({ group }: { group: GroupedScan }) {
   )
 }
 
-export function ScanResultsView({ scanResults, queries, brandName }: ScanResultsViewProps) {
+export function ScanResultsView({ scanResults, queries, brandName, brandDomain }: ScanResultsViewProps) {
   const [filter, setFilter] = useState<'all' | 'mentioned' | 'not_mentioned'>('all')
   
   // Create a map of queries for easy lookup
@@ -339,6 +410,7 @@ export function ScanResultsView({ scanResults, queries, brandName }: ScanResults
               <GroupedScanCard 
                 key={`${group.queryId}-${group.scannedAt}`}
                 group={group}
+                brandDomain={brandDomain}
               />
             ))}
             {groupedScans.length > 50 && (

@@ -4,6 +4,8 @@ import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+import { queryPerplexity, checkBrandInCitations, PerplexitySearchResult } from '@/lib/utils/perplexity'
+import { PerplexitySearchResultJson } from '@/lib/supabase/types'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +24,7 @@ const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. P
 interface ModelConfig {
   id: string
   displayName: string
-  provider: 'openai' | 'anthropic' | 'openrouter'
+  provider: 'openai' | 'anthropic' | 'openrouter' | 'perplexity-direct'
   modelId: string
   enabled: boolean
 }
@@ -36,7 +38,9 @@ const SCAN_MODELS: ModelConfig[] = [
   { id: 'gemini-flash', displayName: 'Gemini 2.0 Flash', provider: 'openrouter', modelId: 'google/gemini-2.0-flash-001', enabled: true },
   { id: 'llama-3.1-70b', displayName: 'Llama 3.1 70B', provider: 'openrouter', modelId: 'meta-llama/llama-3.1-70b-instruct', enabled: true },
   { id: 'mistral-large', displayName: 'Mistral Large', provider: 'openrouter', modelId: 'mistralai/mistral-large-2411', enabled: true },
-  { id: 'perplexity-sonar', displayName: 'Perplexity Sonar', provider: 'openrouter', modelId: 'perplexity/sonar', enabled: true },
+  
+  // Perplexity - using direct API to get citations (not OpenRouter)
+  { id: 'perplexity-sonar', displayName: 'Perplexity Sonar', provider: 'perplexity-direct', modelId: 'sonar', enabled: true },
   
   // Optional: more models (disabled by default for cost control)
   { id: 'qwen-72b', displayName: 'Qwen 2.5 72B', provider: 'openrouter', modelId: 'qwen/qwen-2.5-72b-instruct', enabled: false },
@@ -65,6 +69,10 @@ interface ScanResult {
   brandPosition: number | null
   brandContext: string | null
   competitorsMentioned: string[]
+  // Perplexity-specific citation fields
+  citations: string[] | null
+  searchResults: PerplexitySearchResultJson[] | null
+  brandInCitations: boolean | null
 }
 
 export const scanRun = inngest.createFunction(
@@ -138,19 +146,35 @@ export const scanRun = inngest.createFunction(
           // Scan with each enabled model
           for (const modelConfig of enabledModels) {
             try {
-              const modelInstance = getModelInstance(modelConfig)
-              const scanResult = await scanWithModel(
-                query.query_text,
-                modelConfig.displayName,
-                modelInstance,
-                brandName,
-                competitorNames
-              )
-              results.push({
-                queryId: query.id,
-                model: modelConfig.id,
-                ...scanResult,
-              })
+              // Use direct Perplexity API for citation data
+              if (modelConfig.provider === 'perplexity-direct') {
+                const scanResult = await scanWithPerplexityDirect(
+                  query.query_text,
+                  brandName,
+                  brand.domain,
+                  competitorNames
+                )
+                results.push({
+                  queryId: query.id,
+                  model: modelConfig.id,
+                  ...scanResult,
+                })
+              } else {
+                // Standard AI SDK for other models
+                const modelInstance = getModelInstance(modelConfig)
+                const scanResult = await scanWithModel(
+                  query.query_text,
+                  modelConfig.displayName,
+                  modelInstance,
+                  brandName,
+                  competitorNames
+                )
+                results.push({
+                  queryId: query.id,
+                  model: modelConfig.id,
+                  ...scanResult,
+                })
+              }
             } catch (error) {
               console.error(`${modelConfig.displayName} scan failed for query ${query.id}:`, error)
               // Continue with other models even if one fails
@@ -181,6 +205,10 @@ export const scanRun = inngest.createFunction(
         brand_position: r.brandPosition,
         brand_context: r.brandContext,
         competitors_mentioned: r.competitorsMentioned,
+        // Perplexity citation fields
+        citations: r.citations,
+        search_results: r.searchResults,
+        brand_in_citations: r.brandInCitations,
         scanned_at: new Date().toISOString(),
       }))
 
@@ -368,7 +396,7 @@ export const scanRun = inngest.createFunction(
   }
 )
 
-// Helper function to scan with a specific model
+// Helper function to scan with a specific model (non-Perplexity)
 async function scanWithModel(
   query: string,
   modelName: string,
@@ -425,5 +453,82 @@ async function scanWithModel(
     brandPosition,
     brandContext,
     competitorsMentioned,
+    // Non-Perplexity models don't have citations
+    citations: null,
+    searchResults: null,
+    brandInCitations: null,
+  }
+}
+
+// Helper function to scan with Perplexity direct API (with citations)
+async function scanWithPerplexityDirect(
+  query: string,
+  brandName: string,
+  brandDomain: string,
+  competitorNames: string[]
+): Promise<Omit<ScanResult, 'queryId' | 'model'>> {
+  // Call Perplexity direct API to get citations
+  const perplexityResponse = await queryPerplexity(query, SCAN_SYSTEM_PROMPT, {
+    model: 'sonar',
+    searchContextSize: 'low', // Cost-efficient
+    temperature: 0.7,
+  })
+
+  const { text, citations, searchResults } = perplexityResponse
+  const responseLower = text.toLowerCase()
+  const brandMentioned = responseLower.includes(brandName)
+  
+  // Check if brand's domain appears in any cited sources
+  const brandInCitations = checkBrandInCitations(citations, brandDomain)
+  
+  // Find position if mentioned (which recommendation number)
+  let brandPosition: number | null = null
+  if (brandMentioned) {
+    const lines = text.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes(brandName)) {
+        const match = lines[i].match(/^(\d+)[.)\s]/)
+        if (match) {
+          brandPosition = parseInt(match[1])
+        } else {
+          brandPosition = i + 1
+        }
+        break
+      }
+    }
+  }
+
+  // Extract context around brand mention
+  let brandContext: string | null = null
+  if (brandMentioned) {
+    const index = responseLower.indexOf(brandName)
+    const start = Math.max(0, index - 100)
+    const end = Math.min(text.length, index + brandName.length + 100)
+    brandContext = text.slice(start, end)
+  }
+
+  // Find mentioned competitors
+  const competitorsMentioned = competitorNames.filter(name => 
+    responseLower.includes(name)
+  )
+
+  // Convert search results to the JSON format for storage
+  const searchResultsJson: PerplexitySearchResultJson[] = searchResults.map(sr => ({
+    url: sr.url,
+    title: sr.title,
+    date: sr.date,
+    snippet: sr.snippet,
+  }))
+
+  return {
+    responseText: text,
+    brandMentioned,
+    brandPosition,
+    brandContext,
+    competitorsMentioned,
+    // Perplexity citation data
+    citations,
+    searchResults: searchResultsJson.length > 0 ? searchResultsJson : null,
+    brandInCitations,
   }
 }

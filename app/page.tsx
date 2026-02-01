@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { 
-  FileText, 
-  Search, 
-  TrendingUp, 
   CheckCircle2, 
   ArrowRight,
   Zap,
-  Shield,
-  BarChart3,
   Users,
   Bot,
   Target,
@@ -17,7 +12,9 @@ import {
   Eye,
   LineChart,
   MessageSquare,
-  Globe
+  FileText,
+  TrendingUp,
+  Shield
 } from "lucide-react";
 
 // Pricing tranches - users lock in their price forever
@@ -51,562 +48,504 @@ function getNextTranche(userCount: number) {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
+    <div className="min-h-screen bg-[#0F172A] text-white">
       {/* Header */}
-      <header className="border-b sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 bg-[#0F172A]/95 backdrop-blur-sm z-40 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <FileText className="h-6 w-6" />
-            <span className="font-semibold text-lg">Context Memo</span>
+            <Zap className="h-8 w-8 text-[#0EA5E9]" />
+            <span className="font-black text-xl tracking-tight">CONTEXT MEMO</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link href="#features" className="text-muted-foreground hover:text-foreground">Features</Link>
-            <Link href="#how-it-works" className="text-muted-foreground hover:text-foreground">How It Works</Link>
-            <Link href="#pricing" className="text-muted-foreground hover:text-foreground">Pricing</Link>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wide">
+            <Link href="#features" className="text-slate-400 hover:text-white transition-colors">FEATURES</Link>
+            <Link href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">HOW IT WORKS</Link>
+            <Link href="#pricing" className="text-slate-400 hover:text-white transition-colors">PRICING</Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
-              Sign in
+            <Link href="/login" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">
+              SIGN IN
             </Link>
-            <Button asChild>
-              <Link href="/signup">Start Free</Link>
+            <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
+              <Link href="/signup">START FREE</Link>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="py-20 md:py-28">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm mb-6">
+      <section className="py-24 md:py-32 relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-linear-to-b from-[#0EA5E9]/10 to-transparent" />
+        
+        <div className="max-w-7xl mx-auto px-6 text-center relative">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/20 border border-[#0EA5E9]/30 text-[#0EA5E9] text-sm font-bold tracking-wide mb-8">
             <Bot className="h-4 w-4" />
-            For B2B Marketing Teams
+            FOR B2B MARKETING TEAMS
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-4xl mx-auto leading-tight">
-            Get your brand cited in <span className="text-primary">AI search results</span>
+          
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight max-w-5xl mx-auto leading-[0.9]">
+            GET CITED IN{" "}
+            <span className="text-[#0EA5E9]">AI SEARCH</span>
           </h1>
-          <p className="mt-6 text-xl text-muted-foreground max-w-2xl mx-auto">
-            Your buyers are asking ChatGPT, Claude, and Perplexity for product recommendations. 
-            Context Memo ensures they hear about you.
+          
+          <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Your buyers ask ChatGPT, Claude, and Perplexity for recommendations. 
+            Make sure they hear about you.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
+          
+          <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-8 py-6 h-auto">
               <Link href="/signup">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-4 w-4" />
+                START FREE TRIAL
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="#how-it-works">See How It Works</Link>
+            <Button size="lg" variant="outline" asChild className="border-2 border-white/20 hover:border-white/40 bg-transparent text-white font-bold text-lg rounded-none px-8 py-6 h-auto">
+              <Link href="#how-it-works">SEE HOW IT WORKS</Link>
             </Button>
           </div>
           
           {/* AI Models Row */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
-            <span className="font-medium">Monitor visibility across:</span>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">ChatGPT</span>
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">Claude</span>
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">Perplexity</span>
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">Gemini</span>
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">Llama</span>
-              <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">Mistral</span>
-            </div>
+          <div className="mt-16 flex flex-wrap items-center justify-center gap-3">
+            <span className="text-sm font-semibold text-slate-500 mr-2">MONITORS:</span>
+            {["ChatGPT", "Claude", "Perplexity", "Gemini", "Llama", "Mistral"].map((model) => (
+              <span key={model} className="px-4 py-2 bg-white/5 border border-white/10 text-sm font-semibold tracking-wide">
+                {model.toUpperCase()}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Problem Statement */}
-      <section className="py-20 bg-zinc-50 dark:bg-zinc-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold">The New B2B Buyer Journey</h2>
-            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Your prospects have stopped Googling. They&apos;re asking AI for recommendations instead.
-              If you&apos;re not in those answers, you&apos;re losing deals you never knew existed.
+      {/* Stats Section */}
+      <section className="py-20 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">THE NEW BUYER JOURNEY</h2>
+            <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
+              Your prospects stopped Googling. They ask AI instead.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg border text-center">
-              <div className="text-4xl font-bold text-primary mb-2">65%</div>
-              <p className="text-sm text-muted-foreground">
-                of B2B buyers now use AI assistants for product research
+          
+          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
+            <div className="p-10 text-center border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="text-6xl md:text-7xl font-black text-[#0EA5E9]">65%</div>
+              <p className="mt-4 text-lg font-semibold text-slate-600">
+                of B2B buyers use AI for product research
               </p>
             </div>
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg border text-center">
-              <div className="text-4xl font-bold text-primary mb-2">3-5</div>
-              <p className="text-sm text-muted-foreground">
-                brands typically mentioned per AI recommendation
+            <div className="p-10 text-center border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="text-6xl md:text-7xl font-black text-[#0EA5E9]">3-5</div>
+              <p className="mt-4 text-lg font-semibold text-slate-600">
+                brands mentioned per AI recommendation
               </p>
             </div>
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg border text-center">
-              <div className="text-4xl font-bold text-primary mb-2">0</div>
-              <p className="text-sm text-muted-foreground">
-                clicks to your site if AI doesn&apos;t mention you
+            <div className="p-10 text-center">
+              <div className="text-6xl md:text-7xl font-black text-[#0EA5E9]">0</div>
+              <p className="mt-4 text-lg font-semibold text-slate-600">
+                clicks if AI doesn&apos;t mention you
               </p>
             </div>
           </div>
           
-          <div className="mt-12 max-w-3xl mx-auto bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-            <p className="text-lg text-center italic text-muted-foreground">
-              &quot;What CRM is best for small B2B teams?&quot;
+          <div className="mt-12 p-8 bg-slate-100 border-2 border-[#0F172A]">
+            <p className="text-2xl md:text-3xl font-bold text-center italic text-slate-700">
+              &quot;What&apos;s the best CRM for small B2B teams?&quot;
             </p>
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              When your buyer asks this, does the AI mention your brand?
+            <p className="mt-4 text-center text-lg text-slate-500 font-semibold">
+              When your buyer asks this, does AI mention your brand?
             </p>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20">
-        <div className="container mx-auto px-4">
+      <section id="features" className="py-24 bg-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold">Everything You Need for AI Visibility</h2>
-            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Track, analyze, and improve how AI models talk about your brand.
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">EVERYTHING YOU NEED</h2>
+            <p className="mt-4 text-xl text-slate-400">
+              Track, analyze, and improve your AI visibility.
             </p>
           </div>
           
-          {/* Main Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-0 border-2 border-white/20">
             
-            {/* Feature 1: Multi-Model Scanning */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <Eye className="h-5 w-5 text-primary" />
+            {/* Feature 1 */}
+            <div className="p-8 border-b-2 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Eye className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">6 AI Model Scanning</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                Daily visibility checks across ChatGPT, Claude, Perplexity, Gemini, Llama, and Mistral. 
-                Know exactly where you&apos;re mentioned and where you&apos;re not.
+              <h3 className="font-black text-xl tracking-tight mb-3">6 AI MODEL SCANNING</h3>
+              <p className="text-slate-400 mb-6">
+                Daily visibility checks across ChatGPT, Claude, Perplexity, Gemini, Llama, and Mistral.
               </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Automated daily scans</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Automated daily scans
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Visibility score tracking</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Visibility score tracking
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Historical trend analysis</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Historical trends
                 </li>
               </ul>
             </div>
             
-            {/* Feature 2: Competitive Intelligence */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <Target className="h-5 w-5 text-primary" />
+            {/* Feature 2 */}
+            <div className="p-8 border-b-2 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Target className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Competitive Intelligence</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                See which competitors win AI recommendations over you. 
-                Get share-of-voice metrics and identify exactly which queries to improve.
+              <h3 className="font-black text-xl tracking-tight mb-3">COMPETITIVE INTELLIGENCE</h3>
+              <p className="text-slate-400 mb-6">
+                See which competitors win AI recommendations over you. Get share-of-voice metrics.
               </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Share of voice tracking</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Share of voice tracking
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Win/loss analysis vs competitors</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Win/loss analysis
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Query gap identification</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Query gap identification
                 </li>
               </ul>
             </div>
             
-            {/* Feature 3: Auto-Generated Memos */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <FileText className="h-5 w-5 text-primary" />
+            {/* Feature 3 */}
+            <div className="p-8 border-b-2 border-white/20 group hover:bg-white/5 transition-colors">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <FileText className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Auto-Generated Memos</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                AI creates factual, citable content based on your website. 
-                Comparison pages, industry guides, how-tos—all optimized for AI citation.
+              <h3 className="font-black text-xl tracking-tight mb-3">AUTO-GENERATED MEMOS</h3>
+              <p className="text-slate-400 mb-6">
+                AI creates factual, citable content based on your website. Optimized for AI citation.
               </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>5 memo types generated</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  5 memo types
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Brand tone customization</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Brand tone customization
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Auto internal linking</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Auto internal linking
                 </li>
               </ul>
             </div>
             
-            {/* Feature 4: Search Console Integration */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <LineChart className="h-5 w-5 text-primary" />
+            {/* Feature 4 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <LineChart className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Search Console Integration</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                Connect Bing (ChatGPT&apos;s data source) and Google (AI Overviews) to see the 
-                full picture of your AI discoverability pathway.
+              <h3 className="font-black text-xl tracking-tight mb-3">SEARCH CONSOLE SYNC</h3>
+              <p className="text-slate-400 mb-6">
+                Connect Bing and Google to see the full picture of your AI discoverability pathway.
               </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Bing Webmaster integration</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Bing Webmaster integration
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Google Search Console</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Google Search Console
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Query correlation insights</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Query correlation
                 </li>
               </ul>
             </div>
             
-            {/* Feature 5: Competitor Content Response */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <MessageSquare className="h-5 w-5 text-primary" />
+            {/* Feature 5 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <MessageSquare className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Competitor Content Intelligence</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                Monitor competitor blogs daily. When they publish educational content, 
-                automatically generate your response—in your brand&apos;s voice.
+              <h3 className="font-black text-xl tracking-tight mb-3">CONTENT INTELLIGENCE</h3>
+              <p className="text-slate-400 mb-6">
+                Monitor competitor content daily. Auto-generate responses in your brand&apos;s voice.
               </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Daily competitor scanning</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Daily competitor scanning
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Smart content filtering</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Smart content filtering
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Auto-publish responses</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Auto-publish responses
                 </li>
               </ul>
             </div>
             
-            {/* Feature 6: Persona Targeting */}
-            <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-xl border">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <Users className="h-5 w-5 text-primary" />
+            {/* Feature 6 */}
+            <div className="p-8 group hover:bg-white/5 transition-colors">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Users className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Persona-Based Targeting</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                AI analyzes your website to identify your target personas. Content is generated 
-                specifically for B2B Marketers, Developers, Product Leaders, and more.
+              <h3 className="font-black text-xl tracking-tight mb-3">PERSONA TARGETING</h3>
+              <p className="text-slate-400 mb-6">
+                AI detects your target personas and generates content specifically for each audience.
               </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Auto persona detection</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Auto persona detection
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>6 B2B persona types</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  6 B2B persona types
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Intent-matched queries</span>
+                <li className="flex items-center gap-2 text-sm font-semibold">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
+                  Intent-matched queries
                 </li>
               </ul>
             </div>
-            
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 bg-zinc-50 dark:bg-zinc-900">
-        <div className="container mx-auto px-4">
+      <section id="how-it-works" className="py-24 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold">How Context Memo Works</h2>
-            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              Set it up once. Get continuous AI visibility monitoring and content generation.
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">HOW IT WORKS</h2>
+            <p className="mt-4 text-xl text-slate-600">
+              Set it up once. Get continuous AI visibility.
             </p>
           </div>
           
-          <div className="max-w-4xl mx-auto">
-            <div className="grid gap-8">
-              {/* Step 1 */}
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
-                  1
-                </div>
-                <div className="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-                  <h3 className="font-semibold text-lg mb-2">Connect Your Brand</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Add your brand with a verified work email. We&apos;ll crawl your website and extract 
-                    key facts: products, features, pricing, differentiators, and target personas.
-                  </p>
-                </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
+            {/* Step 1 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
+              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+                1
               </div>
-              
-              {/* Step 2 */}
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
-                  2
-                </div>
-                <div className="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-                  <h3 className="font-semibold text-lg mb-2">Discover Competitors & Queries</h3>
-                  <p className="text-muted-foreground text-sm">
-                    AI identifies your competitors and generates high-intent buyer queries. 
-                    These are the exact questions your prospects ask AI assistants.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Step 3 */}
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
-                  3
-                </div>
-                <div className="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-                  <h3 className="font-semibold text-lg mb-2">Monitor Your Visibility</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Daily scans across 6 AI models show your visibility score, competitor performance, 
-                    and specific queries where you&apos;re winning or losing.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Step 4 */}
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
-                  4
-                </div>
-                <div className="flex-1 bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-                  <h3 className="font-semibold text-lg mb-2">Auto-Generate Winning Content</h3>
-                  <p className="text-muted-foreground text-sm">
-                    For queries where you&apos;re missing, Context Memo creates factual memos—comparison pages, 
-                    industry guides, how-tos—that AI models can cite. All based on verified facts from your site.
-                  </p>
-                </div>
-              </div>
+              <h3 className="font-black text-lg mb-3">CONNECT YOUR BRAND</h3>
+              <p className="text-slate-600">
+                Verify with your work email. We crawl your site and extract key facts, features, and differentiators.
+              </p>
             </div>
             
-            {/* Automation Note */}
-            <div className="mt-12 flex items-center justify-center gap-3 text-sm text-muted-foreground">
-              <RefreshCw className="h-4 w-4" />
-              <span>Everything runs automatically—daily scans, weekly content refresh, continuous optimization</span>
+            {/* Step 2 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
+              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+                2
+              </div>
+              <h3 className="font-black text-lg mb-3">DISCOVER LANDSCAPE</h3>
+              <p className="text-slate-600">
+                AI identifies your competitors and generates the high-intent queries your buyers actually ask.
+              </p>
             </div>
+            
+            {/* Step 3 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
+              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+                3
+              </div>
+              <h3 className="font-black text-lg mb-3">MONITOR VISIBILITY</h3>
+              <p className="text-slate-600">
+                Daily scans across 6 AI models show your score and where you&apos;re winning or losing vs competitors.
+              </p>
+            </div>
+            
+            {/* Step 4 */}
+            <div className="p-8">
+              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+                4
+              </div>
+              <h3 className="font-black text-lg mb-3">AUTO-GENERATE CONTENT</h3>
+              <p className="text-slate-600">
+                For gaps, Context Memo creates factual memos that AI models can cite—based on verified facts.
+              </p>
+            </div>
+          </div>
+          
+          {/* Automation Note */}
+          <div className="mt-8 flex items-center justify-center gap-3 text-slate-500 font-semibold">
+            <RefreshCw className="h-5 w-5" />
+            <span>RUNS AUTOMATICALLY — DAILY SCANS, WEEKLY REFRESH, CONTINUOUS OPTIMIZATION</span>
           </div>
         </div>
       </section>
 
-      {/* Trust & Authenticity */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-start gap-4 mb-8">
-              <Shield className="h-8 w-8 text-primary shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-xl mb-2">The Authenticity Principle</h3>
-                <p className="text-muted-foreground">
-                  Context Memo only creates content based on facts from your website. 
-                  No hallucinated claims. No fake testimonials. Just verified information 
-                  structured for AI citation. Every claim is traceable to a source.
-                </p>
-              </div>
+      {/* Trust Section */}
+      <section className="py-24 bg-[#0F172A]">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex items-start gap-6 mb-10">
+            <div className="w-16 h-16 bg-[#0EA5E9] flex items-center justify-center shrink-0">
+              <Shield className="h-8 w-8 text-white" />
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                <span className="text-sm">Only verified facts from your website</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                <span className="text-sm">Competitor info from public sources only</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                <span className="text-sm">Citations and sources on every memo</span>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                <span className="text-sm">&quot;Last verified&quot; timestamps</span>
-              </div>
+            <div>
+              <h3 className="font-black text-2xl tracking-tight mb-3">THE AUTHENTICITY PRINCIPLE</h3>
+              <p className="text-xl text-slate-400">
+                We only create content based on facts from your website. No hallucinations. 
+                No fake claims. Every statement is traceable to a source.
+              </p>
             </div>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              "Only verified facts from your website",
+              "Competitor info from public sources",
+              "Citations on every memo",
+              "\"Last verified\" timestamps"
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-5 bg-white/5 border border-white/10">
+                <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />
+                <span className="font-semibold">{item}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Use Cases */}
-      <section className="py-20 bg-zinc-50 dark:bg-zinc-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold">Built for B2B Marketing Teams</h2>
+      <section className="py-24 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">BUILT FOR B2B TEAMS</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-              <div className="text-2xl mb-4">📊</div>
-              <h3 className="font-semibold mb-2">Demand Gen Leaders</h3>
-              <p className="text-sm text-muted-foreground">
-                Track AI as a discovery channel alongside SEO and paid. Understand where 
-                buyers find you in the new AI-first research journey.
+          
+          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
+            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="text-5xl mb-6">📊</div>
+              <h3 className="font-black text-xl mb-3">DEMAND GEN LEADERS</h3>
+              <p className="text-slate-600">
+                Track AI as a discovery channel alongside SEO and paid. Understand where buyers find you in the AI-first research journey.
               </p>
             </div>
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-              <div className="text-2xl mb-4">🎯</div>
-              <h3 className="font-semibold mb-2">Product Marketers</h3>
-              <p className="text-sm text-muted-foreground">
-                See how AI positions you vs competitors. Identify messaging gaps where 
-                competitors win recommendations over you.
+            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="text-5xl mb-6">🎯</div>
+              <h3 className="font-black text-xl mb-3">PRODUCT MARKETERS</h3>
+              <p className="text-slate-600">
+                See how AI positions you vs competitors. Identify messaging gaps where competitors win recommendations.
               </p>
             </div>
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg border">
-              <div className="text-2xl mb-4">✍️</div>
-              <h3 className="font-semibold mb-2">Content Teams</h3>
-              <p className="text-sm text-muted-foreground">
-                Scale AI-optimized content without manual effort. Auto-generated memos 
-                fill gaps and respond to competitor content automatically.
+            <div className="p-10">
+              <div className="text-5xl mb-6">✍️</div>
+              <h3 className="font-black text-xl mb-3">CONTENT TEAMS</h3>
+              <p className="text-slate-600">
+                Scale AI-optimized content without manual effort. Auto-generated memos fill gaps automatically.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing - Early Adopter Model */}
-      <section id="pricing" className="py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Early Adopter Pricing</h2>
-          <p className="text-muted-foreground mb-2 max-w-2xl mx-auto">
-            Lock in your price forever. The earlier you sign up, the less you pay — for life.
-          </p>
-          <p className="text-sm text-muted-foreground mb-8">
-            Price increases as we grow. Your rate never changes.
+      {/* Pricing */}
+      <section id="pricing" className="py-24 bg-[#0F172A]">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">EARLY ADOPTER PRICING</h2>
+          <p className="text-xl text-slate-400 mb-12">
+            Lock in your price forever. Price goes up as we grow — yours never changes.
           </p>
           
-          {/* Pricing Tiers Visual */}
-          <div className="max-w-4xl mx-auto mb-8">
-            <div className="grid grid-cols-4 md:grid-cols-7 gap-2 text-xs">
-              {PRICING_TRANCHES.slice(0, 7).map((tranche, i) => (
-                <div 
-                  key={i} 
-                  className={`p-3 rounded-lg border ${i === 0 ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-white dark:bg-zinc-800'}`}
-                >
-                  <div className="font-bold text-lg">
-                    {tranche.price === 0 ? 'FREE' : `$${tranche.price}`}
-                  </div>
-                  <div className="text-muted-foreground">
-                    /mo
-                  </div>
-                  <div className="mt-1 text-muted-foreground text-[10px]">
-                    Users {tranche.min}-{tranche.max}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-2 text-xs">
-              {PRICING_TRANCHES.slice(7).map((tranche, i) => (
-                <div 
-                  key={i} 
-                  className="p-3 rounded-lg border bg-white dark:bg-zinc-800"
-                >
-                  <div className="font-bold text-lg">${tranche.price}</div>
-                  <div className="text-muted-foreground">/mo</div>
-                  <div className="mt-1 text-muted-foreground text-[10px]">
-                    {tranche.max === Infinity ? `${tranche.min}+` : `${tranche.min}-${tranche.max}`}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Current Price - Big and Bold */}
+          <div className="border-2 border-[#0EA5E9] bg-[#0EA5E9]/10 p-10 mb-8">
+            <p className="text-[#0EA5E9] font-bold text-sm tracking-wider mb-2">SIGN UP NOW</p>
+            <div className="text-7xl md:text-8xl font-black">FREE</div>
+            <p className="text-slate-400 font-semibold mt-2">FOR LIFE</p>
+            <p className="text-slate-500 text-sm mt-4">First 10 brands — 4 spots remaining</p>
+          </div>
+          
+          {/* Price Progression - Simplified */}
+          <div className="flex items-center justify-center gap-2 mb-12 text-sm font-semibold overflow-x-auto pb-2">
+            <span className="px-3 py-2 bg-[#0EA5E9] text-white whitespace-nowrap">FREE</span>
+            <span className="text-slate-600">→</span>
+            <span className="px-3 py-2 border border-white/20 text-slate-400 whitespace-nowrap">$5</span>
+            <span className="text-slate-600">→</span>
+            <span className="px-3 py-2 border border-white/20 text-slate-400 whitespace-nowrap">$19</span>
+            <span className="text-slate-600">→</span>
+            <span className="px-3 py-2 border border-white/20 text-slate-400 whitespace-nowrap">$49</span>
+            <span className="text-slate-600">→</span>
+            <span className="px-3 py-2 border border-white/20 text-slate-500 whitespace-nowrap">$99 MAX</span>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-6">
-            Max price caps at <span className="font-semibold">$99/month</span> — early supporters get the best deal.
-          </p>
-          
           {/* What's Included */}
-          <div className="max-w-md mx-auto mb-8">
-            <p className="font-medium mb-4">Everything included:</p>
-            <div className="grid grid-cols-2 gap-3 text-sm text-left">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>6 AI model scans</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Unlimited memos</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Competitor tracking</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Search console sync</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Daily automation</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Content intelligence</span>
-              </div>
+          <div className="border-2 border-white/20 p-8 mb-10">
+            <p className="font-black text-lg mb-6">EVERYTHING INCLUDED:</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-left max-w-lg mx-auto">
+              {[
+                "6 AI model scans",
+                "Unlimited memos",
+                "Competitor tracking",
+                "Search console sync",
+                "Daily automation",
+                "Content intelligence"
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />
+                  <span className="font-semibold text-sm">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
           
-          <Button size="lg" asChild>
+          <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
             <Link href="/signup">
-              Claim Your Spot
-              <ArrowRight className="ml-2 h-4 w-4" />
+              CLAIM YOUR FREE SPOT
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 bg-zinc-900 dark:bg-zinc-950 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <Sparkles className="h-12 w-12 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl font-bold mb-4">Start Getting Cited by AI</h2>
-          <p className="text-zinc-400 mb-8 max-w-xl mx-auto">
+      {/* Final CTA */}
+      <section className="py-24 bg-[#0EA5E9]">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <Sparkles className="h-16 w-16 mx-auto mb-8" />
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">START GETTING CITED BY AI</h2>
+          <p className="text-xl text-white/80 mb-10 max-w-xl mx-auto">
             Your competitors are already showing up in AI recommendations. 
-            Don&apos;t let them own the conversation about your category.
+            Don&apos;t let them own the conversation.
           </p>
-          <Button size="lg" className="bg-white text-zinc-900 hover:bg-zinc-100" asChild>
+          <Button size="lg" asChild className="bg-[#0F172A] hover:bg-[#0F172A]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
             <Link href="/signup">
-              Start Your Free Trial
-              <ArrowRight className="ml-2 h-4 w-4" />
+              START YOUR FREE TRIAL
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-12 pb-28">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="py-12 pb-28 bg-[#0F172A] border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              <span className="font-semibold">Context Memo</span>
+              <Zap className="h-6 w-6 text-[#0EA5E9]" />
+              <span className="font-black tracking-tight">CONTEXT MEMO</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link href="/login" className="hover:text-foreground">Sign In</Link>
-              <Link href="/signup" className="hover:text-foreground">Sign Up</Link>
-              <Link href="/changelog" className="hover:text-foreground">Changelog</Link>
-              <Link href="/about/editorial" className="hover:text-foreground">Editorial Guidelines</Link>
-              <a href="mailto:support@contextmemo.com" className="hover:text-foreground">Contact</a>
+            <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
+              <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
+              <Link href="/signup" className="hover:text-white transition-colors">SIGN UP</Link>
+              <Link href="/changelog" className="hover:text-white transition-colors">CHANGELOG</Link>
+              <Link href="/about/editorial" className="hover:text-white transition-colors">EDITORIAL</Link>
             </div>
-            <p className="text-sm text-muted-foreground">
-              &copy; 2026 Context Memo. All rights reserved.
+            <p className="text-sm text-slate-500 font-semibold">
+              &copy; 2026 CONTEXT MEMO
             </p>
           </div>
         </div>
@@ -620,97 +559,37 @@ export default function Home() {
 
 function PricingBar({ currentUserCount }: { currentUserCount: number }) {
   const currentTranche = getCurrentTranche(currentUserCount);
-  const nextTranche = getNextTranche(currentUserCount);
   const spotsLeft = currentTranche.max - currentUserCount + 1;
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 dark:bg-zinc-950 text-white border-t border-zinc-800 z-50">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#0F172A] border-t-2 border-[#0EA5E9] z-50">
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between gap-4">
           {/* Current Status */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-zinc-400" />
-              <span className="text-sm">
-                <span className="font-bold text-green-400">{currentUserCount}</span>
-                <span className="text-zinc-400"> brands signed up</span>
+            <div className="font-bold text-lg">
+              <span className="text-white">
+                {currentTranche.price === 0 ? 'FREE' : `$${currentTranche.price}/MO`}
               </span>
+              <span className="text-[#0EA5E9]"> FOR LIFE</span>
             </div>
-            <div className="hidden sm:block h-4 w-px bg-zinc-700" />
-            <div className="text-sm">
-              <span className="text-zinc-400">Current price: </span>
-              <span className="font-bold text-white">
-                {currentTranche.price === 0 ? 'FREE' : `$${currentTranche.price}/mo`}
-              </span>
-              <span className="text-green-400 font-medium"> for life</span>
-            </div>
-          </div>
-
-          {/* Urgency + CTA */}
-          <div className="flex items-center gap-4">
-            {nextTranche && spotsLeft <= 10 && (
-              <div className="text-sm">
-                <span className="text-amber-400 font-semibold">{spotsLeft} spots left</span>
-                <span className="text-zinc-400"> at this price</span>
-              </div>
-            )}
-            {nextTranche && spotsLeft > 10 && (
-              <div className="hidden md:block text-sm text-zinc-400">
-                Next tier: <span className="text-zinc-300">${nextTranche.price}/mo</span> after brand #{currentTranche.max}
-              </div>
-            )}
-            <Button size="sm" className="bg-white text-zinc-900 hover:bg-zinc-100" asChild>
-              <Link href="/signup">
-                Lock In {currentTranche.price === 0 ? 'Free' : `$${currentTranche.price}/mo`}
-                <ArrowRight className="ml-1 h-3 w-3" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Progress bar showing full journey to 2000 users */}
-        <div className="mt-3 hidden sm:block">
-          <div className="flex items-center gap-0.5">
-            {PRICING_TRANCHES.slice(0, -1).map((tranche, i) => {
-              const isCurrentTranche = currentUserCount >= tranche.min && currentUserCount <= tranche.max;
-              const isPastTranche = currentUserCount > tranche.max;
-              const width = ((tranche.max - tranche.min + 1) / 2000) * 100;
-              const fillPercent = isCurrentTranche 
-                ? ((currentUserCount - tranche.min + 1) / (tranche.max - tranche.min + 1)) * 100
-                : isPastTranche ? 100 : 0;
-              const showLabel = true;
-              
-              return (
-                <div 
-                  key={i} 
-                  className="relative group"
-                  style={{ width: `${width}%` }}
-                >
-                  <div className={`h-2 rounded-sm overflow-hidden ${isPastTranche ? 'bg-green-600' : 'bg-zinc-700'}`}>
-                    {isCurrentTranche && (
-                      <div 
-                        className="h-full bg-green-500 transition-all"
-                        style={{ width: `${fillPercent}%` }}
-                      />
-                    )}
-                  </div>
-                  {showLabel && (
-                    <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 text-[9px] whitespace-nowrap ${isCurrentTranche ? 'text-green-400 font-medium' : isPastTranche ? 'text-green-600' : 'text-zinc-500'}`}>
-                      {tranche.price === 0 ? 'FREE' : `$${tranche.price}`}
-                    </div>
-                  )}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-800 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    <div className="font-medium">{tranche.price === 0 ? 'FREE' : `$${tranche.price}/mo`}</div>
-                    <div className="text-zinc-400">Brands {tranche.min}-{tranche.max}</div>
-                  </div>
+            {spotsLeft <= 10 && (
+              <>
+                <div className="hidden sm:block h-5 w-px bg-white/20" />
+                <div className="hidden sm:block font-bold text-sm">
+                  <span className="text-amber-400">{spotsLeft} SPOTS LEFT</span>
                 </div>
-              );
-            })}
-            <div className="text-[9px] text-zinc-500 ml-1">$99</div>
+              </>
+            )}
           </div>
-          <div className="flex justify-end mt-4 text-[10px] text-zinc-500">
-            <span>2,000 brands = max price</span>
-          </div>
+
+          {/* CTA */}
+          <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
+            <Link href="/signup">
+              {currentTranche.price === 0 ? 'START FREE' : `LOCK IN $${currentTranche.price}/MO`}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
