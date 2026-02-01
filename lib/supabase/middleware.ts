@@ -37,22 +37,35 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Get hostname for subdomain routing
-  const hostname = request.headers.get('host') || ''
-  const subdomain = hostname.split('.')[0]
+  // Get hostname for subdomain routing (check x-forwarded-host for Vercel)
+  const hostname = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+  const hostParts = hostname.split('.')
   
-  // Check if this is a memo subdomain request
-  const isSubdomainRequest = 
-    subdomain && 
-    subdomain !== 'www' && 
-    subdomain !== 'contextmemo' &&
-    subdomain !== 'localhost' &&
-    !hostname.startsWith('localhost')
+  // Determine if this is a subdomain request
+  // Valid subdomain patterns: checkit.contextmemo.com (3+ parts) or checkit.localhost:3000 (2+ parts for local)
+  let subdomain: string | null = null
+  
+  if (hostParts.length >= 3) {
+    // Production: checkit.contextmemo.com -> subdomain is 'checkit'
+    const potentialSubdomain = hostParts[0]
+    // Ensure it's not 'www' and the remaining parts form a valid domain
+    if (potentialSubdomain !== 'www' && potentialSubdomain !== 'app') {
+      subdomain = potentialSubdomain
+    }
+  } else if (hostParts.length === 2 && hostParts[1].startsWith('localhost')) {
+    // Local dev: checkit.localhost:3000 -> subdomain is 'checkit'
+    const potentialSubdomain = hostParts[0]
+    if (potentialSubdomain !== 'localhost') {
+      subdomain = potentialSubdomain
+    }
+  }
 
   // If it's a subdomain request, rewrite to memo pages
-  if (isSubdomainRequest) {
+  if (subdomain) {
     const url = request.nextUrl.clone()
-    url.pathname = `/memo/${subdomain}${request.nextUrl.pathname}`
+    // Preserve the original path
+    const originalPath = request.nextUrl.pathname === '/' ? '' : request.nextUrl.pathname
+    url.pathname = `/memo/${subdomain}${originalPath}`
     return NextResponse.rewrite(url)
   }
 
