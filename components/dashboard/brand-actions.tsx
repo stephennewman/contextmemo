@@ -11,15 +11,18 @@ interface BrandActionsProps {
   hasContext: boolean
   hasCompetitors: boolean
   hasQueries: boolean
+  onboardingStep?: 'extract' | 'competitors' | 'queries' // Optional: show only one button for focused onboarding
 }
 
 export function BrandActions({ 
   brandId, 
   hasContext, 
   hasCompetitors, 
-  hasQueries 
+  hasQueries,
+  onboardingStep
 }: BrandActionsProps) {
   const [loading, setLoading] = useState<string | null>(null)
+  const router = useRouter()
 
   const executeAction = async (action: string, options?: Record<string, unknown>) => {
     setLoading(action)
@@ -37,6 +40,9 @@ export function BrandActions({
       }
 
       toast.success(data.message)
+      
+      // Refresh after action completes (with delay for background jobs)
+      setTimeout(() => router.refresh(), 15000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Action failed')
     } finally {
@@ -44,6 +50,59 @@ export function BrandActions({
     }
   }
 
+  // If onboardingStep is provided, show only that specific button
+  if (onboardingStep === 'extract') {
+    return (
+      <Button 
+        onClick={() => executeAction('extract_context')}
+        disabled={loading !== null}
+        className="bg-[#F59E0B] hover:bg-[#D97706] text-white"
+      >
+        {loading === 'extract_context' ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Play className="mr-2 h-4 w-4" />
+        )}
+        Extract Context
+      </Button>
+    )
+  }
+
+  if (onboardingStep === 'competitors') {
+    return (
+      <Button 
+        onClick={() => executeAction('discover_competitors')}
+        disabled={loading !== null}
+        className="bg-[#F59E0B] hover:bg-[#D97706] text-white"
+      >
+        {loading === 'discover_competitors' ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Play className="mr-2 h-4 w-4" />
+        )}
+        Discover Competitors
+      </Button>
+    )
+  }
+
+  if (onboardingStep === 'queries') {
+    return (
+      <Button 
+        onClick={() => executeAction('generate_queries')}
+        disabled={loading !== null}
+        className="bg-[#F59E0B] hover:bg-[#D97706] text-white"
+      >
+        {loading === 'generate_queries' ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Play className="mr-2 h-4 w-4" />
+        )}
+        Generate Prompts
+      </Button>
+    )
+  }
+
+  // Legacy fallback: show all steps (for any old usages)
   return (
     <div className="space-y-3">
       {!hasContext && (

@@ -199,6 +199,54 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Competitor content scan started' 
         })
 
+      case 'check_status': {
+        // Check onboarding status - used by terminal to poll for completion
+        const context = brand.context as Record<string, unknown> | null
+        const hasContext = context && Object.keys(context).length > 0
+        
+        // Count competitors
+        const { count: competitorCount } = await supabase
+          .from('competitors')
+          .select('*', { count: 'exact', head: true })
+          .eq('brand_id', brandId)
+          .eq('is_active', true)
+        
+        // Count queries
+        const { count: queryCount } = await supabase
+          .from('queries')
+          .select('*', { count: 'exact', head: true })
+          .eq('brand_id', brandId)
+          .eq('is_active', true)
+        
+        // Count scans (last 90 days)
+        const ninetyDaysAgo = new Date()
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+        const { count: scanCount } = await supabase
+          .from('scan_results')
+          .select('*', { count: 'exact', head: true })
+          .eq('brand_id', brandId)
+          .gte('scanned_at', ninetyDaysAgo.toISOString())
+        
+        // Build context summary if available
+        let contextSummary = ''
+        if (hasContext) {
+          const products = (context.products as unknown[])?.length || 0
+          const personas = (context.target_personas as unknown[])?.length || 0
+          contextSummary = `${products} products, ${personas} personas detected`
+        }
+        
+        return NextResponse.json({
+          hasContext,
+          hasCompetitors: (competitorCount || 0) > 0,
+          hasQueries: (queryCount || 0) > 0,
+          hasScans: (scanCount || 0) > 0,
+          competitorCount: competitorCount || 0,
+          queryCount: queryCount || 0,
+          scanCount: scanCount || 0,
+          contextSummary,
+        })
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

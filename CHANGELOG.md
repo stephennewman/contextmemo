@@ -7,15 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Public changelog page** at `/changelog` - renders CHANGELOG.md automatically
-- **Updated landing page** - rewritten for B2B marketers with feature highlights
-- **Project documentation** - AI_Onboarding.md restructured as comprehensive project doc
-
 ### Planned
 - Stripe billing integration
 - Email notifications for visibility changes
 - Additional memo templates (best-of, what-is)
+
+---
+
+## [0.9.0] - 2026-02-01
+
+### Added
+- **Terminal-style onboarding experience**: New brands see an engaging step-by-step setup with live terminal output
+  - Real-time progress messages showing what's happening ("Connecting to Jina Reader API...", "Analyzing products...", etc.)
+  - Dark terminal UI with timestamps and blinking cursor
+  - Polls backend for actual completion, shows summary when done
+  - Auto-refreshes to proceed to next step
+- **Cleaner onboarding flow**: Step-by-step card with progress indicators instead of confusing multiple buttons
+- **Status check API**: New `check_status` action for polling onboarding progress
+
+### Changed
+- **Removed confusing buttons**: Simplified header by removing "Discovery Scan" button during onboarding
+- **Metrics only show after scans**: No more fake 0% visibility scores for new brands
+- **"Ready to scan" prompt**: After onboarding completes, shows clear prompt to run first scan instead of empty metrics
+
+### Fixed
+- New brands no longer see meaningless metrics before any scans have run
 
 ---
 

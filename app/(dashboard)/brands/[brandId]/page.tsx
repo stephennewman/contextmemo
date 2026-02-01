@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-  AlertCircle,
   ExternalLink,
   Settings,
   TrendingUp
 } from 'lucide-react'
 import { BrandContext, PERSONA_CONFIGS, CorePersona, CustomPersona } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
-import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton, UpdateBacklinksButton, RefreshContextButton } from '@/components/dashboard/brand-actions'
+import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, RefreshContextButton } from '@/components/dashboard/brand-actions'
+import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
@@ -181,6 +181,59 @@ export default async function BrandPage({ params }: Props) {
   const context = brand.context as BrandContext
   const hasContext = context && Object.keys(context).length > 0
   const hubspotEnabled = !!(context?.hubspot?.enabled && context?.hubspot?.access_token && context?.hubspot?.blog_id)
+  
+  // Determine onboarding state
+  const hasCompletedOnboarding = hasContext && !!competitors?.length && !!queries?.length
+  const hasAnyScans = (recentScans?.length || 0) > 0
+
+  // Show onboarding flow for new brands
+  if (!hasCompletedOnboarding) {
+    return (
+      <div className="space-y-6">
+        {/* Minimal Header for Onboarding */}
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
+              {brand.verified ? (
+                <span className="px-2 py-1 text-xs font-bold bg-[#10B981] text-white">VERIFIED</span>
+              ) : (
+                <span className="px-2 py-1 text-xs font-bold border-2 border-[#0F172A] text-[#0F172A]">PENDING</span>
+              )}
+            </div>
+            <a 
+              href={process.env.NODE_ENV === 'development' 
+                ? `http://localhost:3000/memo/${brand.subdomain}` 
+                : `https://${brand.subdomain}.contextmemo.com`
+              } 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
+            >
+              {brand.subdomain}.contextmemo.com
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+          <Button variant="outline" size="sm" asChild className="rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white">
+            <Link href={`/brands/${brandId}/settings`}>
+              <Settings className="h-4 w-4" strokeWidth={2.5} />
+            </Link>
+          </Button>
+        </div>
+
+        {/* Onboarding Flow with Terminal */}
+        <OnboardingFlow
+          brandId={brandId}
+          brandName={brand.name}
+          hasContext={hasContext}
+          hasCompetitors={!!competitors?.length}
+          hasQueries={!!queries?.length}
+          competitorCount={competitors?.length || 0}
+          queryCount={queries?.length || 0}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -214,53 +267,54 @@ export default async function BrandPage({ params }: Props) {
               <Settings className="h-4 w-4" strokeWidth={2.5} />
             </Link>
           </Button>
-          <DiscoveryScanButton brandId={brandId} />
           <ScanButton brandId={brandId} />
         </div>
       </div>
 
-      {/* Visibility Score Hero */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="p-6 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-5 w-5 text-[#0EA5E9]" strokeWidth={2.5} />
-            <span className="text-xs font-bold tracking-widest text-slate-400">VISIBILITY SCORE</span>
+      {/* Visibility Score Hero - only show if we have scans */}
+      {hasAnyScans ? (
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="p-6 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-5 w-5 text-[#0EA5E9]" strokeWidth={2.5} />
+              <span className="text-xs font-bold tracking-widest text-slate-400">VISIBILITY SCORE</span>
+            </div>
+            <div className="text-5xl font-bold text-[#0EA5E9]">{visibilityScore}%</div>
+            <div className="w-full h-2 bg-slate-700 mt-3">
+              <div className="h-2 bg-[#0EA5E9]" style={{ width: `${visibilityScore}%` }} />
+            </div>
           </div>
-          <div className="text-5xl font-bold text-[#0EA5E9]">{visibilityScore}%</div>
-          <div className="w-full h-2 bg-slate-700 mt-3">
-            <div className="h-2 bg-[#0EA5E9]" style={{ width: `${visibilityScore}%` }} />
+          <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
+            <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
+            <div className="text-4xl font-bold text-[#0F172A] mt-1">{memos?.length || 0}</div>
+            <div className="text-sm text-zinc-500">published</div>
+          </div>
+          <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
+            <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
+            <div className="text-4xl font-bold text-[#0F172A] mt-1">{queries?.length || 0}</div>
+            <div className="text-sm text-zinc-500">tracked</div>
+          </div>
+          <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #F59E0B' }}>
+            <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
+            <div className="text-4xl font-bold text-[#0F172A] mt-1">{recentScans?.length || 0}</div>
+            <div className="text-sm text-zinc-500">last 90 days</div>
           </div>
         </div>
-        <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
-          <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{memos?.length || 0}</div>
-          <div className="text-sm text-zinc-500">published</div>
-        </div>
-        <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
-          <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{queries?.length || 0}</div>
-          <div className="text-sm text-zinc-500">tracked</div>
-        </div>
-        <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #F59E0B' }}>
-          <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{recentScans?.length || 0}</div>
-          <div className="text-sm text-zinc-500">last 90 days</div>
-        </div>
-      </div>
-
-      {/* Setup Progress - only show if incomplete */}
-      {(!hasContext || !competitors?.length || !queries?.length) && (
-        <div className="p-5 border-[3px] border-[#F59E0B] bg-[#FFFBEB]" style={{ borderLeft: '8px solid #F59E0B' }}>
-          <div className="flex items-center gap-3 mb-3">
-            <AlertCircle className="h-5 w-5 text-[#F59E0B]" strokeWidth={2.5} />
-            <span className="font-bold text-[#92400E]">COMPLETE SETUP TO START TRACKING</span>
+      ) : (
+        /* No scans yet - prompt to run first scan */
+        <div className="p-6 border-[3px] border-[#0EA5E9] bg-[#F0F9FF]" style={{ borderLeft: '8px solid #0EA5E9' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-[#0F172A] mb-1">Ready to scan!</h3>
+              <p className="text-sm text-zinc-600">
+                Setup complete. Run your first scan to see how visible {brand.name} is across AI assistants.
+              </p>
+              <p className="text-xs text-zinc-500 mt-2">
+                {queries?.length || 0} prompts • {competitors?.length || 0} competitors • 6 AI models
+              </p>
+            </div>
+            <ScanButton brandId={brandId} />
           </div>
-          <BrandActions 
-            brandId={brandId}
-            hasContext={hasContext}
-            hasCompetitors={!!competitors?.length}
-            hasQueries={!!queries?.length}
-          />
         </div>
       )}
 

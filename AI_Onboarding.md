@@ -1,7 +1,7 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 1, 2026  
-> **Version:** 0.8.0  
+> **Version:** 0.9.0  
 > **Status:** MVP Complete + Active Development
 
 ---
