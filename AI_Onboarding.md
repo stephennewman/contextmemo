@@ -52,11 +52,17 @@
 - `memo/batch-backlink` - Updates all memos for a brand (triggered after new memo creation)
 - `dailyBacklinkRefresh` - Runs at 7 AM UTC, refreshes backlinks for brands with new content in last 24 hours
 
+**Competitor Content Intelligence (NEW):**
+- `competitor/content-scan` - Daily scan of competitor blogs/RSS for new content
+- `competitor/content-classify` - AI classifies content type and filters (skips press releases, feature announcements, company news)
+- `competitor/content-respond` - Generates response content with brand's tone/context and auto-publishes
+
 **Daily Automation (runs at 6 AM ET):**
 - `daily/run` - **Main scheduler** - Analyzes all brands and triggers appropriate workflows:
   - **Full Refresh** (weekly): Brands with stale context → context/extract → competitor/discover → query/generate → scan/run
   - **Update** (weekly): Brands needing new competitors/queries → competitor/discover → query/generate → scan/run  
   - **Scan Only** (daily): Up-to-date brands → scan/run with auto memo generation
+  - **Content Intelligence** (daily): Scans competitor sites → classifies → auto-generates response articles
 - `daily/brand-full-refresh` - Complete re-extraction and discovery pipeline
 - `daily/brand-update` - Weekly competitor/query refresh
 - `daily/brand-scan` - Daily visibility scan + auto memo generation
@@ -69,6 +75,8 @@
 | Query generation | Weekly | No new queries in 7 days |
 | Visibility scan | Daily | No scan in 24 hours |
 | Memo generation | On-demand | Gaps detected in scans |
+| Competitor content scan | Daily | Part of daily run |
+| Response content generation | Daily | New educational/industry content from competitors |
 
 ### API Routes
 - `/api/inngest` - Inngest webhook endpoint
@@ -87,9 +95,10 @@ Tables created in Supabase:
 - `tenants` - User accounts
 - `brands` - Brand profiles with context
 - `competitors` - Discovered competitors
+- `competitor_content` - Tracked competitor articles (NEW)
 - `queries` - Search queries to monitor
 - `scan_results` - AI scan results
-- `memos` - Generated context memos
+- `memos` - Generated context memos (now includes `source_competitor_content_id` for response memos)
 - `memo_versions` - Version history
 - `alerts` - User notifications
 
@@ -113,6 +122,8 @@ INNGEST_EVENT_KEY=[required for production]
 
 | Date | Activity | Details |
 |------|----------|---------|
+| Feb 1, 2026 | **Competitor Content Intelligence** | Daily scan of competitor blogs/content, AI classification (filters press releases, feature announcements), auto-generates response articles with brand's tone, auto-publishes to resources page. New `competitor_content` table, `memo_type: 'response'`. |
+| Feb 1, 2026 | **External credibility signals** | Added `/about/editorial` guidelines page, `/ai.txt` for AI crawler permissions, enhanced Schema.org with `sameAs` links to LinkedIn/Crunchbase/Wikipedia, social_links support in BrandContext. |
 | Feb 1, 2026 | **Automated backlinking system** | New continuous backlinking: auto-runs after memo generation, daily refresh at 7 AM UTC, injects contextual links + "Related Reading" section. Functions: `memo/backlink`, `memo/batch-backlink`, `dailyBacklinkRefresh`. |
 | Jan 31, 2026 | **High-intent query generation + Discovery scan** | Added intent-based query generation from homepage content, filtering for buyer signals. New Discovery Scan feature tests 50+ query variations to find where brand IS being mentioned. |
 | Jan 31, 2026 | **Subdomain link fix** | Fixed link generation to use relative paths on subdomain access, preventing double-rewrite 404 errors |

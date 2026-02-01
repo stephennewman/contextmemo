@@ -173,7 +173,17 @@ export const dailyRun = inngest.createFunction(
       })
     }
 
-    // Step 6: Record daily snapshot for trend tracking
+    // Step 6: Trigger competitor content scanning for all brands
+    await step.run('trigger-competitor-content-scan', async () => {
+      const events = brands.map(brand => ({
+        name: 'competitor/content-scan' as const,
+        data: { brandId: brand.id },
+      }))
+      await inngest.send(events)
+      return events.length
+    })
+
+    // Step 7: Record daily snapshot for trend tracking
     await step.run('record-daily-snapshot', async () => {
       const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
       
@@ -234,7 +244,7 @@ export const dailyRun = inngest.createFunction(
       }
     })
 
-    // Step 7: Log completion
+    // Step 8: Log completion
     await step.run('log-completion', async () => {
       const summary = {
         fullRefresh: fullRefreshBrands.length,

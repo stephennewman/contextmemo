@@ -7,6 +7,11 @@ import { scanRun } from '@/lib/inngest/functions/scan-run'
 import { memoGenerate } from '@/lib/inngest/functions/memo-generate'
 import { discoveryScan } from '@/lib/inngest/functions/discovery-scan'
 import { 
+  competitorContentScan,
+  competitorContentClassify,
+  competitorContentRespond,
+} from '@/lib/inngest/functions/competitor-content'
+import { 
   memoBacklink, 
   memoBatchBacklink, 
   dailyBacklinkRefresh 
@@ -28,6 +33,11 @@ export const { GET, POST, PUT } = serve({
     scanRun,            // Run AI scans, track visibility
     memoGenerate,       // Generate context memos
     discoveryScan,      // Discovery scan - find where brand is mentioned
+    
+    // Competitor content intelligence
+    competitorContentScan,     // Scan competitor sites for new content
+    competitorContentClassify, // Classify and filter content
+    competitorContentRespond,  // Generate and auto-publish response content
     
     // Backlinking functions
     memoBacklink,           // Add backlinks to individual memo

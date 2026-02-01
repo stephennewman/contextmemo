@@ -452,6 +452,17 @@ export interface BrandTone {
   custom_notes?: string
 }
 
+// Social links for sameAs references
+export interface SocialLinks {
+  linkedin?: string
+  twitter?: string
+  crunchbase?: string
+  wikipedia?: string
+  github?: string
+  facebook?: string
+  youtube?: string
+}
+
 // Brand context structure
 export interface BrandContext {
   company_name?: string
@@ -473,6 +484,8 @@ export interface BrandContext {
   homepage_content?: string
   // Extracted user intents/pain points from homepage
   user_intents?: UserIntent[]
+  // Social links for Schema.org sameAs references
+  social_links?: SocialLinks
 }
 
 // User intent extracted from homepage content

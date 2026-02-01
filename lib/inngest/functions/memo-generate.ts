@@ -182,7 +182,40 @@ export const memoGenerate = inngest.createFunction(
       return text.slice(0, 160)
     })
 
-    // Step 4: Generate Schema.org structured data
+    // Step 4: Generate Schema.org structured data with sameAs links
+    // Build sameAs array for authoritative external references
+    const brandSameAs: string[] = []
+    
+    // Add domain as primary reference
+    if (brand.domain) {
+      brandSameAs.push(`https://${brand.domain}`)
+      brandSameAs.push(`https://www.${brand.domain}`)
+    }
+    
+    // Add known authoritative sources based on brand name
+    const brandSlug = brand.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    const brandSlugUnderscore = brand.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+    
+    // LinkedIn company page (common pattern)
+    brandSameAs.push(`https://www.linkedin.com/company/${brandSlug}`)
+    
+    // Crunchbase
+    brandSameAs.push(`https://www.crunchbase.com/organization/${brandSlug}`)
+    
+    // Wikipedia (if company is notable enough)
+    brandSameAs.push(`https://en.wikipedia.org/wiki/${encodeURIComponent(brand.name.replace(/\s+/g, '_'))}`)
+    
+    // Add social links from context if available
+    if (brandContext.social_links) {
+      if (brandContext.social_links.linkedin) brandSameAs.push(brandContext.social_links.linkedin)
+      if (brandContext.social_links.twitter) brandSameAs.push(brandContext.social_links.twitter)
+      if (brandContext.social_links.crunchbase) brandSameAs.push(brandContext.social_links.crunchbase)
+      if (brandContext.social_links.wikipedia) brandSameAs.push(brandContext.social_links.wikipedia)
+    }
+    
+    // Deduplicate
+    const uniqueSameAs = [...new Set(brandSameAs)]
+
     const schemaJson = {
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -194,14 +227,34 @@ export const memoGenerate = inngest.createFunction(
         '@type': 'Organization',
         name: 'Context Memo',
         url: 'https://contextmemo.com',
+        logo: 'https://contextmemo.com/logo.png',
       },
       publisher: {
         '@type': 'Organization',
+        name: 'Context Memo',
+        url: 'https://contextmemo.com',
+      },
+      about: {
+        '@type': 'Organization',
         name: brand.name,
+        url: `https://${brand.domain}`,
+        sameAs: uniqueSameAs,
+        description: brandContext.description || `${brand.name} company information`,
       },
       mainEntityOfPage: {
         '@type': 'WebPage',
         '@id': `https://${brand.subdomain}.contextmemo.com/${memoContent.slug}`,
+      },
+      isAccessibleForFree: true,
+      inLanguage: 'en-US',
+      copyrightHolder: {
+        '@type': 'Organization',
+        name: brand.name,
+      },
+      citation: {
+        '@type': 'WebSite',
+        name: brand.name,
+        url: `https://${brand.domain}`,
       },
     }
 

@@ -332,6 +332,7 @@ export default function Home() {
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link href="/login" className="hover:text-foreground">Sign In</Link>
               <Link href="/signup" className="hover:text-foreground">Sign Up</Link>
+              <Link href="/about/editorial" className="hover:text-foreground">Editorial Guidelines</Link>
               <a href="mailto:support@contextmemo.com" className="hover:text-foreground">Contact</a>
             </div>
             <p className="text-sm text-muted-foreground">
