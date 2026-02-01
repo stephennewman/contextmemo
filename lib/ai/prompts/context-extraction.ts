@@ -16,16 +16,41 @@ Analyze the provided website content and extract the following information in JS
   "target_personas": ["Array of persona IDs this brand targets"]
 }
 
-TARGET PERSONAS - Identify which of these personas the brand is clearly targeting:
+TARGET PERSONAS - Identify which of these personas the brand is clearly targeting. Look for BOTH explicit and implicit signals:
 
-- "b2b_marketer" - Marketing leaders. Signals: ROI language, campaign tools, marketing automation, CRM integration, analytics dashboards, lead generation
-- "developer" - Technical ICs. Signals: API documentation, SDKs, code samples, GitHub links, developer portal, technical specs, CLI tools
-- "product_leader" - PMs/Directors. Signals: Team collaboration, roadmap features, product analytics, workflow tools, scaling teams
-- "enterprise_buyer" - Procurement/IT. Signals: SOC 2, GDPR, SSO, enterprise pricing, compliance, SLA, dedicated support, security pages
-- "smb_owner" - Small business owners. Signals: Simple pricing, quick setup, "small business", affordable, no-code, easy to use
-- "student" - Students/researchers. Signals: Free tier, educational pricing, tutorials, learning resources, community, academic use
+- "b2b_marketer" - Marketing leaders evaluating tools
+  EXPLICIT: ROI, campaign tools, marketing automation, CRM integration, lead generation
+  IMPLICIT: Revenue attribution, conversion tracking, funnel language, "drive growth", pipeline metrics, demand gen
 
-Include a persona ONLY if there are clear signals on the website. Most brands target 2-4 personas.
+- "developer" - Technical individual contributors
+  EXPLICIT: API documentation, SDKs, code samples, GitHub, CLI tools
+  IMPLICIT: Technical language throughout, JSON/code examples, webhooks, integrations focus, "build", "ship", infrastructure terms
+
+- "product_leader" - PMs, Directors, team leads
+  EXPLICIT: Team collaboration, roadmap features, product analytics
+  IMPLICIT: "Scale your team", user management, permissions, workspace language, "align teams", stakeholder mentions
+
+- "enterprise_buyer" - Procurement, IT, security teams
+  EXPLICIT: SOC 2, GDPR, SSO, SLA, enterprise pricing tiers
+  IMPLICIT: "Contact sales", custom pricing, security page exists, compliance mentions, audit logs, admin controls, "trusted by Fortune 500"
+
+- "smb_owner" - Small business owners, founders
+  EXPLICIT: "Small business", affordable, no-code, easy to use
+  IMPLICIT: Simple pricing (flat rate), "get started free", quick setup language, solo/small team focus, DIY tone, credit card checkout
+
+- "student" - Students, researchers, early career
+  EXPLICIT: Free tier, educational pricing, tutorials, academic use
+  IMPLICIT: Learning-focused language, community emphasis, open source mentions, "learn", "explore", generous free tier, documentation-heavy
+
+INFERENCE RULES:
+1. B2B language + no pricing page visible = likely targets enterprise_buyer
+2. Per-seat pricing + team features = likely targets product_leader
+3. Technical depth + API-first = likely targets developer  
+4. Self-serve signup + simple pricing = likely targets smb_owner
+5. Freemium + educational content = likely targets student
+6. Multiple pricing tiers usually means multiple personas
+
+Include 2-5 personas that the brand CLEARLY targets based on the content.
 
 Rules:
 1. Only include information explicitly stated in the content

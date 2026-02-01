@@ -122,6 +122,7 @@ INNGEST_EVENT_KEY=[required for production]
 
 | Date | Activity | Details |
 |------|----------|---------|
+| Feb 1, 2026 | **Bing Webmaster Integration** | Search console integration showing which Bing queries drive traffic to memos. New settings panel for API key, Inngest sync function (`bing/sync`, `bing-weekly-sync`), Search tab on brand page with query correlation and opportunities. New table: `search_console_stats`. |
 | Feb 1, 2026 | **Competitive Intelligence Dashboard** | New share-of-voice analysis showing which competitors win queries vs brand. Tracks wins/ties/losses across all scans. Shows "queries to improve" where competitors beat brand. Visual progress bars for share of voice. |
 | Feb 1, 2026 | **Competitor Content Intelligence** | Daily scan of competitor blogs/content, AI classification (filters press releases, feature announcements), auto-generates response articles with brand's tone, auto-publishes to resources page. New `competitor_content` table, `memo_type: 'response'`. |
 | Feb 1, 2026 | **Persona-based prompt system** | Renamed queries → prompts throughout UI. Added 6 persona types (B2B Marketer, Developer, Product Leader, Enterprise Buyer, SMB Owner, Student). **Personas now extracted from brand website analysis** - context extraction identifies target personas based on signals (API docs = developer, SOC 2 = enterprise, etc.). Prompts generated only for brand's relevant personas. |
@@ -153,10 +154,32 @@ INNGEST_EVENT_KEY=[required for production]
 | Problem | Score | Description |
 |---------|-------|-------------|
 | No Stripe integration | 75 | Cannot collect payments - needed before public launch |
+| ~~DB migration: search_console_stats~~ | ~~75~~ | ✅ APPLIED - Table created with indexes |
 | ~~DB migration needed: persona column~~ | ~~70~~ | ✅ APPLIED - `persona TEXT` column added to queries table |
 | Missing SUPABASE_SERVICE_ROLE_KEY | 70 | Background jobs need this key for admin access |
 | No Inngest production keys | 65 | Need to configure Inngest for production |
 | ~~No email confirmation~~ | ~~50~~ | ✅ RESOLVED - Email verification now required |
+
+**search_console_stats table migration (run in Supabase SQL editor):**
+```sql
+create table search_console_stats (
+  id uuid default gen_random_uuid() primary key,
+  brand_id uuid references brands(id) on delete cascade,
+  provider text not null,
+  query text not null,
+  page_url text,
+  impressions integer default 0,
+  clicks integer default 0,
+  position decimal,
+  ctr decimal,
+  date date not null,
+  synced_at timestamptz default now(),
+  unique(brand_id, provider, query, date)
+);
+
+create index idx_search_stats_brand on search_console_stats(brand_id, date desc);
+create index idx_search_stats_query on search_console_stats(query);
+```
 
 ### High-Value Opportunities
 | Opportunity | Score | Description |

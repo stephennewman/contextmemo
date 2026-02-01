@@ -473,15 +473,17 @@ export interface HubSpotConfig {
 }
 
 // Search Console integrations (Bing + Google)
+export interface BingWebmasterConfig {
+  enabled?: boolean
+  api_key?: string
+  site_url?: string  // The verified site URL in Bing Webmaster
+  last_synced_at?: string
+}
+
 export interface SearchConsoleConfig {
-  bing?: {
-    enabled: boolean
-    api_key?: string
-    site_url?: string  // The verified site URL in Bing Webmaster
-    last_synced_at?: string
-  }
+  bing?: BingWebmasterConfig
   google?: {
-    enabled: boolean
+    enabled?: boolean
     // Google uses OAuth - would need refresh token flow
     // For now, just Bing is supported
   }

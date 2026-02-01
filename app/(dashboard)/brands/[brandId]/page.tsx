@@ -16,6 +16,7 @@ import { VisibilityChart } from '@/components/dashboard/visibility-chart'
 import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton, UpdateBacklinksButton } from '@/components/dashboard/brand-actions'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
+import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -77,6 +78,14 @@ export default async function BrandPage({ params }: Props) {
     .select('*')
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
+
+  // Get search console stats (last 90 days)
+  const { data: searchConsoleStats } = await supabase
+    .from('search_console_stats')
+    .select('*')
+    .eq('brand_id', brandId)
+    .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
+    .order('date', { ascending: false })
 
   // Get latest discovery scan result
   const { data: discoveryAlert } = await supabase
@@ -247,6 +256,7 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
+          <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -481,6 +491,16 @@ export default async function BrandPage({ params }: Props) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="search">
+          <SearchConsoleView
+            brandId={brandId}
+            stats={searchConsoleStats || []}
+            queries={queries || []}
+            bingEnabled={!!(context?.search_console?.bing?.enabled && context?.search_console?.bing?.api_key)}
+            lastSyncedAt={context?.search_console?.bing?.last_synced_at}
+          />
         </TabsContent>
       </Tabs>
     </div>
