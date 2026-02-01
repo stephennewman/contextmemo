@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { BrandContext, PERSONA_CONFIGS, CorePersona, CustomPersona } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
-import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton, UpdateBacklinksButton } from '@/components/dashboard/brand-actions'
+import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton, UpdateBacklinksButton, RefreshContextButton } from '@/components/dashboard/brand-actions'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
@@ -268,15 +268,20 @@ export default async function BrandPage({ params }: Props) {
           />
 
           {/* Target Personas - show who we're generating prompts for */}
-          {context?.target_personas && context.target_personas.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Target Personas</CardTitle>
-                <CardDescription>
-                  User types detected from your website - prompts are tailored to how each persona searches
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Target Personas</CardTitle>
+                  <CardDescription>
+                    User types detected from your website - prompts are tailored to how each persona searches
+                  </CardDescription>
+                </div>
+                <RefreshContextButton brandId={brandId} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {context?.target_personas && context.target_personas.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {context.target_personas.map((personaId: string) => {
                     // Check if it's a core persona
@@ -324,14 +329,18 @@ export default async function BrandPage({ params }: Props) {
                     )
                   })}
                 </div>
-                {(!context.target_personas || context.target_personas.length === 0) && (
-                  <p className="text-sm text-muted-foreground">
-                    No personas detected yet. Run context extraction to identify target user types.
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    No personas detected yet. Click &quot;Refresh Context&quot; to analyze your website and identify target user types.
                   </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  <p className="text-xs text-muted-foreground">
+                    Personas help generate prompts tailored to how different users search (B2B marketers, developers, SMB owners, etc.)
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Discovery Scan Results */}
           {discoveryResults && (

@@ -453,6 +453,57 @@ export function DiscoveryScanButton({ brandId }: { brandId: string }) {
   )
 }
 
+// Refresh context extraction (re-analyze website for updated personas, products, etc.)
+export function RefreshContextButton({ brandId }: { brandId: string }) {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const refreshContext = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'extract_context' }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Context extraction failed')
+      }
+
+      toast.success('Re-analyzing website for updated context. Personas and product info will be refreshed.', {
+        duration: 8000,
+      })
+      
+      // Refresh after extraction completes
+      setTimeout(() => router.refresh(), 15000)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Context extraction failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button 
+      onClick={refreshContext} 
+      disabled={loading}
+      variant="outline"
+      size="sm"
+      className="gap-2"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <RefreshCw className="h-4 w-4" />
+      )}
+      Refresh Context
+    </Button>
+  )
+}
+
 // Update backlinks across all memos
 export function UpdateBacklinksButton({ brandId, memoCount }: { brandId: string; memoCount?: number }) {
   const [loading, setLoading] = useState(false)
