@@ -53,20 +53,44 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
       return
     }
 
+    const trimmedName = newName.trim()
+    
+    // Clean domain (remove http/https, www, trailing slashes)
+    let cleanDomain = newDomain.trim()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/$/, '')
+      .toLowerCase()
+
+    // Check for existing competitor with same name (case-insensitive)
+    const existingByName = competitors.find(
+      c => c.name.toLowerCase() === trimmedName.toLowerCase()
+    )
+    if (existingByName) {
+      toast.error(`"${existingByName.name}" already exists`)
+      return
+    }
+
+    // Check for existing competitor with same domain
+    if (cleanDomain) {
+      const existingByDomain = competitors.find(
+        c => c.domain?.toLowerCase() === cleanDomain
+      )
+      if (existingByDomain) {
+        toast.error(`A competitor with domain "${cleanDomain}" already exists: ${existingByDomain.name}`)
+        return
+      }
+    }
+
     setAdding(true)
     try {
       const supabase = createClient()
-      
-      // Clean domain (remove http/https, trailing slashes)
-      let cleanDomain = newDomain.trim()
-        .replace(/^https?:\/\//, '')
-        .replace(/\/$/, '')
       
       const { data, error } = await supabase
         .from('competitors')
         .insert({
           brand_id: brandId,
-          name: newName.trim(),
+          name: trimmedName,
           domain: cleanDomain || null,
           auto_discovered: false,
           is_active: true,
@@ -79,7 +103,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
       // Add to local state
       setCompetitors(prev => [...prev, data])
       
-      toast.success(`Added ${newName}`)
+      toast.success(`Added ${trimmedName}`)
       setNewName('')
       setNewDomain('')
       setDialogOpen(false)
