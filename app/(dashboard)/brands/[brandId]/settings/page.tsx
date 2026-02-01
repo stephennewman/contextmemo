@@ -210,8 +210,27 @@ export default function BrandSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div>
+          <div className="h-8 w-40 bg-slate-200 animate-pulse rounded" />
+          <div className="h-4 w-56 bg-slate-100 animate-pulse rounded mt-2" />
+        </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="border rounded-lg p-6 space-y-4">
+            <div className="space-y-2">
+              <div className="h-5 w-24 bg-slate-200 animate-pulse rounded" />
+              <div className="h-4 w-48 bg-slate-100 animate-pulse rounded" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[1, 2].map((j) => (
+                <div key={j} className="space-y-2">
+                  <div className="h-4 w-20 bg-slate-100 animate-pulse rounded" />
+                  <div className="h-10 w-full bg-slate-200 animate-pulse rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }

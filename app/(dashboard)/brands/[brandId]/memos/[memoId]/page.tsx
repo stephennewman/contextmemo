@@ -177,8 +177,36 @@ export default function MemoEditPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6 max-w-4xl">
+        {/* Back link and header */}
+        <div className="flex items-center gap-4">
+          <div className="h-9 w-9 bg-slate-200 animate-pulse rounded" />
+          <div className="flex-1">
+            <div className="h-6 w-64 bg-slate-200 animate-pulse rounded" />
+            <div className="h-4 w-40 bg-slate-100 animate-pulse rounded mt-1" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-9 w-24 bg-slate-200 animate-pulse rounded" />
+            <div className="h-9 w-20 bg-slate-200 animate-pulse rounded" />
+          </div>
+        </div>
+        {/* Main content area */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 border rounded-lg p-6 space-y-4">
+            <div className="h-6 w-32 bg-slate-200 animate-pulse rounded" />
+            <div className="h-10 w-full bg-slate-200 animate-pulse rounded" />
+            <div className="h-10 w-full bg-slate-200 animate-pulse rounded" />
+            <div className="h-80 w-full bg-slate-200 animate-pulse rounded" />
+            <div className="h-20 w-full bg-slate-200 animate-pulse rounded" />
+          </div>
+          <div className="space-y-4">
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="h-5 w-24 bg-slate-200 animate-pulse rounded" />
+              <div className="h-10 w-full bg-slate-200 animate-pulse rounded" />
+              <div className="h-9 w-full bg-slate-200 animate-pulse rounded" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
