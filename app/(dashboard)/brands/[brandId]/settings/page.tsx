@@ -1,0 +1,655 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { Loader2, Save, Trash2, ExternalLink } from 'lucide-react'
+import { toast } from 'sonner'
+import { BrandContext, BrandTone, HubSpotConfig } from '@/lib/supabase/types'
+
+interface Brand {
+  id: string
+  name: string
+  domain: string
+  subdomain: string
+  verified: boolean
+  auto_publish: boolean
+  context: BrandContext
+}
+
+// Default brand tone values
+const defaultBrandTone: BrandTone = {
+  personality: 'trustworthy' as const,
+  formality: 'professional' as const,
+  technical_level: 'intermediate' as const,
+  audience_type: 'enterprise_buyers' as const,
+  writing_style: 'concise' as const,
+  jargon_usage: 'moderate' as const,
+  custom_notes: '',
+}
+
+// Default HubSpot config
+const defaultHubSpotConfig: HubSpotConfig = {
+  enabled: false,
+  access_token: '',
+  blog_id: '',
+  auto_sync: false,
+}
+
+export default function BrandSettingsPage() {
+  const router = useRouter()
+  const params = useParams()
+  const brandId = params.brandId as string
+  
+  const [brand, setBrand] = useState<Brand | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  
+  // Form state
+  const [name, setName] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [description, setDescription] = useState('')
+  const [products, setProducts] = useState('')
+  const [markets, setMarkets] = useState('')
+  const [features, setFeatures] = useState('')
+  const [certifications, setCertifications] = useState('')
+  const [customers, setCustomers] = useState('')
+  const [founded, setFounded] = useState('')
+  const [headquarters, setHeadquarters] = useState('')
+  const [autoPublish, setAutoPublish] = useState(true)
+  
+  // Brand tone state
+  const [brandTone, setBrandTone] = useState<BrandTone>(defaultBrandTone)
+  
+  // HubSpot integration state
+  const [hubspotConfig, setHubspotConfig] = useState<HubSpotConfig>(defaultHubSpotConfig)
+
+  useEffect(() => {
+    const loadBrand = async () => {
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('id', brandId)
+        .single()
+
+      if (error || !data) {
+        router.push('/dashboard')
+        return
+      }
+
+      setBrand(data)
+      setName(data.name)
+      setAutoPublish(data.auto_publish)
+      
+      const context = data.context as BrandContext
+      if (context) {
+        setCompanyName(context.company_name || '')
+        setDescription(context.description || '')
+        setProducts((context.products || []).join(', '))
+        setMarkets((context.markets || []).join(', '))
+        setFeatures((context.features || []).join(', '))
+        setCertifications((context.certifications || []).join(', '))
+        setCustomers((context.customers || []).join(', '))
+        setFounded(context.founded || '')
+        setHeadquarters(context.headquarters || '')
+        // Load brand tone with defaults
+        setBrandTone({
+          ...defaultBrandTone,
+          ...context.brand_tone,
+        })
+        // Load HubSpot config with defaults
+        setHubspotConfig({
+          ...defaultHubSpotConfig,
+          ...context.hubspot,
+        })
+      }
+      
+      setLoading(false)
+    }
+
+    loadBrand()
+  }, [brandId, router])
+
+  const handleSave = async () => {
+    if (!brand) return
+    
+    setSaving(true)
+    const supabase = createClient()
+
+    const updatedContext: BrandContext = {
+      ...brand.context,
+      company_name: companyName || undefined,
+      description: description || undefined,
+      products: products.split(',').map(p => p.trim()).filter(Boolean),
+      markets: markets.split(',').map(m => m.trim()).filter(Boolean),
+      features: features.split(',').map(f => f.trim()).filter(Boolean),
+      certifications: certifications.split(',').map(c => c.trim()).filter(Boolean),
+      customers: customers.split(',').map(c => c.trim()).filter(Boolean),
+      founded: founded || undefined,
+      headquarters: headquarters || undefined,
+      brand_tone: brandTone,
+      hubspot: hubspotConfig,
+    }
+
+    const { error } = await supabase
+      .from('brands')
+      .update({
+        name,
+        auto_publish: autoPublish,
+        context: updatedContext,
+        context_edited_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', brand.id)
+
+    setSaving(false)
+
+    if (error) {
+      toast.error('Failed to save settings')
+    } else {
+      toast.success('Settings saved')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!brand) return
+    
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this brand? This action cannot be undone.'
+    )
+    
+    if (!confirmed) return
+
+    setDeleting(true)
+    const supabase = createClient()
+
+    const { error } = await supabase
+      .from('brands')
+      .delete()
+      .eq('id', brand.id)
+
+    if (error) {
+      toast.error('Failed to delete brand')
+      setDeleting(false)
+    } else {
+      toast.success('Brand deleted')
+      router.push('/dashboard')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!brand) {
+    return null
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Brand Settings</h1>
+        <p className="text-muted-foreground">
+          Manage settings for {brand.name}
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>General</CardTitle>
+          <CardDescription>Basic brand information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Brand Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Domain</Label>
+            <Input value={brand.domain} disabled />
+            <p className="text-xs text-muted-foreground">
+              Domain cannot be changed after creation
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Subdomain</Label>
+            <Input value={`${brand.subdomain}.contextmemo.com`} disabled />
+            <p className="text-xs text-muted-foreground">
+              Subdomain cannot be changed after creation
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Brand Context</CardTitle>
+          <CardDescription>
+            Edit the extracted context about your brand. Add or correct information AI uses to understand your company.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name</Label>
+              <Input
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Acme Inc."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="founded">Founded</Label>
+              <Input
+                id="founded"
+                value={founded}
+                onChange={(e) => setFounded(e.target.value)}
+                placeholder="2020"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="headquarters">Headquarters</Label>
+            <Input
+              id="headquarters"
+              value={headquarters}
+              onChange={(e) => setHeadquarters(e.target.value)}
+              placeholder="San Francisco, CA"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Brief description of what your company does"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="products">Products & Services</Label>
+            <Input
+              id="products"
+              value={products}
+              onChange={(e) => setProducts(e.target.value)}
+              placeholder="Product 1, Product 2, Product 3"
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated list of products or services
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="features">Key Features</Label>
+            <Input
+              id="features"
+              value={features}
+              onChange={(e) => setFeatures(e.target.value)}
+              placeholder="AI-powered, Real-time analytics, SOC2 compliant"
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated list of notable features or capabilities
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="markets">Target Markets</Label>
+            <Input
+              id="markets"
+              value={markets}
+              onChange={(e) => setMarkets(e.target.value)}
+              placeholder="Enterprise SaaS, Healthcare, Financial Services"
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated list of industries or markets you serve
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customers">Notable Customers</Label>
+            <Input
+              id="customers"
+              value={customers}
+              onChange={(e) => setCustomers(e.target.value)}
+              placeholder="Company A, Company B, Company C"
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated list of notable customers (if public)
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="certifications">Certifications & Awards</Label>
+            <Input
+              id="certifications"
+              value={certifications}
+              onChange={(e) => setCertifications(e.target.value)}
+              placeholder="SOC2, ISO 27001, G2 Leader 2025"
+            />
+            <p className="text-xs text-muted-foreground">
+              Comma-separated list of certifications, compliance, or awards
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Brand Tone</CardTitle>
+          <CardDescription>
+            Configure how your brand communicates. These settings shape the voice and style of generated memos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="personality">Personality</Label>
+              <select
+                id="personality"
+                value={brandTone.personality || 'trustworthy'}
+                onChange={(e) => setBrandTone({ ...brandTone, personality: e.target.value as BrandTone['personality'] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="friendly">Friendly - Warm and approachable</option>
+                <option value="authoritative">Authoritative - Expert and confident</option>
+                <option value="innovative">Innovative - Forward-thinking and creative</option>
+                <option value="approachable">Approachable - Down-to-earth and relatable</option>
+                <option value="bold">Bold - Direct and impactful</option>
+                <option value="trustworthy">Trustworthy - Reliable and credible</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                How your brand&apos;s character comes across
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="formality">Formality</Label>
+              <select
+                id="formality"
+                value={brandTone.formality || 'professional'}
+                onChange={(e) => setBrandTone({ ...brandTone, formality: e.target.value as BrandTone['formality'] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="formal">Formal - Corporate and structured</option>
+                <option value="professional">Professional - Business-appropriate</option>
+                <option value="conversational">Conversational - Natural and engaging</option>
+                <option value="casual">Casual - Relaxed and informal</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Writing register for your content
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="technical_level">Technical Level</Label>
+              <select
+                id="technical_level"
+                value={brandTone.technical_level || 'intermediate'}
+                onChange={(e) => setBrandTone({ ...brandTone, technical_level: e.target.value as BrandTone['technical_level'] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="beginner">Beginner - Explain everything simply</option>
+                <option value="intermediate">Intermediate - Some assumed knowledge</option>
+                <option value="expert">Expert - Technical depth OK</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Assumed knowledge level of your audience
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="audience_type">Audience Type</Label>
+              <select
+                id="audience_type"
+                value={brandTone.audience_type || 'enterprise_buyers'}
+                onChange={(e) => setBrandTone({ ...brandTone, audience_type: e.target.value as BrandTone['audience_type'] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="enterprise_buyers">Enterprise Buyers - Decision makers at large orgs</option>
+                <option value="developers">Developers - Technical practitioners</option>
+                <option value="small_business">Small Business - SMB owners and managers</option>
+                <option value="consumers">Consumers - End users and individuals</option>
+                <option value="technical_decision_makers">Technical Decision Makers - CTOs, VPs of Eng</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Primary persona your content targets
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="writing_style">Writing Style</Label>
+              <select
+                id="writing_style"
+                value={brandTone.writing_style || 'concise'}
+                onChange={(e) => setBrandTone({ ...brandTone, writing_style: e.target.value as BrandTone['writing_style'] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="concise">Concise - Bullet points, short and scannable</option>
+                <option value="detailed">Detailed - Comprehensive and thorough</option>
+                <option value="storytelling">Storytelling - Narrative and engaging</option>
+                <option value="data_driven">Data-Driven - Stats and evidence-focused</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                How content is structured and presented
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="jargon_usage">Industry Jargon</Label>
+              <select
+                id="jargon_usage"
+                value={brandTone.jargon_usage || 'moderate'}
+                onChange={(e) => setBrandTone({ ...brandTone, jargon_usage: e.target.value as BrandTone['jargon_usage'] })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="avoid">Avoid - Plain language, no jargon</option>
+                <option value="moderate">Moderate - Some terms with explanation</option>
+                <option value="embrace">Embrace - Use industry terminology freely</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Whether to use industry-specific terminology
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="custom_notes">Custom Tone Notes</Label>
+            <Textarea
+              id="custom_notes"
+              value={brandTone.custom_notes || ''}
+              onChange={(e) => setBrandTone({ ...brandTone, custom_notes: e.target.value })}
+              rows={3}
+              placeholder="e.g., Avoid using exclamation marks. Always emphasize security. Reference case studies when possible."
+            />
+            <p className="text-xs text-muted-foreground">
+              Additional guidance for AI when generating content (optional)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Memo Settings</CardTitle>
+          <CardDescription>
+            Configure how memos are generated and published
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Auto-publish memos</p>
+              <p className="text-sm text-muted-foreground">
+                Automatically publish generated memos without review
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoPublish}
+                onChange={(e) => setAutoPublish(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>HubSpot Integration</CardTitle>
+          <CardDescription>
+            Push memos directly to your HubSpot blog with one click
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Enable HubSpot</p>
+              <p className="text-sm text-muted-foreground">
+                Connect your HubSpot account to push memos as blog posts
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hubspotConfig.enabled}
+                onChange={(e) => setHubspotConfig({ ...hubspotConfig, enabled: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+          
+          {hubspotConfig.enabled && (
+            <>
+              <Separator />
+              <div className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    <p className="mb-2">To get your HubSpot credentials:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      <li>Go to HubSpot → Settings → Integrations → Private Apps</li>
+                      <li>Create a new Private App with &quot;CMS Blog&quot; read/write scopes</li>
+                      <li>Copy the Access Token</li>
+                      <li>Find your Blog ID from any existing blog post URL or via the API</li>
+                    </ol>
+                    <a 
+                      href="https://developers.hubspot.com/docs/api/private-apps" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline mt-2"
+                    >
+                      HubSpot Private Apps Documentation
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hubspot_token">Access Token</Label>
+                  <Input
+                    id="hubspot_token"
+                    type="password"
+                    value={hubspotConfig.access_token || ''}
+                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, access_token: e.target.value })}
+                    placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your HubSpot Private App access token
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hubspot_blog_id">Blog ID (content_group_id)</Label>
+                  <Input
+                    id="hubspot_blog_id"
+                    value={hubspotConfig.blog_id || ''}
+                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
+                    placeholder="123456789"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The ID of the HubSpot blog to post to. Find this in your blog settings or via the API.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div>
+                    <p className="font-medium">Auto-sync to HubSpot</p>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically push memos to HubSpot when published
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hubspotConfig.auto_sync || false}
+                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, auto_sync: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-4">
+        <Button variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Save className="mr-2 h-4 w-4" />
+          Save Changes
+        </Button>
+      </div>
+
+      <Separator />
+
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>
+            Irreversible actions for this brand
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertDescription>
+              Deleting this brand will remove all memos, queries, scan results, 
+              and competitors. This action cannot be undone.
+            </AlertDescription>
+          </Alert>
+          <Button 
+            variant="destructive" 
+            className="mt-4"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Brand
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
