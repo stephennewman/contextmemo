@@ -34,7 +34,7 @@ export default function BrandPageLoading() {
         {/* Other stat cards */}
         {[
           { color: '#8B5CF6', label: 'MEMOS' },
-          { color: '#10B981', label: 'QUERIES' },
+          { color: '#10B981', label: 'PROMPTS' },
           { color: '#F59E0B', label: 'SCANS' },
         ].map((stat, i) => (
           <div key={i} className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: `8px solid ${stat.color}` }}>

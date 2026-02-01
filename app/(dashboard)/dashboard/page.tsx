@@ -138,7 +138,7 @@ export default async function DashboardPage() {
                 <div className="p-4" style={{ borderLeft: '8px solid #10B981' }}>
                   <div className="flex items-center gap-2 mb-1">
                     <Search className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-zinc-500">QUERIES</span>
+                    <span className="text-xs font-bold text-zinc-500">PROMPTS</span>
                   </div>
                   <p className="text-3xl font-bold text-[#0F172A]">{brand.queries?.[0]?.count || 0}</p>
                 </div>

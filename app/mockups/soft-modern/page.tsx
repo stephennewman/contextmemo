@@ -249,7 +249,7 @@ export default function SoftModernMockup() {
               </div>
             </div>
             <div className="text-3xl font-bold text-slate-800">24</div>
-            <div className="text-sm text-slate-500">Queries tracked</div>
+            <div className="text-sm text-slate-500">Prompts tracked</div>
           </div>
 
           <div 

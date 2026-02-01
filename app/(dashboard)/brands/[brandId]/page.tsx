@@ -221,7 +221,7 @@ export default async function BrandPage({ params }: Props) {
           <div className="text-sm text-zinc-500">published</div>
         </div>
         <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
-          <span className="text-xs font-bold tracking-widest text-zinc-500">QUERIES</span>
+          <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
           <div className="text-4xl font-bold text-[#0F172A] mt-1">{queries?.length || 0}</div>
           <div className="text-sm text-zinc-500">tracked</div>
         </div>
@@ -289,7 +289,7 @@ export default async function BrandPage({ params }: Props) {
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div className="p-3 bg-muted rounded-lg">
                     <div className="text-2xl font-semibold">{discoveryResults.totalQueries}</div>
-                    <div className="text-xs text-muted-foreground">Queries tested</div>
+                    <div className="text-xs text-muted-foreground">Prompts tested</div>
                   </div>
                   <div className="p-3 bg-muted rounded-lg">
                     <div className="text-2xl font-semibold">{discoveryResults.totalMentions}</div>
@@ -301,10 +301,10 @@ export default async function BrandPage({ params }: Props) {
                   </div>
                 </div>
 
-                {/* Winning Queries */}
+                {/* Winning Prompts */}
                 {discoveryResults.winningQueries && discoveryResults.winningQueries.length > 0 && (
                   <div>
-                    <h4 className="font-medium mb-2 text-green-600">Winning Queries (Brand Mentioned)</h4>
+                    <h4 className="font-medium mb-2 text-green-600">Winning Prompts (Brand Mentioned)</h4>
                     <div className="space-y-2">
                       {discoveryResults.winningQueries.slice(0, 5).map((q, i) => (
                         <div key={i} className="p-3 border border-green-200 bg-green-50 dark:bg-green-950/20 rounded-lg">
@@ -323,10 +323,10 @@ export default async function BrandPage({ params }: Props) {
                   </div>
                 )}
 
-                {/* Failed Queries */}
+                {/* Failed Prompts */}
                 {discoveryResults.sampleFailures && discoveryResults.sampleFailures.length > 0 && (
                   <div>
-                    <h4 className="font-medium mb-2 text-red-600">Queries Where Not Mentioned (samples)</h4>
+                    <h4 className="font-medium mb-2 text-red-600">Prompts Where Not Mentioned (samples)</h4>
                     <div className="space-y-1">
                       {discoveryResults.sampleFailures.slice(0, 5).map((q, i) => (
                         <div key={i} className="p-2 text-sm text-muted-foreground border rounded">
@@ -499,7 +499,9 @@ export default async function BrandPage({ params }: Props) {
             stats={searchConsoleStats || []}
             queries={queries || []}
             bingEnabled={!!(context?.search_console?.bing?.enabled && context?.search_console?.bing?.api_key)}
-            lastSyncedAt={context?.search_console?.bing?.last_synced_at}
+            bingLastSyncedAt={context?.search_console?.bing?.last_synced_at}
+            googleEnabled={!!(context?.search_console?.google?.enabled && context?.search_console?.google?.refresh_token)}
+            googleLastSyncedAt={context?.search_console?.google?.last_synced_at}
           />
         </TabsContent>
       </Tabs>

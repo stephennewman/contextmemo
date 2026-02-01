@@ -181,7 +181,7 @@ function GroupedScanCard({ group }: { group: GroupedScan }) {
           <div className="flex items-center gap-2 mb-1">
             <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
             <p className="font-medium">
-              &quot;{group.query?.query_text || 'Unknown query'}&quot;
+              &quot;{group.query?.query_text || 'Unknown prompt'}&quot;
             </p>
             {group.isBranded && (
               <Badge variant="outline" className="text-xs shrink-0">
@@ -295,7 +295,7 @@ export function ScanResultsView({ scanResults, queries, brandName }: ScanResults
               {mentionedCount} of {totalScans} scans mention you
               {brandedCount > 0 && (
                 <span className="block text-muted-foreground/70">
-                  ({brandedCount} branded query scans excluded)
+                  ({brandedCount} branded prompt scans excluded)
                 </span>
               )}
             </p>
@@ -343,14 +343,14 @@ export function ScanResultsView({ scanResults, queries, brandName }: ScanResults
             ))}
             {groupedScans.length > 50 && (
               <p className="text-center text-sm text-muted-foreground py-2">
-                Showing 50 of {groupedScans.length} query results
+                Showing 50 of {groupedScans.length} prompt results
               </p>
             )}
           </div>
         ) : (
           <p className="text-muted-foreground text-sm py-8 text-center">
             {scanResults.length === 0 
-              ? 'No scans yet. Run a scan to see how AI models respond to queries about your industry.'
+              ? 'No scans yet. Run a scan to see how AI models respond to prompts about your industry.'
               : 'No results match your filters.'}
           </p>
         )}

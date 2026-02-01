@@ -177,6 +177,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Bing Webmaster sync started' 
         })
 
+      case 'sync_google':
+        // Sync Google Search Console data
+        await inngest.send({
+          name: 'google-search-console/sync',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Google Search Console sync started' 
+        })
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

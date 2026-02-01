@@ -168,7 +168,7 @@ export default function BoldMonochromeMockup() {
           >
             <div className="flex items-center gap-3 mb-3">
               <Search className="w-6 h-6" strokeWidth={2.5} />
-              <span className="text-xs font-bold tracking-widest text-zinc-500">QUERIES</span>
+              <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
             </div>
             <div className="text-6xl font-bold text-black tracking-tighter">24</div>
             <div className="text-sm font-medium text-zinc-500 mt-1">TRACKED</div>

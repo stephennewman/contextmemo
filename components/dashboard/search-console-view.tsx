@@ -39,7 +39,9 @@ interface SearchConsoleViewProps {
   stats: SearchConsoleStat[]
   queries: Query[]  // Generated queries to compare against
   bingEnabled: boolean
-  lastSyncedAt?: string
+  bingLastSyncedAt?: string
+  googleEnabled: boolean
+  googleLastSyncedAt?: string
 }
 
 export function SearchConsoleView({ 
@@ -47,12 +49,15 @@ export function SearchConsoleView({
   stats, 
   queries,
   bingEnabled,
-  lastSyncedAt 
+  bingLastSyncedAt,
+  googleEnabled,
+  googleLastSyncedAt
 }: SearchConsoleViewProps) {
-  const [syncing, setSyncing] = useState(false)
+  const [syncingBing, setSyncingBing] = useState(false)
+  const [syncingGoogle, setSyncingGoogle] = useState(false)
 
-  const handleSync = async () => {
-    setSyncing(true)
+  const handleBingSync = async () => {
+    setSyncingBing(true)
     try {
       const response = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
@@ -68,9 +73,34 @@ export function SearchConsoleView({
     } catch {
       toast.error('Failed to start Bing sync')
     } finally {
-      setSyncing(false)
+      setSyncingBing(false)
     }
   }
+
+  const handleGoogleSync = async () => {
+    setSyncingGoogle(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_google' }),
+      })
+
+      if (response.ok) {
+        toast.success('Google sync started - data will update shortly')
+      } else {
+        toast.error('Failed to start Google sync')
+      }
+    } catch {
+      toast.error('Failed to start Google sync')
+    } finally {
+      setSyncingGoogle(false)
+    }
+  }
+
+  // Separate stats by provider
+  const bingStats = stats.filter(s => s.provider === 'bing')
+  const googleStats = stats.filter(s => s.provider === 'google')
 
   // Group stats by query and aggregate
   const queryAggregates = new Map<string, {
@@ -126,14 +156,16 @@ export function SearchConsoleView({
     !matchedQueries.includes(q) && q.totalImpressions >= 10
   ).slice(0, 10)
 
-  if (!bingEnabled) {
+  const hasAnyProvider = bingEnabled || googleEnabled
+
+  if (!hasAnyProvider) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
           <Search className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
           <h3 className="font-medium mb-2">Search Console Not Configured</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Connect Bing Webmaster Tools to see which search queries drive traffic to your memos.
+            Connect Bing Webmaster or Google Search Console to see which queries drive traffic to your memos.
           </p>
           <Button variant="outline" asChild>
             <a href={`/brands/${brandId}/settings`}>
@@ -147,34 +179,56 @@ export function SearchConsoleView({
 
   return (
     <div className="space-y-4">
-      {/* Header with sync button */}
+      {/* Header with sync buttons */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold">Search Console Data</h3>
           <p className="text-sm text-muted-foreground">
-            Queries driving traffic from Bing (ChatGPT uses Bing for real-time search)
+            Queries driving traffic from search engines (upstream signal for AI visibility)
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {lastSyncedAt && (
-            <span className="text-xs text-muted-foreground">
-              Last synced: {new Date(lastSyncedAt).toLocaleDateString()}
-            </span>
+          {bingEnabled && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBingSync}
+              disabled={syncingBing}
+            >
+              {syncingBing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="ml-2">Bing</span>
+            </Button>
           )}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSync}
-            disabled={syncing}
-          >
-            {syncing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            <span className="ml-2">Sync</span>
-          </Button>
+          {googleEnabled && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleGoogleSync}
+              disabled={syncingGoogle}
+            >
+              {syncingGoogle ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="ml-2">Google</span>
+            </Button>
+          )}
         </div>
+      </div>
+
+      {/* Provider status */}
+      <div className="flex gap-4 text-xs text-muted-foreground">
+        {bingEnabled && (
+          <span>Bing: {bingLastSyncedAt ? `synced ${new Date(bingLastSyncedAt).toLocaleDateString()}` : 'not synced'}</span>
+        )}
+        {googleEnabled && (
+          <span>Google: {googleLastSyncedAt ? `synced ${new Date(googleLastSyncedAt).toLocaleDateString()}` : 'not synced'}</span>
+        )}
       </div>
 
       {stats.length === 0 ? (

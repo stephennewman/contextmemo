@@ -207,7 +207,7 @@ export default function BoldSportMockup() {
 
           {/* Metric cards */}
           {[
-            { label: 'QUERIES', value: '24', sub: 'TRACKED', icon: Search },
+            { label: 'PROMPTS', value: '24', sub: 'TRACKED', icon: Search },
             { label: 'MEMOS', value: '3', sub: 'PUBLISHED', icon: FileText },
             { label: 'ALERTS', value: '2', sub: 'UNREAD', icon: AlertCircle },
           ].map((item, i) => (
@@ -254,7 +254,7 @@ export default function BoldSportMockup() {
             {[
               { label: 'AVG POSITION', value: '#3' },
               { label: 'MENTIONS TODAY', value: '12' },
-              { label: 'TOP QUERY', value: '"best tools"' },
+              { label: 'TOP PROMPT', value: '"best tools"' },
               { label: 'WIN RATE', value: '67%' },
             ].map((stat, i) => (
               <div key={i} className="flex items-center gap-3">

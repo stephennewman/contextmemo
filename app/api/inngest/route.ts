@@ -23,6 +23,7 @@ import {
   dailyBrandScan,
 } from '@/lib/inngest/functions/daily-run'
 import { bingSync, bingWeeklySync } from '@/lib/inngest/functions/bing-sync'
+import { googleSearchConsoleSync, googleWeeklySync } from '@/lib/inngest/functions/google-search-console-sync'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -54,5 +55,7 @@ export const { GET, POST, PUT } = serve({
     // Search Console integrations
     bingSync,               // Sync Bing Webmaster data for a brand
     bingWeeklySync,         // Weekly sync for all brands - Sundays 8 AM UTC
+    googleSearchConsoleSync, // Sync Google Search Console data for a brand
+    googleWeeklySync,        // Weekly sync for all brands - Sundays 9 AM UTC
   ],
 })

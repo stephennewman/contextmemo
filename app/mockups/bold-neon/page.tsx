@@ -245,7 +245,7 @@ export default function BoldNeonMockup() {
 
           {/* Metric cards */}
           {[
-            { label: 'QUERIES', value: '24', sub: 'TRACKED', icon: Search, gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)' },
+            { label: 'PROMPTS', value: '24', sub: 'TRACKED', icon: Search, gradient: 'linear-gradient(135deg, #06B6D4, #0891B2)' },
             { label: 'MEMOS', value: '3', sub: 'PUBLISHED', icon: FileText, gradient: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' },
             { label: 'ALERTS', value: '2', sub: 'UNREAD', icon: AlertCircle, gradient: 'linear-gradient(135deg, #F43F5E, #E11D48)' },
           ].map((item, i) => (

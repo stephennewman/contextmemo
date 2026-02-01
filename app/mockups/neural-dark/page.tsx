@@ -273,7 +273,7 @@ export default function NeuralDarkMockup() {
 
           {/* Metric cards */}
           {[
-            { label: 'Queries', value: '24', sub: 'tracked', icon: Search, color: '#06B6D4' },
+            { label: 'Prompts', value: '24', sub: 'tracked', icon: Search, color: '#06B6D4' },
             { label: 'Memos', value: '3', sub: 'published', icon: FileText, color: '#A855F7' },
             { label: 'Alerts', value: '2', sub: 'unread', icon: AlertCircle, color: '#F97316' },
           ].map((item, i) => (

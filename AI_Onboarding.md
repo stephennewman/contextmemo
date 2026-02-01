@@ -1,317 +1,294 @@
-# Context Memo - AI Onboarding Document
+# Context Memo - Project Documentation
 
-## Project Overview
+> **Last Updated:** February 1, 2026  
+> **Version:** 0.8.0  
+> **Status:** MVP Complete + Active Development
 
-**Product:** Context Memo - A platform that creates factual reference memos about brands, ensuring AI search engines have accurate, citable information to recommend them.
+---
 
-**Tagline:** "The facts AI needs to recommend you"
+## What is Context Memo?
 
-**Status:** MVP Complete - Ready for testing
+**Context Memo** is a B2B SaaS platform that helps brands become visible in AI-powered search engines (ChatGPT, Claude, Perplexity, Gemini). It automatically creates factual, citable reference content about brands that AI models can use when answering user queries.
+
+### The Problem We Solve
+
+When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How do I automate marketing workflows?", AI models generate answers based on their training data and available web content. Brands that aren't represented with clear, factual content get overlooked.
+
+### How It Works
+
+1. **Brand Context Extraction** - AI scans your website to extract verified facts
+2. **Competitor Discovery** - Identifies who you compete with
+3. **Query Generation** - Creates high-intent prompts your buyers actually ask
+4. **AI Visibility Scanning** - Tests if AI models mention you for those queries
+5. **Memo Generation** - Creates factual content filling the gaps
+6. **Continuous Monitoring** - Daily automation keeps everything current
+
+### Target Audience
+
+- **B2B Marketers** managing brand visibility
+- **Product Marketers** positioning against competitors
+- **Content Teams** scaling AI-optimized content
+- **Growth Teams** tracking AI as a discovery channel
 
 ---
 
 ## Tech Stack
 
-| Component | Technology | Status |
-|-----------|------------|--------|
-| Frontend | Next.js 16.1.6 + React 19 + Tailwind CSS 4 | ✅ Complete |
-| UI Components | shadcn/ui | ✅ Complete |
-| Database | Supabase (Postgres) - Project ID: ncrclfpiremxmqpvmavx | ✅ Complete |
-| Auth | Supabase Auth with email verification + domain verification | ✅ Complete |
-| Job Queue | Inngest | ✅ Complete |
-| AI Providers | OpenAI + Anthropic + OpenRouter (Gemini, Llama, Mistral, Perplexity) | ✅ Complete |
-| Web Scraping | Jina Reader API | ✅ Complete |
-| Hosting | Vercel | ✅ Pushed to GitHub (awaiting Vercel connection) |
-| Payments | Stripe | ⏳ Not configured (post-MVP) |
+| Component | Technology | Version/Details |
+|-----------|------------|-----------------|
+| Frontend | Next.js + React + Tailwind CSS | 16.1.6 / 19.2.3 / 4.x |
+| UI Components | shadcn/ui | Latest |
+| Database | Supabase (Postgres) | Project: ncrclfpiremxmqpvmavx |
+| Auth | Supabase Auth | Email verification + domain verification |
+| Job Queue | Inngest | v3.50.0 |
+| AI Providers | OpenAI, Anthropic, OpenRouter | GPT-4o, Claude, Gemini, Llama, Mistral, Perplexity |
+| Web Scraping | Jina Reader API | - |
+| Hosting | Vercel | Connected to GitHub main |
+| Payments | Stripe | ⏳ Planned |
 
 ---
 
-## Current State
+## Key Features
 
-### Completed Features
-- Landing page with product explanation and pricing
-- User authentication (signup/login with work email + email verification)
-- Email verification flow with confirmation emails
+### Core Platform
+- Landing page with early adopter pricing model
+- User authentication (work email + email verification)
 - Brand creation with email domain verification
-- Dashboard with visibility scores
-- Brand detail page with stats and tabs
-- Settings page for brand management
+- Dashboard with visibility scores and trends
+- Brand detail page with stats, prompts, memos, and settings
+- Public memo pages (`[subdomain].contextmemo.com`)
+
+### AI Visibility Monitoring
+- **6 AI models scanned**: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar
+- Visibility score tracking over time
+- Win/tie/loss analysis vs competitors
+
+### Competitive Intelligence
+- Auto-discovered competitors
+- Share-of-voice analysis across all scans
+- "Queries to improve" recommendations
+- Competitor content monitoring (blogs/articles)
+- Auto-generated response content
+
+### Search Console Integrations
+- **Bing Webmaster API**: Shows ChatGPT's discovery pathway
+- **Google Search Console**: Shows Google AI Overviews pathway
+- Query correlation with AI prompts
+- Opportunity detection
+
+### Content Automation
+- **Memo Types**: Comparison, industry guide, how-to, alternative, response
+- Persona-based targeting (B2B Marketer, Developer, Product Leader, Enterprise Buyer, SMB Owner, Student)
+- Brand tone customization
+- Automated internal backlinking
+- Daily refresh cycles
+
+---
+
+## Architecture
 
 ### Background Jobs (Inngest)
 
-**Core Workflow:**
-- `context/extract` - Crawls website, extracts brand context using Jina + GPT-4 (now stores raw homepage content)
-- `competitor/discover` - Identifies competitors using AI
-- `query/generate` - Generates search queries (high-intent buyer queries + intent-based queries from homepage)
-- `scan/run` - Queries OpenAI and Anthropic to check brand mentions (supports `autoGenerateMemos` flag)
-- `memo/generate` - Creates factual memos (comparison, industry, how-to, alternative) → auto-triggers backlinking
-- `discovery/scan` - Tests 50+ query variations to find WHERE the brand IS being mentioned (baseline discovery)
+| Function | Description |
+|----------|-------------|
+| `context/extract` | Crawls website, extracts brand context using Jina + GPT-4 |
+| `competitor/discover` | Identifies competitors using AI |
+| `query/generate` | Generates high-intent buyer queries from homepage content |
+| `scan/run` | Queries 6 AI models to check brand mentions |
+| `memo/generate` | Creates factual memos → auto-triggers backlinking |
+| `discovery/scan` | Tests 50+ query variations for baseline discovery |
+| `memo/backlink` | Injects contextual internal links into memos |
+| `memo/batch-backlink` | Updates all memos for a brand |
+| `competitor/content-scan` | Daily scan of competitor blogs/RSS |
+| `competitor/content-classify` | AI classifies and filters content |
+| `competitor/content-respond` | Generates response content |
+| `google-search-console/sync` | Syncs GSC data weekly |
+| `bing/sync` | Syncs Bing Webmaster data weekly |
+| `daily/run` | Main scheduler (6 AM ET) |
 
-**Backlinking Automation:**
-- `memo/backlink` - Injects contextual internal links into a single memo + adds "Related Reading" section
-- `memo/batch-backlink` - Updates all memos for a brand (triggered after new memo creation)
-- `dailyBacklinkRefresh` - Runs at 7 AM UTC, refreshes backlinks for brands with new content in last 24 hours
+### Automation Schedule
 
-**Competitor Content Intelligence (NEW):**
-- `competitor/content-scan` - Daily scan of competitor blogs/RSS for new content
-- `competitor/content-classify` - AI classifies content type and filters (skips press releases, feature announcements, company news)
-- `competitor/content-respond` - Generates response content with brand's tone/context and auto-publishes
-
-**Daily Automation (runs at 6 AM ET):**
-- `daily/run` - **Main scheduler** - Analyzes all brands and triggers appropriate workflows:
-  - **Full Refresh** (weekly): Brands with stale context → context/extract → competitor/discover → query/generate → scan/run
-  - **Update** (weekly): Brands needing new competitors/queries → competitor/discover → query/generate → scan/run  
-  - **Scan Only** (daily): Up-to-date brands → scan/run with auto memo generation
-  - **Content Intelligence** (daily): Scans competitor sites → classifies → auto-generates response articles
-- `daily/brand-full-refresh` - Complete re-extraction and discovery pipeline
-- `daily/brand-update` - Weekly competitor/query refresh
-- `daily/brand-scan` - Daily visibility scan + auto memo generation
-
-**Automation Schedule:**
-| Task | Frequency | Trigger Condition |
-|------|-----------|-------------------|
+| Task | Frequency | Trigger |
+|------|-----------|---------|
 | Context refresh | Weekly | Context older than 7 days |
 | Competitor discovery | Weekly | No new competitors in 7 days |
 | Query generation | Weekly | No new queries in 7 days |
 | Visibility scan | Daily | No scan in 24 hours |
 | Memo generation | On-demand | Gaps detected in scans |
 | Competitor content scan | Daily | Part of daily run |
-| Response content generation | Daily | New educational/industry content from competitors |
+| Search console sync | Weekly | Sundays 9 AM UTC |
 
 ### API Routes
-- `/api/inngest` - Inngest webhook endpoint
-- `/api/brands/[brandId]/actions` - Trigger background jobs
-- `/auth/callback` - Handle email verification links from Supabase
 
-### Public Memo Pages
-- `/memo/[subdomain]/` - Brand memo index
-- `/memo/[subdomain]/[...slug]` - Individual memo pages
+| Route | Purpose |
+|-------|---------|
+| `/api/inngest` | Inngest webhook endpoint |
+| `/api/brands/[brandId]/actions` | Trigger background jobs |
+| `/api/auth/google-search-console/*` | GSC OAuth flow |
+| `/auth/callback` | Email verification links |
+
+### Database Schema
+
+| Table | Description |
+|-------|-------------|
+| `tenants` | User accounts |
+| `brands` | Brand profiles with context |
+| `competitors` | Discovered competitors |
+| `competitor_content` | Tracked competitor articles |
+| `queries` | Search prompts to monitor |
+| `scan_results` | AI scan results |
+| `memos` | Generated context memos |
+| `memo_versions` | Version history |
+| `search_console_stats` | Bing/Google search data |
+| `alerts` | User notifications |
 
 ---
 
-## Database Schema
+## Environment Variables
 
-Tables created in Supabase:
-- `tenants` - User accounts
-- `brands` - Brand profiles with context
-- `competitors` - Discovered competitors
-- `competitor_content` - Tracked competitor articles (NEW)
-- `queries` - Search queries to monitor
-- `scan_results` - AI scan results
-- `memos` - Generated context memos (now includes `source_competitor_content_id` for response memos)
-- `memo_versions` - Version history
-- `alerts` - User notifications
-
----
-
-## Environment Variables Required
-
-```
+```env
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://ncrclfpiremxmqpvmavx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[set]
 SUPABASE_SERVICE_ROLE_KEY=[required for background jobs]
+
+# AI Providers
 OPENAI_API_KEY=[required]
 ANTHROPIC_API_KEY=[required]
+OPENROUTER_API_KEY=[required for multi-model]
+
+# Inngest
 INNGEST_SIGNING_KEY=[required for production]
 INNGEST_EVENT_KEY=[required for production]
+
+# Google Search Console (OAuth)
+GOOGLE_CLIENT_ID=[for GSC integration]
+GOOGLE_CLIENT_SECRET=[for GSC integration]
 ```
 
 ---
 
-## Activity Log
+## File Structure
 
-| Date | Activity | Details |
-|------|----------|---------|
-| Feb 1, 2026 | **Bing Webmaster Integration** | Search console integration showing which Bing queries drive traffic to memos. New settings panel for API key, Inngest sync function (`bing/sync`, `bing-weekly-sync`), Search tab on brand page with query correlation and opportunities. New table: `search_console_stats`. |
-| Feb 1, 2026 | **Competitive Intelligence Dashboard** | New share-of-voice analysis showing which competitors win queries vs brand. Tracks wins/ties/losses across all scans. Shows "queries to improve" where competitors beat brand. Visual progress bars for share of voice. |
-| Feb 1, 2026 | **Competitor Content Intelligence** | Daily scan of competitor blogs/content, AI classification (filters press releases, feature announcements), auto-generates response articles with brand's tone, auto-publishes to resources page. New `competitor_content` table, `memo_type: 'response'`. |
-| Feb 1, 2026 | **Persona-based prompt system** | Renamed queries → prompts throughout UI. Added 6 persona types (B2B Marketer, Developer, Product Leader, Enterprise Buyer, SMB Owner, Student). **Personas now extracted from brand website analysis** - context extraction identifies target personas based on signals (API docs = developer, SOC 2 = enterprise, etc.). Prompts generated only for brand's relevant personas. |
-| Feb 1, 2026 | **OpenRouter multi-model scanning** | Expanded AI model coverage via OpenRouter: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar. Visibility chart updated to show all 6 models. |
-| Feb 1, 2026 | **External credibility signals** | Added `/about/editorial` guidelines page, `/ai.txt` for AI crawler permissions, enhanced Schema.org with `sameAs` links to LinkedIn/Crunchbase/Wikipedia, social_links support in BrandContext. |
-| Feb 1, 2026 | **Automated backlinking system** | New continuous backlinking: auto-runs after memo generation, daily refresh at 7 AM UTC, injects contextual links + "Related Reading" section. Functions: `memo/backlink`, `memo/batch-backlink`, `dailyBacklinkRefresh`. |
-| Jan 31, 2026 | **High-intent query generation + Discovery scan** | Added intent-based query generation from homepage content, filtering for buyer signals. New Discovery Scan feature tests 50+ query variations to find where brand IS being mentioned. |
-| Jan 31, 2026 | **Subdomain link fix** | Fixed link generation to use relative paths on subdomain access, preventing double-rewrite 404 errors |
-| Jan 31, 2026 | **Subdomain routing fix** | Improved middleware to check x-forwarded-host for Vercel, better subdomain detection. Requires Vercel wildcard domain config (`*.contextmemo.com`) |
-| Jan 31, 2026 | **Deployed to GitHub** | Complete MVP with daily automation pushed to production |
-| Jan 31, 2026 | **Comprehensive Daily Automation** | Smart scheduling: weekly context refresh, competitor discovery, query generation; daily scans; auto memo generation for gaps; visibility trend tracking |
-| Jan 31, 2026 | Brand Tone feature added | Comprehensive brand tone system for memo generation - personality, formality, technical level, audience type, writing style, jargon usage, custom notes |
-| Jan 31, 2026 | Project initialized | Fresh Next.js 16 + React 19 + Tailwind CSS 4 setup |
-| Jan 31, 2026 | Supabase project created | Project ID: ncrclfpiremxmqpvmavx, Region: us-east-1 |
-| Jan 31, 2026 | Database schema applied | Created all tables with RLS policies |
-| Jan 31, 2026 | Auth system built | Signup/login with work email domain verification |
-| Jan 31, 2026 | Dashboard created | Brand cards with visibility scores, stats |
-| Jan 31, 2026 | Inngest jobs implemented | Context extraction, competitor discovery, query generation, scanning, memo generation |
-| Jan 31, 2026 | Public memo pages | Subdomain-based routing with markdown rendering |
-| Jan 31, 2026 | Landing page | Modern landing page with pricing and features |
-| Jan 31, 2026 | MVP build successful | All TypeScript compiles, ready for deployment |
-| Jan 31, 2026 | Email verification implemented | Added email confirmation flow: auth callback, verify-email page, middleware enforcement |
+```
+app/
+├── (auth)/           # Login, signup, verify-email
+├── (dashboard)/      # Protected dashboard routes
+│   ├── dashboard/    # Main dashboard
+│   └── brands/       # Brand management
+├── api/              # API routes
+├── memo/             # Public memo pages
+└── mockups/          # Design mockups
+
+components/
+├── dashboard/        # Dashboard-specific components
+└── ui/               # shadcn/ui components
+
+lib/
+├── ai/prompts/       # AI prompt templates
+├── inngest/          # Background job functions
+├── supabase/         # Database client & types
+└── utils/            # Helper utilities
+```
+
+---
+
+## Current Status
+
+### Completed ✅
+- [x] Core platform (auth, dashboard, brand management)
+- [x] Multi-model AI scanning (6 models)
+- [x] Automated memo generation
+- [x] Competitive intelligence dashboard
+- [x] Search console integrations (Bing + Google)
+- [x] Competitor content intelligence
+- [x] Persona-based targeting
+- [x] Daily automation pipeline
+- [x] Vercel deployment
+
+### In Progress 🔄
+- [ ] Production environment variables setup
+- [ ] Custom domain configuration (contextmemo.com)
+
+### Planned 📋
+- [ ] Stripe billing integration
+- [ ] Email notifications for visibility changes
+- [ ] Additional memo templates (best-of, what-is)
+- [ ] Team/organization features
 
 ---
 
 ## Problems & Opportunities
 
-### Current Problems (Post-MVP)
-| Problem | Score | Description |
-|---------|-------|-------------|
-| No Stripe integration | 75 | Cannot collect payments - needed before public launch |
-| ~~DB migration: search_console_stats~~ | ~~75~~ | ✅ APPLIED - Table created with indexes |
-| ~~DB migration needed: persona column~~ | ~~70~~ | ✅ APPLIED - `persona TEXT` column added to queries table |
-| Missing SUPABASE_SERVICE_ROLE_KEY | 70 | Background jobs need this key for admin access |
-| No Inngest production keys | 65 | Need to configure Inngest for production |
-| ~~No email confirmation~~ | ~~50~~ | ✅ RESOLVED - Email verification now required |
+### Active Issues
 
-**search_console_stats table migration (run in Supabase SQL editor):**
-```sql
-create table search_console_stats (
-  id uuid default gen_random_uuid() primary key,
-  brand_id uuid references brands(id) on delete cascade,
-  provider text not null,
-  query text not null,
-  page_url text,
-  impressions integer default 0,
-  clicks integer default 0,
-  position decimal,
-  ctr decimal,
-  date date not null,
-  synced_at timestamptz default now(),
-  unique(brand_id, provider, query, date)
-);
+| Issue | Priority | Status |
+|-------|----------|--------|
+| Stripe not configured | High | Blocks monetization |
+| Production Inngest keys needed | High | For production jobs |
+| Service role key needed | High | For background jobs |
 
-create index idx_search_stats_brand on search_console_stats(brand_id, date desc);
-create index idx_search_stats_query on search_console_stats(query);
-```
+### Opportunities (Scored 0-100)
 
-### High-Value Opportunities
-| Opportunity | Score | Description |
-|-------------|-------|-------------|
-| **Search Console Integrations** | 90 | Upstream signal for AI visibility. Bing (ChatGPT) + Google (AI Overviews). See API docs below. |
-| Vercel deployment | 90 | Deploy to production with custom domain |
-| Add Google Gemini scanning | 75 | Third AI model for more comprehensive coverage |
-| ~~Scheduled scans~~ | ~~70~~ | ✅ IMPLEMENTED - Daily automation at 6 AM ET |
-| Email notifications | 65 | Alert users when visibility changes |
-| Memo templates | 60 | More memo types (best-of, what-is) |
-
-### Search Console API Integrations (Documented Feb 1, 2026)
-
-**Why it matters:** 
-- ChatGPT uses **Bing** for real-time RAG → Bing Webmaster data shows discoverability
-- Google AI Overviews uses **Google** → GSC data shows discoverability
-- Both show which queries a brand's memo pages appear for in search - the **upstream signal** for AI visibility
+| Opportunity | Score | Impact |
+|-------------|-------|--------|
+| Stripe billing | 95 | Revenue enablement |
+| Email notifications | 70 | User engagement |
+| Team features | 65 | Enterprise expansion |
+| More memo types | 60 | Content depth |
+| API access for brands | 55 | Developer market |
 
 ---
 
-#### Bing Webmaster API
+## Quick Reference
 
-**Endpoint:**
+### Local Development
+
+```bash
+# Start dev server
+npm run dev
+
+# Start Inngest dev server (separate terminal)
+npm run dev:inngest
+
+# Build for production
+npm run build
 ```
-POST https://ssl.bing.com/webmaster/api.svc/json/GetQueryStats?siteUrl=URL&apikey=KEY
+
+### Key URLs
+
+| Environment | URL |
+|-------------|-----|
+| Local | http://localhost:3000 |
+| Production | https://contextmemo.com |
+| Inngest Dashboard | https://app.inngest.com |
+| Supabase Dashboard | https://supabase.com/dashboard/project/ncrclfpiremxmqpvmavx |
+| Vercel Dashboard | https://vercel.com |
+
+### Useful Commands
+
+```bash
+# Trigger brand scan manually (via Inngest dev)
+curl -X POST http://localhost:8288/e/context/scan/run \
+  -d '{"data": {"brandId": "uuid-here"}}'
+
+# Check recent git history
+git log --oneline -10
 ```
-
-**Response:** Query, Impressions, Clicks, AvgImpressionPosition, Date
-
-**Authentication:** Simple API key from Bing Webmaster Tools > Settings > API Access
-
-**Limitations:**
-- No date range filtering (returns all data every time)
-- Weekly buckets only (Saturdays)
-- One API key per user (works for all verified sites)
 
 ---
 
-#### Google Search Console API
+## Changelog
 
-**Endpoint:**
-```
-POST https://www.googleapis.com/webmasters/v3/sites/{siteUrl}/searchAnalytics/query
-
-Body: {
-  "startDate": "2026-01-01",
-  "endDate": "2026-01-31",
-  "dimensions": ["query", "page", "date"],
-  "rowLimit": 1000
-}
-```
-
-**Response:** For each row: keys[], clicks, impressions, ctr, position
-
-**Authentication:** OAuth 2.0 (more complex)
-- Requires Google Cloud project
-- OAuth consent screen setup
-- Service account or user authorization flow
-- Scopes: `webmasters.readonly` or `webmasters`
-
-**Advantages over Bing:**
-- Date range filtering
-- More granular dimensions (country, device, searchAppearance)
-- Larger data limits (25k rows per request)
-- Filter by specific pages (memo URLs)
+See [CHANGELOG.md](./CHANGELOG.md) for detailed version history and deployment notes.
 
 ---
 
-#### Combined Implementation Plan
+## Contributing
 
-**Database:**
-```sql
-create table search_console_stats (
-  id uuid default gen_random_uuid() primary key,
-  brand_id uuid references brands(id),
-  provider text not null,  -- 'bing' or 'google'
-  query text not null,
-  page_url text,
-  impressions integer,
-  clicks integer,
-  position decimal,
-  ctr decimal,
-  date date not null,
-  synced_at timestamptz default now()
-);
-
-create index idx_search_stats_brand on search_console_stats(brand_id, date desc);
-```
-
-**Brand Settings Extension:**
-```typescript
-interface SearchConsoleConfig {
-  bing?: {
-    api_key: string
-    enabled: boolean
-  }
-  google?: {
-    refresh_token: string  // From OAuth flow
-    enabled: boolean
-  }
-}
-```
-
-**Inngest Functions:**
-1. `search-console/sync-bing` - Weekly sync from Bing
-2. `search-console/sync-google` - Weekly sync from GSC
-3. `search-console/correlate` - Map search queries to generated prompts
-
-**Dashboard Display:**
-- Show "Search Visibility" alongside "AI Visibility"
-- Correlation: "Queries where you rank in search but aren't mentioned by AI" = opportunities
-- Correlation: "Queries where AI mentions you but you don't rank" = memos working
-
-**Priority:** Bing first (simpler auth), Google second (richer data)
-
----
-
-## Deploy Log
-
-**2026-02-01 - Add instant loading feedback with skeleton UIs**
-- Added `loading.tsx` files for dashboard layout, dashboard page, brand page, settings, memo edit, new brand, and auth pages
-- Updated Button component with `active:scale-[0.97]` for instant visual feedback on click
-- Replaced generic spinner loading states with layout-matching skeleton loaders
-- Commit: `bef4cda`
-
----
-
-## Next Steps
-
-1. Add SUPABASE_SERVICE_ROLE_KEY to .env.local
-2. Add OPENAI_API_KEY and ANTHROPIC_API_KEY
-3. Set up Inngest production account
-4. Deploy to Vercel
-5. Configure custom domain (contextmemo.com)
-6. Add Stripe billing (Phase 2)
+1. Create feature branch from `main`
+2. Make changes
+3. Test locally with `npm run dev`
+4. Test Inngest jobs with `npm run dev:inngest`
+5. Deploy: `git add . && git commit -m "message" && git push`
+6. Vercel auto-deploys from main branch

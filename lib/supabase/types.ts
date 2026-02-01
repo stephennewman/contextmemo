@@ -480,13 +480,19 @@ export interface BingWebmasterConfig {
   last_synced_at?: string
 }
 
+export interface GoogleSearchConsoleConfig {
+  enabled?: boolean
+  access_token?: string
+  refresh_token?: string
+  token_expiry?: string
+  site_url?: string  // The property URL in GSC (e.g., sc-domain:example.com)
+  connected_at?: string
+  last_synced_at?: string
+}
+
 export interface SearchConsoleConfig {
   bing?: BingWebmasterConfig
-  google?: {
-    enabled?: boolean
-    // Google uses OAuth - would need refresh token flow
-    // For now, just Bing is supported
-  }
+  google?: GoogleSearchConsoleConfig
 }
 
 // Brand tone configuration for content generation

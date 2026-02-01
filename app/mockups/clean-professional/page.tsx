@@ -190,10 +190,10 @@ export default function CleanProfessionalMockup() {
               >
                 <Search className="w-5 h-5" style={{ color: '#4F46E5' }} />
               </div>
-              <span className="text-sm font-medium text-zinc-500">Queries</span>
+              <span className="text-sm font-medium text-zinc-500">Prompts</span>
             </div>
             <div className="text-3xl font-bold text-zinc-900">24</div>
-            <div className="text-sm text-zinc-500">tracked queries</div>
+            <div className="text-sm text-zinc-500">tracked prompts</div>
           </div>
 
           <div 

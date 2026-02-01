@@ -98,7 +98,7 @@ export function BrandActions({
             <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-sm font-medium">
               3
             </div>
-            <span>Generate search queries to monitor</span>
+            <span>Generate prompts to monitor</span>
           </div>
           <Button 
             size="sm" 
@@ -277,7 +277,7 @@ export function GenerateMemoDropdown({
     return (
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground mb-3">
-          Queries where you&apos;re not showing up:
+          Prompts where you&apos;re not showing up:
         </p>
         {lowVisibilityQueries.slice(0, 5).map((query) => (
           <button
@@ -316,7 +316,7 @@ export function GenerateMemoDropdown({
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground mb-3">
-        Run a scan first to see which queries need work
+        Run a scan first to see which prompts need work
       </p>
       {memoTypes.map((type) => (
         <button
@@ -423,7 +423,7 @@ export function DiscoveryScanButton({ brandId }: { brandId: string }) {
         throw new Error(data.error || 'Discovery scan failed')
       }
 
-      toast.success('Discovery scan started - testing 50+ query variations. Results will appear in alerts.', {
+      toast.success('Discovery scan started - testing 50+ prompt variations. Results will appear in alerts.', {
         duration: 8000,
       })
       

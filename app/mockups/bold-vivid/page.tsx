@@ -200,7 +200,7 @@ export default function BoldVividMockup() {
           >
             <div className="flex items-center gap-3 mb-2">
               <Search className="w-5 h-5" strokeWidth={2.5} style={{ color: '#3B82F6' }} />
-              <span className="text-xs font-bold tracking-widest text-zinc-500">QUERIES</span>
+              <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
             </div>
             <div className="text-5xl font-bold text-black tracking-tighter">24</div>
             <div className="text-sm font-medium text-zinc-500">TRACKED</div>

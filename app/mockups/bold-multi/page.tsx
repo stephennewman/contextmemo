@@ -200,7 +200,7 @@ export default function BoldMultiMockup() {
               >
                 <Search className="w-4 h-4" strokeWidth={2.5} style={{ color: '#3B82F6' }} />
               </div>
-              <span className="text-xs font-bold tracking-widest text-zinc-500">QUERIES</span>
+              <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
             </div>
             <div className="text-5xl font-bold text-black tracking-tighter">24</div>
             <div className="text-sm font-medium text-zinc-500">TRACKED</div>

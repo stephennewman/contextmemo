@@ -102,7 +102,7 @@ export function CompetitiveIntelligence({
             <CardTitle className="text-base">Share of Voice</CardTitle>
           </div>
           <CardDescription>
-            Who gets mentioned most in AI responses to your queries
+            Who gets mentioned most in AI responses to your prompts
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -135,7 +135,7 @@ export function CompetitiveIntelligence({
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            Based on {scanResults.length} scans across {queries.length} queries
+            Based on {scanResults.length} scans across {queries.length} prompts
           </p>
         </CardContent>
       </Card>
@@ -148,7 +148,7 @@ export function CompetitiveIntelligence({
             <CardTitle className="text-base">Competitive Threats</CardTitle>
           </div>
           <CardDescription>
-            Competitors winning queries where you&apos;re not mentioned
+            Competitors winning prompts where you&apos;re not mentioned
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -192,15 +192,15 @@ export function CompetitiveIntelligence({
         </CardContent>
       </Card>
 
-      {/* Query Battles - Where Competitors Beat You */}
+      {/* Prompt Battles - Where Competitors Beat You */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-orange-500" />
-            <CardTitle className="text-base">Queries to Improve</CardTitle>
+            <CardTitle className="text-base">Prompts to Improve</CardTitle>
           </div>
           <CardDescription>
-            Queries where competitors are mentioned but you&apos;re not
+            Prompts where competitors are mentioned but you&apos;re not
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -225,7 +225,7 @@ export function CompetitiveIntelligence({
               ))}
               {queryBattles.losses.length > 8 && (
                 <p className="text-xs text-muted-foreground text-center pt-2">
-                  +{queryBattles.losses.length - 8} more queries where competitors win
+                  +{queryBattles.losses.length - 8} more prompts where competitors win
                 </p>
               )}
             </div>
@@ -233,7 +233,7 @@ export function CompetitiveIntelligence({
             <div className="text-center py-4">
               <TrendingUp className="h-8 w-8 mx-auto mb-2 text-green-500" />
               <p className="text-sm text-muted-foreground">
-                Great! No queries where competitors beat you exclusively
+                Great! No prompts where competitors beat you exclusively
               </p>
             </div>
           )}
@@ -254,19 +254,19 @@ export function CompetitiveIntelligence({
               )}
               <span className="text-2xl font-bold">{queryBattles.wins.length}</span>
             </div>
-            <p className="text-xs text-muted-foreground">Queries You Win</p>
+            <p className="text-xs text-muted-foreground">Prompts You Win</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 text-center">
             <div className="text-2xl font-bold text-amber-600">{queryBattles.ties.length}</div>
-            <p className="text-xs text-muted-foreground">Shared Queries</p>
+            <p className="text-xs text-muted-foreground">Shared Prompts</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 text-center">
             <div className="text-2xl font-bold text-red-600">{queryBattles.losses.length}</div>
-            <p className="text-xs text-muted-foreground">Queries to Improve</p>
+            <p className="text-xs text-muted-foreground">Prompts to Improve</p>
           </CardContent>
         </Card>
       </div>
