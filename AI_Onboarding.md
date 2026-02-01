@@ -107,6 +107,7 @@ INNGEST_EVENT_KEY=[required for production]
 
 | Date | Activity | Details |
 |------|----------|---------|
+| Jan 31, 2026 | **Subdomain routing fix** | Improved middleware to check x-forwarded-host for Vercel, better subdomain detection. Requires Vercel wildcard domain config (`*.contextmemo.com`) |
 | Jan 31, 2026 | **Deployed to GitHub** | Complete MVP with daily automation pushed to production |
 | Jan 31, 2026 | **Comprehensive Daily Automation** | Smart scheduling: weekly context refresh, competitor discovery, query generation; daily scans; auto memo generation for gaps; visibility trend tracking |
 | Jan 31, 2026 | Brand Tone feature added | Comprehensive brand tone system for memo generation - personality, formality, technical level, audience type, writing style, jargon usage, custom notes |

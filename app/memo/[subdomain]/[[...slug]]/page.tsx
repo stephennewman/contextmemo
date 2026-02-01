@@ -2,12 +2,30 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { marked } from 'marked'
+import { headers } from 'next/headers'
 
 // Use service role client for public access
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+// Helper to detect if accessed via subdomain
+async function isSubdomainAccess(subdomain: string): Promise<boolean> {
+  const headersList = await headers()
+  const host = headersList.get('x-forwarded-host') || headersList.get('host') || ''
+  const hostParts = host.split('.')
+  
+  // Check if first part matches subdomain (e.g., checkit.contextmemo.com)
+  if (hostParts.length >= 3 && hostParts[0] === subdomain) {
+    return true
+  }
+  // Local dev: checkit.localhost:3000
+  if (hostParts.length === 2 && hostParts[0] === subdomain && hostParts[1].startsWith('localhost')) {
+    return true
+  }
+  return false
+}
 
 interface Props {
   params: Promise<{ subdomain: string; slug?: string[] }>
@@ -64,6 +82,12 @@ export default async function MemoPage({ params }: Props) {
   const { subdomain, slug } = await params
   const slugPath = slug?.join('/') || ''
 
+  // Detect if accessed via subdomain for correct link generation
+  const viaSubdomain = await isSubdomainAccess(subdomain)
+  
+  // Generate link prefix based on access method
+  const linkPrefix = viaSubdomain ? '' : `/memo/${subdomain}`
+
   // Get brand
   const { data: brand, error: brandError } = await supabase
     .from('brands')
@@ -117,7 +141,7 @@ export default async function MemoPage({ params }: Props) {
               {memos.map((memo) => (
                 <a
                   key={memo.id}
-                  href={`/memo/${subdomain}/${memo.slug}`}
+                  href={`${linkPrefix}/${memo.slug}`}
                   className="block p-6 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-md transition-all group"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -274,7 +298,7 @@ export default async function MemoPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 py-4">
           <nav className="flex items-center gap-2 text-sm">
             <a 
-              href={`/memo/${subdomain}`} 
+              href={`${linkPrefix}/`} 
               className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
             >
               {brand.name}
