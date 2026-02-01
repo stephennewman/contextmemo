@@ -14,7 +14,18 @@ import {
   Users,
   AlertTriangle
 } from 'lucide-react'
-import type { ScanResult, Query } from '@/lib/supabase/types'
+import type { ScanResult, Query, PromptPersona, PERSONA_CONFIGS } from '@/lib/supabase/types'
+import { PERSONA_CONFIGS as PersonaConfigs } from '@/lib/supabase/types'
+
+// Persona display configuration
+const PERSONA_DISPLAY: Record<PromptPersona, { label: string; color: string }> = {
+  b2b_marketer: { label: 'B2B Marketer', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
+  developer: { label: 'Developer', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  product_leader: { label: 'Product Leader', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' },
+  enterprise_buyer: { label: 'Enterprise', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
+  smb_owner: { label: 'SMB Owner', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
+  student: { label: 'Student', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
+}
 
 interface ScanResultWithQuery extends ScanResult {
   query?: Query
@@ -51,11 +62,24 @@ function formatDate(dateString: string) {
 }
 
 function getModelDisplay(model: string) {
-  if (model.includes('gpt') || model.includes('openai')) {
-    return { name: 'OpenAI', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', key: 'openai' }
+  const m = model.toLowerCase()
+  if (m.includes('gpt') || m.includes('openai')) {
+    return { name: 'GPT', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', key: 'openai' }
   }
-  if (model.includes('claude') || model.includes('anthropic')) {
+  if (m.includes('claude') || m.includes('anthropic')) {
     return { name: 'Claude', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', key: 'claude' }
+  }
+  if (m.includes('gemini')) {
+    return { name: 'Gemini', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', key: 'gemini' }
+  }
+  if (m.includes('llama')) {
+    return { name: 'Llama', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200', key: 'llama' }
+  }
+  if (m.includes('mistral')) {
+    return { name: 'Mistral', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200', key: 'mistral' }
+  }
+  if (m.includes('perplexity') || m.includes('sonar')) {
+    return { name: 'Perplexity', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200', key: 'perplexity' }
   }
   return { name: model, color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200', key: 'other' }
 }
@@ -318,11 +342,12 @@ export function ScanResultsView({ scanResults, queries, brandName }: ScanResults
   )
 }
 
-// Query visibility component to show per-query breakdown
-interface QueryWithVisibility {
+// Prompt visibility component to show per-prompt breakdown
+interface PromptWithVisibility {
   id: string
   query_text: string
   query_type: string | null
+  persona: PromptPersona | null
   priority: number
   visibility: number
   totalScans: number
@@ -330,30 +355,36 @@ interface QueryWithVisibility {
   isBranded: boolean
 }
 
-interface QueryVisibilityListProps {
+interface PromptVisibilityListProps {
   queries: Query[]
   scanResults: ScanResult[]
   brandName: string
 }
 
-export function QueryVisibilityList({ queries, scanResults, brandName }: QueryVisibilityListProps) {
-  // Calculate visibility per query
-  const queryStats = new Map<string, { mentioned: number; total: number }>()
+// Keep old name as alias for backward compatibility
+export const QueryVisibilityList = PromptVisibilityList
+
+export function PromptVisibilityList({ queries, scanResults, brandName }: PromptVisibilityListProps) {
+  const [personaFilter, setPersonaFilter] = useState<PromptPersona | 'all'>('all')
+  
+  // Calculate visibility per prompt
+  const promptStats = new Map<string, { mentioned: number; total: number }>()
   scanResults.forEach(scan => {
     if (!scan.query_id) return
-    const current = queryStats.get(scan.query_id) || { mentioned: 0, total: 0 }
+    const current = promptStats.get(scan.query_id) || { mentioned: 0, total: 0 }
     current.total++
     if (scan.brand_mentioned) current.mentioned++
-    queryStats.set(scan.query_id, current)
+    promptStats.set(scan.query_id, current)
   })
 
-  const queriesWithVisibility: QueryWithVisibility[] = queries.map(q => {
-    const stats = queryStats.get(q.id)
+  const promptsWithVisibility: PromptWithVisibility[] = queries.map(q => {
+    const stats = promptStats.get(q.id)
     const isBranded = queryContainsBrand(q.query_text, brandName)
     return {
       id: q.id,
       query_text: q.query_text,
       query_type: q.query_type,
+      persona: (q as any).persona || null,
       priority: q.priority,
       visibility: stats && stats.total > 0 
         ? Math.round((stats.mentioned / stats.total) * 100)
@@ -363,7 +394,7 @@ export function QueryVisibilityList({ queries, scanResults, brandName }: QueryVi
       isBranded
     }
   }).sort((a, b) => {
-    // Put branded queries at the end
+    // Put branded prompts at the end
     if (a.isBranded && !b.isBranded) return 1
     if (!a.isBranded && b.isBranded) return -1
     // Sort by visibility (lowest first), but put unscanned at end
@@ -373,33 +404,75 @@ export function QueryVisibilityList({ queries, scanResults, brandName }: QueryVi
     return a.visibility - b.visibility
   })
 
+  // Apply persona filter
+  const filteredPrompts = personaFilter === 'all' 
+    ? promptsWithVisibility 
+    : promptsWithVisibility.filter(p => p.persona === personaFilter)
+
+  // Count prompts by persona
+  const personaCounts = promptsWithVisibility.reduce((acc, p) => {
+    if (p.persona) {
+      acc[p.persona] = (acc[p.persona] || 0) + 1
+    }
+    return acc
+  }, {} as Record<string, number>)
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Query Performance</CardTitle>
+            <CardTitle>Prompt Performance</CardTitle>
             <CardDescription>
-              See which queries mention you and which need attention
+              See which prompts mention you and which need attention
             </CardDescription>
           </div>
-          <Button variant="outline">Add Query</Button>
+          <Button variant="outline">Add Prompt</Button>
         </div>
       </CardHeader>
-      <CardContent>
-        {queriesWithVisibility.length > 0 ? (
+      <CardContent className="space-y-4">
+        {/* Persona filter */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={personaFilter === 'all' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setPersonaFilter('all')}
+          >
+            All ({promptsWithVisibility.length})
+          </Button>
+          {Object.entries(personaCounts).map(([persona, count]) => {
+            const display = PERSONA_DISPLAY[persona as PromptPersona]
+            return (
+              <Button
+                key={persona}
+                variant={personaFilter === persona ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setPersonaFilter(persona as PromptPersona)}
+              >
+                {display?.label || persona} ({count})
+              </Button>
+            )
+          })}
+        </div>
+
+        {filteredPrompts.length > 0 ? (
           <div className="space-y-2">
-            {queriesWithVisibility.map((query) => (
+            {filteredPrompts.map((prompt) => (
               <div 
-                key={query.id} 
+                key={prompt.id} 
                 className={`flex items-center justify-between p-3 border rounded-lg ${
-                  query.isBranded ? 'opacity-60 border-dashed' : ''
+                  prompt.isBranded ? 'opacity-60 border-dashed' : ''
                 }`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium truncate">&quot;{query.query_text}&quot;</p>
-                    {query.isBranded && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium truncate">&quot;{prompt.query_text}&quot;</p>
+                    {prompt.persona && PERSONA_DISPLAY[prompt.persona] && (
+                      <Badge className={`text-xs ${PERSONA_DISPLAY[prompt.persona].color}`}>
+                        {PERSONA_DISPLAY[prompt.persona].label}
+                      </Badge>
+                    )}
+                    {prompt.isBranded && (
                       <Badge variant="outline" className="text-xs shrink-0">
                         <AlertTriangle className="h-3 w-3 mr-1" />
                         Branded
@@ -407,26 +480,26 @@ export function QueryVisibilityList({ queries, scanResults, brandName }: QueryVi
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {query.query_type}
-                    {query.totalScans > 0 && (
+                    {prompt.query_type?.replace('_', ' ')}
+                    {prompt.totalScans > 0 && (
                       <span className="ml-2">
-                        • {query.mentionedCount}/{query.totalScans} scans
+                        • {prompt.mentionedCount}/{prompt.totalScans} scans
                       </span>
                     )}
-                    {query.isBranded && ' • Excluded from visibility score'}
+                    {prompt.isBranded && ' • Excluded from visibility score'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 ml-2">
-                  {query.isBranded ? (
+                  {prompt.isBranded ? (
                     <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
-                  ) : query.visibility === -1 ? (
+                  ) : prompt.visibility === -1 ? (
                     <Badge variant="outline">No scans</Badge>
-                  ) : query.visibility >= 70 ? (
-                    <Badge className="bg-green-500 text-white">{query.visibility}%</Badge>
-                  ) : query.visibility >= 30 ? (
-                    <Badge className="bg-yellow-500 text-white">{query.visibility}%</Badge>
+                  ) : prompt.visibility >= 70 ? (
+                    <Badge className="bg-green-500 text-white">{prompt.visibility}%</Badge>
+                  ) : prompt.visibility >= 30 ? (
+                    <Badge className="bg-yellow-500 text-white">{prompt.visibility}%</Badge>
                   ) : (
-                    <Badge variant="destructive">{query.visibility}%</Badge>
+                    <Badge variant="destructive">{prompt.visibility}%</Badge>
                   )}
                 </div>
               </div>
@@ -434,7 +507,9 @@ export function QueryVisibilityList({ queries, scanResults, brandName }: QueryVi
           </div>
         ) : (
           <p className="text-muted-foreground text-sm">
-            No queries generated yet. Complete the setup to auto-generate relevant queries.
+            {promptsWithVisibility.length === 0
+              ? 'No prompts generated yet. Complete the setup to auto-generate relevant prompts.'
+              : 'No prompts match the selected filter.'}
           </p>
         )}
       </CardContent>

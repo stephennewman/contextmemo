@@ -12,8 +12,9 @@ import {
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
-import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton } from '@/components/dashboard/brand-actions'
-import { ScanResultsView, QueryVisibilityList } from '@/components/dashboard/scan-results-view'
+import { BrandActions, ScanButton, GenerateMemoDropdown, PushToHubSpotButton, DiscoveryScanButton, UpdateBacklinksButton } from '@/components/dashboard/brand-actions'
+import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
+import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -216,7 +217,7 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="scans">Scans{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
           <TabsTrigger value="memos">Memos{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
-          <TabsTrigger value="queries">Queries{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
+          <TabsTrigger value="prompts">Prompts{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="competitors">Competitors{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
         </TabsList>
 
@@ -396,30 +397,39 @@ export default async function BrandPage({ params }: Props) {
           </div>
         </TabsContent>
 
-        <TabsContent value="queries">
-          <QueryVisibilityList 
+        <TabsContent value="prompts">
+          <PromptVisibilityList 
             queries={queries || []} 
             scanResults={recentScans}
             brandName={brand.name}
           />
         </TabsContent>
 
-        <TabsContent value="competitors">
+        <TabsContent value="competitors" className="space-y-4">
+          {/* Competitive Intelligence Dashboard */}
+          <CompetitiveIntelligence
+            brandName={brand.name}
+            competitors={competitors || []}
+            scanResults={recentScans}
+            queries={queries || []}
+          />
+          
+          {/* Competitor List */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Competitors</CardTitle>
+                  <CardTitle className="text-base">Tracked Competitors</CardTitle>
                   <CardDescription>
-                    Brands competing for the same AI recommendations
+                    Brands being monitored in your scans
                   </CardDescription>
                 </div>
-                <Button variant="outline">Add Competitor</Button>
+                <Button variant="outline" size="sm">Add Competitor</Button>
               </div>
             </CardHeader>
             <CardContent>
               {competitors && competitors.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {competitors.map((competitor) => (
                     <div key={competitor.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
@@ -431,7 +441,7 @@ export default async function BrandPage({ params }: Props) {
                         )}
                       </div>
                       {competitor.auto_discovered && (
-                        <Badge variant="secondary">Auto-discovered</Badge>
+                        <Badge variant="secondary" className="text-xs">Auto-discovered</Badge>
                       )}
                     </div>
                   ))}

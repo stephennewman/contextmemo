@@ -5,9 +5,10 @@ import { openai } from '@ai-sdk/openai'
 import { 
   QUERY_GENERATION_PROMPT, 
   USER_INTENT_EXTRACTION_PROMPT,
-  INTENT_BASED_QUERY_PROMPT 
+  INTENT_BASED_QUERY_PROMPT,
+  PERSONA_PROMPT_GENERATION,
 } from '@/lib/ai/prompts/context-extraction'
-import { BrandContext, UserIntent } from '@/lib/supabase/types'
+import { BrandContext, UserIntent, PERSONA_CONFIGS, PromptPersona } from '@/lib/supabase/types'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +20,7 @@ interface GeneratedQuery {
   query_type: string
   priority: number
   related_competitor: string | null
+  persona?: PromptPersona | null
 }
 
 export const queryGenerate = inngest.createFunction(
@@ -152,10 +154,60 @@ export const queryGenerate = inngest.createFunction(
       }
     })
 
-    // Combine both query types, prioritizing intent-based queries
+    // Step 5: Generate persona-based prompts for each persona
+    const personaQueries = await step.run('generate-persona-prompts', async () => {
+      const allPersonaQueries: GeneratedQuery[] = []
+      const competitorNames = competitors.map(c => c.name).join(', ')
+
+      // Generate prompts for top 4 most relevant personas (to balance coverage vs. cost)
+      const relevantPersonas = PERSONA_CONFIGS.slice(0, 4)
+
+      for (const persona of relevantPersonas) {
+        try {
+          const prompt = PERSONA_PROMPT_GENERATION
+            .replace(/\{\{company_name\}\}/g, context.company_name || brand.name)
+            .replace('{{description}}', context.description || '')
+            .replace('{{products}}', (context.products || []).join(', '))
+            .replace('{{markets}}', (context.markets || []).join(', '))
+            .replace('{{competitors}}', competitorNames)
+            .replace('{{persona_name}}', persona.name)
+            .replace('{{persona_description}}', persona.description)
+            .replace('{{persona_phrasing}}', persona.phrasingSyle)
+            .replace('{{persona_priorities}}', persona.priorities.join(', '))
+            .replace('{{persona_example}}', persona.examplePhrasing)
+
+          const { text } = await generateText({
+            model: openai('gpt-4o'),
+            prompt,
+            temperature: 0.5,
+          })
+
+          const jsonMatch = text.match(/\[[\s\S]*\]/)
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]) as GeneratedQuery[]
+            // Add persona to each query
+            const withPersona = parsed.map(q => ({
+              ...q,
+              persona: persona.id,
+            }))
+            allPersonaQueries.push(...withPersona)
+          }
+        } catch (error) {
+          console.error(`Failed to generate prompts for persona ${persona.id}:`, error)
+        }
+
+        // Small delay between persona generations
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+
+      return allPersonaQueries
+    })
+
+    // Combine all query types, prioritizing persona and intent-based queries
     const queries = [
+      ...personaQueries.map(q => ({ ...q, priority: Math.min(100, q.priority + 15) })), // Boost persona queries most
       ...intentQueries.map(q => ({ ...q, priority: Math.min(100, q.priority + 10) })), // Boost intent queries
-      ...categoryQueries,
+      ...categoryQueries.map(q => ({ ...q, persona: null as PromptPersona | null })), // Legacy queries have no persona
     ]
 
     // Step 5: Map competitor names to IDs
@@ -163,8 +215,8 @@ export const queryGenerate = inngest.createFunction(
       competitors.map(c => [c.name.toLowerCase(), c.id])
     )
 
-    // Step 6: Save queries to database
-    const savedQueries = await step.run('save-queries', async () => {
+    // Step 6: Save prompts to database
+    const savedQueries = await step.run('save-prompts', async () => {
       const queriesToInsert = queries.map(q => ({
         brand_id: brandId,
         query_text: q.query_text,
@@ -175,6 +227,7 @@ export const queryGenerate = inngest.createFunction(
           : null,
         auto_discovered: true,
         is_active: true,
+        persona: q.persona || null,
       }))
 
       // Use upsert to avoid duplicates
@@ -217,22 +270,24 @@ export const queryGenerate = inngest.createFunction(
     // Create alert for user
     const intentQueryCount = intentQueries.length
     const categoryQueryCount = categoryQueries.length
+    const personaQueryCount = personaQueries.length
     
     await step.run('create-alert', async () => {
       await supabase.from('alerts').insert({
         brand_id: brandId,
         alert_type: 'setup_complete',
-        title: 'Setup Complete',
-        message: `Generated ${savedQueries.length} queries (${intentQueryCount} intent-based, ${categoryQueryCount} category-based). Running initial scan...`,
+        title: 'Prompt Generation Complete',
+        message: `Generated ${savedQueries.length} prompts (${personaQueryCount} persona-based, ${intentQueryCount} intent-based, ${categoryQueryCount} category-based). Running initial scan...`,
       })
     })
 
     return {
       success: true,
-      queriesGenerated: queries.length,
-      queriesSaved: savedQueries.length,
-      intentQueries: intentQueryCount,
-      categoryQueries: categoryQueryCount,
+      promptsGenerated: queries.length,
+      promptsSaved: savedQueries.length,
+      personaPrompts: personaQueryCount,
+      intentPrompts: intentQueryCount,
+      categoryPrompts: categoryQueryCount,
       userIntentsExtracted: userIntents.length,
     }
   }

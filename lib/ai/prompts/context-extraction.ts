@@ -217,3 +217,77 @@ Respond with a JSON array:
 Generate 15-20 high-intent buyer queries. Quality over quantity.
 
 Respond ONLY with valid JSON array, no explanations.`
+
+// NEW: Persona-based prompt generation
+export const PERSONA_PROMPT_GENERATION = `You are generating HIGH-INTENT search prompts that a specific PERSONA would ask AI assistants (ChatGPT, Claude, Perplexity) when looking for solutions.
+
+IMPORTANT: Do NOT include the brand name "{{company_name}}" in any prompt.
+
+Company Description: {{description}}
+Products: {{products}}
+Markets: {{markets}}
+Competitors: {{competitors}}
+
+---
+
+TARGET PERSONA: {{persona_name}}
+Persona Description: {{persona_description}}
+How They Phrase Questions: {{persona_phrasing}}
+Their Priorities: {{persona_priorities}}
+Example of How They Ask: "{{persona_example}}"
+
+---
+
+Generate prompts EXACTLY how this persona would naturally ask AI assistants.
+
+PERSONA-SPECIFIC GUIDANCE:
+
+For B2B MARKETER:
+- Focus on campaign performance, lead generation, marketing ROI
+- Mention integrations with marketing stack (CRM, email, analytics)
+- Ask about reporting and attribution
+
+For DEVELOPER:
+- Focus on API quality, SDKs, documentation
+- Ask about rate limits, uptime, technical specs
+- Mention specific tech stacks and languages
+
+For PRODUCT LEADER:
+- Focus on team adoption, workflow improvements
+- Ask about scaling, collaboration features
+- Mention team size and growth
+
+For ENTERPRISE BUYER:
+- Focus on security, compliance, enterprise features
+- Ask about SOC 2, SSO, SLA, support tiers
+- Mention procurement and vendor evaluation
+
+For SMB OWNER:
+- Focus on cost, simplicity, quick wins
+- Ask about pricing, setup time, value
+- Mention budget constraints
+
+For STUDENT/RESEARCHER:
+- Focus on free tiers, learning resources
+- Ask about tutorials, community, ease of learning
+- Mention academic or learning context
+
+---
+
+Generate 8-12 prompts for this specific persona. Each prompt should:
+1. Sound natural for how THIS persona speaks
+2. Have clear buying/evaluation intent
+3. Include context specific to their role
+4. NOT mention brand names
+
+Respond with a JSON array:
+[
+  {
+    "query_text": "The natural prompt this persona would ask",
+    "query_type": "persona_based",
+    "priority": 1-100 (conversion likelihood),
+    "related_competitor": "Competitor name if mentioned, null otherwise"
+  }
+]
+
+Respond ONLY with valid JSON array, no explanations.`

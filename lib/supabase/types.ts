@@ -146,6 +146,7 @@ export interface Database {
           is_active: boolean
           auto_discovered: boolean
           created_at: string
+          persona: PromptPersona | null
         }
         Insert: {
           id?: string
@@ -157,6 +158,7 @@ export interface Database {
           is_active?: boolean
           auto_discovered?: boolean
           created_at?: string
+          persona?: PromptPersona | null
         }
         Update: {
           id?: string
@@ -168,6 +170,7 @@ export interface Database {
           is_active?: boolean
           auto_discovered?: boolean
           created_at?: string
+          persona?: PromptPersona | null
         }
       }
       scan_results: {
@@ -452,6 +455,76 @@ export interface BrandTone {
   custom_notes?: string
 }
 
+// Prompt personas - how different user types phrase AI queries
+export type PromptPersona = 
+  | 'b2b_marketer'      // Marketing leader, ROI-focused
+  | 'developer'         // Technical IC, API/integration focused
+  | 'product_leader'    // PM/Director, team workflows
+  | 'enterprise_buyer'  // Procurement/IT, security/compliance
+  | 'smb_owner'         // Small business, cost-conscious
+  | 'student'           // Early career, free tiers, learning
+
+// Persona configuration for prompt generation
+export interface PersonaConfig {
+  id: PromptPersona
+  name: string
+  description: string
+  phrasingSyle: string
+  priorities: string[]
+  examplePhrasing: string
+}
+
+export const PERSONA_CONFIGS: PersonaConfig[] = [
+  {
+    id: 'b2b_marketer',
+    name: 'B2B Marketer',
+    description: 'Marketing leader evaluating tools for their team',
+    phrasingSyle: 'ROI-focused, mentions integrations, campaign performance',
+    priorities: ['ROI', 'integrations', 'analytics', 'automation'],
+    examplePhrasing: 'What marketing automation integrates with our CRM and shows clear ROI?',
+  },
+  {
+    id: 'developer',
+    name: 'Developer',
+    description: 'Technical IC looking for tools and APIs',
+    phrasingSyle: 'Technical specs, API quality, documentation, rate limits',
+    priorities: ['API quality', 'documentation', 'reliability', 'developer experience'],
+    examplePhrasing: 'Which API has the best rate limits and SDK support for Node.js?',
+  },
+  {
+    id: 'product_leader',
+    name: 'Product Leader',
+    description: 'PM or Director evaluating for their team',
+    phrasingSyle: 'Team workflows, scalability, collaboration features',
+    priorities: ['team collaboration', 'scalability', 'roadmap features', 'user adoption'],
+    examplePhrasing: 'What project management tool works well as we scale from 10 to 50 people?',
+  },
+  {
+    id: 'enterprise_buyer',
+    name: 'Enterprise Buyer',
+    description: 'Procurement or IT evaluating vendors',
+    phrasingSyle: 'Security, compliance, enterprise features, pricing',
+    priorities: ['SOC 2', 'SSO', 'compliance', 'SLA', 'enterprise support'],
+    examplePhrasing: 'What solution is SOC 2 compliant and supports SSO for our enterprise?',
+  },
+  {
+    id: 'smb_owner',
+    name: 'SMB Owner',
+    description: 'Small business owner, cost-conscious',
+    phrasingSyle: 'Cost-focused, ease of use, quick setup, value',
+    priorities: ['price', 'ease of use', 'quick setup', 'value for money'],
+    examplePhrasing: 'What\'s the most affordable way to automate my invoicing?',
+  },
+  {
+    id: 'student',
+    name: 'Student/Researcher',
+    description: 'Early career, learning, budget-constrained',
+    phrasingSyle: 'Free tiers, tutorials, learning resources, simplicity',
+    priorities: ['free tier', 'tutorials', 'learning curve', 'community'],
+    examplePhrasing: 'Free tools to help me learn data analysis for my thesis?',
+  },
+]
+
 // Social links for sameAs references
 export interface SocialLinks {
   linkedin?: string
@@ -500,6 +573,7 @@ export type Tenant = Database['public']['Tables']['tenants']['Row']
 export type Brand = Database['public']['Tables']['brands']['Row']
 export type Competitor = Database['public']['Tables']['competitors']['Row']
 export type Query = Database['public']['Tables']['queries']['Row']
+export type Prompt = Database['public']['Tables']['queries']['Row'] // Alias: prompts are stored in queries table
 export type ScanResult = Database['public']['Tables']['scan_results']['Row']
 export type Memo = Database['public']['Tables']['memos']['Row']
 export type MemoVersion = Database['public']['Tables']['memo_versions']['Row']

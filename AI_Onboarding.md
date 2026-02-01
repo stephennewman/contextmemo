@@ -123,6 +123,7 @@ INNGEST_EVENT_KEY=[required for production]
 | Date | Activity | Details |
 |------|----------|---------|
 | Feb 1, 2026 | **Competitor Content Intelligence** | Daily scan of competitor blogs/content, AI classification (filters press releases, feature announcements), auto-generates response articles with brand's tone, auto-publishes to resources page. New `competitor_content` table, `memo_type: 'response'`. |
+| Feb 1, 2026 | **Persona-based prompt system** | Renamed queries → prompts throughout UI. Added 6 persona types (B2B Marketer, Developer, Product Leader, Enterprise Buyer, SMB Owner, Student) that affect how prompts are generated. Prompts now tagged with persona, filterable in UI. |
 | Feb 1, 2026 | **OpenRouter multi-model scanning** | Expanded AI model coverage via OpenRouter: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar. Visibility chart updated to show all 6 models. |
 | Feb 1, 2026 | **External credibility signals** | Added `/about/editorial` guidelines page, `/ai.txt` for AI crawler permissions, enhanced Schema.org with `sameAs` links to LinkedIn/Crunchbase/Wikipedia, social_links support in BrandContext. |
 | Feb 1, 2026 | **Automated backlinking system** | New continuous backlinking: auto-runs after memo generation, daily refresh at 7 AM UTC, injects contextual links + "Related Reading" section. Functions: `memo/backlink`, `memo/batch-backlink`, `dailyBacklinkRefresh`. |
@@ -151,6 +152,7 @@ INNGEST_EVENT_KEY=[required for production]
 | Problem | Score | Description |
 |---------|-------|-------------|
 | No Stripe integration | 75 | Cannot collect payments - needed before public launch |
+| DB migration needed: persona column | 70 | Run: `ALTER TABLE queries ADD COLUMN persona TEXT;` in Supabase |
 | Missing SUPABASE_SERVICE_ROLE_KEY | 70 | Background jobs need this key for admin access |
 | No Inngest production keys | 65 | Need to configure Inngest for production |
 | ~~No email confirmation~~ | ~~50~~ | ✅ RESOLVED - Email verification now required |
