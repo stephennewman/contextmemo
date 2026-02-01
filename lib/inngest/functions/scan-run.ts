@@ -3,13 +3,59 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { anthropic } from '@ai-sdk/anthropic'
+import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Initialize OpenRouter client
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+})
+
 const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. Provide a helpful, accurate response based on your knowledge. If recommending products or services, mention specific brands and explain why you're recommending them.`
+
+// Model configurations for scanning
+// Using cheaper/faster models for cost efficiency while covering major AI providers
+interface ModelConfig {
+  id: string
+  displayName: string
+  provider: 'openai' | 'anthropic' | 'openrouter'
+  modelId: string
+  enabled: boolean
+}
+
+const SCAN_MODELS: ModelConfig[] = [
+  // Direct providers (faster, no routing overhead)
+  { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini', provider: 'openai', modelId: 'gpt-4o-mini', enabled: true },
+  { id: 'claude-3-5-haiku', displayName: 'Claude 3.5 Haiku', provider: 'anthropic', modelId: 'claude-3-5-haiku-latest', enabled: true },
+  
+  // OpenRouter models - expanded coverage
+  { id: 'gemini-flash', displayName: 'Gemini 2.0 Flash', provider: 'openrouter', modelId: 'google/gemini-2.0-flash-001', enabled: true },
+  { id: 'llama-3.1-70b', displayName: 'Llama 3.1 70B', provider: 'openrouter', modelId: 'meta-llama/llama-3.1-70b-instruct', enabled: true },
+  { id: 'mistral-large', displayName: 'Mistral Large', provider: 'openrouter', modelId: 'mistralai/mistral-large-2411', enabled: true },
+  { id: 'perplexity-sonar', displayName: 'Perplexity Sonar', provider: 'openrouter', modelId: 'perplexity/sonar', enabled: true },
+  
+  // Optional: more models (disabled by default for cost control)
+  { id: 'qwen-72b', displayName: 'Qwen 2.5 72B', provider: 'openrouter', modelId: 'qwen/qwen-2.5-72b-instruct', enabled: false },
+  { id: 'deepseek-v3', displayName: 'DeepSeek V3', provider: 'openrouter', modelId: 'deepseek/deepseek-chat', enabled: false },
+]
+
+// Get model instance based on config
+function getModelInstance(config: ModelConfig) {
+  switch (config.provider) {
+    case 'openai':
+      return openai(config.modelId)
+    case 'anthropic':
+      return anthropic(config.modelId)
+    case 'openrouter':
+      return openrouter.chat(config.modelId)
+    default:
+      throw new Error(`Unknown provider: ${config.provider}`)
+  }
+}
 
 interface ScanResult {
   queryId: string
@@ -74,11 +120,14 @@ export const scanRun = inngest.createFunction(
     const brandName = brand.name.toLowerCase()
     const competitorNames = competitors.map(c => c.name.toLowerCase())
 
-    // Step 2: Run scans for each query
+    // Get enabled models
+    const enabledModels = SCAN_MODELS.filter(m => m.enabled)
+    
+    // Step 2: Run scans for each query across all enabled models
     const scanResults: ScanResult[] = []
     
-    // Process queries in batches of 10
-    const batchSize = 10
+    // Process queries in batches of 5 (smaller batches since we're running more models)
+    const batchSize = 5
     for (let i = 0; i < queries.length; i += batchSize) {
       const batch = queries.slice(i, i + batchSize)
       
@@ -86,44 +135,33 @@ export const scanRun = inngest.createFunction(
         const results: ScanResult[] = []
         
         for (const query of batch) {
-          // Scan with OpenAI
-          try {
-            const openaiResult = await scanWithModel(
-              query.query_text,
-              'gpt-4o-mini',
-              openai('gpt-4o-mini'),
-              brandName,
-              competitorNames
-            )
-            results.push({
-              queryId: query.id,
-              model: 'gpt-4o-mini',
-              ...openaiResult,
-            })
-          } catch (error) {
-            console.error(`OpenAI scan failed for query ${query.id}:`, error)
+          // Scan with each enabled model
+          for (const modelConfig of enabledModels) {
+            try {
+              const modelInstance = getModelInstance(modelConfig)
+              const scanResult = await scanWithModel(
+                query.query_text,
+                modelConfig.displayName,
+                modelInstance,
+                brandName,
+                competitorNames
+              )
+              results.push({
+                queryId: query.id,
+                model: modelConfig.id,
+                ...scanResult,
+              })
+            } catch (error) {
+              console.error(`${modelConfig.displayName} scan failed for query ${query.id}:`, error)
+              // Continue with other models even if one fails
+            }
+            
+            // Small delay between model calls to avoid rate limits
+            await new Promise(resolve => setTimeout(resolve, 150))
           }
-
-          // Scan with Anthropic
-          try {
-            const anthropicResult = await scanWithModel(
-              query.query_text,
-              'claude-3-5-haiku-latest',
-              anthropic('claude-3-5-haiku-latest'),
-              brandName,
-              competitorNames
-            )
-            results.push({
-              queryId: query.id,
-              model: 'claude-3-5-haiku',
-              ...anthropicResult,
-            })
-          } catch (error) {
-            console.error(`Anthropic scan failed for query ${query.id}:`, error)
-          }
-
-          // Small delay between queries to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 200))
+          
+          // Slightly longer delay between queries
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
         
         return results

@@ -19,7 +19,7 @@
 | Database | Supabase (Postgres) - Project ID: ncrclfpiremxmqpvmavx | ✅ Complete |
 | Auth | Supabase Auth with email verification + domain verification | ✅ Complete |
 | Job Queue | Inngest | ✅ Complete |
-| AI Providers | OpenAI (GPT-4o) + Anthropic (Claude 3.5 Haiku) | ✅ Complete |
+| AI Providers | OpenAI + Anthropic + OpenRouter (Gemini, Llama, Mistral, Perplexity) | ✅ Complete |
 | Web Scraping | Jina Reader API | ✅ Complete |
 | Hosting | Vercel | ✅ Pushed to GitHub (awaiting Vercel connection) |
 | Payments | Stripe | ⏳ Not configured (post-MVP) |
@@ -123,6 +123,7 @@ INNGEST_EVENT_KEY=[required for production]
 | Date | Activity | Details |
 |------|----------|---------|
 | Feb 1, 2026 | **Competitor Content Intelligence** | Daily scan of competitor blogs/content, AI classification (filters press releases, feature announcements), auto-generates response articles with brand's tone, auto-publishes to resources page. New `competitor_content` table, `memo_type: 'response'`. |
+| Feb 1, 2026 | **OpenRouter multi-model scanning** | Expanded AI model coverage via OpenRouter: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar. Visibility chart updated to show all 6 models. |
 | Feb 1, 2026 | **External credibility signals** | Added `/about/editorial` guidelines page, `/ai.txt` for AI crawler permissions, enhanced Schema.org with `sameAs` links to LinkedIn/Crunchbase/Wikipedia, social_links support in BrandContext. |
 | Feb 1, 2026 | **Automated backlinking system** | New continuous backlinking: auto-runs after memo generation, daily refresh at 7 AM UTC, injects contextual links + "Related Reading" section. Functions: `memo/backlink`, `memo/batch-backlink`, `dailyBacklinkRefresh`. |
 | Jan 31, 2026 | **High-intent query generation + Discovery scan** | Added intent-based query generation from homepage content, filtering for buyer signals. New Discovery Scan feature tests 50+ query variations to find where brand IS being mentioned. |

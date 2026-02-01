@@ -46,6 +46,10 @@ interface DataPoint {
   visibilityProjection: number | null
   openai: number
   claude: number
+  gemini: number
+  llama: number
+  mistral: number
+  perplexity: number
   totalScans: number
   mentionedScans: number
   isToday: boolean
@@ -54,6 +58,16 @@ interface DataPoint {
   estimatedQueries: number
   estimatedValue: number
 }
+
+// Model display configuration
+const MODEL_CONFIG = {
+  openai: { name: 'GPT-4o', color: '#22c55e' },
+  claude: { name: 'Claude', color: '#f97316' },
+  gemini: { name: 'Gemini', color: '#4285f4' },
+  llama: { name: 'Llama', color: '#8b5cf6' },
+  mistral: { name: 'Mistral', color: '#ec4899' },
+  perplexity: { name: 'Perplexity', color: '#06b6d4' },
+} as const
 
 // Industry benchmarks for AI visibility (rough estimates)
 const INDUSTRY_BENCHMARKS = {
@@ -178,6 +192,10 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
           visibilityProjection: isProjection ? visibility : (isToday ? visibility : null),
           openai: 0,
           claude: 0,
+          gemini: 0,
+          llama: 0,
+          mistral: 0,
+          perplexity: 0,
           totalScans: 0,
           mentionedScans: 0,
           isToday,
@@ -211,30 +229,40 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
     const sortedActualDates = Array.from(scansByDate.keys()).sort()
     const firstActualDate = sortedActualDates[0]
     
-    // Calculate actual visibility data
-    const actualDataByDate = new Map<string, { visibility: number; openai: number; claude: number; totalScans: number; mentionedScans: number }>()
+    // Calculate actual visibility data with all models
+    const actualDataByDate = new Map<string, { 
+      visibility: number
+      openai: number
+      claude: number
+      gemini: number
+      llama: number
+      mistral: number
+      perplexity: number
+      totalScans: number
+      mentionedScans: number 
+    }>()
+    
+    // Helper to calculate visibility for a model
+    const calcModelVisibility = (scans: ScanResult[], modelMatch: string) => {
+      const modelScans = scans.filter(s => s.model.toLowerCase().includes(modelMatch))
+      if (modelScans.length === 0) return 0
+      return Math.round((modelScans.filter(s => s.brand_mentioned).length / modelScans.length) * 100)
+    }
     
     sortedActualDates.forEach(date => {
       const scans = scansByDate.get(date)!
       const totalScans = scans.length
       const mentionedScans = scans.filter(s => s.brand_mentioned).length
       const visibility = Math.round((mentionedScans / totalScans) * 100)
-      
-      const openaiScans = scans.filter(s => s.model.includes('gpt'))
-      const claudeScans = scans.filter(s => s.model.includes('claude'))
-      
-      const openaiVisibility = openaiScans.length > 0
-        ? Math.round((openaiScans.filter(s => s.brand_mentioned).length / openaiScans.length) * 100)
-        : 0
-      
-      const claudeVisibility = claudeScans.length > 0
-        ? Math.round((claudeScans.filter(s => s.brand_mentioned).length / claudeScans.length) * 100)
-        : 0
 
       actualDataByDate.set(date, {
         visibility,
-        openai: openaiVisibility,
-        claude: claudeVisibility,
+        openai: calcModelVisibility(scans, 'gpt'),
+        claude: calcModelVisibility(scans, 'claude'),
+        gemini: calcModelVisibility(scans, 'gemini'),
+        llama: calcModelVisibility(scans, 'llama'),
+        mistral: calcModelVisibility(scans, 'mistral'),
+        perplexity: calcModelVisibility(scans, 'perplexity') || calcModelVisibility(scans, 'sonar'),
         totalScans,
         mentionedScans,
       })
@@ -281,6 +309,10 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
         let visibility: number
         let openai = 0
         let claude = 0
+        let gemini = 0
+        let llama = 0
+        let mistral = 0
+        let perplexity = 0
         let totalScans = 0
         let mentionedScans = 0
         
@@ -289,6 +321,10 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
           visibility = actual.visibility
           openai = actual.openai
           claude = actual.claude
+          gemini = actual.gemini
+          llama = actual.llama
+          mistral = actual.mistral
+          perplexity = actual.perplexity
           totalScans = actual.totalScans
           mentionedScans = actual.mentionedScans
         } else if (isBeforeFirstActual) {
@@ -312,6 +348,10 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
           visibilityProjection: isProjection ? visibility : (isToday ? visibility : null),
           openai,
           claude,
+          gemini,
+          llama,
+          mistral,
+          perplexity,
           totalScans,
           mentionedScans,
           isToday,
@@ -521,12 +561,14 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
                           </p>
                           {data.totalScans > 0 && (
                             <>
-                              <p className="text-sm text-green-600">
-                                OpenAI: {data.openai}%
-                              </p>
-                              <p className="text-sm text-orange-500">
-                                Claude: {data.claude}%
-                              </p>
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
+                                {data.openai > 0 && <p style={{ color: MODEL_CONFIG.openai.color }}>GPT: {data.openai}%</p>}
+                                {data.claude > 0 && <p style={{ color: MODEL_CONFIG.claude.color }}>Claude: {data.claude}%</p>}
+                                {data.gemini > 0 && <p style={{ color: MODEL_CONFIG.gemini.color }}>Gemini: {data.gemini}%</p>}
+                                {data.llama > 0 && <p style={{ color: MODEL_CONFIG.llama.color }}>Llama: {data.llama}%</p>}
+                                {data.mistral > 0 && <p style={{ color: MODEL_CONFIG.mistral.color }}>Mistral: {data.mistral}%</p>}
+                                {data.perplexity > 0 && <p style={{ color: MODEL_CONFIG.perplexity.color }}>Perplexity: {data.perplexity}%</p>}
+                              </div>
                               <p className="text-xs text-muted-foreground mt-1">
                                 {data.mentionedScans}/{data.totalScans} mentions
                               </p>
@@ -590,7 +632,7 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
           {filteredScanResults && filteredScanResults.length > 0 && (
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm font-medium mb-2">Visibility by Model</p>
-              <div className="h-[150px]">
+              <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData.filter(d => d.totalScans > 0)} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -608,23 +650,13 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
                     <Tooltip
                       formatter={(value, name) => [`${value}%`, name]}
                     />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="openai"
-                      name="OpenAI"
-                      stroke="#22c55e"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="claude"
-                      name="Claude"
-                      stroke="#f97316"
-                      strokeWidth={2}
-                      dot={false}
-                    />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                    <Line type="monotone" dataKey="openai" name={MODEL_CONFIG.openai.name} stroke={MODEL_CONFIG.openai.color} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="claude" name={MODEL_CONFIG.claude.name} stroke={MODEL_CONFIG.claude.color} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="gemini" name={MODEL_CONFIG.gemini.name} stroke={MODEL_CONFIG.gemini.color} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="llama" name={MODEL_CONFIG.llama.name} stroke={MODEL_CONFIG.llama.color} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="mistral" name={MODEL_CONFIG.mistral.name} stroke={MODEL_CONFIG.mistral.color} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="perplexity" name={MODEL_CONFIG.perplexity.name} stroke={MODEL_CONFIG.perplexity.color} strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
