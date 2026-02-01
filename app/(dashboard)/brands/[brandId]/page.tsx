@@ -10,11 +10,12 @@ import {
   Settings,
   TrendingUp
 } from 'lucide-react'
-import { BrandContext, PERSONA_CONFIGS, CorePersona, CustomPersona } from '@/lib/supabase/types'
+import { BrandContext } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
 import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, RefreshContextButton } from '@/components/dashboard/brand-actions'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
+import { PersonaManager } from '@/components/dashboard/persona-manager'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
@@ -344,71 +345,19 @@ export default async function BrandPage({ params }: Props) {
                 <div>
                   <CardTitle className="text-base">Target Personas</CardTitle>
                   <CardDescription>
-                    User types detected from your website - prompts are tailored to how each persona searches
+                    User types to generate prompts for - toggle on/off or add custom personas
                   </CardDescription>
                 </div>
                 <RefreshContextButton brandId={brandId} />
               </div>
             </CardHeader>
             <CardContent>
-              {context?.target_personas && context.target_personas.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {context.target_personas.map((personaId: string) => {
-                    // Check if it's a core persona
-                    const corePersona = PERSONA_CONFIGS.find(p => p.id === personaId)
-                    // Check if it's a custom persona
-                    const customPersona = context.custom_personas?.find((cp: CustomPersona) => cp.id === personaId)
-                    
-                    if (corePersona) {
-                      return (
-                        <div 
-                          key={personaId}
-                          className="px-3 py-2 border rounded-lg bg-muted/50"
-                        >
-                          <div className="font-medium text-sm">{corePersona.name}</div>
-                          <div className="text-xs text-muted-foreground">{corePersona.description}</div>
-                        </div>
-                      )
-                    }
-                    
-                    if (customPersona) {
-                      return (
-                        <div 
-                          key={personaId}
-                          className="px-3 py-2 border rounded-lg bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800"
-                        >
-                          <div className="font-medium text-sm flex items-center gap-2">
-                            {customPersona.name}
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">Custom</Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground">{customPersona.description}</div>
-                          <div className="text-xs text-teal-600 dark:text-teal-400 mt-1">
-                            Detected from: {customPersona.detected_from}
-                          </div>
-                        </div>
-                      )
-                    }
-                    
-                    // Unknown persona (shouldn't happen but fallback)
-                    return (
-                      <div key={personaId} className="px-3 py-2 border rounded-lg bg-muted/50">
-                        <div className="font-medium text-sm">
-                          {personaId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    No personas detected yet. Click &quot;Refresh Context&quot; to analyze your website and identify target user types.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Personas help generate prompts tailored to how different users search (B2B marketers, developers, SMB owners, etc.)
-                  </p>
-                </div>
-              )}
+              <PersonaManager 
+                brandId={brandId}
+                targetPersonas={context?.target_personas || []}
+                customPersonas={context?.custom_personas || []}
+                disabledPersonas={context?.disabled_personas || []}
+              />
             </CardContent>
           </Card>
 

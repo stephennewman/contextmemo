@@ -662,6 +662,8 @@ export interface BrandContext {
   target_personas?: PromptPersona[]
   // Custom industry-specific personas detected from website
   custom_personas?: CustomPersona[]
+  // Personas that have been manually disabled (won't generate prompts)
+  disabled_personas?: string[]
 }
 
 // User intent extracted from homepage content

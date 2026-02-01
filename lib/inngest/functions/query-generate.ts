@@ -164,15 +164,21 @@ export const queryGenerate = inngest.createFunction(
         ? context.target_personas
         : ['b2b_marketer', 'developer', 'smb_owner'] as PromptPersona[]
       
-      // Get core persona configs that match target personas
-      const corePersonas = PERSONA_CONFIGS.filter(p => targetPersonaIds.includes(p.id))
+      // Filter out disabled personas
+      const disabledPersonas = context.disabled_personas || []
+      const enabledPersonaIds = targetPersonaIds.filter(id => !disabledPersonas.includes(id))
+      
+      console.log(`Target personas: ${targetPersonaIds.length}, Disabled: ${disabledPersonas.length}, Enabled: ${enabledPersonaIds.length}`)
+      
+      // Get core persona configs that match enabled personas
+      const corePersonas = PERSONA_CONFIGS.filter(p => enabledPersonaIds.includes(p.id))
       
       // Get custom personas from brand context
       const customPersonas = context.custom_personas || []
       
-      // Convert custom personas to the same format as core personas
+      // Convert custom personas to the same format as core personas (only enabled ones)
       const customAsConfigs: PersonaConfig[] = customPersonas
-        .filter(cp => targetPersonaIds.includes(cp.id))
+        .filter(cp => enabledPersonaIds.includes(cp.id))
         .map(cp => ({
           id: cp.id as PromptPersona,
           name: cp.name,
