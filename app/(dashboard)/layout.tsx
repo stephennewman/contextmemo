@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { FileText, LayoutDashboard, Settings, User, LogOut, Bell } from 'lucide-react'
+import { Zap, LayoutDashboard, Settings, LogOut, Bell } from 'lucide-react'
 
 async function signOut() {
   'use server'
@@ -44,70 +44,74 @@ export default async function DashboardLayout({
     .select('id, name, subdomain')
     .order('created_at', { ascending: false })
 
+  // Get initials for avatar
+  const initials = tenant?.name 
+    ? tenant.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : user.email?.slice(0, 2).toUpperCase() || 'U'
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white dark:bg-zinc-900">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-6">
+    <div className="min-h-screen bg-white">
+      {/* Bold Electric Header */}
+      <header className="sticky top-0 z-50 bg-[#0F172A]">
+        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-6">
+          <div className="flex items-center gap-10">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <FileText className="h-6 w-6" />
-              <span className="font-semibold text-lg">Context Memo</span>
+              <Zap className="h-7 w-7 text-[#0EA5E9]" />
+              <span className="font-bold text-xl tracking-tight text-white">CONTEXT MEMO</span>
             </Link>
             
-            {brands && brands.length > 0 && (
-              <nav className="hidden md:flex items-center gap-4">
-                <Link 
-                  href="/dashboard" 
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Dashboard
-                </Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <Link 
+                href="/dashboard" 
+                className="px-4 py-2 text-sm font-semibold tracking-wide bg-[#0EA5E9] text-white"
+              >
+                DASHBOARD
+              </Link>
+              {brands && brands.length > 0 && (
                 <Link 
                   href={`/brands/${brands[0].id}`}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="px-4 py-2 text-sm font-semibold tracking-wide text-slate-400 hover:text-white transition-colors"
                 >
-                  {brands[0].name}
+                  {brands[0].name.toUpperCase()}
                 </Link>
-              </nav>
-            )}
+              )}
+            </nav>
           </div>
           
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <button className="p-2 text-slate-400 hover:text-white transition-colors">
+              <Bell className="h-5 w-5" strokeWidth={2.5} />
+            </button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="h-5 w-5" />
-                </Button>
+                <button className="w-9 h-9 flex items-center justify-center text-sm font-bold bg-[#0EA5E9] text-white">
+                  {initials}
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{tenant?.name || 'User'}</p>
+              <DropdownMenuContent align="end" className="w-56 border-2 border-[#0F172A] rounded-none">
+                <div className="px-3 py-2 border-b-2 border-[#0F172A]">
+                  <p className="text-sm font-bold">{tenant?.name || 'User'}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard">
+                <DropdownMenuItem asChild className="rounded-none">
+                  <Link href="/dashboard" className="font-medium">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
+                    DASHBOARD
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings">
+                <DropdownMenuItem asChild className="rounded-none">
+                  <Link href="/settings" className="font-medium">
                     <Settings className="mr-2 h-4 w-4" />
-                    Settings
+                    SETTINGS
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-[#0F172A]" />
                 <form action={signOut}>
-                  <DropdownMenuItem asChild>
-                    <button type="submit" className="w-full cursor-pointer">
+                  <DropdownMenuItem asChild className="rounded-none">
+                    <button type="submit" className="w-full cursor-pointer font-medium">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Sign out
+                      SIGN OUT
                     </button>
                   </DropdownMenuItem>
                 </form>
@@ -118,7 +122,7 @@ export default async function DashboardLayout({
       </header>
       
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         {children}
       </main>
     </div>

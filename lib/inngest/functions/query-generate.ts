@@ -154,13 +154,20 @@ export const queryGenerate = inngest.createFunction(
       }
     })
 
-    // Step 5: Generate persona-based prompts for each persona
+    // Step 5: Generate persona-based prompts for the brand's target personas
     const personaQueries = await step.run('generate-persona-prompts', async () => {
       const allPersonaQueries: GeneratedQuery[] = []
       const competitorNames = competitors.map(c => c.name).join(', ')
 
-      // Generate prompts for top 4 most relevant personas (to balance coverage vs. cost)
-      const relevantPersonas = PERSONA_CONFIGS.slice(0, 4)
+      // Use brand's extracted target personas, or fall back to top 3 generic if none extracted
+      const targetPersonaIds = context.target_personas && context.target_personas.length > 0
+        ? context.target_personas
+        : ['b2b_marketer', 'developer', 'smb_owner'] as PromptPersona[] // sensible defaults
+      
+      // Get the full persona configs for the target personas
+      const relevantPersonas = PERSONA_CONFIGS.filter(p => targetPersonaIds.includes(p.id))
+      
+      console.log(`Generating prompts for ${relevantPersonas.length} target personas:`, targetPersonaIds)
 
       for (const persona of relevantPersonas) {
         try {

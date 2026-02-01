@@ -122,8 +122,9 @@ INNGEST_EVENT_KEY=[required for production]
 
 | Date | Activity | Details |
 |------|----------|---------|
+| Feb 1, 2026 | **Competitive Intelligence Dashboard** | New share-of-voice analysis showing which competitors win queries vs brand. Tracks wins/ties/losses across all scans. Shows "queries to improve" where competitors beat brand. Visual progress bars for share of voice. |
 | Feb 1, 2026 | **Competitor Content Intelligence** | Daily scan of competitor blogs/content, AI classification (filters press releases, feature announcements), auto-generates response articles with brand's tone, auto-publishes to resources page. New `competitor_content` table, `memo_type: 'response'`. |
-| Feb 1, 2026 | **Persona-based prompt system** | Renamed queries → prompts throughout UI. Added 6 persona types (B2B Marketer, Developer, Product Leader, Enterprise Buyer, SMB Owner, Student) that affect how prompts are generated. Prompts now tagged with persona, filterable in UI. |
+| Feb 1, 2026 | **Persona-based prompt system** | Renamed queries → prompts throughout UI. Added 6 persona types (B2B Marketer, Developer, Product Leader, Enterprise Buyer, SMB Owner, Student). **Personas now extracted from brand website analysis** - context extraction identifies target personas based on signals (API docs = developer, SOC 2 = enterprise, etc.). Prompts generated only for brand's relevant personas. |
 | Feb 1, 2026 | **OpenRouter multi-model scanning** | Expanded AI model coverage via OpenRouter: GPT-4o, Claude, Gemini 2.0 Flash, Llama 3.1 70B, Mistral Large, Perplexity Sonar. Visibility chart updated to show all 6 models. |
 | Feb 1, 2026 | **External credibility signals** | Added `/about/editorial` guidelines page, `/ai.txt` for AI crawler permissions, enhanced Schema.org with `sameAs` links to LinkedIn/Crunchbase/Wikipedia, social_links support in BrandContext. |
 | Feb 1, 2026 | **Automated backlinking system** | New continuous backlinking: auto-runs after memo generation, daily refresh at 7 AM UTC, injects contextual links + "Related Reading" section. Functions: `memo/backlink`, `memo/batch-backlink`, `dailyBacklinkRefresh`. |
@@ -152,7 +153,7 @@ INNGEST_EVENT_KEY=[required for production]
 | Problem | Score | Description |
 |---------|-------|-------------|
 | No Stripe integration | 75 | Cannot collect payments - needed before public launch |
-| DB migration needed: persona column | 70 | Run: `ALTER TABLE queries ADD COLUMN persona TEXT;` in Supabase |
+| ~~DB migration needed: persona column~~ | ~~70~~ | ✅ APPLIED - `persona TEXT` column added to queries table |
 | Missing SUPABASE_SERVICE_ROLE_KEY | 70 | Background jobs need this key for admin access |
 | No Inngest production keys | 65 | Need to configure Inngest for production |
 | ~~No email confirmation~~ | ~~50~~ | ✅ RESOLVED - Email verification now required |
@@ -160,11 +161,116 @@ INNGEST_EVENT_KEY=[required for production]
 ### High-Value Opportunities
 | Opportunity | Score | Description |
 |-------------|-------|-------------|
+| **Search Console Integrations** | 90 | Upstream signal for AI visibility. Bing (ChatGPT) + Google (AI Overviews). See API docs below. |
 | Vercel deployment | 90 | Deploy to production with custom domain |
 | Add Google Gemini scanning | 75 | Third AI model for more comprehensive coverage |
 | ~~Scheduled scans~~ | ~~70~~ | ✅ IMPLEMENTED - Daily automation at 6 AM ET |
 | Email notifications | 65 | Alert users when visibility changes |
 | Memo templates | 60 | More memo types (best-of, what-is) |
+
+### Search Console API Integrations (Documented Feb 1, 2026)
+
+**Why it matters:** 
+- ChatGPT uses **Bing** for real-time RAG → Bing Webmaster data shows discoverability
+- Google AI Overviews uses **Google** → GSC data shows discoverability
+- Both show which queries a brand's memo pages appear for in search - the **upstream signal** for AI visibility
+
+---
+
+#### Bing Webmaster API
+
+**Endpoint:**
+```
+POST https://ssl.bing.com/webmaster/api.svc/json/GetQueryStats?siteUrl=URL&apikey=KEY
+```
+
+**Response:** Query, Impressions, Clicks, AvgImpressionPosition, Date
+
+**Authentication:** Simple API key from Bing Webmaster Tools > Settings > API Access
+
+**Limitations:**
+- No date range filtering (returns all data every time)
+- Weekly buckets only (Saturdays)
+- One API key per user (works for all verified sites)
+
+---
+
+#### Google Search Console API
+
+**Endpoint:**
+```
+POST https://www.googleapis.com/webmasters/v3/sites/{siteUrl}/searchAnalytics/query
+
+Body: {
+  "startDate": "2026-01-01",
+  "endDate": "2026-01-31",
+  "dimensions": ["query", "page", "date"],
+  "rowLimit": 1000
+}
+```
+
+**Response:** For each row: keys[], clicks, impressions, ctr, position
+
+**Authentication:** OAuth 2.0 (more complex)
+- Requires Google Cloud project
+- OAuth consent screen setup
+- Service account or user authorization flow
+- Scopes: `webmasters.readonly` or `webmasters`
+
+**Advantages over Bing:**
+- Date range filtering
+- More granular dimensions (country, device, searchAppearance)
+- Larger data limits (25k rows per request)
+- Filter by specific pages (memo URLs)
+
+---
+
+#### Combined Implementation Plan
+
+**Database:**
+```sql
+create table search_console_stats (
+  id uuid default gen_random_uuid() primary key,
+  brand_id uuid references brands(id),
+  provider text not null,  -- 'bing' or 'google'
+  query text not null,
+  page_url text,
+  impressions integer,
+  clicks integer,
+  position decimal,
+  ctr decimal,
+  date date not null,
+  synced_at timestamptz default now()
+);
+
+create index idx_search_stats_brand on search_console_stats(brand_id, date desc);
+```
+
+**Brand Settings Extension:**
+```typescript
+interface SearchConsoleConfig {
+  bing?: {
+    api_key: string
+    enabled: boolean
+  }
+  google?: {
+    refresh_token: string  // From OAuth flow
+    enabled: boolean
+  }
+}
+```
+
+**Inngest Functions:**
+1. `search-console/sync-bing` - Weekly sync from Bing
+2. `search-console/sync-google` - Weekly sync from GSC
+3. `search-console/correlate` - Map search queries to generated prompts
+
+**Dashboard Display:**
+- Show "Search Visibility" alongside "AI Visibility"
+- Correlation: "Queries where you rank in search but aren't mentioned by AI" = opportunities
+- Correlation: "Queries where AI mentions you but you don't rank" = memos working
+
+**Priority:** Bing first (simpler auth), Google second (richer data)
 
 ---
 

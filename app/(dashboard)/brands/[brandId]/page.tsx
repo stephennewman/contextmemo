@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   AlertCircle,
   ExternalLink,
-  Settings
+  Settings,
+  TrendingUp
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
 import { VisibilityChart } from '@/components/dashboard/visibility-chart'
@@ -158,15 +159,15 @@ export default async function BrandPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Bold Electric Header */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold">{brand.name}</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
             {brand.verified ? (
-              <Badge className="bg-green-500 text-xs">Verified</Badge>
+              <span className="px-2 py-1 text-xs font-bold bg-[#10B981] text-white">VERIFIED</span>
             ) : (
-              <Badge variant="outline" className="text-xs">Unverified</Badge>
+              <span className="px-2 py-1 text-xs font-bold border-2 border-[#0F172A] text-[#0F172A]">PENDING</span>
             )}
           </div>
           <a 
@@ -176,16 +177,16 @@ export default async function BrandPage({ params }: Props) {
             } 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-sm text-muted-foreground hover:underline flex items-center gap-1"
+            className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
           >
             {brand.subdomain}.contextmemo.com
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white">
             <Link href={`/brands/${brandId}/settings`}>
-              <Settings className="h-4 w-4" />
+              <Settings className="h-4 w-4" strokeWidth={2.5} />
             </Link>
           </Button>
           <DiscoveryScanButton brandId={brandId} />
@@ -193,32 +194,59 @@ export default async function BrandPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Visibility Score Hero */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="p-6 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-5 w-5 text-[#0EA5E9]" strokeWidth={2.5} />
+            <span className="text-xs font-bold tracking-widest text-slate-400">VISIBILITY SCORE</span>
+          </div>
+          <div className="text-5xl font-bold text-[#0EA5E9]">{visibilityScore}%</div>
+          <div className="w-full h-2 bg-slate-700 mt-3">
+            <div className="h-2 bg-[#0EA5E9]" style={{ width: `${visibilityScore}%` }} />
+          </div>
+        </div>
+        <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
+          <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{memos?.length || 0}</div>
+          <div className="text-sm text-zinc-500">published</div>
+        </div>
+        <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
+          <span className="text-xs font-bold tracking-widest text-zinc-500">QUERIES</span>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{queries?.length || 0}</div>
+          <div className="text-sm text-zinc-500">tracked</div>
+        </div>
+        <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #F59E0B' }}>
+          <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{recentScans?.length || 0}</div>
+          <div className="text-sm text-zinc-500">last 90 days</div>
+        </div>
+      </div>
+
       {/* Setup Progress - only show if incomplete */}
       {(!hasContext || !competitors?.length || !queries?.length) && (
-        <Card className="border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/20">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <AlertCircle className="h-4 w-4 text-orange-600" />
-              <span className="font-medium text-orange-700 dark:text-orange-400">Complete setup to start tracking</span>
-            </div>
-            <BrandActions 
-              brandId={brandId}
-              hasContext={hasContext}
-              hasCompetitors={!!competitors?.length}
-              hasQueries={!!queries?.length}
-            />
-          </CardContent>
-        </Card>
+        <div className="p-5 border-[3px] border-[#F59E0B] bg-[#FFFBEB]" style={{ borderLeft: '8px solid #F59E0B' }}>
+          <div className="flex items-center gap-3 mb-3">
+            <AlertCircle className="h-5 w-5 text-[#F59E0B]" strokeWidth={2.5} />
+            <span className="font-bold text-[#92400E]">COMPLETE SETUP TO START TRACKING</span>
+          </div>
+          <BrandActions 
+            brandId={brandId}
+            hasContext={hasContext}
+            hasCompetitors={!!competitors?.length}
+            hasQueries={!!queries?.length}
+          />
+        </div>
       )}
 
       {/* Main Content - Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="scans">Scans{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
-          <TabsTrigger value="memos">Memos{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
-          <TabsTrigger value="prompts">Prompts{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
-          <TabsTrigger value="competitors">Competitors{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
+        <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto">
+          <TabsTrigger value="overview" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">OVERVIEW</TabsTrigger>
+          <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
+          <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
+          <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
+          <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

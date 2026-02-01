@@ -1,9 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Plus, TrendingUp, FileText, Search, AlertCircle } from 'lucide-react'
 
 export default async function DashboardPage() {
@@ -82,77 +80,79 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
+          <p className="text-zinc-500 font-medium">
             Monitor your AI search visibility across all brands
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-semibold rounded-none px-6">
           <Link href="/brands/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Brand
+            <Plus className="mr-2 h-4 w-4" strokeWidth={2.5} />
+            ADD BRAND
           </Link>
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Brand Cards - Bold Electric Style */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {brandsWithStats.map((brand) => (
           <Link key={brand.id} href={`/brands/${brand.id}`}>
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl">{brand.name}</CardTitle>
+            <div className="border-[3px] border-[#0F172A] bg-white hover:shadow-lg transition-shadow cursor-pointer">
+              {/* Header */}
+              <div className="p-5 border-b-[3px] border-[#0F172A]">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-xl font-bold text-[#0F172A]">{brand.name.toUpperCase()}</h3>
                   {brand.verified ? (
-                    <Badge variant="secondary">Verified</Badge>
+                    <span className="px-2 py-1 text-xs font-bold bg-[#10B981] text-white">VERIFIED</span>
                   ) : (
-                    <Badge variant="outline">Pending</Badge>
+                    <span className="px-2 py-1 text-xs font-bold border-2 border-[#0F172A] text-[#0F172A]">PENDING</span>
                   )}
                 </div>
-                <CardDescription>{brand.subdomain}.contextmemo.com</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{brand.visibilityScore}%</p>
-                      <p className="text-xs text-muted-foreground">Visibility</p>
-                    </div>
+                <p className="text-sm text-zinc-500">{brand.subdomain}.contextmemo.com</p>
+              </div>
+              
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 divide-x-[3px] divide-[#0F172A]">
+                {/* Visibility */}
+                <div className="p-4 border-b-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="h-4 w-4 text-[#0EA5E9]" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-zinc-500">VISIBILITY</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-blue-500/10">
-                      <FileText className="h-4 w-4 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{brand.memos?.[0]?.count || 0}</p>
-                      <p className="text-xs text-muted-foreground">Memos</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-green-500/10">
-                      <Search className="h-4 w-4 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{brand.queries?.[0]?.count || 0}</p>
-                      <p className="text-xs text-muted-foreground">Queries</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-orange-500/10">
-                      <AlertCircle className="h-4 w-4 text-orange-500" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{brand.alertsCount}</p>
-                      <p className="text-xs text-muted-foreground">Alerts</p>
-                    </div>
-                  </div>
+                  <p className="text-3xl font-bold text-[#0F172A]">{brand.visibilityScore}%</p>
                 </div>
-              </CardContent>
-            </Card>
+                
+                {/* Memos */}
+                <div className="p-4 border-b-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-[#8B5CF6]" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-zinc-500">MEMOS</span>
+                  </div>
+                  <p className="text-3xl font-bold text-[#0F172A]">{brand.memos?.[0]?.count || 0}</p>
+                </div>
+                
+                {/* Queries */}
+                <div className="p-4" style={{ borderLeft: '8px solid #10B981' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Search className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-zinc-500">QUERIES</span>
+                  </div>
+                  <p className="text-3xl font-bold text-[#0F172A]">{brand.queries?.[0]?.count || 0}</p>
+                </div>
+                
+                {/* Alerts */}
+                <div className="p-4" style={{ borderLeft: '8px solid #F59E0B' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertCircle className="h-4 w-4 text-[#F59E0B]" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-zinc-500">ALERTS</span>
+                  </div>
+                  <p className="text-3xl font-bold text-[#0F172A]">{brand.alertsCount}</p>
+                </div>
+              </div>
+            </div>
           </Link>
         ))}
       </div>

@@ -4,11 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -52,23 +47,27 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription>
-          Sign in to your Context Memo account
-        </CardDescription>
-      </CardHeader>
+    <div className="border-[3px] border-[#0F172A] bg-white">
+      {/* Header */}
+      <div className="p-6 border-b-[3px] border-[#0F172A]">
+        <h1 className="text-2xl font-bold text-[#0F172A]">WELCOME BACK</h1>
+        <p className="text-zinc-500 font-medium mt-1">Sign in to your Context Memo account</p>
+      </div>
+      
+      {/* Form */}
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <div className="p-6 space-y-5">
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 font-medium">
+              {error}
+            </div>
           )}
+          
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
+            <label htmlFor="email" className="text-xs font-bold tracking-widest text-zinc-500">
+              EMAIL
+            </label>
+            <input
               id="email"
               type="email"
               placeholder="you@company.com"
@@ -76,33 +75,45 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              className="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
             />
           </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
+            <label htmlFor="password" className="text-xs font-bold tracking-widest text-zinc-500">
+              PASSWORD
+            </label>
+            <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
+              className="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
             />
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+        </div>
+        
+        {/* Footer */}
+        <div className="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
-          </Button>
-          <p className="text-sm text-muted-foreground text-center">
+            SIGN IN
+          </button>
+          
+          <p className="text-sm text-zinc-500 text-center mt-4 font-medium">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
-              Sign up
+            <Link href="/signup" className="text-[#0EA5E9] hover:underline font-bold">
+              SIGN UP
             </Link>
           </p>
-        </CardFooter>
+        </div>
       </form>
-    </Card>
+    </div>
   )
 }

@@ -12,8 +12,20 @@ Analyze the provided website content and extract the following information in JS
   "features": ["Key features or capabilities"],
   "certifications": ["Any certifications, accreditations, or compliance standards"],
   "customers": ["Named customers or notable clients (if publicly listed)"],
-  "brand_voice": "professional" | "casual" | "technical"
+  "brand_voice": "professional" | "casual" | "technical",
+  "target_personas": ["Array of persona IDs this brand targets"]
 }
+
+TARGET PERSONAS - Identify which of these personas the brand is clearly targeting:
+
+- "b2b_marketer" - Marketing leaders. Signals: ROI language, campaign tools, marketing automation, CRM integration, analytics dashboards, lead generation
+- "developer" - Technical ICs. Signals: API documentation, SDKs, code samples, GitHub links, developer portal, technical specs, CLI tools
+- "product_leader" - PMs/Directors. Signals: Team collaboration, roadmap features, product analytics, workflow tools, scaling teams
+- "enterprise_buyer" - Procurement/IT. Signals: SOC 2, GDPR, SSO, enterprise pricing, compliance, SLA, dedicated support, security pages
+- "smb_owner" - Small business owners. Signals: Simple pricing, quick setup, "small business", affordable, no-code, easy to use
+- "student" - Students/researchers. Signals: Free tier, educational pricing, tutorials, learning resources, community, academic use
+
+Include a persona ONLY if there are clear signals on the website. Most brands target 2-4 personas.
 
 Rules:
 1. Only include information explicitly stated in the content
@@ -21,6 +33,7 @@ Rules:
 3. Use the exact language from the website when possible
 4. Do not embellish or add marketing language
 5. For brand_voice, analyze the tone: "professional" (formal business), "casual" (friendly/conversational), "technical" (industry jargon, detailed specs)
+6. For target_personas, only include personas with CLEAR evidence from the website content
 
 Respond ONLY with valid JSON, no explanations.`
 

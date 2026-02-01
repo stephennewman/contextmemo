@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Loader2, Save, Trash2, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
-import { BrandContext, BrandTone, HubSpotConfig } from '@/lib/supabase/types'
+import { BrandContext, BrandTone, HubSpotConfig, SearchConsoleConfig } from '@/lib/supabase/types'
 
 interface Brand {
   id: string
@@ -43,6 +43,15 @@ const defaultHubSpotConfig: HubSpotConfig = {
   auto_sync: false,
 }
 
+// Default Search Console config
+const defaultSearchConsoleConfig: SearchConsoleConfig = {
+  bing: {
+    enabled: false,
+    api_key: '',
+    site_url: '',
+  },
+}
+
 export default function BrandSettingsPage() {
   const router = useRouter()
   const params = useParams()
@@ -71,6 +80,9 @@ export default function BrandSettingsPage() {
   
   // HubSpot integration state
   const [hubspotConfig, setHubspotConfig] = useState<HubSpotConfig>(defaultHubSpotConfig)
+  
+  // Search Console integration state
+  const [searchConsoleConfig, setSearchConsoleConfig] = useState<SearchConsoleConfig>(defaultSearchConsoleConfig)
 
   useEffect(() => {
     const loadBrand = async () => {
@@ -112,6 +124,14 @@ export default function BrandSettingsPage() {
           ...defaultHubSpotConfig,
           ...context.hubspot,
         })
+        // Load Search Console config with defaults
+        setSearchConsoleConfig({
+          ...defaultSearchConsoleConfig,
+          bing: {
+            ...defaultSearchConsoleConfig.bing,
+            ...context.search_console?.bing,
+          },
+        })
       }
       
       setLoading(false)
@@ -139,6 +159,7 @@ export default function BrandSettingsPage() {
       headquarters: headquarters || undefined,
       brand_tone: brandTone,
       hubspot: hubspotConfig,
+      search_console: searchConsoleConfig,
     }
 
     const { error } = await supabase
@@ -605,6 +626,104 @@ export default function BrandSettingsPage() {
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                 </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bing Webmaster Integration</CardTitle>
+          <CardDescription>
+            Track which search queries drive traffic to your memos. Since ChatGPT uses Bing for real-time search, this data indicates AI discoverability.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Enable Bing Webmaster</p>
+              <p className="text-sm text-muted-foreground">
+                Sync search query data from Bing Webmaster Tools
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={searchConsoleConfig.bing?.enabled || false}
+                onChange={(e) => setSearchConsoleConfig({ 
+                  ...searchConsoleConfig, 
+                  bing: { ...searchConsoleConfig.bing, enabled: e.target.checked } 
+                })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+          
+          {searchConsoleConfig.bing?.enabled && (
+            <>
+              <Separator />
+              <div className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    <p className="mb-2">To get your Bing Webmaster API key:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      <li>Go to <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Bing Webmaster Tools</a></li>
+                      <li>Add and verify your site if not already done</li>
+                      <li>Go to Settings → API Access</li>
+                      <li>Generate an API Key</li>
+                    </ol>
+                    <a 
+                      href="https://learn.microsoft.com/en-us/bingwebmaster/getting-access" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline mt-2"
+                    >
+                      Bing Webmaster API Documentation
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bing_api_key">API Key</Label>
+                  <Input
+                    id="bing_api_key"
+                    type="password"
+                    value={searchConsoleConfig.bing?.api_key || ''}
+                    onChange={(e) => setSearchConsoleConfig({ 
+                      ...searchConsoleConfig, 
+                      bing: { ...searchConsoleConfig.bing, api_key: e.target.value } 
+                    })}
+                    placeholder="Your Bing Webmaster API key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    One API key works for all your verified sites
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bing_site_url">Site URL</Label>
+                  <Input
+                    id="bing_site_url"
+                    value={searchConsoleConfig.bing?.site_url || `https://${brand.subdomain}.contextmemo.com`}
+                    onChange={(e) => setSearchConsoleConfig({ 
+                      ...searchConsoleConfig, 
+                      bing: { ...searchConsoleConfig.bing, site_url: e.target.value } 
+                    })}
+                    placeholder="https://example.contextmemo.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The site URL as verified in Bing Webmaster Tools (usually your memo subdomain)
+                  </p>
+                </div>
+
+                {searchConsoleConfig.bing?.last_synced_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Last synced: {new Date(searchConsoleConfig.bing.last_synced_at).toLocaleString()}
+                  </p>
+                )}
               </div>
             </>
           )}

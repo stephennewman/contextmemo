@@ -366,6 +366,47 @@ export interface Database {
           recorded_at?: string
         }
       }
+      search_console_stats: {
+        Row: {
+          id: string
+          brand_id: string
+          provider: string
+          query: string
+          page_url: string | null
+          impressions: number
+          clicks: number
+          position: number | null
+          ctr: number | null
+          date: string
+          synced_at: string
+        }
+        Insert: {
+          id?: string
+          brand_id: string
+          provider: string
+          query: string
+          page_url?: string | null
+          impressions?: number
+          clicks?: number
+          position?: number | null
+          ctr?: number | null
+          date: string
+          synced_at?: string
+        }
+        Update: {
+          id?: string
+          brand_id?: string
+          provider?: string
+          query?: string
+          page_url?: string | null
+          impressions?: number
+          clicks?: number
+          position?: number | null
+          ctr?: number | null
+          date?: string
+          synced_at?: string
+        }
+      }
       competitor_content: {
         Row: {
           id: string
@@ -429,6 +470,21 @@ export interface HubSpotConfig {
   access_token?: string
   blog_id?: string  // content_group_id in HubSpot
   auto_sync?: boolean  // Auto-push memos on publish
+}
+
+// Search Console integrations (Bing + Google)
+export interface SearchConsoleConfig {
+  bing?: {
+    enabled: boolean
+    api_key?: string
+    site_url?: string  // The verified site URL in Bing Webmaster
+    last_synced_at?: string
+  }
+  google?: {
+    enabled: boolean
+    // Google uses OAuth - would need refresh token flow
+    // For now, just Bing is supported
+  }
 }
 
 // Brand tone configuration for content generation
@@ -553,12 +609,15 @@ export interface BrandContext {
   brand_tone?: BrandTone
   // Integration configurations
   hubspot?: HubSpotConfig
+  search_console?: SearchConsoleConfig
   // Raw homepage content for intent-based query generation
   homepage_content?: string
   // Extracted user intents/pain points from homepage
   user_intents?: UserIntent[]
   // Social links for Schema.org sameAs references
   social_links?: SocialLinks
+  // Target personas identified from website analysis
+  target_personas?: PromptPersona[]
 }
 
 // User intent extracted from homepage content
@@ -580,3 +639,4 @@ export type MemoVersion = Database['public']['Tables']['memo_versions']['Row']
 export type Alert = Database['public']['Tables']['alerts']['Row']
 export type VisibilityHistory = Database['public']['Tables']['visibility_history']['Row']
 export type CompetitorContent = Database['public']['Tables']['competitor_content']['Row']
+export type SearchConsoleStat = Database['public']['Tables']['search_console_stats']['Row']

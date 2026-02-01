@@ -4,11 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getEmailDomain } from '@/lib/utils/domain-verification'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Mail, CheckCircle, Users, Sparkles } from 'lucide-react'
 
 // Pricing tranches - users lock in their price forever
@@ -109,153 +104,174 @@ export default function SignupPage() {
   // Show confirmation screen after signup
   if (emailSent) {
     return (
-      <Card>
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
-            <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
+      <div className="border-[3px] border-[#0F172A] bg-white">
+        <div className="p-6 border-b-[3px] border-[#0F172A] text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-[#10B981]">
+            <Mail className="h-7 w-7 text-white" strokeWidth={2.5} />
           </div>
-          <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
-          <CardDescription>
-            We&apos;ve sent a confirmation link to <strong>{email}</strong>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 text-center">
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold text-[#0F172A]">CHECK YOUR EMAIL</h1>
+          <p className="text-zinc-500 font-medium mt-2">
+            We&apos;ve sent a confirmation link to <strong className="text-[#0F172A]">{email}</strong>
+          </p>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-zinc-500 text-center font-medium">
             Click the link in your email to verify your account and get started.
           </p>
-          <div className="rounded-lg border bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 p-4">
-            <div className="flex items-center justify-center gap-2 text-sm text-green-700 dark:text-green-300">
+          <div className="p-4 bg-[#10B981] text-white">
+            <div className="flex items-center justify-center gap-2 font-bold">
               <Sparkles className="h-4 w-4" />
               <span>
-                Your price: <strong>{currentTranche.price === 0 ? 'FREE' : `$${currentTranche.price}/mo`}</strong> locked in forever
+                Your price: {currentTranche.price === 0 ? 'FREE' : `$${currentTranche.price}/mo`} locked in forever
               </span>
             </div>
           </div>
-          <div className="rounded-lg border bg-muted/50 p-4">
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+          <div className="p-4 border-[3px] border-[#0F172A] bg-[#F8FAFC]">
+            <div className="flex items-center justify-center gap-2 text-sm font-medium">
+              <CheckCircle className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
               <span>Confirmation link expires in 24 hours</span>
             </div>
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground text-center">
+        </div>
+        <div className="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC] text-center">
+          <p className="text-sm text-zinc-500 font-medium">
             Didn&apos;t receive the email?{' '}
             <button 
               onClick={() => setEmailSent(false)}
-              className="text-primary hover:underline font-medium"
+              className="text-[#0EA5E9] hover:underline font-bold"
             >
-              Try again
+              TRY AGAIN
             </button>
           </p>
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-xs text-zinc-400 mt-2">
             Already verified?{' '}
-            <Link href="/login" className="text-primary hover:underline font-medium">
-              Sign in
+            <Link href="/login" className="text-[#0EA5E9] hover:underline font-bold">
+              SIGN IN
             </Link>
           </p>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      {/* Pricing Tier Banner */}
-      <div className="rounded-lg border bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800 p-4">
+      {/* Pricing Tier Banner - Bold Electric Style */}
+      <div className="p-4 bg-[#10B981] text-white" style={{ borderLeft: '8px solid #0F172A' }}>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-              <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex h-10 w-10 items-center justify-center bg-white">
+              <Sparkles className="h-5 w-5 text-[#10B981]" />
             </div>
             <div>
-              <div className="font-semibold text-green-900 dark:text-green-100">
-                {currentTranche.price === 0 ? 'Lock in FREE forever' : `Lock in $${currentTranche.price}/mo forever`}
+              <div className="font-bold">
+                {currentTranche.price === 0 ? 'LOCK IN FREE FOREVER' : `LOCK IN $${currentTranche.price}/MO FOREVER`}
               </div>
-              <div className="text-sm text-green-700 dark:text-green-300">
+              <div className="text-sm text-white/80 font-medium">
                 You&apos;re user #{CURRENT_USER_COUNT + 1} · {spotsLeft} spots left at this price
               </div>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-white/80">
             <Users className="h-3.5 w-3.5" />
             <span>{CURRENT_USER_COUNT} signed up</span>
           </div>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
-          <CardDescription>
-            Get started with Context Memo using your work email
-          </CardDescription>
-        </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="name">Full name</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Jane Smith"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoComplete="name"
-            />
+      <div className="border-[3px] border-[#0F172A] bg-white">
+        {/* Header */}
+        <div className="p-6 border-b-[3px] border-[#0F172A]">
+          <h1 className="text-2xl font-bold text-[#0F172A]">CREATE YOUR ACCOUNT</h1>
+          <p className="text-zinc-500 font-medium mt-1">Get started with Context Memo using your work email</p>
+        </div>
+        
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          <div className="p-6 space-y-5">
+            {error && (
+              <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 font-medium">
+                {error}
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-xs font-bold tracking-widest text-zinc-500">
+                FULL NAME
+              </label>
+              <input
+                id="name"
+                type="text"
+                placeholder="Jane Smith"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                className="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-xs font-bold tracking-widest text-zinc-500">
+                WORK EMAIL
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              />
+              <p className="text-xs text-zinc-500 font-medium">
+                Use your work email to verify brand ownership
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-xs font-bold tracking-widest text-zinc-500">
+                PASSWORD
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Minimum 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Work email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-            <p className="text-xs text-muted-foreground">
-              Use your work email to verify brand ownership
+          
+          {/* Footer */}
+          <div className="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              CREATE ACCOUNT
+            </button>
+            
+            <p className="text-sm text-zinc-500 text-center mt-4 font-medium">
+              Already have an account?{' '}
+              <Link href="/login" className="text-[#0EA5E9] hover:underline font-bold">
+                SIGN IN
+              </Link>
+            </p>
+            
+            <p className="text-xs text-zinc-400 text-center mt-2">
+              By signing up, you agree to our Terms of Service and Privacy Policy
             </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Minimum 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Account
-          </Button>
-          <p className="text-sm text-muted-foreground text-center">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-          <p className="text-xs text-muted-foreground text-center">
-            By signing up, you agree to our Terms of Service and Privacy Policy
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+        </form>
+      </div>
     </div>
   )
 }

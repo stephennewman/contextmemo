@@ -166,6 +166,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Backlink update started for all memos' 
         })
 
+      case 'sync_bing':
+        // Sync Bing Webmaster data
+        await inngest.send({
+          name: 'bing/sync',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Bing Webmaster sync started' 
+        })
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
