@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.1] - 2026-02-01
+
+### Fixed
+- TypeScript type errors for AI providers in scan-run.ts (OpenAIProvider vs LanguageModelV3)
+- Stripe client proxy type casting for strict TypeScript checking
+
+---
+
 ## [0.10.0] - 2026-02-01
 
 ### Added
