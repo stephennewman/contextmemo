@@ -860,3 +860,117 @@ export const AI_SOURCE_COLORS: Record<AIReferrerSource, string> = {
   organic: '#D1D5DB',
   direct_nav: '#E5E7EB',
 }
+
+// =============================================================================
+// Activity Feed Types
+// =============================================================================
+
+// Activity categories for grouping
+export type ActivityCategory = 'scan' | 'content' | 'discovery' | 'traffic' | 'system'
+
+// Specific activity types
+export type ActivityType =
+  // Scans
+  | 'scan_started'
+  | 'scan_completed'
+  | 'scan_failed'
+  | 'ai_overview_scanned'
+  // Content
+  | 'memo_generated'
+  | 'memo_published'
+  | 'memo_updated'
+  | 'context_extracted'
+  // Discovery
+  | 'competitor_discovered'
+  | 'query_generated'
+  | 'competitor_content_found'
+  | 'discovery_scan_completed'
+  // Traffic
+  | 'ai_traffic_detected'
+  // System
+  | 'daily_run_completed'
+  | 'search_console_synced'
+  | 'brand_created'
+  | 'brand_verified'
+  | 'error'
+
+// Activity log entry
+export interface ActivityLogEntry {
+  id: string
+  brand_id: string
+  tenant_id: string
+  activity_type: ActivityType
+  category: ActivityCategory
+  title: string
+  description: string | null
+  icon: string | null
+  link_url: string | null
+  link_label: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+// Activity filter options
+export interface ActivityFilters {
+  categories?: ActivityCategory[]
+  activity_types?: ActivityType[]
+  brand_ids?: string[]
+  start_date?: string
+  end_date?: string
+}
+
+// Saved view
+export interface ActivitySavedView {
+  id: string
+  tenant_id: string
+  name: string
+  filters: ActivityFilters
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Activity type metadata for UI
+export const ACTIVITY_TYPE_META: Record<ActivityType, {
+  label: string
+  icon: string
+  color: string
+  category: ActivityCategory
+}> = {
+  // Scans
+  scan_started: { label: 'Scan Started', icon: 'Play', color: '#0EA5E9', category: 'scan' },
+  scan_completed: { label: 'Scan Complete', icon: 'CheckCircle', color: '#10B981', category: 'scan' },
+  scan_failed: { label: 'Scan Failed', icon: 'XCircle', color: '#EF4444', category: 'scan' },
+  ai_overview_scanned: { label: 'AI Overview Scanned', icon: 'Eye', color: '#8B5CF6', category: 'scan' },
+  // Content
+  memo_generated: { label: 'Memo Generated', icon: 'FileText', color: '#8B5CF6', category: 'content' },
+  memo_published: { label: 'Memo Published', icon: 'Globe', color: '#10B981', category: 'content' },
+  memo_updated: { label: 'Memo Updated', icon: 'RefreshCw', color: '#F59E0B', category: 'content' },
+  context_extracted: { label: 'Context Extracted', icon: 'Database', color: '#0EA5E9', category: 'content' },
+  // Discovery
+  competitor_discovered: { label: 'Competitor Found', icon: 'Users', color: '#F97316', category: 'discovery' },
+  query_generated: { label: 'Query Generated', icon: 'Search', color: '#10B981', category: 'discovery' },
+  competitor_content_found: { label: 'Competitor Content', icon: 'Newspaper', color: '#F59E0B', category: 'discovery' },
+  discovery_scan_completed: { label: 'Discovery Complete', icon: 'Compass', color: '#8B5CF6', category: 'discovery' },
+  // Traffic
+  ai_traffic_detected: { label: 'AI Traffic', icon: 'Zap', color: '#0EA5E9', category: 'traffic' },
+  // System
+  daily_run_completed: { label: 'Daily Run', icon: 'Calendar', color: '#6B7280', category: 'system' },
+  search_console_synced: { label: 'Search Console Sync', icon: 'RefreshCw', color: '#10B981', category: 'system' },
+  brand_created: { label: 'Brand Created', icon: 'Plus', color: '#10B981', category: 'system' },
+  brand_verified: { label: 'Brand Verified', icon: 'BadgeCheck', color: '#10B981', category: 'system' },
+  error: { label: 'Error', icon: 'AlertTriangle', color: '#EF4444', category: 'system' },
+}
+
+// Category metadata
+export const ACTIVITY_CATEGORY_META: Record<ActivityCategory, {
+  label: string
+  icon: string
+  color: string
+}> = {
+  scan: { label: 'Scans', icon: 'Radar', color: '#0EA5E9' },
+  content: { label: 'Content', icon: 'FileText', color: '#8B5CF6' },
+  discovery: { label: 'Discovery', icon: 'Compass', color: '#F97316' },
+  traffic: { label: 'Traffic', icon: 'Zap', color: '#10B981' },
+  system: { label: 'System', icon: 'Settings', color: '#6B7280' },
+}

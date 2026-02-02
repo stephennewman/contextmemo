@@ -334,8 +334,14 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
 
   // Calculate aggregate metrics
   function calculateMetrics(data: DataPoint[], bench: typeof benchmarks, daysUntilEOY: number = 180) {
-    const todayData = data.find(d => d.isToday)
-    const currentVisibility = todayData?.visibility || todayData?.visibilityHistorical || bench.avgVisibility
+    // Calculate current visibility from ALL actual data points, not just today
+    // This matches the visibility score calculation on the brand page
+    const actualDataPoints = data.filter(d => d.totalScans > 0)
+    const totalMentions = actualDataPoints.reduce((sum, d) => sum + d.mentionedScans, 0)
+    const totalScans = actualDataPoints.reduce((sum, d) => sum + d.totalScans, 0)
+    const currentVisibility = totalScans > 0 
+      ? Math.round((totalMentions / totalScans) * 100)
+      : 0 // Return 0 instead of benchmark fallback when no data
     
     // Get end-of-year projection (last projection point)
     const projections = data.filter(d => d.isProjection && d.visibilityProjection !== null)

@@ -13,6 +13,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.11.0] - 2026-02-01
+
+### Added
+- **Activity Feed**: Collapsible sidebar showing all platform activity in real-time
+  - Aggregates activity from scans, memos, competitor discoveries, queries, AI traffic
+  - Timestamped entries with links to relevant pages
+  - Filter by category (Scans, Content, Discovery, Traffic, System)
+  - Filter by brand (for multi-brand users)
+  - Saved views - save filter combinations for quick access
+  - Activity icon button in header to open feed
+- New API endpoints: `/api/activity` and `/api/activity/views`
+- Activity types and utility logging functions for future Inngest integration
+- SQL migration for `activity_log` and `activity_saved_views` tables
+
+### Changed
+- Refactored dashboard header into client component for activity feed integration
+
+---
+
 ## [0.10.1] - 2026-02-01
 
 ### Fixed
@@ -197,6 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.11.0 | Feb 1, 2026 | Activity feed with filters and saved views |
 | 0.10.0 | Feb 1, 2026 | Google AI Overviews, AI traffic attribution, exports, teams, billing foundation |
 | 0.9.0 | Feb 1, 2026 | Terminal-style onboarding |
 | 0.8.0 | Feb 1, 2026 | Google Search Console, loading UIs |
