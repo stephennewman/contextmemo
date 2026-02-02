@@ -89,6 +89,46 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Memo generation started' 
         })
 
+      case 'regenerate_memo': {
+        // Regenerate an existing memo that may have failed
+        if (!body.memoId) {
+          return NextResponse.json({ error: 'memoId required' }, { status: 400 })
+        }
+
+        // Get the existing memo to find its details
+        const { data: existingMemo, error: memoError } = await supabase
+          .from('memos')
+          .select('id, slug, memo_type, source_query_id')
+          .eq('id', body.memoId)
+          .eq('brand_id', brandId)
+          .single()
+
+        if (memoError || !existingMemo) {
+          return NextResponse.json({ error: 'Memo not found' }, { status: 404 })
+        }
+
+        // Delete the existing memo so a new one can be generated with the same slug
+        await supabase
+          .from('memos')
+          .delete()
+          .eq('id', body.memoId)
+
+        // Trigger new memo generation with the same type
+        await inngest.send({
+          name: 'memo/generate',
+          data: { 
+            brandId, 
+            queryId: existingMemo.source_query_id,
+            memoType: existingMemo.memo_type,
+          },
+        })
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Memo regeneration started. The page will update when complete.' 
+        })
+      }
+
       case 'full_setup':
         // Trigger the full setup pipeline
         await inngest.send({

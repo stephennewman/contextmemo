@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactored dashboard header into client component for activity feed integration
 
+### Fixed
+- **Failed memo detection**: Memos now validate AI responses and reject error messages
+- **Regenerate button**: Added to memo edit page to fix broken memos
+- **Warning banner**: Shows when memo content looks like an AI error with action buttons
+
 ---
 
 ## [0.10.1] - 2026-02-01

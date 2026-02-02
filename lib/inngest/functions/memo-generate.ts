@@ -169,6 +169,29 @@ export const memoGenerate = inngest.createFunction(
         temperature: 0.3,
       })
 
+      // Validate that we got actual content, not an error response
+      const errorPhrases = [
+        "i'm sorry",
+        "i cannot",
+        "i can't",
+        "i don't have",
+        "i am not able",
+        "without specific details",
+        "without more context",
+        "without more information",
+        "please provide",
+        "could you provide",
+        "need more information",
+      ]
+      
+      const textLower = text.toLowerCase().slice(0, 200)
+      const isErrorResponse = errorPhrases.some(phrase => textLower.includes(phrase))
+      
+      if (isErrorResponse || text.length < 200) {
+        console.error('Memo generation produced invalid content:', text.slice(0, 200))
+        throw new Error(`Memo generation failed: AI could not generate content. Brand context may be insufficient. Please review brand settings and try again.`)
+      }
+
       return { content: text, slug, title }
     })
 

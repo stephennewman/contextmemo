@@ -19,7 +19,9 @@ import {
   Trash2,
   Check,
   X,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -54,6 +56,7 @@ export default function MemoEditPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
 
   // Form state
   const [title, setTitle] = useState('')
@@ -175,6 +178,71 @@ export default function MemoEditPage() {
     toast.info('Status changed to draft. Click Save to apply.')
   }
 
+  const handleRegenerate = async () => {
+    if (!confirm('This will regenerate the memo content using AI. Your current content will be replaced. Continue?')) {
+      return
+    }
+
+    setRegenerating(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'regenerate_memo',
+          memoId,
+          memoType: memo?.memo_type,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to regenerate memo')
+      }
+
+      toast.success('Memo regeneration started. This page will refresh when complete.')
+      
+      // Poll for completion
+      const checkInterval = setInterval(async () => {
+        const supabase = createClient()
+        const { data: updatedMemo } = await supabase
+          .from('memos')
+          .select('content_markdown, updated_at')
+          .eq('id', memoId)
+          .single()
+        
+        if (updatedMemo && updatedMemo.updated_at !== memo?.updated_at) {
+          clearInterval(checkInterval)
+          window.location.reload()
+        }
+      }, 3000)
+
+      // Stop polling after 2 minutes
+      setTimeout(() => clearInterval(checkInterval), 120000)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to regenerate memo')
+      console.error(error)
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  // Detect if memo content looks like an error/failed generation
+  const isBrokenMemo = (content: string): boolean => {
+    const errorPhrases = [
+      "i'm sorry",
+      "i cannot",
+      "i can't",
+      "i don't have",
+      "without specific details",
+      "without more context",
+      "need more information",
+      "please provide",
+    ]
+    const contentLower = content.toLowerCase().slice(0, 300)
+    return errorPhrases.some(phrase => contentLower.includes(phrase)) || content.length < 200
+  }
+
   if (loading) {
     return (
       <div className="space-y-6 max-w-4xl">
@@ -286,6 +354,16 @@ export default function MemoEditPage() {
             </>
           )}
           <div className="w-px h-6 bg-border" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRegenerate} 
+            disabled={regenerating}
+            title="Regenerate memo content using AI"
+          >
+            {regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+            Regenerate
+          </Button>
           <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleting} className="text-destructive hover:text-destructive">
             {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </Button>
@@ -295,6 +373,41 @@ export default function MemoEditPage() {
           </Button>
         </div>
       </div>
+
+      {/* Warning for broken memos */}
+      {isBrokenMemo(content) && (
+        <div className="bg-amber-50 border-2 border-amber-400 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-amber-800">This memo may have failed to generate</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              The content looks like an AI error response rather than actual memo content. 
+              This usually happens when the brand context doesn&apos;t have enough information.
+            </p>
+            <div className="flex gap-3 mt-3">
+              <Button 
+                size="sm" 
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                {regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Regenerate Memo
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                asChild
+                className="border-amber-400 text-amber-800 hover:bg-amber-100"
+              >
+                <Link href={`/brands/${brandId}/settings`}>
+                  Review Brand Context
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Main Content */}
