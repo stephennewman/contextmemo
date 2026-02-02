@@ -210,6 +210,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Google AI Overview scan started (checking top queries)' 
         })
 
+      case 'update_themes': {
+        // Update prompt themes in brand context
+        const currentContext = brand.context as Record<string, unknown> | null || {}
+        const updatedContext = {
+          ...currentContext,
+          prompt_themes: body.themes || [],
+        }
+        
+        const { error: updateError } = await supabase
+          .from('brands')
+          .update({
+            context: updatedContext,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', brandId)
+        
+        if (updateError) {
+          throw updateError
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Themes updated' 
+        })
+      }
+
       case 'check_status': {
         // Check onboarding status - used by terminal to poll for completion
         const context = brand.context as Record<string, unknown> | null

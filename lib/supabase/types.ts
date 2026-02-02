@@ -634,6 +634,14 @@ export interface SocialLinks {
   youtube?: string
 }
 
+// Prompt theme - keyword cluster for targeting
+export interface PromptTheme {
+  theme: string           // 1-3 word keyword phrase (e.g., "temperature monitoring")
+  priority: 'high' | 'medium' | 'low'
+  category?: string       // Optional category (e.g., "product", "use_case", "industry")
+  auto_detected?: boolean // Was this auto-detected vs manually added
+}
+
 // Brand context structure
 export interface BrandContext {
   company_name?: string
@@ -666,6 +674,8 @@ export interface BrandContext {
   disabled_personas?: string[]
   // Primary and secondary offers/CTAs
   offers?: BrandOffers
+  // Critical prompt themes - keyword clusters to focus on
+  prompt_themes?: PromptTheme[]
 }
 
 // Brand offers/CTAs extracted from website

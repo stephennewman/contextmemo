@@ -39,7 +39,14 @@ Analyze the provided website content and extract the following information in JS
     },
     "pricing_model": "free|freemium|paid|enterprise|contact_sales|custom",
     "pricing_url": "URL to pricing page (if found)"
-  }
+  },
+  "prompt_themes": [
+    {
+      "theme": "1-3 word keyword cluster (e.g., 'temperature monitoring', 'food safety')",
+      "priority": "high|medium|low",
+      "category": "product|use_case|industry|feature"
+    }
+  ]
 }
 
 TARGET PERSONAS - Identify which of these personas the brand is clearly targeting. Look for BOTH explicit and implicit signals:
@@ -127,6 +134,26 @@ Pricing models:
 - "contact_sales" - Must contact for pricing
 - "custom" - Usage-based or variable pricing
 
+PROMPT THEMES - Extract 5-10 critical keyword clusters (1-3 words each) that define what this brand is about:
+
+Examples of good prompt themes:
+- "temperature monitoring" (product capability)
+- "food safety compliance" (use case)
+- "predictive maintenance" (feature)
+- "healthcare operations" (industry application)
+- "cold chain monitoring" (specific solution)
+
+Priority levels:
+- "high" - Core to what the brand does (would be in top 3 keywords)
+- "medium" - Important but secondary capabilities
+- "low" - Relevant but not primary focus
+
+Categories:
+- "product" - Core product or service
+- "use_case" - Specific problem solved
+- "industry" - Target vertical
+- "feature" - Key capability or functionality
+
 Rules:
 1. Only include information explicitly stated in the content
 2. Leave fields empty or as empty arrays if information is not available
@@ -135,6 +162,7 @@ Rules:
 5. For brand_voice, analyze the tone: "professional" (formal business), "casual" (friendly/conversational), "technical" (industry jargon, detailed specs)
 6. For target_personas, only include personas with CLEAR evidence from the website content
 7. For offers, extract the EXACT CTA text as the label (e.g., "Start Your Free Trial" not just "trial")
+8. For prompt_themes, extract the most specific keyword clusters - prefer "temperature monitoring" over generic "monitoring"
 
 Respond ONLY with valid JSON, no explanations.`
 

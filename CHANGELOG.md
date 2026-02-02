@@ -23,7 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Filter by brand (for multi-brand users)
   - Saved views - save filter combinations for quick access
   - Activity icon button in header to open feed
-- New API endpoints: `/api/activity` and `/api/activity/views`
+- **Activity Detail View**: Click any activity to see full context
+  - "What This Means" explanations for each activity type
+  - "Why It Matters" business context
+  - "Next Steps" action guidance
+  - Shows actual data: generated prompts, scan results, memo content
+  - Explains prompt types: persona-based, intent-based, category-based
+- New API endpoints: `/api/activity`, `/api/activity/views`, `/api/activity/detail`
 - Activity types and utility logging functions for future Inngest integration
 - SQL migration for `activity_log` and `activity_saved_views` tables
 

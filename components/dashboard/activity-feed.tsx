@@ -56,6 +56,7 @@ import {
   ACTIVITY_TYPE_META,
   ACTIVITY_CATEGORY_META 
 } from '@/lib/supabase/types'
+import { ActivityDetail } from './activity-detail'
 
 // Icon mapping
 const ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -130,6 +131,9 @@ export function ActivityFeed({ isOpen, onOpenChange, brands = [] }: ActivityFeed
   const [activeView, setActiveView] = useState<SavedView | null>(null)
   const [savingView, setSavingView] = useState(false)
   const [newViewName, setNewViewName] = useState('')
+  
+  // Activity detail
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null)
 
   const fetchActivities = useCallback(async (reset = false) => {
     if (reset) {
@@ -506,7 +510,8 @@ export function ActivityFeed({ isOpen, onOpenChange, brands = [] }: ActivityFeed
                 return (
                   <div 
                     key={activity.id}
-                    className="p-4 hover:bg-slate-50 transition-colors"
+                    className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedActivity(activity)}
                   >
                     <div className="flex gap-3">
                       {/* Icon */}
@@ -597,6 +602,13 @@ export function ActivityFeed({ isOpen, onOpenChange, brands = [] }: ActivityFeed
           )}
         </div>
       </SheetContent>
+
+      {/* Activity Detail Modal */}
+      <ActivityDetail
+        activity={selectedActivity}
+        isOpen={!!selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+      />
     </Sheet>
   )
 }
