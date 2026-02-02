@@ -1,9 +1,27 @@
 import Stripe from 'stripe'
 
-// Server-side Stripe client
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-01-28.clover',
-  typescript: true,
+// Server-side Stripe client (lazy initialization to avoid build-time errors)
+let _stripe: Stripe | null = null
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY
+    if (!key) {
+      throw new Error('STRIPE_SECRET_KEY is not set')
+    }
+    _stripe = new Stripe(key, {
+      apiVersion: '2026-01-28.clover',
+      typescript: true,
+    })
+  }
+  return _stripe
+}
+
+// For backward compatibility - use getStripe() in new code
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return (getStripe() as Record<string, unknown>)[prop as string]
+  }
 })
 
 // Pricing Plans

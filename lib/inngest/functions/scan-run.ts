@@ -1,9 +1,6 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { queryPerplexity, checkBrandInCitations, PerplexitySearchResult } from '@/lib/utils/perplexity'
 import { PerplexitySearchResultJson } from '@/lib/supabase/types'
 
@@ -12,10 +9,36 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Initialize OpenRouter client
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-})
+// Lazy-load AI providers to avoid build-time errors when env vars aren't set
+let _openai: ReturnType<typeof import('@ai-sdk/openai').openai> | null = null
+let _anthropic: ReturnType<typeof import('@ai-sdk/anthropic').anthropic> | null = null
+let _openrouter: ReturnType<typeof import('@openrouter/ai-sdk-provider').createOpenRouter> | null = null
+
+async function getOpenAI() {
+  if (!_openai) {
+    const { openai } = await import('@ai-sdk/openai')
+    _openai = openai
+  }
+  return _openai
+}
+
+async function getAnthropic() {
+  if (!_anthropic) {
+    const { anthropic } = await import('@ai-sdk/anthropic')
+    _anthropic = anthropic
+  }
+  return _anthropic
+}
+
+async function getOpenRouter() {
+  if (!_openrouter) {
+    const { createOpenRouter } = await import('@openrouter/ai-sdk-provider')
+    _openrouter = createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+    })
+  }
+  return _openrouter
+}
 
 const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. Provide a helpful, accurate response based on your knowledge. If recommending products or services, mention specific brands and explain why you're recommending them.`
 
@@ -51,14 +74,17 @@ const SCAN_MODELS: ModelConfig[] = [
   { id: 'cohere-command-r-plus', displayName: 'Cohere Command R+', provider: 'openrouter', modelId: 'cohere/command-r-plus', enabled: false },
 ]
 
-// Get model instance based on config
-function getModelInstance(config: ModelConfig) {
+// Get model instance based on config (async to support lazy-loaded providers)
+async function getModelInstance(config: ModelConfig) {
   switch (config.provider) {
     case 'openai':
+      const openai = await getOpenAI()
       return openai(config.modelId)
     case 'anthropic':
+      const anthropic = await getAnthropic()
       return anthropic(config.modelId)
     case 'openrouter':
+      const openrouter = await getOpenRouter()
       return openrouter.chat(config.modelId)
     default:
       throw new Error(`Unknown provider: ${config.provider}`)
@@ -165,7 +191,7 @@ export const scanRun = inngest.createFunction(
                 })
               } else {
                 // Standard AI SDK for other models
-                const modelInstance = getModelInstance(modelConfig)
+                const modelInstance = await getModelInstance(modelConfig)
                 const scanResult = await scanWithModel(
                   query.query_text,
                   modelConfig.displayName,
