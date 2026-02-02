@@ -353,28 +353,132 @@ export default async function BrandPage({ params }: Props) {
             queries={queries || []}
           />
 
-          {/* Target Personas - show who we're generating prompts for */}
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Target Personas</CardTitle>
-                  <CardDescription>
-                    User types to generate prompts for - toggle on/off or add custom personas
-                  </CardDescription>
+          {/* Target Personas and Offers Row */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Target Personas */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Target Personas</CardTitle>
+                    <CardDescription>
+                      User types to generate prompts for
+                    </CardDescription>
+                  </div>
+                  <RefreshContextButton brandId={brandId} />
                 </div>
-                <RefreshContextButton brandId={brandId} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <PersonaManager 
-                brandId={brandId}
-                targetPersonas={context?.target_personas || []}
-                customPersonas={context?.custom_personas || []}
-                disabledPersonas={context?.disabled_personas || []}
-              />
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <PersonaManager 
+                  brandId={brandId}
+                  targetPersonas={context?.target_personas || []}
+                  customPersonas={context?.custom_personas || []}
+                  disabledPersonas={context?.disabled_personas || []}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Brand Offers */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Brand Offers</CardTitle>
+                <CardDescription>
+                  Primary and secondary CTAs detected from website
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {context?.offers ? (
+                  <div className="space-y-3">
+                    {context.offers.primary && (
+                      <div className="p-3 border rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="bg-emerald-600 text-xs">Primary</Badge>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {context.offers.primary.type.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <div className="font-medium">{context.offers.primary.label}</div>
+                        {context.offers.primary.details && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {context.offers.primary.details}
+                          </div>
+                        )}
+                        {context.offers.primary.url && (
+                          <a 
+                            href={context.offers.primary.url.startsWith('http') 
+                              ? context.offers.primary.url 
+                              : `https://${brand.domain}${context.offers.primary.url}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-emerald-600 hover:underline mt-1 inline-block"
+                          >
+                            {context.offers.primary.url}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {context.offers.secondary && (
+                      <div className="p-3 border rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="secondary" className="text-xs">Secondary</Badge>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {context.offers.secondary.type.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <div className="font-medium">{context.offers.secondary.label}</div>
+                        {context.offers.secondary.details && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {context.offers.secondary.details}
+                          </div>
+                        )}
+                        {context.offers.secondary.url && (
+                          <a 
+                            href={context.offers.secondary.url.startsWith('http') 
+                              ? context.offers.secondary.url 
+                              : `https://${brand.domain}${context.offers.secondary.url}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                          >
+                            {context.offers.secondary.url}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {context.offers.pricing_model && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">Pricing:</span>
+                        <Badge variant="outline" className="capitalize">
+                          {context.offers.pricing_model.replace('_', ' ')}
+                        </Badge>
+                        {context.offers.pricing_url && (
+                          <a 
+                            href={context.offers.pricing_url.startsWith('http') 
+                              ? context.offers.pricing_url 
+                              : `https://${brand.domain}${context.offers.pricing_url}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            View pricing
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">
+                      No offers detected yet. Click &quot;Refresh Context&quot; to analyze your website.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Discovery Scan Results */}
           {discoveryResults && (

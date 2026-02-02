@@ -664,6 +664,23 @@ export interface BrandContext {
   custom_personas?: CustomPersona[]
   // Personas that have been manually disabled (won't generate prompts)
   disabled_personas?: string[]
+  // Primary and secondary offers/CTAs
+  offers?: BrandOffers
+}
+
+// Brand offers/CTAs extracted from website
+export interface BrandOffer {
+  type: 'demo' | 'trial' | 'freemium' | 'contact_sales' | 'signup' | 'download' | 'quote' | 'consultation' | 'other'
+  label: string           // The CTA text (e.g., "Book a Demo", "Start Free Trial")
+  url?: string            // Link to the offer page
+  details?: string        // Additional context (e.g., "14-day free trial", "No credit card required")
+}
+
+export interface BrandOffers {
+  primary?: BrandOffer    // Main CTA (most prominent)
+  secondary?: BrandOffer  // Secondary CTA
+  pricing_model?: 'free' | 'freemium' | 'paid' | 'enterprise' | 'contact_sales' | 'custom'
+  pricing_url?: string    // Link to pricing page
 }
 
 // User intent extracted from homepage content

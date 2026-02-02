@@ -23,7 +23,23 @@ Analyze the provided website content and extract the following information in JS
       "priorities": ["What they care about"],
       "detected_from": "What signal on the website indicated this"
     }
-  ]
+  ],
+  "offers": {
+    "primary": {
+      "type": "demo|trial|freemium|contact_sales|signup|download|quote|consultation|other",
+      "label": "The CTA button text (e.g., 'Book a Demo', 'Start Free Trial')",
+      "url": "Full URL to the offer page (if found)",
+      "details": "Additional context like '14-day free trial' or 'No credit card required'"
+    },
+    "secondary": {
+      "type": "...",
+      "label": "...",
+      "url": "...",
+      "details": "..."
+    },
+    "pricing_model": "free|freemium|paid|enterprise|contact_sales|custom",
+    "pricing_url": "URL to pricing page (if found)"
+  }
 }
 
 TARGET PERSONAS - Identify which of these personas the brand is clearly targeting. Look for BOTH explicit and implicit signals:
@@ -82,6 +98,35 @@ For custom personas, you MUST provide:
 Include core personas from the list above AND any relevant custom personas.
 Total should be 2-6 personas that the brand CLEARLY targets.
 
+OFFERS/CTAs - Identify the primary and secondary calls-to-action:
+
+Offer types:
+- "demo" - Book/Schedule/Request a Demo
+- "trial" - Free Trial, Start Trial (time-limited access)
+- "freemium" - Free plan/tier, Free forever
+- "contact_sales" - Contact Sales, Talk to Sales, Get in Touch
+- "signup" - Sign Up, Create Account, Get Started
+- "download" - Download, Get the App
+- "quote" - Get a Quote, Request Pricing
+- "consultation" - Free Consultation, Book a Call
+- "other" - Any other CTA type
+
+Primary offer: The most prominent CTA (usually in header/hero)
+Secondary offer: Alternative CTA (e.g., "Watch Demo" next to "Start Trial")
+
+For URLs:
+- Extract the full URL if visible (e.g., from href attributes, button links)
+- Use relative paths if absolute URLs not found (e.g., "/demo", "/pricing")
+- Leave empty if URL not found
+
+Pricing models:
+- "free" - Completely free product
+- "freemium" - Free tier + paid upgrades
+- "paid" - Paid only (may have trial)
+- "enterprise" - Enterprise/custom pricing only
+- "contact_sales" - Must contact for pricing
+- "custom" - Usage-based or variable pricing
+
 Rules:
 1. Only include information explicitly stated in the content
 2. Leave fields empty or as empty arrays if information is not available
@@ -89,6 +134,7 @@ Rules:
 4. Do not embellish or add marketing language
 5. For brand_voice, analyze the tone: "professional" (formal business), "casual" (friendly/conversational), "technical" (industry jargon, detailed specs)
 6. For target_personas, only include personas with CLEAR evidence from the website content
+7. For offers, extract the EXACT CTA text as the label (e.g., "Start Your Free Trial" not just "trial")
 
 Respond ONLY with valid JSON, no explanations.`
 
