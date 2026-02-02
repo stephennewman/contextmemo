@@ -20,7 +20,7 @@ export function getStripe(): Stripe {
 // For backward compatibility - use getStripe() in new code
 export const stripe = new Proxy({} as Stripe, {
   get(_, prop) {
-    return (getStripe() as Record<string, unknown>)[prop as string]
+    return (getStripe() as unknown as Record<string, unknown>)[prop as string]
   }
 })
 

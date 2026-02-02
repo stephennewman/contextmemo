@@ -10,8 +10,8 @@ const supabase = createClient(
 )
 
 // Lazy-load AI providers to avoid build-time errors when env vars aren't set
-let _openai: ReturnType<typeof import('@ai-sdk/openai').openai> | null = null
-let _anthropic: ReturnType<typeof import('@ai-sdk/anthropic').anthropic> | null = null
+let _openai: typeof import('@ai-sdk/openai').openai | null = null
+let _anthropic: typeof import('@ai-sdk/anthropic').anthropic | null = null
 let _openrouter: ReturnType<typeof import('@openrouter/ai-sdk-provider').createOpenRouter> | null = null
 
 async function getOpenAI() {
