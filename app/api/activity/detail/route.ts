@@ -34,6 +34,15 @@ export async function GET(request: NextRequest) {
     const result: {
       queries?: Array<{ id: string; query_text: string; persona: string | null; query_type: string }>
       scans?: Array<{ model: string; brand_mentioned: boolean; query_text: string }>
+      gaps?: Array<{ 
+        id: string
+        query_text: string
+        query_type: string
+        persona: string | null
+        mention_rate: number
+        models_checked: number
+        has_memo: boolean
+      }>
       memo?: { title: string; content_markdown: string; slug: string }
       competitors?: Array<{ name: string; domain: string | null }>
       content?: Array<{ title: string; url: string; competitor_name: string }>
@@ -61,7 +70,7 @@ export async function GET(request: NextRequest) {
       }
 
       case 'scan_completed': {
-        // Get recent scan results
+        // Get recent scan results with query details
         const timeWindow = createdAt 
           ? new Date(new Date(createdAt).getTime() - 60 * 60 * 1000).toISOString()
           : new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -69,20 +78,85 @@ export async function GET(request: NextRequest) {
         const { data: scans } = await supabase
           .from('scan_results')
           .select(`
+            query_id,
             model,
             brand_mentioned,
-            query:query_id(query_text)
+            query:query_id(id, query_text, query_type, persona, is_active)
           `)
           .eq('brand_id', brandId)
           .gte('scanned_at', timeWindow)
           .order('scanned_at', { ascending: false })
-          .limit(50)
 
-        result.scans = (scans || []).map(s => ({
-          model: s.model,
-          brand_mentioned: s.brand_mentioned,
-          query_text: (s.query as unknown as { query_text: string } | null)?.query_text || 'Unknown query',
-        }))
+        if (scans && scans.length > 0) {
+          // Group by query to find gaps (queries where brand wasn't mentioned)
+          const queryStats = new Map<string, {
+            id: string
+            query_text: string
+            query_type: string
+            persona: string | null
+            mentions: number
+            total: number
+          }>()
+
+          for (const scan of scans) {
+            const query = scan.query as unknown as { 
+              id: string
+              query_text: string
+              query_type: string
+              persona: string | null
+              is_active: boolean
+            } | null
+            
+            if (!query || !query.is_active) continue
+
+            const existing = queryStats.get(query.id)
+            if (existing) {
+              existing.total++
+              if (scan.brand_mentioned) existing.mentions++
+            } else {
+              queryStats.set(query.id, {
+                id: query.id,
+                query_text: query.query_text,
+                query_type: query.query_type || 'general',
+                persona: query.persona,
+                mentions: scan.brand_mentioned ? 1 : 0,
+                total: 1,
+              })
+            }
+          }
+
+          // Get memos to check which queries have memos
+          const { data: memos } = await supabase
+            .from('memos')
+            .select('source_query_id')
+            .eq('brand_id', brandId)
+            .not('source_query_id', 'is', null)
+
+          const queryIdsWithMemos = new Set((memos || []).map(m => m.source_query_id))
+
+          // Convert to gaps array - only queries with <50% mention rate
+          const gaps = Array.from(queryStats.values())
+            .filter(q => (q.mentions / q.total) < 0.5) // Less than 50% mention rate = gap
+            .map(q => ({
+              id: q.id,
+              query_text: q.query_text,
+              query_type: q.query_type,
+              persona: q.persona,
+              mention_rate: Math.round((q.mentions / q.total) * 100),
+              models_checked: q.total,
+              has_memo: queryIdsWithMemos.has(q.id),
+            }))
+            .sort((a, b) => a.mention_rate - b.mention_rate) // Worst first
+
+          result.gaps = gaps
+
+          // Also include summary scans
+          result.scans = (scans || []).slice(0, 20).map(s => ({
+            model: s.model,
+            brand_mentioned: s.brand_mentioned,
+            query_text: (s.query as unknown as { query_text: string } | null)?.query_text || 'Unknown query',
+          }))
+        }
         break
       }
 

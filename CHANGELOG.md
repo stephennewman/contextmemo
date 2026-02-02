@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - "Next Steps" action guidance
   - Shows actual data: generated prompts, scan results, memo content
   - Explains prompt types: persona-based, intent-based, category-based
+- **Actionable Visibility Gaps**: Scan results now show each "gap" prompt with actions
+  - See exactly which prompts have 0% visibility
+  - "Generate Memo" button to create content for that prompt
+  - "Edit Prompt" button to refine the prompt text
+  - "Disable Prompt" button to exclude irrelevant prompts
+  - Shows visibility %, prompt type, and persona for each gap
 - New API endpoints: `/api/activity`, `/api/activity/views`, `/api/activity/detail`
 - Activity types and utility logging functions for future Inngest integration
 - SQL migration for `activity_log` and `activity_saved_views` tables

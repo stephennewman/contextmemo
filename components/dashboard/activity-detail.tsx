@@ -13,6 +13,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Activity,
   ChevronRight,
   ExternalLink,
@@ -39,7 +45,13 @@ import {
   Lightbulb,
   Target,
   MessageSquare,
+  MoreHorizontal,
+  EyeOff,
+  Pencil,
+  Sparkles,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 import { 
   ActivityType, 
   ACTIVITY_TYPE_META,
@@ -93,9 +105,9 @@ const ACTIVITY_EXPLANATIONS: Record<string, {
     whatItMeans: `An AI visibility scan queries multiple AI models (GPT-4o, Claude, Gemini, Llama, Mistral, Perplexity, DeepSeek, Qwen, Grok) with your tracked prompts and checks if they mention your brand in their responses.
 
 **Visibility score** = % of responses that mention your brand
-**Mentions** = Number of times your brand appeared in AI responses`,
-    whyItMatters: `This is your core metric for AI search visibility. Higher visibility means more potential customers discovering your brand through AI assistants.`,
-    nextSteps: `Review scan results to see which prompts and models mention you, and where you're losing to competitors.`,
+**Visibility gaps** = Prompts where AI models did NOT mention your brand (these are opportunities to improve)`,
+    whyItMatters: `This is your core metric for AI search visibility. Higher visibility means more potential customers discovering your brand through AI assistants. Each "gap" is a prompt where potential customers won't find you.`,
+    nextSteps: `Review the gaps below. For each prompt, you can: disable it if not relevant, edit it to be more specific, or generate a memo to help AI models learn about your brand for that topic.`,
   },
   memo_generated: {
     whatItMeans: `A memo is a factual, AI-optimized reference page about your brand. Types include:
@@ -164,8 +176,18 @@ export function ActivityDetail({ activity, isOpen, onClose }: ActivityDetailProp
   const [relatedData, setRelatedData] = useState<{
     queries?: Array<{ id: string; query_text: string; persona: string | null; query_type: string }>
     scans?: Array<{ model: string; brand_mentioned: boolean; query_text: string }>
+    gaps?: Array<{
+      id: string
+      query_text: string
+      query_type: string
+      persona: string | null
+      mention_rate: number
+      models_checked: number
+      has_memo: boolean
+    }>
     memo?: { title: string; content_markdown: string; slug: string }
   } | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -198,6 +220,73 @@ export function ActivityDetail({ activity, isOpen, onClose }: ActivityDetailProp
 
     fetchRelatedData()
   }, [activity, isOpen])
+
+  // Action handlers for gaps
+  const handleDisablePrompt = async (promptId: string) => {
+    setActionLoading(promptId)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('queries')
+        .update({ is_active: false })
+        .eq('id', promptId)
+
+      if (error) throw error
+
+      // Remove from local state
+      setRelatedData(prev => prev ? {
+        ...prev,
+        gaps: prev.gaps?.filter(g => g.id !== promptId)
+      } : null)
+
+      toast.success('Prompt disabled')
+    } catch (error) {
+      toast.error('Failed to disable prompt')
+      console.error(error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleGenerateMemo = async (promptId: string, queryType: string, brandId: string) => {
+    setActionLoading(promptId)
+    try {
+      // Determine memo type based on query type
+      let memoType = 'industry'
+      if (queryType === 'comparison' || queryType === 'versus') {
+        memoType = 'comparison'
+      } else if (queryType === 'alternative') {
+        memoType = 'alternative'
+      } else if (queryType === 'how_to') {
+        memoType = 'how_to'
+      }
+
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_memo',
+          queryId: promptId,
+          memoType,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed to trigger memo generation')
+
+      // Update local state to show memo is being generated
+      setRelatedData(prev => prev ? {
+        ...prev,
+        gaps: prev.gaps?.map(g => g.id === promptId ? { ...g, has_memo: true } : g)
+      } : null)
+
+      toast.success('Memo generation started')
+    } catch (error) {
+      toast.error('Failed to generate memo')
+      console.error(error)
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   if (!activity) return null
 
@@ -336,8 +425,105 @@ export function ActivityDetail({ activity, isOpen, onClose }: ActivityDetailProp
                 </div>
               )}
 
+              {/* Show visibility gaps with actions */}
+              {relatedData.gaps && relatedData.gaps.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span className="font-semibold text-sm text-[#0F172A]">
+                      Visibility Gaps ({relatedData.gaps.length} prompts)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-3">
+                    These prompts have low visibility. Take action to improve.
+                  </p>
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {relatedData.gaps.map((gap) => (
+                      <div 
+                        key={gap.id}
+                        className="p-3 bg-slate-50 border-l-2 border-amber-400"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-[#0F172A] font-medium">"{gap.query_text}"</p>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs rounded-none ${gap.mention_rate === 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}
+                              >
+                                {gap.mention_rate}% visibility
+                              </Badge>
+                              <Badge variant="outline" className="text-xs rounded-none">
+                                {gap.query_type.replace(/_/g, ' ')}
+                              </Badge>
+                              {gap.persona && (
+                                <Badge variant="outline" className="text-xs rounded-none bg-purple-50 border-purple-200">
+                                  {gap.persona.replace(/_/g, ' ')}
+                                </Badge>
+                              )}
+                              {gap.has_memo && (
+                                <Badge variant="outline" className="text-xs rounded-none bg-green-50 border-green-200 text-green-700">
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  has memo
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Action dropdown */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                disabled={actionLoading === gap.id}
+                              >
+                                {actionLoading === gap.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <MoreHorizontal className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 border-2 border-[#0F172A] rounded-none">
+                              {!gap.has_memo && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleGenerateMemo(gap.id, gap.query_type, activity!.brand_id)}
+                                  className="rounded-none"
+                                >
+                                  <Sparkles className="h-4 w-4 mr-2 text-purple-500" />
+                                  Generate Memo
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  // Open prompt in new tab for editing
+                                  window.open(`/brands/${activity!.brand_id}?tab=prompts&edit=${gap.id}`, '_blank')
+                                }}
+                                className="rounded-none"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit Prompt
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDisablePrompt(gap.id)}
+                                className="rounded-none text-red-600"
+                              >
+                                <EyeOff className="h-4 w-4 mr-2" />
+                                Disable Prompt
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Show scan results summary */}
-              {relatedData.scans && relatedData.scans.length > 0 && (
+              {relatedData.scans && relatedData.scans.length > 0 && !relatedData.gaps && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Radar className="h-4 w-4 text-[#0EA5E9]" />
