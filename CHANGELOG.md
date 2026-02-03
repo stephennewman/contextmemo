@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.13.0] - 2026-02-02
+
+### Added
+- **RSS Feed Monitoring**: Proper RSS/Atom feed parsing with `rss-parser` library
+  - Auto-discovers feeds from competitor sites via common paths + HTML autodiscovery
+  - Persistent `competitor_feeds` table tracks discovered and manual feeds
+  - Feed health monitoring (last success, failures, errors)
+- **Historical Content Backfill**: One-click button to import up to 2 years of competitor content
+- **Manual Feed Management**: Add custom RSS/Atom URLs per competitor in the UI
+- **Enhanced Content Tracking**: Published date, author, word count stored for all competitor articles
+- **Improved Response Generation**: New prompt creates unique, differentiated, LONGER content (1000-1500 words)
+  - Emphasizes deeper analysis, unique angles, actionable frameworks
+  - Uses full competitor content for better differentiation
+  - Creates more specific, compelling titles
+
+### Changed
+- Competitor content scan now uses proper RSS parser instead of regex
+- Response memos target 1000-1500 words (up from 600-900)
+- Feeds are discovered once and persisted for efficient re-scans
+
+---
+
 ## [0.12.0] - 2026-02-02
 
 ### Added
@@ -255,6 +277,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.13.0 | Feb 2, 2026 | RSS feed monitoring, content backfill, improved response generation |
+| 0.12.0 | Feb 2, 2026 | Auto memo generation with daily caps, competitor-linked queries |
 | 0.11.0 | Feb 1, 2026 | Activity feed with filters and saved views |
 | 0.10.0 | Feb 1, 2026 | Google AI Overviews, AI traffic attribution, exports, teams, billing foundation |
 | 0.9.0 | Feb 1, 2026 | Terminal-style onboarding |

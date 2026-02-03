@@ -1,7 +1,7 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 2, 2026  
-> **Version:** 0.12.0  
+> **Version:** 0.13.0  
 > **Status:** MVP Complete + Active Development
 
 ---
@@ -102,9 +102,10 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | `discovery/scan` | Tests 50+ query variations for baseline discovery |
 | `memo/backlink` | Injects contextual internal links into memos |
 | `memo/batch-backlink` | Updates all memos for a brand |
-| `competitor/content-scan` | Daily scan of competitor blogs/RSS |
+| `competitor/content-scan` | Daily scan of competitor RSS feeds |
 | `competitor/content-classify` | AI classifies and filters content |
-| `competitor/content-respond` | Generates response content |
+| `competitor/content-respond` | Generates unique response content |
+| `competitor/content-backfill` | One-time import of historical content |
 | `google-search-console/sync` | Syncs GSC data weekly |
 | `bing/sync` | Syncs Bing Webmaster data weekly |
 | `ai-overview/scan` | Checks Google AI Overviews via SerpAPI |
@@ -146,6 +147,7 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | `tenants` | User accounts |
 | `brands` | Brand profiles with context |
 | `competitors` | Discovered competitors |
+| `competitor_feeds` | RSS/Atom feeds per competitor |
 | `competitor_content` | Tracked competitor articles |
 | `queries` | Search prompts to monitor |
 | `scan_results` | AI scan results |
