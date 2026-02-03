@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   Sheet, 
@@ -115,16 +116,34 @@ interface ActivityFeedProps {
 }
 
 export function ActivityFeed({ isOpen, onOpenChange, brands = [] }: ActivityFeedProps) {
+  const pathname = usePathname()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
   
-  // Filters
+  // Detect current brand from URL (e.g., /brands/[brandId]/...)
+  const currentBrandId = pathname?.match(/\/brands\/([^\/]+)/)?.[1] || null
+  
+  // Filters - auto-select current brand if on a brand page
   const [selectedCategories, setSelectedCategories] = useState<ActivityCategory[]>([])
   const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+  const [hasAutoSelectedBrand, setHasAutoSelectedBrand] = useState(false)
+  
+  // Auto-select current brand when opening on a brand page
+  useEffect(() => {
+    if (isOpen && currentBrandId && !hasAutoSelectedBrand && brands.some(b => b.id === currentBrandId)) {
+      setSelectedBrands([currentBrandId])
+      setHasAutoSelectedBrand(true)
+    }
+  }, [isOpen, currentBrandId, brands, hasAutoSelectedBrand])
+  
+  // Reset auto-selection when URL changes
+  useEffect(() => {
+    setHasAutoSelectedBrand(false)
+  }, [currentBrandId])
   
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedView[]>([])
@@ -469,9 +488,11 @@ export function ActivityFeed({ isOpen, onOpenChange, brands = [] }: ActivityFeed
             </div>
           </div>
           <SheetDescription className="text-slate-400 text-xs">
-            {hasActiveFilters 
-              ? `Filtered: ${selectedCategories.length > 0 ? selectedCategories.join(', ') : 'all categories'}${selectedBrands.length > 0 ? ` • ${selectedBrands.length} brand(s)` : ''}`
-              : 'All activity across your brands'
+            {selectedBrands.length === 1 && brands.length > 0
+              ? `Showing activity for ${brands.find(b => b.id === selectedBrands[0])?.name || 'selected brand'}`
+              : hasActiveFilters 
+                ? `Filtered: ${selectedCategories.length > 0 ? selectedCategories.join(', ') : 'all categories'}${selectedBrands.length > 1 ? ` • ${selectedBrands.length} brands` : ''}`
+                : 'All activity across your brands'
             }
           </SheetDescription>
         </SheetHeader>

@@ -20,7 +20,9 @@ import {
   Globe,
   ToggleLeft,
   ToggleRight,
-  Plus
+  Plus,
+  Trash2,
+  RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -42,8 +44,10 @@ interface CompetitorListProps {
 export function CompetitorList({ brandId, competitors: initialCompetitors }: CompetitorListProps) {
   const [competitors, setCompetitors] = useState(initialCompetitors)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [rediscovering, setRediscovering] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDomain, setNewDomain] = useState('')
 
@@ -155,6 +159,55 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
     }
   }
 
+  const handleDelete = async (competitorId: string, competitorName: string) => {
+    if (!confirm(`Delete "${competitorName}" permanently? This will also remove any related content tracking.`)) {
+      return
+    }
+
+    setDeletingId(competitorId)
+    
+    try {
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('competitors')
+        .delete()
+        .eq('id', competitorId)
+
+      if (error) throw error
+
+      // Update local state
+      setCompetitors(prev => prev.filter(c => c.id !== competitorId))
+      toast.success(`Deleted ${competitorName}`)
+    } catch (error) {
+      toast.error('Failed to delete competitor')
+      console.error(error)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const handleRediscover = async () => {
+    setRediscovering(true)
+    
+    try {
+      const res = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'discover_competitors' }),
+      })
+
+      if (!res.ok) throw new Error('Failed to trigger discovery')
+
+      toast.success('Re-discovering competitors... this may take a minute')
+    } catch (error) {
+      toast.error('Failed to start competitor discovery')
+      console.error(error)
+    } finally {
+      setRediscovering(false)
+    }
+  }
+
   // Separate active and excluded competitors
   const activeCompetitors = competitors.filter(c => c.is_active)
   const excludedCompetitors = competitors.filter(c => !c.is_active)
@@ -169,13 +222,28 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
               {activeCompetitors.length} active • {excludedCompetitors.length} excluded
             </CardDescription>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Competitor
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRediscover}
+              disabled={rediscovering}
+              title="Re-discover competitors using AI"
+            >
+              {rediscovering ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1" />
+              )}
+              Re-discover
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Competitor</DialogTitle>
@@ -217,6 +285,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -257,6 +326,20 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
                       <ToggleRight className="h-4 w-4 text-green-500" />
                     )}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(competitor.id, competitor.name)}
+                    disabled={deletingId === competitor.id}
+                    className="text-muted-foreground hover:text-destructive"
+                    title="Delete competitor"
+                  >
+                    {deletingId === competitor.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
               </div>
             ))}
@@ -287,20 +370,36 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
                       </p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggle(competitor.id, false)}
-                    disabled={togglingId === competitor.id}
-                    className="text-muted-foreground hover:text-green-600"
-                    title="Re-enable tracking"
-                  >
-                    {togglingId === competitor.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ToggleLeft className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggle(competitor.id, false)}
+                      disabled={togglingId === competitor.id}
+                      className="text-muted-foreground hover:text-green-600"
+                      title="Re-enable tracking"
+                    >
+                      {togglingId === competitor.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ToggleLeft className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(competitor.id, competitor.name)}
+                      disabled={deletingId === competitor.id}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete competitor"
+                    >
+                      {deletingId === competitor.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
