@@ -17,8 +17,23 @@ const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 })
 
-// Initialize RSS parser with custom fields
-const rssParser = new Parser({
+// Custom types for RSS parser
+type CustomFeed = {
+  lastBuildDate?: string
+}
+
+type CustomItem = {
+  contentEncoded?: string
+  creator?: string
+  mediaContent?: string
+  author?: string
+  'content:encoded'?: string
+  'dc:creator'?: string
+  'media:content'?: string
+}
+
+// Initialize RSS parser with custom fields and proper types
+const rssParser = new Parser<CustomFeed, CustomItem>({
   customFields: {
     item: [
       ['content:encoded', 'contentEncoded'],
@@ -273,7 +288,7 @@ async function parseFeedItems(feedUrl: string, maxItems = 50): Promise<ParsedFee
       }
       
       // Get author
-      const author = item.creator || (item as Record<string, unknown>).author || item['dc:creator'] || null
+      const author = item.creator || item.author || item['dc:creator'] || null
       
       // Get content preview
       const contentPreview = item.contentSnippet || item.content?.slice(0, 500) || item.summary?.slice(0, 500) || null
