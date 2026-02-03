@@ -51,9 +51,9 @@ export default async function DashboardPage() {
         </Button>
       </div>
 
-      {/* Brand Cards - Bold Electric Style */}
+      {/* Brand Cards - Simplified for fast loading */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {brandsWithStats.map((brand) => (
+        {brands.map((brand) => (
           <Link key={brand.id} href={`/brands/${brand.id}`}>
             <div className="border-[3px] border-[#0F172A] bg-white hover:shadow-lg transition-shadow cursor-pointer">
               {/* Header */}
@@ -69,19 +69,10 @@ export default async function DashboardPage() {
                 <p className="text-sm text-zinc-500">{brand.subdomain}.contextmemo.com</p>
               </div>
               
-              {/* Stats Grid */}
+              {/* Stats Grid - 2 columns */}
               <div className="grid grid-cols-2 divide-x-[3px] divide-[#0F172A]">
-                {/* Citation Score */}
-                <div className="p-4 border-b-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="h-4 w-4 text-[#0EA5E9]" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-zinc-500">CITATIONS</span>
-                  </div>
-                  <p className="text-3xl font-bold text-[#0F172A]">{brand.citationScore}%</p>
-                </div>
-                
                 {/* Memos */}
-                <div className="p-4 border-b-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
+                <div className="p-4" style={{ borderLeft: '8px solid #8B5CF6' }}>
                   <div className="flex items-center gap-2 mb-1">
                     <FileText className="h-4 w-4 text-[#8B5CF6]" strokeWidth={2.5} />
                     <span className="text-xs font-bold text-zinc-500">MEMOS</span>
@@ -96,15 +87,6 @@ export default async function DashboardPage() {
                     <span className="text-xs font-bold text-zinc-500">PROMPTS</span>
                   </div>
                   <p className="text-3xl font-bold text-[#0F172A]">{brand.queries?.[0]?.count || 0}</p>
-                </div>
-                
-                {/* Alerts */}
-                <div className="p-4" style={{ borderLeft: '8px solid #F59E0B' }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <AlertCircle className="h-4 w-4 text-[#F59E0B]" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-zinc-500">ALERTS</span>
-                  </div>
-                  <p className="text-3xl font-bold text-[#0F172A]">{brand.alertsCount}</p>
                 </div>
               </div>
             </div>
