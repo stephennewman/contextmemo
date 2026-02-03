@@ -269,7 +269,7 @@ export const gapToContent = inngest.createFunction(
         
         // Create excerpt from first paragraph (avoid 's' flag for ES compatibility)
         const paragraphs = content.content.split('\n\n')
-        const firstParagraph = paragraphs.find(p => p.trim() && !p.startsWith('#')) || ''
+        const firstParagraph = paragraphs.find((p: string) => p.trim() && !p.startsWith('#')) || ''
         const postSummary = firstParagraph
           ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300) + '...'
           : content.meta_description
