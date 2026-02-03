@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   // Verify brand ownership
   const { data: brand } = await supabase
     .from('brands')
-    .select('id, organization_id')
+    .select('id, organization_id, user_id')
     .eq('id', brandId)
     .single()
 
@@ -35,15 +35,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
-  // Check user has access
-  const { data: membership } = await supabase
-    .from('organization_members')
-    .select('role')
-    .eq('organization_id', brand.organization_id)
-    .eq('user_id', user.id)
-    .single()
+  // Check user has access - either direct owner or org member
+  let hasAccess = false
 
-  if (!membership) {
+  // Check direct ownership
+  if (brand.user_id === user.id) {
+    hasAccess = true
+  }
+
+  // Check organization membership if brand has an organization
+  if (!hasAccess && brand.organization_id) {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', brand.organization_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (membership) {
+      hasAccess = true
+    }
+  }
+
+  if (!hasAccess) {
     return NextResponse.json({ error: 'Access denied' }, { status: 403 })
   }
 

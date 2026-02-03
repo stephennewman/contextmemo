@@ -214,16 +214,20 @@ export default function BrandSettingsPage() {
         body: JSON.stringify({ brandId }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
         toast.success('HubSpot disconnected')
         setHubspotConnected(false)
         setHubspotHealthy(false)
-        setHubspotConfig({ ...hubspotConfig, enabled: false })
+        setHubspotConfig({ ...defaultHubSpotConfig })
+        setHubspotBlogs([])
       } else {
-        const data = await response.json()
+        console.error('Disconnect failed:', data)
         toast.error(data.error || 'Failed to disconnect')
       }
     } catch (error) {
+      console.error('Disconnect error:', error)
       toast.error('Failed to disconnect HubSpot')
     } finally {
       setHubspotDisconnecting(false)
