@@ -273,7 +273,7 @@ async function parseFeedItems(feedUrl: string, maxItems = 50): Promise<ParsedFee
       }
       
       // Get author
-      const author = item.creator || item.author || item['dc:creator'] || null
+      const author = item.creator || (item as Record<string, unknown>).author || item['dc:creator'] || null
       
       // Get content preview
       const contentPreview = item.contentSnippet || item.content?.slice(0, 500) || item.summary?.slice(0, 500) || null
