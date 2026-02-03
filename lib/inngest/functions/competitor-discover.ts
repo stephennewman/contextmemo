@@ -175,11 +175,14 @@ export const competitorDiscover = inngest.createFunction(
 
     // Step 5: Save competitors to database
     const savedCompetitors = await step.run('save-competitors', async () => {
-      if (validatedCompetitors.length === 0) {
+      // Cast to restore type info lost during Inngest serialization
+      const typed = validatedCompetitors as DiscoveredCompetitor[]
+      
+      if (typed.length === 0) {
         return []
       }
 
-      const competitorsToInsert = validatedCompetitors.map(c => ({
+      const competitorsToInsert = typed.map(c => ({
         brand_id: brandId,
         name: c.name,
         domain: c.domain,
