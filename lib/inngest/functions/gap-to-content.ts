@@ -107,7 +107,7 @@ function detectTopic(query: string, title: string): string {
 }
 
 // Prompt for generating gap-filling content
-const GAP_CONTENT_PROMPT = `You are creating content that will be published on a brand's website to help them get cited by AI assistants.
+const GAP_CONTENT_PROMPT = `You are creating comprehensive, authoritative content for a brand's website that will be cited by AI assistants.
 
 BRAND: {{brand_name}}
 BRAND DESCRIPTION: {{brand_description}}
@@ -120,38 +120,66 @@ CONTENT GAP TO FILL:
 - Why competitor's content gets cited: {{content_structure}}
 - Recommendation: {{recommendation}}
 
-YOUR TASK:
-Create a comprehensive, authoritative article that:
-1. Directly addresses the query "{{source_query}}"
-2. Positions {{brand_name}} as an expert/solution in this space
-3. Uses the content structure that works ({{content_type}})
-4. Is SEO-optimized for AI citation
-5. Includes factual, verifiable information
-6. Is 1500-2500 words for depth
+CRITICAL REQUIREMENTS:
 
-CONTENT STRUCTURE REQUIREMENTS:
-- Clear H1 title that matches the query intent
-- Structured with H2/H3 headings for scannability
-- Include a "Key Takeaways" or "Summary" section
-- Include practical examples or use cases
-- Reference {{brand_name}}'s capabilities naturally (not salesy)
-- End with a clear call-to-action
+1. WORD COUNT: MUST be 1800-2500 words. This is non-negotiable. Short articles don't get cited.
 
-SEO/AI CITATION REQUIREMENTS:
-- Title should match common query patterns
-- Include FAQ schema-friendly Q&A sections where appropriate
-- Use specific numbers, statistics, and data points
-- Include comparison tables if relevant
-- Cite authoritative sources (industry standards, regulations)
+2. SPECIFIC COMPETITORS: Name real competitors by name:
+   - SafetyCulture (iAuditor) - inspection/audit platform
+   - Monnit - wireless sensors
+   - Zenput - operations execution
+   - FoodDocs - HACCP automation
+   - Therma - temperature monitoring
+   - ComplianceMate - compliance software
+   Never use "Tool A" or "Tool B" - always name actual products.
+
+3. STATISTICS & DATA: Include at least 8-10 specific data points:
+   - Industry statistics (e.g., "The global food safety testing market is worth $XX billion")
+   - Compliance numbers (e.g., "FDA conducts XX,XXX inspections annually")
+   - ROI figures (e.g., "Automated monitoring reduces spoilage by 15-30%")
+   - Cost comparisons (e.g., "Manual temperature checks cost $X per location monthly")
+   Always cite the source (FDA, WHO, industry reports).
+
+4. COMPARISON TABLE: Create a detailed comparison with 8-10 rows:
+   | Feature | {{brand_name}} | Competitor 1 | Competitor 2 |
+   Include: Real-time alerts, Mobile app, API integrations, Compliance reports, Sensor types, Pricing model, Support, Industry certifications
+
+5. FAQ SECTION: Include exactly 5-7 FAQs in this format:
+   ### Q: [Specific question matching search queries]
+   **A:** [Detailed 2-3 sentence answer with facts]
+   
+   FAQs should cover: pricing, implementation time, integrations, compliance standards, ROI, support.
+
+6. USE CASES: Include 2-3 specific scenarios:
+   - Name the industry segment (e.g., "Quick-service restaurant chains")
+   - Describe the problem solved
+   - Include specific outcomes (e.g., "reduced audit prep time by 60%")
+
+7. REGULATORY REFERENCES: Link to actual regulations:
+   - FDA Food Safety Modernization Act (FSMA)
+   - HACCP principles
+   - ISO 22000
+   - Local health department requirements
+
+8. STRUCTURE:
+   - H1: SEO title matching query intent
+   - H2: Key Takeaways (5-7 bullet points)
+   - H2: Why [Topic] Matters (with statistics)
+   - H2: Top Solutions Compared (detailed comparison)
+   - H2: {{brand_name}}'s Approach (features and differentiators)
+   - H2: Use Cases and Results
+   - H2: How to Choose the Right Solution
+   - H2: FAQs (5-7 questions)
+   - H2: Conclusion with CTA
 
 OUTPUT FORMAT:
 Return a JSON object:
 {
   "title": "SEO-optimized title (60-70 chars)",
   "slug": "url-friendly-slug",
-  "meta_description": "150-160 char meta description",
-  "content": "Full article in Markdown format",
-  "target_keywords": ["keyword1", "keyword2", "keyword3"]
+  "meta_description": "150-160 char meta description with key benefit",
+  "content": "Full article in Markdown format - MUST be 1800-2500 words",
+  "target_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
 }`
 
 /**
