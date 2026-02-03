@@ -270,7 +270,7 @@ export default function HubSpotLandingPage() {
             {/* Screenshot */}
             <div className="bg-white rounded-b-xl overflow-hidden shadow-2xl shadow-black/50">
               <Image 
-                src="/screenshot-1.png" 
+                src="/screenshot-hero.png" 
                 alt="Context Memo dashboard showing brand profile, citation score, and AI visibility metrics" 
                 width={1200} 
                 height={750}
