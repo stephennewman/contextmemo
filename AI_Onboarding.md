@@ -381,3 +381,21 @@ When the AI assistant deploys changes, it should:
 5. **Update CHANGELOG.md** with your changes
 6. Deploy: `git add . && git commit -m "message" && git push`
 7. Vercel auto-deploys from main branch
+
+---
+
+## Deploy Log
+
+_Most recent deploys first_
+
+### February 2, 2026
+
+**Fix: Activity feed brand filter and competitor management** (fc29713)
+- Activity feed now auto-filters to current brand when viewing a brand page
+- Added delete functionality for competitors (to remove incorrect ones)
+- Added "Re-discover" button to re-run AI competitor discovery
+- Updated activity feed description text to show which brand is being filtered
+
+**Files changed:**
+- `components/dashboard/activity-feed.tsx` - Added URL-based brand detection and auto-filtering
+- `components/dashboard/competitor-list.tsx` - Added delete and re-discover functionality
