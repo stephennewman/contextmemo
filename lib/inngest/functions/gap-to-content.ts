@@ -267,10 +267,11 @@ export const gapToContent = inngest.createFunction(
         const image = TOPIC_IMAGES[topic] || TOPIC_IMAGES['default']
         const tagIds = KEYWORD_TO_TAGS[topic] || []
         
-        // Create excerpt from first paragraph
-        const excerptMatch = content.content.match(/^[^#].*?(?=\n\n|\n#)/s)
-        const postSummary = excerptMatch 
-          ? excerptMatch[0].replace(/[*_`]/g, '').slice(0, 300) + '...'
+        // Create excerpt from first paragraph (avoid 's' flag for ES compatibility)
+        const paragraphs = content.content.split('\n\n')
+        const firstParagraph = paragraphs.find(p => p.trim() && !p.startsWith('#')) || ''
+        const postSummary = firstParagraph
+          ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300) + '...'
           : content.meta_description
 
         const blogPost = {
