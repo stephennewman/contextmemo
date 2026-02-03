@@ -141,8 +141,8 @@ export async function GET(
           return acc
         }, {} as Record<string, { impressions: number; clicks: number }>)
 
-        const topQueries = Object.entries(queryMap)
-          .map(([query, stats]: [string, { impressions: number; clicks: number }]) => ({ query, ...stats }))
+        const topQueries = (Object.entries(queryMap) as [string, { impressions: number; clicks: number }][])
+          .map(([query, stats]) => ({ query, ...stats }))
           .sort((a, b) => b.impressions - a.impressions)
           .slice(0, 5)
 
