@@ -26,6 +26,7 @@ import {
 import { bingSync, bingWeeklySync } from '@/lib/inngest/functions/bing-sync'
 import { googleSearchConsoleSync, googleWeeklySync } from '@/lib/inngest/functions/google-search-console-sync'
 import { aiOverviewScan } from '@/lib/inngest/functions/ai-overview-scan'
+import { citationLoopRun, analyzeCitation } from '@/lib/inngest/functions/citation-loop'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -38,6 +39,10 @@ export const { GET, POST, PUT } = serve({
     memoGenerate,       // Generate context memos
     discoveryScan,      // Discovery scan - find where brand is mentioned
     promptEnrich,       // Feedback loop - mine scan results for new prompts/competitors
+    
+    // Citation loop - autonomous competitor analysis
+    citationLoopRun,    // Full loop: analyze competitors → find content gaps → recommendations
+    analyzeCitation,    // Analyze why specific competitor was cited
     
     // Competitor content intelligence
     competitorContentScan,     // Scan competitor sites for new content
