@@ -44,7 +44,7 @@ export default async function DashboardLayout({
 
   const orgIds = memberships?.map(m => m.organization_id).filter(Boolean) || []
 
-  // Query brands the user has access to (via org OR direct ownership)
+  // Query brands the user has access to (via org OR tenant ownership)
   let brands: { id: string; name: string; subdomain: string }[] = []
   
   if (orgIds.length > 0) {
@@ -57,17 +57,17 @@ export default async function DashboardLayout({
     brands = orgBrands || []
   }
   
-  // Also get directly owned brands
-  const { data: ownedBrands } = await serviceClient
+  // Also get brands owned by user's tenant (tenant_id = user.id)
+  const { data: tenantBrands } = await serviceClient
     .from('brands')
     .select('id, name, subdomain')
-    .eq('user_id', user.id)
+    .eq('tenant_id', user.id)
     .order('created_at', { ascending: false })
   
   // Merge and dedupe
-  if (ownedBrands) {
+  if (tenantBrands) {
     const existingIds = new Set(brands.map(b => b.id))
-    for (const brand of ownedBrands) {
+    for (const brand of tenantBrands) {
       if (!existingIds.has(brand.id)) {
         brands.push(brand)
       }

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   // Verify brand exists
   const { data: brand, error: brandError } = await serviceClient
     .from('brands')
-    .select('id, organization_id, user_id')
+    .select('id, tenant_id, organization_id')
     .eq('id', brandId)
     .single()
 
@@ -68,11 +68,11 @@ export async function GET(request: NextRequest) {
   }
 
   // Check user has access to this brand
-  // Either: direct owner (user_id matches) or organization member
+  // Either: tenant owner or organization member
   let hasAccess = false
 
-  // Check direct ownership
-  if (brand.user_id === user.id) {
+  // Check tenant ownership (tenant_id = user.id for single-user tenants)
+  if (brand.tenant_id === user.id) {
     hasAccess = true
   }
 
@@ -86,6 +86,20 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (membership) {
+      hasAccess = true
+    }
+  }
+  
+  // Also check if user's tenant owns this brand
+  if (!hasAccess && brand.tenant_id) {
+    const { data: tenant } = await serviceClient
+      .from('tenants')
+      .select('id')
+      .eq('id', brand.tenant_id)
+      .eq('id', user.id)
+      .single()
+    
+    if (tenant) {
       hasAccess = true
     }
   }

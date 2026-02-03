@@ -34,23 +34,24 @@ export async function POST(request: NextRequest) {
   // Verify brand exists
   const { data: brand, error: brandError } = await serviceClient
     .from('brands')
-    .select('id, organization_id, user_id')
+    .select('id, tenant_id, organization_id')
     .eq('id', brandId)
     .single()
   
   if (brandError) {
     console.error('Brand lookup error:', brandError)
+    return NextResponse.json({ error: 'Brand not found', details: brandError.message }, { status: 404 })
   }
 
   if (!brand) {
     return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
-  // Check user has access - either direct owner or org member
+  // Check user has access - tenant owner or org member
   let hasAccess = false
 
-  // Check direct ownership
-  if (brand.user_id === user.id) {
+  // Check tenant ownership
+  if (brand.tenant_id === user.id) {
     hasAccess = true
   }
 
