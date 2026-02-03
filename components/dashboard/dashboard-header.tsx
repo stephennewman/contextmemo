@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,6 +32,16 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHeaderProps) {
   const [activityOpen, setActivityOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Extract current brandId from URL if on a brand page
+  const brandIdMatch = pathname.match(/\/brands\/([^\/]+)/)
+  const currentBrandId = brandIdMatch ? brandIdMatch[1] : null
+  
+  // Find current brand, or default to first brand
+  const currentBrand = currentBrandId 
+    ? brands.find(b => b.id === currentBrandId) 
+    : brands[0]
 
   // Get initials for avatar
   const initials = tenant?.name 
@@ -50,16 +61,16 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
             <nav className="hidden md:flex items-center gap-1">
               <Link 
                 href="/dashboard" 
-                className="px-4 py-2 text-sm font-semibold tracking-wide bg-[#0EA5E9] text-white"
+                className={`px-4 py-2 text-sm font-semibold tracking-wide ${!currentBrandId ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white'} transition-colors`}
               >
                 DASHBOARD
               </Link>
-              {brands && brands.length > 0 && (
+              {currentBrand && (
                 <Link 
-                  href={`/brands/${brands[0].id}`}
-                  className="px-4 py-2 text-sm font-semibold tracking-wide text-slate-400 hover:text-white transition-colors"
+                  href={`/brands/${currentBrand.id}`}
+                  className={`px-4 py-2 text-sm font-semibold tracking-wide ${currentBrandId ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white'} transition-colors`}
                 >
-                  {brands[0].name.toUpperCase()}
+                  {currentBrand.name.toUpperCase()}
                 </Link>
               )}
             </nav>
@@ -95,9 +106,9 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
                     DASHBOARD
                   </Link>
                 </DropdownMenuItem>
-                {brands && brands.length > 0 && (
+                {currentBrand && (
                   <DropdownMenuItem asChild className="rounded-none">
-                    <Link href={`/brands/${brands[0].id}/settings`} className="font-medium">
+                    <Link href={`/brands/${currentBrand.id}/settings`} className="font-medium">
                       <Settings className="mr-2 h-4 w-4" />
                       SETTINGS
                     </Link>

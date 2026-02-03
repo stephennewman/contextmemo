@@ -29,10 +29,11 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  // Get brands
+  // Get user's brands (direct ownership or via organization)
   const { data: brands } = await supabase
     .from('brands')
-    .select('id, name, subdomain')
+    .select('id, name, subdomain, user_id, organization_id')
+    .or(`user_id.eq.${user.id}`)
     .order('created_at', { ascending: false })
 
   return (
