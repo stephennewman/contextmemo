@@ -104,7 +104,7 @@ export default function BrandSettingsPage() {
   const [activeSection, setActiveSection] = useState('general')
   
   // Section refs for scroll-to behavior
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   
   // Form state
   const [name, setName] = useState('')
