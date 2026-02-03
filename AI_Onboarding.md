@@ -390,6 +390,15 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**Remove: Verification Badge from Memos List** (b57c88a)
+- Removed "Indexing" spinner badge from memos - not needed
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Removed VerificationBadge
+- `components/dashboard/brand-tabs.tsx` - Removed VerificationBadge (also committed this new file)
+
+---
+
 **Fix: HubSpot Sync Token Refresh & Deleted Post Recovery** (8d89b20)
 - Fixed 401 errors by using `getHubSpotToken()` for automatic token refresh
 - Fixed 404 errors when syncing memos previously deleted in HubSpot - now gracefully creates new posts
