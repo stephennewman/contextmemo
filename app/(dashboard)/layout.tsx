@@ -29,12 +29,27 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
+  // Get user's organization memberships
+  const { data: memberships } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', user.id)
+
+  const orgIds = memberships?.map(m => m.organization_id) || []
+
   // Get user's brands (direct ownership or via organization)
-  const { data: brands } = await supabase
+  let brandsQuery = supabase
     .from('brands')
-    .select('id, name, subdomain, user_id, organization_id')
-    .or(`user_id.eq.${user.id}`)
+    .select('id, name, subdomain')
     .order('created_at', { ascending: false })
+
+  if (orgIds.length > 0) {
+    brandsQuery = brandsQuery.or(`user_id.eq.${user.id},organization_id.in.(${orgIds.join(',')})`)
+  } else {
+    brandsQuery = brandsQuery.eq('user_id', user.id)
+  }
+
+  const { data: brands } = await brandsQuery
 
   return (
     <div className="min-h-screen bg-white">
