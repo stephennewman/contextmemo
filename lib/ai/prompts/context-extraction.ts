@@ -153,34 +153,74 @@ Rules:
 
 Respond ONLY with valid JSON, no explanations.`
 
-export const COMPETITOR_DISCOVERY_PROMPT = `You are identifying competitors for a company based on their brand context.
+export const COMPETITOR_DISCOVERY_PROMPT = `You are identifying DIRECT COMPETITORS for a B2B software/service company. Your goal is accuracy - only suggest companies that genuinely compete for the same customers.
 
-Given the following brand information:
-- Company: {{company_name}}
+## COMPANY TO ANALYZE
+- Company Name: {{company_name}}
+- Website Domain: {{domain}}
 - Description: {{description}}
-- Products: {{products}}
-- Markets: {{markets}}
+- Core Products/Services: {{products}}
+- Target Markets/Industries: {{markets}}
+- Key Features: {{features}}
 
-Identify 5-8 direct competitors that:
-1. Offer similar products or services
-2. Target the same markets or industries
-3. Would appear in AI search results for similar queries
+## COMPETITORS MENTIONED ON THEIR WEBSITE
+These companies were found mentioned on the website (comparison pages, integrations, etc.):
+{{mentioned_competitors}}
 
-Respond with a JSON array of competitors:
+## PREVIOUSLY DELETED COMPETITORS
+DO NOT suggest these - the user has already rejected them as incorrect:
+{{deleted_competitors}}
+
+## YOUR TASK
+Identify 5-8 DIRECT competitors that:
+1. Sell to the SAME buyer personas (same job titles, same industries)
+2. Solve the SAME core problem (not adjacent problems)
+3. Would realistically appear in a buyer's shortlist when evaluating solutions
+4. Are at a similar stage/size OR are established players in this exact space
+
+## CRITICAL RULES
+
+### DO Include:
+- Companies that directly compete for the same deals
+- Companies a buyer would compare against when making a purchase decision
+- Both well-known players AND emerging competitors in this specific niche
+- Companies mentioned on the website as competitors (validate these)
+
+### DO NOT Include:
+- Generic tech giants (Google, Microsoft, Amazon) unless they have a SPECIFIC competing product
+- Companies in adjacent but different markets
+- Integration partners that complement rather than compete
+- Companies from the "deleted" list above
+- Companies you're not confident actually exist
+- Companies without a clear domain (if you can't find their website, don't include them)
+
+### For Each Competitor, You MUST:
+1. Be confident they are a real, active company
+2. Know their actual domain (not guessed)
+3. Explain specifically HOW they compete (same product category, same buyers)
+
+## OUTPUT FORMAT
+Respond with a JSON array:
 [
   {
-    "name": "Competitor Name",
-    "domain": "competitor.com",
-    "description": "Brief description of what they offer and how they compete"
+    "name": "Exact Company Name",
+    "domain": "company.com",
+    "description": "1-2 sentences: What they sell and why they're a direct competitor",
+    "confidence": "high" | "medium",
+    "competition_type": "direct" | "partial",
+    "reasoning": "Why this company competes for the same customers"
   }
 ]
 
-Rules:
-1. Only include real companies that exist
-2. Focus on direct competitors, not tangentially related companies
-3. Include both large and smaller competitors
-4. If you're unsure about a domain, leave it null
-5. Descriptions should be factual and neutral
+confidence:
+- "high" = You're certain this is a direct competitor
+- "medium" = Likely a competitor but less certain
+
+competition_type:
+- "direct" = Competes head-to-head for same customers
+- "partial" = Overlaps significantly but not 100% same market
+
+Only include competitors with "high" or "medium" confidence. If unsure, leave them out.
 
 Respond ONLY with valid JSON array, no explanations.`
 

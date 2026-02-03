@@ -22,16 +22,25 @@ import {
   ToggleRight,
   Plus,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Info
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+
+interface CompetitorContext {
+  confidence?: 'high' | 'medium'
+  competition_type?: 'direct' | 'partial'
+  reasoning?: string
+  discovered_at?: string
+}
 
 interface Competitor {
   id: string
   name: string
   domain: string | null
   description: string | null
+  context?: CompetitorContext | null
   auto_discovered: boolean
   is_active: boolean
 }
@@ -292,57 +301,98 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
         {/* Active Competitors */}
         {activeCompetitors.length > 0 ? (
           <div className="space-y-2">
-            {activeCompetitors.map((competitor) => (
-              <div 
-                key={competitor.id} 
-                className="flex items-center justify-between p-3 border rounded-lg"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{competitor.name}</p>
-                    {competitor.domain && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
-                        {competitor.domain}
-                      </p>
+            {activeCompetitors.map((competitor) => {
+              const ctx = competitor.context as CompetitorContext | null
+              const confidenceColor = ctx?.confidence === 'high' ? 'text-green-600' : 'text-yellow-600'
+              const confidenceLabel = ctx?.confidence === 'high' ? 'High confidence' : 'Medium confidence'
+              
+              return (
+                <div 
+                  key={competitor.id} 
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{competitor.name}</p>
+                        {ctx?.confidence && (
+                          <span 
+                            className={`text-xs ${confidenceColor}`}
+                            title={ctx.reasoning || confidenceLabel}
+                          >
+                            {ctx.confidence === 'high' ? '●' : '○'}
+                          </span>
+                        )}
+                        {ctx?.competition_type === 'partial' && (
+                          <span className="text-xs text-muted-foreground" title="Partial overlap">
+                            (partial)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {competitor.domain && (
+                          <span className="flex items-center gap-1">
+                            <Globe className="h-3 w-3" />
+                            {competitor.domain}
+                          </span>
+                        )}
+                        {competitor.description && (
+                          <span 
+                            className="truncate max-w-[200px] cursor-help" 
+                            title={competitor.description}
+                          >
+                            • {competitor.description}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    {competitor.auto_discovered && (
+                      <Badge variant="secondary" className="text-xs">Auto</Badge>
                     )}
+                    {ctx?.reasoning && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-8 w-8 p-0"
+                        title={ctx.reasoning}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggle(competitor.id, true)}
+                      disabled={togglingId === competitor.id}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Exclude from tracking"
+                    >
+                      {togglingId === competitor.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ToggleRight className="h-4 w-4 text-green-500" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(competitor.id, competitor.name)}
+                      disabled={deletingId === competitor.id}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete competitor"
+                    >
+                      {deletingId === competitor.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {competitor.auto_discovered && (
-                    <Badge variant="secondary" className="text-xs">Auto</Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggle(competitor.id, true)}
-                    disabled={togglingId === competitor.id}
-                    className="text-muted-foreground hover:text-destructive"
-                    title="Exclude from tracking"
-                  >
-                    {togglingId === competitor.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ToggleRight className="h-4 w-4 text-green-500" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(competitor.id, competitor.name)}
-                    disabled={deletingId === competitor.id}
-                    className="text-muted-foreground hover:text-destructive"
-                    title="Delete competitor"
-                  >
-                    {deletingId === competitor.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-muted-foreground text-sm py-4 text-center">
@@ -407,10 +457,17 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
         )}
 
         {/* Help text */}
-        <p className="text-xs text-muted-foreground pt-2">
-          Excluded competitors won&apos;t appear in visibility scans or content monitoring. 
-          Toggle to re-enable them.
-        </p>
+        <div className="text-xs text-muted-foreground pt-2 space-y-1">
+          <p>
+            <span className="text-green-600">●</span> High confidence = Direct competitor
+            {' • '}
+            <span className="text-yellow-600">○</span> Medium confidence = Likely competitor
+          </p>
+          <p>
+            Excluded competitors won&apos;t appear in visibility scans or content monitoring.
+            Delete incorrect ones to prevent them from being re-suggested.
+          </p>
+        </div>
       </CardContent>
     </Card>
   )
