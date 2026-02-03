@@ -19,16 +19,17 @@ import {
   Sparkles,
   Bot,
   X,
-  Lock
+  Lock,
+  Quote
 } from 'lucide-react'
 
-// Consumption-based pricing (monthly)
+// Consumption-based pricing (monthly) - nice round numbers
 const PRICING = {
-  baseMonthly: 29, // Base platform fee
-  perCompetitor: 5,
-  perPersona: 8,
-  perPrompt: 0.50,
-  perContentWeekly: 12, // Per piece of content published per week
+  baseMonthly: 50,
+  perCompetitor: 10,
+  perPersona: 10,
+  perPrompt: 1,
+  perContentWeekly: 20,
 }
 
 export default function HubSpotLandingPage() {
@@ -36,23 +37,24 @@ export default function HubSpotLandingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   
-  // Pricing sliders
+  // Pricing sliders - round number steps
   const [competitors, setCompetitors] = useState(5)
   const [personas, setPersonas] = useState(3)
   const [prompts, setPrompts] = useState(50)
   const [contentPerWeek, setContentPerWeek] = useState(5)
 
-  // Calculate monthly price
+  // Calculate monthly price - rounds to nearest 10
   const monthlyPrice = useMemo(() => {
     const base = PRICING.baseMonthly
     const competitorCost = competitors * PRICING.perCompetitor
     const personaCost = personas * PRICING.perPersona
     const promptCost = prompts * PRICING.perPrompt
-    const contentCost = contentPerWeek * PRICING.perContentWeekly * 4 // 4 weeks per month
-    return Math.round(base + competitorCost + personaCost + promptCost + contentCost)
+    const contentCost = contentPerWeek * PRICING.perContentWeekly * 4
+    const total = base + competitorCost + personaCost + promptCost + contentCost
+    return Math.round(total / 10) * 10 // Round to nearest 10
   }, [competitors, personas, prompts, contentPerWeek])
 
-  const discountedPrice = Math.round(monthlyPrice * 0.5)
+  const discountedPrice = Math.round(monthlyPrice * 0.5 / 10) * 10 // Round to nearest 10
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,7 +69,7 @@ export default function HubSpotLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
-      {/* Header - Minimal, no prominent auth links */}
+      {/* Header */}
       <header className="sticky top-0 bg-[#0F172A]/95 backdrop-blur-sm z-40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -97,158 +99,34 @@ export default function HubSpotLandingPage() {
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
               FILL THE{" "}
               <span className="text-[#FF5C35]">GAPS</span>{" "}
-              IN YOUR CONTENT STRATEGY AUTOMATICALLY
+              IN YOUR CONTENT STRATEGY{" "}
+              <span className="text-[#FF5C35]">AUTOMATICALLY</span>
             </h1>
             
             <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-2xl leading-relaxed">
-              Discover which high-intent prompts your personas are asking—and where 
-              AI cites your competitors instead of you. Then auto-publish content 
-              that fills those gaps directly to HubSpot.
+              Your competitors are getting cited by AI. You're not. The reason? 
+              There are gaps in your content that they're filling—and AI is picking it up.
             </p>
 
             {/* Key differentiator */}
             <div className="mt-8 p-6 border border-white/10 bg-white/5">
-              <p className="text-lg text-slate-300 italic">
-                "We're not trying to generate the world's best content. AI content is a dime a dozen. 
-                What we do is <span className="text-[#FF5C35] font-semibold not-italic">identify the gaps</span>—the 
-                prompts where your brand should be mentioned but isn't—and fill them with content 
-                based on <span className="text-white font-semibold not-italic">what we actually know about your brand.</span>"
+              <p className="text-lg text-slate-300">
+                <span className="text-[#FF5C35] font-semibold">The solution:</span> Automatically 
+                surface content gaps, generate content in your brand's voice, and publish 
+                directly to HubSpot. Make sure AI gets the memo.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* The Problem */}
-      <section className="py-20 bg-white text-[#0F172A]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight">THE PROBLEM</h2>
-            <p className="mt-4 text-xl text-slate-600">
-              Your competitors are getting cited. You're not.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
-            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <div className="text-6xl md:text-7xl font-black text-[#FF5C35]">65%</div>
-              <p className="mt-4 text-lg font-semibold text-slate-600">
-                of B2B buyers now use AI to research products
-              </p>
-            </div>
-            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <div className="text-6xl md:text-7xl font-black text-[#FF5C35]">3-5</div>
-              <p className="mt-4 text-lg font-semibold text-slate-600">
-                brands mentioned per AI recommendation
-              </p>
-            </div>
-            <div className="p-10">
-              <div className="text-6xl md:text-7xl font-black text-[#FF5C35]">0</div>
-              <p className="mt-4 text-lg font-semibold text-slate-600">
-                traffic if AI doesn't mention your brand
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-12 p-8 bg-slate-100 border-2 border-[#0F172A]">
-            <div className="flex items-center gap-3 mb-4">
-              <Bot className="h-6 w-6 text-[#FF5C35]" />
-              <span className="font-bold text-sm tracking-wide text-slate-500">EXAMPLE PROMPT YOUR BUYER ASKS:</span>
-            </div>
-            <p className="text-2xl md:text-3xl font-bold italic text-slate-700">
-              "What's the best temperature monitoring software for restaurant compliance?"
-            </p>
-            <p className="mt-4 text-lg text-slate-500">
-              <span className="font-semibold">AI Response:</span> "...SafetyCulture, Monnit, and Zenput are leading options..."
-            </p>
-            <p className="mt-2 text-lg text-[#FF5C35] font-semibold">
-              ← Your brand wasn't mentioned. We fix that.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-[#0F172A]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight">HOW IT WORKS</h2>
-            <p className="mt-4 text-xl text-slate-400">
-              From brand analysis to published content in HubSpot
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-white/20">
-            {/* Step 1 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
-              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
-                1
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <Search className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">UNDERSTAND</h3>
-              </div>
-              <p className="text-slate-400">
-                We learn your brand, your market, your competitors, your personas, and the 
-                high-intent prompts your buyers are actually searching.
-              </p>
-            </div>
-            
-            {/* Step 2 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
-              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
-                2
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">FIND THE GAPS</h3>
-              </div>
-              <p className="text-slate-400">
-                We test 9 AI models with those prompts. We find where your competitors get 
-                cited—and you don't. These are your content gaps.
-              </p>
-            </div>
-            
-            {/* Step 3 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
-              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
-                3
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <FileText className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">GENERATE & PUBLISH</h3>
-              </div>
-              <p className="text-slate-400">
-                We auto-generate content based on your brand—not made up out of thin air. 
-                Then we publish it directly to your HubSpot blog.
-              </p>
-            </div>
-            
-            {/* Step 4 */}
-            <div className="p-8">
-              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
-                4
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <RefreshCw className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">MONITOR & IMPROVE</h3>
-              </div>
-              <p className="text-slate-400">
-                We continuously monitor if you're now getting cited. We validate what's working. 
-                We find new gaps. The cycle never stops.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Product Preview */}
+      {/* The Solution - Dashboard */}
       <section className="py-24 bg-slate-900 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight">THE DASHBOARD</h2>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">THE SOLUTION</h2>
             <p className="mt-4 text-lg text-slate-400">
-              Everything you need to dominate AI search visibility
+              Make sure AI gets the memo about your brand
             </p>
           </div>
 
@@ -297,19 +175,183 @@ export default function HubSpotLandingPage() {
         </div>
       </section>
 
+      {/* The Problem */}
+      <section className="py-20 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">THE PROBLEM</h2>
+            <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
+              AI models recommend your competitors because they have content that answers buyer questions. You don't.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
+            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="text-6xl md:text-7xl font-black text-[#FF5C35]">65%</div>
+              <p className="mt-4 text-lg font-semibold text-slate-600">
+                of B2B buyers now use AI to research products
+              </p>
+            </div>
+            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="text-6xl md:text-7xl font-black text-[#FF5C35]">3-5</div>
+              <p className="mt-4 text-lg font-semibold text-slate-600">
+                brands mentioned per AI recommendation
+              </p>
+            </div>
+            <div className="p-10">
+              <div className="text-6xl md:text-7xl font-black text-[#FF5C35]">0</div>
+              <p className="mt-4 text-lg font-semibold text-slate-600">
+                traffic if AI doesn't mention your brand
+              </p>
+            </div>
+          </div>
+
+          {/* Example Prompts */}
+          <div className="mt-12 space-y-4">
+            <div className="flex items-center gap-3 mb-6">
+              <Bot className="h-6 w-6 text-[#FF5C35]" />
+              <span className="font-bold text-sm tracking-wide text-slate-500">PROMPTS YOUR BUYERS ARE ASKING:</span>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="p-6 bg-slate-100 border-l-4 border-[#FF5C35]">
+                <p className="text-lg font-medium italic text-slate-700">
+                  "What software can help me with compliance tracking?"
+                </p>
+              </div>
+              <div className="p-6 bg-slate-100 border-l-4 border-[#FF5C35]">
+                <p className="text-lg font-medium italic text-slate-700">
+                  "I need a tool to automate our audit process"
+                </p>
+              </div>
+              <div className="p-6 bg-slate-100 border-l-4 border-[#FF5C35]">
+                <p className="text-lg font-medium italic text-slate-700">
+                  "Which platforms integrate with our existing systems?"
+                </p>
+              </div>
+              <div className="p-6 bg-slate-100 border-l-4 border-[#FF5C35]">
+                <p className="text-lg font-medium italic text-slate-700">
+                  "Compare the top solutions for my industry"
+                </p>
+              </div>
+            </div>
+            
+            <p className="mt-6 text-center text-lg text-[#FF5C35] font-semibold">
+              If you don't have content addressing these, AI won't mention you.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-24 bg-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">HOW IT WORKS</h2>
+            <p className="mt-4 text-xl text-slate-400">
+              From brand analysis to published content in HubSpot
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-white/20">
+            {/* Step 1 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
+                1
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <Search className="h-5 w-5 text-[#FF5C35]" />
+                <h3 className="font-black text-lg">UNDERSTAND</h3>
+              </div>
+              <p className="text-slate-400">
+                We learn your brand, your market, and your competitors to understand where you fit.
+              </p>
+            </div>
+            
+            {/* Step 2 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
+                2
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-5 w-5 text-[#FF5C35]" />
+                <h3 className="font-black text-lg">IDENTIFY GAPS</h3>
+              </div>
+              <p className="text-slate-400">
+                We find the content gaps and opportunities—prompts where competitors get cited and you don't.
+              </p>
+            </div>
+            
+            {/* Step 3 */}
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
+                3
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="h-5 w-5 text-[#FF5C35]" />
+                <h3 className="font-black text-lg">GENERATE & PUBLISH</h3>
+              </div>
+              <p className="text-slate-400">
+                Automatically generate content in your brand tone and publish directly to HubSpot.
+              </p>
+            </div>
+            
+            {/* Step 4 */}
+            <div className="p-8">
+              <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
+                4
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <RefreshCw className="h-5 w-5 text-[#FF5C35]" />
+                <h3 className="font-black text-lg">MONITOR & IMPROVE</h3>
+              </div>
+              <p className="text-slate-400">
+                Continuously monitor your citations, validate what's working, and find new opportunities.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="py-20 bg-white text-[#0F172A]">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="relative p-10 bg-slate-50 border-2 border-slate-200">
+            <Quote className="absolute top-6 left-6 h-12 w-12 text-[#FF5C35]/20" />
+            <blockquote className="relative z-10">
+              <p className="text-xl md:text-2xl font-medium text-slate-700 leading-relaxed mb-6">
+                "Our company provides solutions across many industries, but it's hard to get AI 
+                models to understand that—especially with a small marketing team. Context Memo 
+                helps me ensure all the content gaps are filled so I can focus on high-value 
+                strategic work instead."
+              </p>
+              <footer className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-[#FF5C35] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  SN
+                </div>
+                <div>
+                  <p className="font-bold text-[#0F172A]">Stephen Newman</p>
+                  <p className="text-slate-500">Head of Marketing, Checkit</p>
+                </div>
+              </footer>
+            </blockquote>
+          </div>
+        </div>
+      </section>
+
       {/* What Makes This Different */}
-      <section className="py-24 bg-white text-[#0F172A]">
+      <section className="py-24 bg-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">NOT JUST ANOTHER AI CONTENT TOOL</h2>
-            <p className="mt-4 text-xl text-slate-600 max-w-3xl mx-auto">
+            <p className="mt-4 text-xl text-slate-400 max-w-3xl mx-auto">
               You can generate AI content in ChatGPT and paste it into HubSpot. So what makes this different?
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* What we don't do */}
-            <div className="p-8 border-2 border-slate-200 bg-slate-50">
+            <div className="p-8 border-2 border-white/20 bg-white/5">
               <div className="flex items-center gap-3 mb-6">
                 <X className="h-8 w-8 text-red-500" />
                 <h3 className="font-black text-xl">WHAT WE DON'T DO</h3>
@@ -317,25 +359,25 @@ export default function HubSpotLandingPage() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-600">Generate generic content from thin air</span>
+                  <span className="text-slate-400">Generate generic content from thin air</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-600">Guess what topics you should write about</span>
+                  <span className="text-slate-400">Guess what topics you should write about</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-600">Create content that's not grounded in your brand</span>
+                  <span className="text-slate-400">Create content that's not grounded in your brand</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-600">Leave you to figure out distribution</span>
+                  <span className="text-slate-400">Leave you to figure out distribution</span>
                 </li>
               </ul>
             </div>
 
             {/* What we do */}
-            <div className="p-8 border-2 border-[#FF5C35] bg-[#FF5C35]/5">
+            <div className="p-8 border-2 border-[#FF5C35] bg-[#FF5C35]/10">
               <div className="flex items-center gap-3 mb-6">
                 <CheckCircle2 className="h-8 w-8 text-[#FF5C35]" />
                 <h3 className="font-black text-xl">WHAT WE DO</h3>
@@ -343,19 +385,19 @@ export default function HubSpotLandingPage() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-slate-700 font-medium">Identify specific prompts where you're losing to competitors</span>
+                  <span className="text-white font-medium">Identify specific gaps where you're losing to competitors</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-slate-700 font-medium">Generate content based on real facts from your website</span>
+                  <span className="text-white font-medium">Generate content based on real facts from your website</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-slate-700 font-medium">Target high-intent prompts your personas actually ask</span>
+                  <span className="text-white font-medium">Target high-intent prompts your personas actually ask</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-slate-700 font-medium">Auto-publish to HubSpot with proper structure and tags</span>
+                  <span className="text-white font-medium">Auto-publish to HubSpot with proper structure and tags</span>
                 </li>
               </ul>
             </div>
@@ -364,7 +406,7 @@ export default function HubSpotLandingPage() {
       </section>
 
       {/* Pricing Calculator */}
-      <section id="pricing" className="py-24 bg-[#0F172A]">
+      <section id="pricing" className="py-24 bg-slate-900">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">USAGE-BASED PRICING</h2>
@@ -431,7 +473,7 @@ export default function HubSpotLandingPage() {
                       value={[prompts]}
                       onValueChange={([v]) => setPrompts(v)}
                       min={10}
-                      max={500}
+                      max={200}
                       step={10}
                       className="w-full"
                     />
@@ -516,8 +558,6 @@ export default function HubSpotLandingPage() {
           </div>
         </div>
       </section>
-
-
 
       {/* Footer */}
       <footer className="py-12 bg-[#0F172A] border-t border-white/10">
