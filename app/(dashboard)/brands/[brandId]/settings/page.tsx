@@ -316,6 +316,9 @@ export default function BrandSettingsPage() {
 
   // Scroll spy to update active section
   useEffect(() => {
+    const container = contentRef.current
+    if (!container) return
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -324,7 +327,7 @@ export default function BrandSettingsPage() {
           }
         })
       },
-      { rootMargin: '-20% 0px -70% 0px' }
+      { root: container, rootMargin: '-10% 0px -80% 0px' }
     )
 
     Object.values(sectionRefs.current).forEach((ref) => {
@@ -334,10 +337,15 @@ export default function BrandSettingsPage() {
     return () => observer.disconnect()
   }, [loading])
 
+  // Reference for the scrollable content area
+  const contentRef = useRef<HTMLDivElement>(null)
+
   const scrollToSection = (sectionId: string) => {
     const section = sectionRefs.current[sectionId]
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const container = contentRef.current
+    if (section && container) {
+      const offsetTop = section.offsetTop - container.offsetTop
+      container.scrollTo({ top: offsetTop, behavior: 'smooth' })
     }
   }
 
@@ -651,10 +659,10 @@ export default function BrandSettingsPage() {
   })
 
   return (
-    <div className="flex gap-8 max-w-6xl mx-auto relative">
-      {/* Side Navigation */}
+    <div className="flex gap-8 max-w-6xl mx-auto h-[calc(100vh-6rem)]">
+      {/* Side Navigation - stays in place */}
       <nav className="w-56 shrink-0 hidden md:block">
-        <div className="sticky top-24 space-y-1">
+        <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-4">Settings</h2>
           {NAV_SECTIONS.map((section) => {
             const Icon = section.icon
@@ -691,8 +699,8 @@ export default function BrandSettingsPage() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="flex-1 space-y-8 pb-20">
+      {/* Main Content - scrolls independently */}
+      <div ref={contentRef} className="flex-1 overflow-y-auto space-y-8 pb-20 pr-4">
         <div>
           <h1 className="text-2xl font-bold">Brand Settings</h1>
           <p className="text-muted-foreground">Manage settings for {brand.name}</p>
