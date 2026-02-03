@@ -999,7 +999,6 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
             model: openrouter('openai/gpt-4o'),
             prompt,
             temperature: 0.5, // Slightly higher for more creative differentiation
-            maxTokens: 4000, // Allow longer content
           })
 
           // Extract title from generated content (first # heading)
