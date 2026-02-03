@@ -390,6 +390,10 @@ _Most recent deploys first_
 
 ### February 2, 2026
 
+**Fix: TypeScript build error in analytics route** (16876b7)
+- Fixed `Object.entries()` type assertion in memo analytics API
+- Cast entries result to preserve value types, resolving spread type error
+
 **Improve: Competitor discovery accuracy and context** (c962a82)
 - Enhanced AI prompt with more context (domain, features, homepage mentions)
 - Added confidence scoring (high/medium) and competition type (direct/partial)
