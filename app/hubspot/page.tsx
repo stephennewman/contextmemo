@@ -97,7 +97,7 @@ export default function HubSpotLandingPage() {
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
               FILL THE{" "}
               <span className="text-[#FF5C35]">GAPS</span>{" "}
-              IN YOUR CONTENT STRATEGY
+              IN YOUR CONTENT STRATEGY AUTOMATICALLY
             </h1>
             
             <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-2xl leading-relaxed">
