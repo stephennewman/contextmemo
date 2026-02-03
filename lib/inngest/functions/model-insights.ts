@@ -156,7 +156,8 @@ export const analyzeModelPerformance = inngest.createFunction(
         }
 
         // Track success by query type
-        const queryType = (scan.query as { query_type: string } | null)?.query_type || 'unknown'
+        const queryData = scan.query as unknown as { query_type: string } | null
+        const queryType = queryData?.query_type || 'unknown'
         if (!stats[model].queryTypeSuccess[queryType]) {
           stats[model].queryTypeSuccess[queryType] = { total: 0, cited: 0 }
         }
