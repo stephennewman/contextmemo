@@ -179,9 +179,13 @@ export function BrandActions({
 
 export function ScanButton({ brandId }: { brandId: string }) {
   const [loading, setLoading] = useState(false)
+  const [scanStatus, setScanStatus] = useState<string | null>(null)
+  const router = useRouter()
 
   const runScan = async () => {
     setLoading(true)
+    setScanStatus('Starting scan...')
+    
     try {
       const response = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
@@ -195,23 +199,62 @@ export function ScanButton({ brandId }: { brandId: string }) {
         throw new Error(data.error || 'Scan failed')
       }
 
-      toast.success(data.message)
+      toast.success('Scan started! This takes 2-5 minutes.')
+      setScanStatus('Scanning prompts...')
+      
+      // Poll for completion
+      let attempts = 0
+      const maxAttempts = 60 // 5 minutes max
+      const pollInterval = setInterval(async () => {
+        attempts++
+        try {
+          const statusRes = await fetch(`/api/brands/${brandId}/scan-status`)
+          if (statusRes.ok) {
+            const status = await statusRes.json()
+            if (status.recentScans > 0) {
+              setScanStatus(`Scanned ${status.recentScans} prompts...`)
+            }
+            if (status.isComplete || attempts >= maxAttempts) {
+              clearInterval(pollInterval)
+              setLoading(false)
+              setScanStatus(null)
+              toast.success(`Scan complete! ${status.recentScans} new results.`)
+              router.refresh()
+            }
+          }
+        } catch {
+          // Ignore polling errors
+        }
+      }, 5000) // Check every 5 seconds
+      
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Scan failed')
-    } finally {
       setLoading(false)
+      setScanStatus(null)
     }
   }
 
   return (
-    <Button onClick={runScan} disabled={loading}>
-      {loading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <RefreshCw className="mr-2 h-4 w-4" />
+    <div className="flex items-center gap-2">
+      <Button 
+        onClick={runScan} 
+        disabled={loading}
+        size="sm"
+        className="gap-2 rounded-none bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <RefreshCw className="h-4 w-4" />
+        )}
+        {loading ? 'Scanning...' : 'Run Scan'}
+      </Button>
+      {scanStatus && (
+        <span className="text-sm text-muted-foreground animate-pulse">
+          {scanStatus}
+        </span>
       )}
-      Run Scan
-    </Button>
+    </div>
   )
 }
 
@@ -648,7 +691,8 @@ export function AIOverviewScanButton({ brandId }: { brandId: string }) {
       onClick={runAIOverviewScan} 
       disabled={loading}
       variant="outline"
-      className="gap-2"
+      size="sm"
+      className="gap-2 rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white"
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

@@ -78,7 +78,7 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button 
-                  className="w-9 h-9 flex items-center justify-center text-sm font-bold bg-[#0EA5E9] text-white"
+                  className="w-9 h-9 flex items-center justify-center text-sm font-bold bg-[#0EA5E9] text-white cursor-pointer hover:bg-[#0EA5E9]/90 transition-colors"
                   suppressHydrationWarning
                 >
                   {initials}
@@ -95,12 +95,14 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
                     DASHBOARD
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-none">
-                  <Link href="/settings" className="font-medium">
-                    <Settings className="mr-2 h-4 w-4" />
-                    SETTINGS
-                  </Link>
-                </DropdownMenuItem>
+                {brands && brands.length > 0 && (
+                  <DropdownMenuItem asChild className="rounded-none">
+                    <Link href={`/brands/${brands[0].id}/settings`} className="font-medium">
+                      <Settings className="mr-2 h-4 w-4" />
+                      SETTINGS
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator className="bg-[#0F172A]" />
                 <form action={signOut}>
                   <DropdownMenuItem asChild className="rounded-none">

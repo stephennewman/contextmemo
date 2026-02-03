@@ -121,15 +121,26 @@ export function OnboardingFlow({
     }
   }, [progressLines])
 
-  // Auto-start the pipeline when component mounts (if not already started)
+  // Auto-start the pipeline when component mounts
+  // Start if missing any required data (context, competitors, or queries)
   useEffect(() => {
-    if (!hasStarted && !hasContext) {
+    // Only run once on mount - check all conditions needed for complete onboarding
+    const needsOnboarding = !hasContext || !hasCompetitors || !hasQueries
+    if (needsOnboarding) {
       startPipeline()
     }
-  }, [hasStarted, hasContext])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty deps - only run on mount
 
   const addProgressLine = (text: string, type: ProgressLine['type'] = 'working') => {
     setProgressLines(prev => [...prev, { text, type }])
+  }
+
+  // Convert all working lines to completed (removes spinners)
+  const completeWorkingLines = () => {
+    setProgressLines(prev => prev.map(line => 
+      line.type === 'working' ? { ...line, type: 'info' as const } : line
+    ))
   }
 
   const startPipeline = async () => {
@@ -217,6 +228,7 @@ export function OnboardingFlow({
             }
 
             if (stepComplete) {
+              completeWorkingLines() // Stop spinners before showing success
               addProgressLine(`✓ ${summary}`, 'success')
               setCompletedSteps(prev => new Set([...prev, step]))
               break
@@ -226,11 +238,13 @@ export function OnboardingFlow({
 
         // If we hit max time, assume success and continue
         if (!completedSteps.has(step)) {
+          completeWorkingLines() // Stop spinners
           addProgressLine(`✓ ${config.shortTitle} processing...`, 'success')
           setCompletedSteps(prev => new Set([...prev, step]))
         }
 
       } catch (error) {
+        completeWorkingLines() // Stop spinners on error too
         addProgressLine(`⚠ Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'info')
         // Continue with next step even on error
       }
@@ -239,14 +253,16 @@ export function OnboardingFlow({
     // All done
     setCurrentStep(null)
     setIsComplete(true)
+    completeWorkingLines() // Stop any remaining spinners
     addProgressLine(``, 'info')
     addProgressLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
     addProgressLine(`✓ Setup complete! Redirecting to dashboard...`, 'success')
 
-    // Refresh the page after a short delay
+    // Navigate to brand page after a short delay
     setTimeout(() => {
-      router.refresh()
-    }, 2000)
+      // Force a full navigation to reload server data
+      window.location.href = `/brands/${brandId}`
+    }, 1500)
   }
 
   const steps: { id: OnboardingStep; label: string }[] = [

@@ -7,12 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   ExternalLink,
-  Settings,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
-import { VisibilityChart } from '@/components/dashboard/visibility-chart'
-import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, AIOverviewScanButton } from '@/components/dashboard/brand-actions'
+import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton } from '@/components/dashboard/brand-actions'
 import { ProfileSection } from '@/components/dashboard/profile-section'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
@@ -20,9 +18,9 @@ import { CompetitiveIntelligence } from '@/components/dashboard/competitive-inte
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { CompetitorList } from '@/components/dashboard/competitor-list'
-import { CitationAnalysis } from '@/components/dashboard/citation-analysis'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
+import { AlertsList } from '@/components/dashboard/alerts-list'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -115,6 +113,16 @@ export default async function BrandPage({ params }: Props) {
     .order('timestamp', { ascending: false })
     .limit(500)
 
+  // Get alerts for this brand
+  const { data: alerts } = await supabase
+    .from('alerts')
+    .select('*')
+    .eq('brand_id', brandId)
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  const unreadAlerts = alerts?.filter(a => !a.read) || []
+
   // Get latest discovery scan result
   const { data: discoveryAlert } = await supabase
     .from('alerts')
@@ -149,10 +157,18 @@ export default async function BrandPage({ params }: Props) {
       .map(q => q.id)
   )
 
-  // Filter scans to exclude branded queries for visibility calculation
+  // Filter scans to exclude branded queries for score calculation
   const unbiasedScans = recentScans.filter(s => !brandedQueryIds.has(s.query_id))
 
-  // Calculate visibility score from unbiased scans only
+  // Calculate citation score from unbiased scans (primary metric)
+  // Citation score = % of scans with citations where brand was cited
+  const scansWithCitations = unbiasedScans.filter(s => s.citations && s.citations.length > 0)
+  const brandCitedCount = scansWithCitations.filter(s => s.brand_in_citations === true).length
+  const citationScore = scansWithCitations.length > 0 
+    ? Math.round((brandCitedCount / scansWithCitations.length) * 100)
+    : 0
+
+  // Calculate visibility score (secondary metric - for backwards compatibility)
   const mentionedCount = unbiasedScans.filter(s => s.brand_mentioned).length
   const totalScans = unbiasedScans.length
   const visibilityScore = totalScans > 0 
@@ -226,11 +242,6 @@ export default async function BrandPage({ params }: Props) {
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
-          <Button variant="outline" size="sm" asChild className="rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white">
-            <Link href={`/brands/${brandId}/settings`}>
-              <Settings className="h-4 w-4" strokeWidth={2.5} />
-            </Link>
-          </Button>
         </div>
 
         {/* Onboarding Flow - Auto-runs full pipeline */}
@@ -276,27 +287,21 @@ export default async function BrandPage({ params }: Props) {
         </div>
         <div className="flex gap-2">
           <ExportDropdown brandId={brandId} />
-          <AIOverviewScanButton brandId={brandId} />
-          <Button variant="outline" size="sm" asChild className="rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white">
-            <Link href={`/brands/${brandId}/settings`}>
-              <Settings className="h-4 w-4" strokeWidth={2.5} />
-            </Link>
-          </Button>
           <ScanButton brandId={brandId} />
         </div>
       </div>
 
-      {/* Visibility Score Hero - only show if we have scans */}
+      {/* Citation Score Hero - only show if we have scans */}
       {hasAnyScans ? (
         <div className="grid gap-4 md:grid-cols-4">
           <div className="p-6 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-[#0EA5E9]" strokeWidth={2.5} />
-              <span className="text-xs font-bold tracking-widest text-slate-400">VISIBILITY SCORE</span>
+              <span className="text-xs font-bold tracking-widest text-slate-400">CITATION SCORE</span>
             </div>
-            <div className="text-5xl font-bold text-[#0EA5E9]">{visibilityScore}%</div>
+            <div className="text-5xl font-bold text-[#0EA5E9]">{citationScore}%</div>
             <div className="w-full h-2 bg-slate-700 mt-3">
-              <div className="h-2 bg-[#0EA5E9]" style={{ width: `${visibilityScore}%` }} />
+              <div className="h-2 bg-[#0EA5E9]" style={{ width: `${citationScore}%` }} />
             </div>
           </div>
           <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
@@ -334,9 +339,8 @@ export default async function BrandPage({ params }: Props) {
       )}
 
       {/* Main Content - Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="profile" className="space-y-4">
         <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto flex-wrap">
-          <TabsTrigger value="overview" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">OVERVIEW</TabsTrigger>
           <TabsTrigger value="profile" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROFILE</TabsTrigger>
           <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
@@ -344,159 +348,15 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
           <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
           <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC{(aiTraffic?.length || 0) > 0 && ` (${aiTraffic?.length})`}</TabsTrigger>
+          <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+            ALERTS{(alerts?.length || 0) > 0 && ` (${alerts?.length})`}
+            {unreadAlerts.length > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
+                {unreadAlerts.length > 9 ? '9+' : unreadAlerts.length}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          {/* Visibility Chart - the main focus */}
-          <VisibilityChart 
-            scanResults={allScans || []} 
-            brandName={brand.name}
-            queries={queries || []}
-          />
-
-          {/* Brand Profile Summary */}
-          {hasContext && (
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Brand Profile</CardTitle>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/brands/${brandId}?tab=profile`}>View Full Profile →</Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-4">
-                  {/* Personas Summary */}
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Personas</div>
-                    <div className="text-2xl font-bold">{(context?.target_personas || []).length - (context?.disabled_personas || []).length}</div>
-                    <div className="text-xs text-muted-foreground">active of {(context?.target_personas || []).length}</div>
-                  </div>
-                  {/* Primary Offer */}
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Primary Offer</div>
-                    {context?.offers?.primary ? (
-                      <>
-                        <div className="font-medium truncate">{context.offers.primary.label}</div>
-                        <Badge variant="outline" className="text-xs capitalize mt-1">
-                          {context.offers.primary.type.replace('_', ' ')}
-                        </Badge>
-                      </>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">Not detected</div>
-                    )}
-                  </div>
-                  {/* Pricing */}
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Pricing</div>
-                    {context?.offers?.pricing_model ? (
-                      <div className="font-medium capitalize">{context.offers.pricing_model.replace('_', ' ')}</div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">Not detected</div>
-                    )}
-                  </div>
-                  {/* Products */}
-                  <div className="p-3 border rounded-lg">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Products</div>
-                    <div className="text-2xl font-bold">{(context?.products || []).length}</div>
-                    <div className="text-xs text-muted-foreground">detected</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Discovery Scan Results */}
-          {discoveryResults && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">Discovery Scan Results</CardTitle>
-                    <CardDescription>
-                      Where is {brand.name} being mentioned in AI responses?
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold">{discoveryResults.mentionRate}%</div>
-                    <div className="text-xs text-muted-foreground">mention rate</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-semibold">{discoveryResults.totalQueries}</div>
-                    <div className="text-xs text-muted-foreground">Prompts tested</div>
-                  </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-semibold">{discoveryResults.totalMentions}</div>
-                    <div className="text-xs text-muted-foreground">Brand mentions</div>
-                  </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="text-2xl font-semibold">{discoveryResults.totalScans}</div>
-                    <div className="text-xs text-muted-foreground">Total scans</div>
-                  </div>
-                </div>
-
-                {/* Winning Prompts */}
-                {discoveryResults.winningQueries && discoveryResults.winningQueries.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2 text-green-600">Winning Prompts (Brand Mentioned)</h4>
-                    <div className="space-y-2">
-                      {discoveryResults.winningQueries.slice(0, 5).map((q, i) => (
-                        <div key={i} className="p-3 border border-green-200 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <p className="font-medium text-sm">&quot;{q.query}&quot;</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {q.category} • {q.model}
-                          </p>
-                          {q.context && (
-                            <p className="text-xs mt-2 text-green-700 dark:text-green-400 italic">
-                              ...{q.context}...
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Failed Prompts */}
-                {discoveryResults.sampleFailures && discoveryResults.sampleFailures.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2 text-red-600">Prompts Where Not Mentioned (samples)</h4>
-                    <div className="space-y-1">
-                      {discoveryResults.sampleFailures.slice(0, 5).map((q, i) => (
-                        <div key={i} className="p-2 text-sm text-muted-foreground border rounded">
-                          &quot;{q.query}&quot;
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* By Category */}
-                {discoveryResults.byCategory && discoveryResults.byCategory.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">Performance by Category</h4>
-                    <div className="space-y-1">
-                      {discoveryResults.byCategory.map((cat, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
-                          <span className="capitalize">{cat.category.replace('_', ' ')}</span>
-                          <span className={cat.rate > 0 ? 'text-green-600 font-medium' : 'text-muted-foreground'}>
-                            {cat.mentions}/{cat.total} ({cat.rate}%)
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
 
         {/* Brand Profile Tab - All extracted brand information */}
         <TabsContent value="profile" className="space-y-6">
@@ -507,22 +367,17 @@ export default async function BrandPage({ params }: Props) {
             context={context}
             contextExtractedAt={brand.context_extracted_at}
             hasContext={hasContext}
+            competitors={allCompetitors || []}
           />
         </TabsContent>
 
         <TabsContent value="scans" className="space-y-4">
-          {/* Citation Analysis - Perplexity-specific insights */}
-          <CitationAnalysis
-            scanResults={recentScans}
-            brandDomain={brand.domain}
-            brandName={brand.name}
-          />
-          
           <ScanResultsView 
             scanResults={recentScans} 
             queries={queries || []} 
             brandName={brand.name}
             brandDomain={brand.domain}
+            competitors={competitors || []}
           />
         </TabsContent>
 
@@ -557,18 +412,38 @@ export default async function BrandPage({ params }: Props) {
                   <div className="space-y-2">
                     {memos.map((memo) => {
                       const schemaJson = memo.schema_json as { hubspot_synced_at?: string } | null
+                      const liveUrl = `https://${brand.subdomain}.contextmemo.com/${memo.slug}`
                       return (
                         <div key={memo.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium truncate">{memo.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              /{memo.slug}
+                            {memo.status === 'published' ? (
+                              <a 
+                                href={liveUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="font-medium truncate hover:text-primary hover:underline flex items-center gap-1 group"
+                              >
+                                {memo.title}
+                                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </a>
+                            ) : (
+                              <p className="font-medium truncate">{memo.title}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground truncate">
+                              {brand.subdomain}.contextmemo.com/{memo.slug}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 ml-2">
                             <Badge variant={memo.status === 'published' ? 'default' : 'secondary'} className="text-xs">
                               {memo.status}
                             </Badge>
+                            {memo.status === 'published' && (
+                              <Button variant="ghost" size="sm" asChild>
+                                <a href={liveUrl} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            )}
                             <PushToHubSpotButton 
                               brandId={brandId}
                               memoId={memo.id}
@@ -650,6 +525,22 @@ export default async function BrandPage({ params }: Props) {
               memo?: { title: string; slug: string } | null
             }>}
             brandName={brand.name}
+          />
+        </TabsContent>
+
+        <TabsContent value="alerts">
+          <AlertsList 
+            alerts={(alerts || []) as Array<{
+              id: string
+              brand_id: string
+              alert_type: string
+              title: string
+              message: string | null
+              read: boolean
+              data: Record<string, unknown> | null
+              created_at: string
+            }>}
+            unreadCount={unreadAlerts.length}
           />
         </TabsContent>
       </Tabs>

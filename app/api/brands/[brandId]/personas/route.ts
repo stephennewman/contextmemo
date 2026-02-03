@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { BrandContext, CustomPersona, PromptPersona, PERSONA_CONFIGS } from '@/lib/supabase/types'
+import { BrandContext, TargetPersona, PersonaSeniority } from '@/lib/supabase/types'
+import { generateText } from 'ai'
+import { openai } from '@ai-sdk/openai'
 
 interface RouteParams {
   params: Promise<{ brandId: string }>
@@ -71,44 +73,51 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       case 'add_persona': {
-        // Add a custom persona
-        const { id, name, description, phrasing_style, priorities } = body
+        // Add a new persona
+        const { title, seniority, function: func, description, phrasing_style, priorities } = body
         
-        if (!id || !name || !description) {
+        if (!title || !func || !description) {
           return NextResponse.json({ 
-            error: 'id, name, and description are required' 
+            error: 'title, function, and description are required' 
           }, { status: 400 })
         }
 
-        // Validate ID format (snake_case)
-        const idRegex = /^[a-z][a-z0-9_]*$/
-        if (!idRegex.test(id)) {
+        // Validate seniority
+        const validSeniorities: PersonaSeniority[] = ['executive', 'manager', 'specialist']
+        if (!validSeniorities.includes(seniority)) {
           return NextResponse.json({ 
-            error: 'ID must be lowercase letters, numbers, and underscores (e.g., restaurant_owner)' 
+            error: 'seniority must be executive, manager, or specialist' 
           }, { status: 400 })
         }
+
+        // Generate ID from title
+        const id = title.toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, '_')
+          .substring(0, 50)
 
         // Check if persona ID already exists
-        const existingCore = PERSONA_CONFIGS.find(p => p.id === id)
-        const existingCustom = context.custom_personas?.find(p => p.id === id)
-        if (existingCore || existingCustom) {
+        const existingPersona = context.personas?.find(p => p.id === id)
+        if (existingPersona) {
           return NextResponse.json({ 
-            error: 'A persona with this ID already exists' 
+            error: 'A persona with this title already exists' 
           }, { status: 400 })
         }
 
-        const newPersona: CustomPersona = {
+        const newPersona: TargetPersona = {
           id,
-          name,
+          title,
+          seniority,
+          function: func,
           description,
           phrasing_style: phrasing_style || 'Direct and practical',
           priorities: priorities || [],
-          detected_from: 'Manually added'
+          detected_from: 'Manually added',
+          is_auto_detected: false
         }
 
-        // Add to custom_personas and target_personas
-        context.custom_personas = [...(context.custom_personas || []), newPersona]
-        context.target_personas = [...(context.target_personas || []), id]
+        // Add to personas array
+        context.personas = [...(context.personas || []), newPersona]
 
         const { error } = await supabase
           .from('brands')
@@ -122,30 +131,35 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ 
           success: true, 
-          message: `Persona "${name}" added`,
+          message: `Persona "${title}" added`,
           persona: newPersona
         })
       }
 
       case 'remove_persona': {
-        // Remove a custom persona entirely
+        // Remove a persona entirely
         const { personaId } = body
         if (!personaId) {
           return NextResponse.json({ error: 'personaId required' }, { status: 400 })
         }
 
-        // Can only remove custom personas, not core ones
-        const isCore = PERSONA_CONFIGS.find(p => p.id === personaId)
-        if (isCore) {
+        // Check if persona exists
+        const persona = context.personas?.find(p => p.id === personaId)
+        if (!persona) {
           return NextResponse.json({ 
-            error: 'Cannot remove core personas. Use toggle to disable instead.' 
+            error: 'Persona not found' 
+          }, { status: 404 })
+        }
+
+        // Don't allow removing auto-detected personas (use toggle instead)
+        if (persona.is_auto_detected) {
+          return NextResponse.json({ 
+            error: 'Cannot remove auto-detected personas. Use toggle to disable instead.' 
           }, { status: 400 })
         }
 
-        // Remove from custom_personas
-        context.custom_personas = (context.custom_personas || []).filter(p => p.id !== personaId)
-        // Remove from target_personas
-        context.target_personas = (context.target_personas || []).filter(id => id !== personaId)
+        // Remove from personas
+        context.personas = (context.personas || []).filter(p => p.id !== personaId)
         // Remove from disabled_personas if present
         context.disabled_personas = (context.disabled_personas || []).filter(id => id !== personaId)
 
@@ -165,26 +179,81 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
-      case 'add_core_persona': {
-        // Add a core persona to target_personas
-        const { personaId } = body
-        if (!personaId) {
-          return NextResponse.json({ error: 'personaId required' }, { status: 400 })
+      case 'regenerate_personas': {
+        // Regenerate personas from existing context using AI
+        if (!context.description && !context.products?.length) {
+          return NextResponse.json({ 
+            error: 'Not enough context data. Run a full context refresh first.' 
+          }, { status: 400 })
         }
 
-        const corePersona = PERSONA_CONFIGS.find(p => p.id === personaId)
-        if (!corePersona) {
-          return NextResponse.json({ error: 'Invalid core persona' }, { status: 400 })
+        const prompt = `Analyze this company information and identify the 2-3 primary buyer personas.
+
+Company: ${context.company_name || brand.name}
+Description: ${context.description || 'Not available'}
+Products: ${(context.products || []).join(', ') || 'Not specified'}
+Markets: ${(context.markets || []).join(', ') || 'Not specified'}
+Features: ${(context.features || []).join(', ') || 'Not specified'}
+
+For each persona, identify:
+1. SENIORITY - Who has the budget/authority?
+   - "executive" = C-level, VP, Director with budget authority
+   - "manager" = Team leads, department managers
+   - "specialist" = Individual contributors, entry-level
+
+2. FUNCTION - What department/role? (Marketing, Sales, Operations, Training, IT, etc.)
+
+Return exactly 2-3 personas as JSON:
+[
+  {
+    "id": "snake_case_id",
+    "title": "Job Title (e.g., VP of Learning & Development)",
+    "seniority": "executive|manager|specialist",
+    "function": "Department name",
+    "description": "Who this persona is and what they do",
+    "phrasing_style": "How they phrase AI questions",
+    "priorities": ["What they care about"],
+    "detected_from": "What signal indicated this persona",
+    "is_auto_detected": true
+  }
+]
+
+Be specific to this company's actual buyers. Return ONLY valid JSON array.`
+
+        const { text } = await generateText({
+          model: openai('gpt-4o'),
+          prompt,
+          temperature: 0.3,
+        })
+
+        let newPersonas: TargetPersona[] = []
+        try {
+          const jsonMatch = text.match(/\[[\s\S]*\]/)
+          if (jsonMatch) {
+            newPersonas = JSON.parse(jsonMatch[0])
+          }
+        } catch (e) {
+          console.error('Failed to parse personas:', text)
+          return NextResponse.json({ 
+            error: 'Failed to generate personas. Please try again.' 
+          }, { status: 500 })
         }
 
-        // Add to target_personas if not already there
-        const targetPersonas = context.target_personas || []
-        if (!targetPersonas.includes(personaId)) {
-          context.target_personas = [...targetPersonas, personaId]
+        if (newPersonas.length === 0) {
+          return NextResponse.json({ 
+            error: 'No personas generated. Please try again.' 
+          }, { status: 500 })
         }
 
-        // Remove from disabled if it was disabled
-        context.disabled_personas = (context.disabled_personas || []).filter(id => id !== personaId)
+        // Keep any manually added personas
+        const manualPersonas = (context.personas || []).filter(p => !p.is_auto_detected)
+        
+        // Combine: new auto-detected + manual
+        context.personas = [...newPersonas, ...manualPersonas]
+        // Clear disabled list for auto-detected (user can re-disable)
+        context.disabled_personas = (context.disabled_personas || []).filter(
+          id => manualPersonas.some(p => p.id === id)
+        )
 
         const { error } = await supabase
           .from('brands')
@@ -198,7 +267,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ 
           success: true, 
-          message: `${corePersona.name} added`
+          message: `Generated ${newPersonas.length} personas`,
+          personas: context.personas
         })
       }
 

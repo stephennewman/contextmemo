@@ -13,15 +13,17 @@ Analyze the provided website content and extract the following information in JS
   "certifications": ["Any certifications, accreditations, or compliance standards"],
   "customers": ["Named customers or notable clients (if publicly listed)"],
   "brand_voice": "professional" | "casual" | "technical",
-  "target_personas": ["Array of persona IDs this brand targets - can include core personas AND custom"],
-  "custom_personas": [
+  "personas": [
     {
       "id": "snake_case_id",
-      "name": "Display Name",
-      "description": "Who this persona is",
+      "title": "Job Title (e.g., VP of Marketing, Sales Manager)",
+      "seniority": "executive|manager|specialist",
+      "function": "Department/function (e.g., Marketing, Sales, Operations)",
+      "description": "Who this persona is and what they do",
       "phrasing_style": "How they phrase AI questions",
-      "priorities": ["What they care about"],
-      "detected_from": "What signal on the website indicated this"
+      "priorities": ["What they care about when evaluating solutions"],
+      "detected_from": "What signal on the website indicated this",
+      "is_auto_detected": true
     }
   ],
   "offers": {
@@ -49,61 +51,46 @@ Analyze the provided website content and extract the following information in JS
   ]
 }
 
-TARGET PERSONAS - Identify which of these personas the brand is clearly targeting. Look for BOTH explicit and implicit signals:
+TARGET PERSONAS - Reverse-engineer the 2-3 primary buyer personas from website signals.
 
-- "b2b_marketer" - Marketing leaders evaluating tools
-  EXPLICIT: ROI, campaign tools, marketing automation, CRM integration, lead generation
-  IMPLICIT: Revenue attribution, conversion tracking, funnel language, "drive growth", pipeline metrics, demand gen
+Each persona should capture TWO dimensions:
+1. SENIORITY - Who has the budget/authority?
+   - "executive" = C-level, VP, Director with budget authority
+   - "manager" = Team leads, department managers, decision influencers  
+   - "specialist" = Individual contributors, entry-level, end users
 
-- "developer" - Technical individual contributors
-  EXPLICIT: API documentation, SDKs, code samples, GitHub, CLI tools
-  IMPLICIT: Technical language throughout, JSON/code examples, webhooks, integrations focus, "build", "ship", infrastructure terms
+2. FUNCTION - What department/role?
+   - Marketing, Sales, Operations, IT, Finance, HR, Training, Product, Engineering, etc.
+   - Be SPECIFIC to this company's actual buyers (e.g., "Food Safety" not just "Operations")
 
-- "product_leader" - PMs, Directors, team leads
-  EXPLICIT: Team collaboration, roadmap features, product analytics
-  IMPLICIT: "Scale your team", user management, permissions, workspace language, "align teams", stakeholder mentions
+DETECTION SIGNALS:
 
-- "enterprise_buyer" - Procurement, IT, security teams
-  EXPLICIT: SOC 2, GDPR, SSO, SLA, enterprise pricing tiers
-  IMPLICIT: "Contact sales", custom pricing, security page exists, compliance mentions, audit logs, admin controls, "trusted by Fortune 500"
+For SENIORITY:
+- Executive signals: "ROI", "strategic", "business impact", "cost savings", "$X million", case studies with VP/Director quotes, "enterprise", "demo" CTAs
+- Manager signals: "team", "workflow", "productivity", "scale", per-seat pricing, "collaboration", admin features
+- Specialist signals: "easy to use", "tutorials", "free tier", "get started", individual pricing, "learn", integrations with daily tools
 
-- "smb_owner" - Small business owners, founders
-  EXPLICIT: "Small business", affordable, no-code, easy to use
-  IMPLICIT: Simple pricing (flat rate), "get started free", quick setup language, solo/small team focus, DIY tone, credit card checkout
+For FUNCTION (look for industry-specific roles):
+- What job titles are mentioned on the website?
+- What problems are being solved? (compliance → Operations/Legal, campaigns → Marketing)
+- What tools/integrations are highlighted? (Salesforce → Sales, HubSpot → Marketing)
+- What industry jargon is used?
 
-- "student" - Students, researchers, early career
-  EXPLICIT: Free tier, educational pricing, tutorials, academic use
-  IMPLICIT: Learning-focused language, community emphasis, open source mentions, "learn", "explore", generous free tier, documentation-heavy
+EXAMPLES of good personas:
+- IoT monitoring software: "VP of Operations" (executive, Operations), "Quality Assurance Manager" (manager, Quality), "Compliance Officer" (specialist, Compliance)
+- Marketing automation: "CMO" (executive, Marketing), "Demand Gen Manager" (manager, Marketing), "Marketing Coordinator" (specialist, Marketing)
+- Developer tools: "CTO" (executive, Engineering), "Engineering Manager" (manager, Engineering), "Software Developer" (specialist, Engineering)
+- HR software: "CHRO" (executive, HR), "Recruiting Manager" (manager, Talent), "HR Coordinator" (specialist, HR)
+- Restaurant tech: "Franchise Owner" (executive, Operations), "Restaurant Manager" (manager, Operations), "Shift Lead" (specialist, Operations)
 
-INFERENCE RULES:
-1. B2B language + no pricing page visible = likely targets enterprise_buyer
-2. Per-seat pricing + team features = likely targets product_leader
-3. Technical depth + API-first = likely targets developer  
-4. Self-serve signup + simple pricing = likely targets smb_owner
-5. Freemium + educational content = likely targets student
-6. Multiple pricing tiers usually means multiple personas
-
-CUSTOM PERSONAS - If the website clearly targets an industry-specific persona that doesn't fit the 6 core types, CREATE A CUSTOM PERSONA:
-
-Examples of custom personas:
-- Healthcare software → "healthcare_administrator", "physician", "nurse"
-- Restaurant POS → "restaurant_owner", "franchise_operator" 
-- Legal tech → "solo_attorney", "paralegal", "law_firm_partner"
-- Real estate → "realtor", "property_manager", "broker"
-- Education → "teacher", "school_administrator", "instructional_designer"
-- HR software → "hr_manager", "recruiter", "people_ops"
-- E-commerce → "ecommerce_merchant", "dropshipper", "marketplace_seller"
-
-For custom personas, you MUST provide:
-- id: snake_case identifier
-- name: Human-readable name
-- description: 1 sentence about who they are
-- phrasing_style: How they would phrase questions to AI (their vocabulary, concerns)
-- priorities: 3-5 things they care most about
-- detected_from: The specific text/signal on the website that indicated this persona
-
-Include core personas from the list above AND any relevant custom personas.
-Total should be 2-6 personas that the brand CLEARLY targets.
+RULES for personas:
+1. Generate exactly 2-3 personas - no more, no less
+2. Each persona should be UNIQUE - different seniority OR function
+3. Use job titles that match how the website talks about its customers
+4. Be specific to the industry (not generic "Business Owner")
+5. The id should be a slug of the title (e.g., "vp_of_marketing")
+6. detected_from must cite specific text/signals from the website
+7. priorities should reflect what THIS persona cares about (not generic)
 
 OFFERS/CTAs - Identify the primary and secondary calls-to-action:
 
@@ -208,29 +195,33 @@ Competitors: {{competitors}}
 
 Generate ONLY high-intent buyer queries in these categories:
 
-1. ALTERNATIVE/SWITCHING QUERIES (actively unhappy with competitor)
-   - "[Competitor] alternatives that actually work for [specific use case]"
-   - "What should I switch to from [Competitor]?"
-   - "Frustrated with [Competitor], need something better for [context]"
-   Priority: These are highest intent - they're ready to switch
+1. ALTERNATIVE/SWITCHING QUERIES (actively unhappy with competitor) - REQUIRED: 5-8 queries
+   CRITICAL: For each competitor listed above, generate at least one alternative query using their EXACT name.
+   - "[Competitor name] alternatives for [specific use case]"
+   - "What should I switch to from [Competitor name]?"
+   - "Looking for [Competitor name] replacement that [specific requirement]"
+   Priority: 85-95 - These are highest intent - they're ready to switch
+   NOTE: "related_competitor" MUST be set to the EXACT competitor name from the list above
 
-2. SOLUTION-SEEKING QUERIES (need to solve a specific problem NOW)
+2. COMPARISON/EVALUATION QUERIES (actively deciding) - REQUIRED: 5-8 queries
+   CRITICAL: For each competitor listed above, generate at least one versus query using their EXACT name.
+   - "[Competitor name] vs alternatives for [specific use case]"
+   - "How does [Competitor name] compare for [use case]?"
+   - "[Product category] comparison: [Competitor name] vs others"
+   Priority: 80-90 - High intent - they're in evaluation mode
+   NOTE: "related_competitor" MUST be set to the EXACT competitor name from the list above
+
+3. SOLUTION-SEEKING QUERIES (need to solve a specific problem NOW) - 5-8 queries
    - "What tool should I use to [specific outcome]?"
    - "Recommend a [product category] for [specific situation/industry]"
    - "I need to [achieve result] - what's my best option?"
-   Priority: High intent - they have a problem and want a solution
+   Priority: 70-85 - High intent - they have a problem and want a solution
 
-3. COMPARISON/EVALUATION QUERIES (actively deciding)
-   - "[Product category] comparison for [specific use case]"
-   - "Which [solution type] works best for [their specific context]?"
-   - "[Option A] vs [Option B] for [use case] - which is better?"
-   Priority: High intent - they're in evaluation mode
-
-4. IMPLEMENTATION QUERIES (ready to adopt)
+4. IMPLEMENTATION QUERIES (ready to adopt) - 3-5 queries
    - "Best [solution] that integrates with [common tool/platform]"
    - "What [solution] is easiest to set up for [context]?"
    - "[Solution type] for [company size/type] teams"
-   Priority: Very high intent - they're ready to implement
+   Priority: 75-90 - Very high intent - they're ready to implement
 
 DO NOT GENERATE:
 - "What is [category]?" - definition/awareness
@@ -243,13 +234,13 @@ Respond with a JSON array:
 [
   {
     "query_text": "The high-intent buyer query",
-    "query_type": "alternative" | "solution" | "comparison" | "implementation",
+    "query_type": "alternative" | "versus" | "solution" | "implementation",
     "priority": 1-100 (conversion likelihood if recommended),
-    "related_competitor": "Competitor name if applicable, null otherwise"
+    "related_competitor": "EXACT competitor name from list above (REQUIRED for alternative/versus queries), null for others"
   }
 ]
 
-Generate 20-30 high-quality, high-intent queries. Every query should be from someone ready to evaluate or buy.
+Generate 20-30 high-quality, high-intent queries. Ensure at least 10 queries have a related_competitor set.
 
 Respond ONLY with valid JSON array, no explanations.`
 
@@ -382,44 +373,42 @@ Example of How They Ask: "{{persona_example}}"
 
 Generate prompts EXACTLY how this persona would naturally ask AI assistants.
 
-PERSONA-SPECIFIC GUIDANCE:
+ADAPT YOUR PROMPTS BASED ON SENIORITY:
 
-For B2B MARKETER:
-- Focus on campaign performance, lead generation, marketing ROI
-- Mention integrations with marketing stack (CRM, email, analytics)
-- Ask about reporting and attribution
+For EXECUTIVE-LEVEL personas (C-suite, VP, Director with budget):
+- Focus on strategic impact, ROI, competitive advantage
+- Ask about business outcomes and measurable results
+- Mention enterprise requirements, team-wide adoption
+- Use language like "our organization", "strategic initiative", "investment"
 
-For DEVELOPER:
-- Focus on API quality, SDKs, documentation
-- Ask about rate limits, uptime, technical specs
-- Mention specific tech stacks and languages
+For MANAGER-LEVEL personas (Team leads, Department managers):
+- Focus on team efficiency, workflow improvements, implementation
+- Ask about scalability, collaboration, day-to-day operations
+- Mention team size, departmental goals, reporting
+- Use language like "my team", "our department", "manage"
 
-For PRODUCT LEADER:
-- Focus on team adoption, workflow improvements
-- Ask about scaling, collaboration features
-- Mention team size and growth
+For SPECIALIST-LEVEL personas (Individual contributors, Entry-level):
+- Focus on usability, learning curve, daily tasks
+- Ask about ease of use, tutorials, specific features
+- Mention personal productivity, skill development
+- Use language like "I need", "help me", "easiest way to"
 
-For ENTERPRISE BUYER:
-- Focus on security, compliance, enterprise features
-- Ask about SOC 2, SSO, SLA, support tiers
-- Mention procurement and vendor evaluation
+ADAPT YOUR PROMPTS BASED ON FUNCTION:
 
-For SMB OWNER:
-- Focus on cost, simplicity, quick wins
-- Ask about pricing, setup time, value
-- Mention budget constraints
-
-For STUDENT/RESEARCHER:
-- Focus on free tiers, learning resources
-- Ask about tutorials, community, ease of learning
-- Mention academic or learning context
+Use industry-specific terminology for their department/function. Examples:
+- Marketing: campaigns, leads, attribution, conversion, pipeline
+- Sales: CRM, pipeline, forecasting, outreach, deals
+- Operations: efficiency, compliance, automation, process
+- Engineering: API, integration, reliability, performance
+- HR: recruiting, onboarding, engagement, retention
+- Finance: reporting, compliance, audit, forecasting
 
 ---
 
 Generate 8-12 prompts for this specific persona. Each prompt should:
-1. Sound natural for how THIS persona speaks
+1. Sound natural for how THIS persona speaks (match their seniority + function)
 2. Have clear buying/evaluation intent
-3. Include context specific to their role
+3. Include context specific to their role and priorities
 4. NOT mention brand names
 
 Respond with a JSON array:

@@ -47,20 +47,22 @@ export default async function DashboardPage() {
           .map(q => q.id)
       )
 
-      // Get latest scan results with query_id
+      // Get latest scan results with query_id and citation data
       const { data: scans } = await supabase
         .from('scan_results')
-        .select('brand_mentioned, query_id')
+        .select('brand_mentioned, brand_in_citations, citations, query_id')
         .eq('brand_id', brand.id)
         .order('scanned_at', { ascending: false })
         .limit(100)
 
-      // Filter out branded queries for unbiased visibility calculation
+      // Filter out branded queries for unbiased score calculation
       const unbiasedScans = (scans || []).filter(s => !brandedQueryIds.has(s.query_id))
-      const mentionedCount = unbiasedScans.filter(s => s.brand_mentioned).length
-      const totalScans = unbiasedScans.length
-      const visibilityScore = totalScans > 0 
-        ? Math.round((mentionedCount / totalScans) * 100)
+      
+      // Calculate citation score (primary metric)
+      const scansWithCitations = unbiasedScans.filter(s => s.citations && s.citations.length > 0)
+      const brandCitedCount = scansWithCitations.filter(s => s.brand_in_citations === true).length
+      const citationScore = scansWithCitations.length > 0 
+        ? Math.round((brandCitedCount / scansWithCitations.length) * 100)
         : 0
 
       // Get unread alerts count
@@ -72,7 +74,7 @@ export default async function DashboardPage() {
 
       return {
         ...brand,
-        visibilityScore,
+        citationScore,
         alertsCount: alertsCount || 0,
       }
     })
@@ -85,7 +87,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
           <p className="text-zinc-500 font-medium">
-            Monitor your AI search visibility across all brands
+            Monitor your AI search citations across all brands
           </p>
         </div>
         <Button asChild className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-semibold rounded-none px-6">
@@ -116,13 +118,13 @@ export default async function DashboardPage() {
               
               {/* Stats Grid */}
               <div className="grid grid-cols-2 divide-x-[3px] divide-[#0F172A]">
-                {/* Visibility */}
+                {/* Citation Score */}
                 <div className="p-4 border-b-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="h-4 w-4 text-[#0EA5E9]" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-zinc-500">VISIBILITY</span>
+                    <span className="text-xs font-bold text-zinc-500">CITATIONS</span>
                   </div>
-                  <p className="text-3xl font-bold text-[#0F172A]">{brand.visibilityScore}%</p>
+                  <p className="text-3xl font-bold text-[#0F172A]">{brand.citationScore}%</p>
                 </div>
                 
                 {/* Memos */}

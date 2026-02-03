@@ -16,6 +16,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Helper to sanitize slugs - removes special characters, normalizes spaces
+function sanitizeSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[?!.,;:'"()[\]{}]/g, '') // Remove punctuation
+    .replace(/[^\w\s-]/g, '') // Remove non-word characters except spaces and hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Collapse multiple hyphens
+    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    .slice(0, 50) // Limit length
+}
+
 export const memoGenerate = inngest.createFunction(
   { 
     id: 'memo-generate', 
@@ -103,7 +115,7 @@ export const memoGenerate = inngest.createFunction(
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{competitor_name\}\}/g, competitor.name)
             .replace(/\{\{date\}\}/g, today)
-          slug = `vs/${competitor.name.toLowerCase().replace(/\s+/g, '-')}`
+          slug = `vs/${sanitizeSlug(competitor.name)}`
           title = `${brand.name} vs ${competitor.name}: Key Differences`
           break
 
@@ -124,7 +136,7 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{other_alternatives}}', otherCompetitors)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
-          slug = `alternatives-to/${competitor.name.toLowerCase().replace(/\s+/g, '-')}`
+          slug = `alternatives-to/${sanitizeSlug(competitor.name)}`
           title = `${competitor.name} Alternatives`
           break
 
@@ -139,7 +151,7 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{industry}}', industry)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
-          slug = `for/${industry.toLowerCase().replace(/\s+/g, '-')}`
+          slug = `for/${sanitizeSlug(industry)}`
           title = `${brand.name} for ${industry}`
           break
 
@@ -155,7 +167,7 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{topic}}', topic)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
-          slug = `how/${topic.toLowerCase().replace(/\s+/g, '-').slice(0, 50)}`
+          slug = `how/${sanitizeSlug(topic)}`
           title = `How to ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
           break
 

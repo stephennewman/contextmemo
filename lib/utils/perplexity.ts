@@ -12,10 +12,17 @@ export interface PerplexitySearchResult {
   snippet: string | null
 }
 
+export interface PerplexityUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
 export interface PerplexityResponse {
   text: string
   citations: string[]
   searchResults: PerplexitySearchResult[]
+  usage?: PerplexityUsage
 }
 
 interface PerplexityAPIResponse {
@@ -123,10 +130,18 @@ export async function queryPerplexity(
     snippet: result.snippet || null,
   }))
 
+  // Extract usage data for cost tracking
+  const usage: PerplexityUsage | undefined = data.usage ? {
+    promptTokens: data.usage.prompt_tokens,
+    completionTokens: data.usage.completion_tokens,
+    totalTokens: data.usage.total_tokens,
+  } : undefined
+
   return {
     text,
     citations,
     searchResults,
+    usage,
   }
 }
 

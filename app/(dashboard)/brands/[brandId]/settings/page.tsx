@@ -80,6 +80,8 @@ export default function BrandSettingsPage() {
   
   // HubSpot integration state
   const [hubspotConfig, setHubspotConfig] = useState<HubSpotConfig>(defaultHubSpotConfig)
+  const [hubspotBlogs, setHubspotBlogs] = useState<{ id: string; name: string; url?: string }[]>([])
+  const [hubspotTesting, setHubspotTesting] = useState(false)
   
   // Search Console integration state
   const [searchConsoleConfig, setSearchConsoleConfig] = useState<SearchConsoleConfig>(defaultSearchConsoleConfig)
@@ -139,6 +141,45 @@ export default function BrandSettingsPage() {
 
     loadBrand()
   }, [brandId, router])
+
+  const testHubSpotConnection = async () => {
+    if (!hubspotConfig.access_token) {
+      toast.error('Please enter your HubSpot access token first')
+      return
+    }
+
+    setHubspotTesting(true)
+    try {
+      const response = await fetch('/api/integrations/hubspot/blogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: hubspotConfig.access_token }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Connection failed')
+      }
+
+      setHubspotBlogs(data.blogs || [])
+      
+      if (data.blogs?.length > 0) {
+        toast.success(`Connected! Found ${data.blogs.length} blog(s)`)
+        // Auto-select first blog if none selected
+        if (!hubspotConfig.blog_id && data.blogs.length > 0) {
+          setHubspotConfig({ ...hubspotConfig, blog_id: data.blogs[0].id })
+        }
+      } else {
+        toast.warning('Connected, but no blogs found. Create a blog in HubSpot first.')
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Connection failed')
+      setHubspotBlogs([])
+    } finally {
+      setHubspotTesting(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!brand) return
@@ -603,28 +644,64 @@ export default function BrandSettingsPage() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="hubspot_token">Access Token</Label>
-                  <Input
-                    id="hubspot_token"
-                    type="password"
-                    value={hubspotConfig.access_token || ''}
-                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, access_token: e.target.value })}
-                    placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="hubspot_token"
+                      type="password"
+                      value={hubspotConfig.access_token || ''}
+                      onChange={(e) => {
+                        setHubspotConfig({ ...hubspotConfig, access_token: e.target.value })
+                        setHubspotBlogs([]) // Clear blogs when token changes
+                      }}
+                      placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={testHubSpotConnection}
+                      disabled={hubspotTesting || !hubspotConfig.access_token}
+                    >
+                      {hubspotTesting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Test & Fetch Blogs'
+                      )}
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Your HubSpot Private App access token
+                    Your HubSpot Private App access token. Click &quot;Test & Fetch Blogs&quot; to verify and load your blogs.
                   </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="hubspot_blog_id">Blog ID (content_group_id)</Label>
-                  <Input
-                    id="hubspot_blog_id"
-                    value={hubspotConfig.blog_id || ''}
-                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
-                    placeholder="123456789"
-                  />
+                  <Label htmlFor="hubspot_blog_id">Target Blog</Label>
+                  {hubspotBlogs.length > 0 ? (
+                    <select
+                      id="hubspot_blog_id"
+                      value={hubspotConfig.blog_id || ''}
+                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Select a blog...</option>
+                      {hubspotBlogs.map((blog) => (
+                        <option key={blog.id} value={blog.id}>
+                          {blog.name} (ID: {blog.id})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      id="hubspot_blog_id"
+                      value={hubspotConfig.blog_id || ''}
+                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
+                      placeholder="Click 'Test & Fetch Blogs' to load your blogs"
+                    />
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    The ID of the HubSpot blog to post to. Find this in your blog settings or via the API.
+                    {hubspotBlogs.length > 0 
+                      ? 'Select the blog where memos will be published'
+                      : 'Enter your access token and click "Test & Fetch Blogs" to see available blogs'}
                   </p>
                 </div>
 

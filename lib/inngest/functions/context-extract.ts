@@ -61,21 +61,20 @@ export const contextExtract = inngest.createFunction(
 
     // Step 1: Crawl the website (with web search fallback)
     const websiteContent = await step.run('crawl-website', async () => {
+      let crawledContent = ''
+      let source = 'minimal'
+      
       try {
         // Try crawling up to 10 pages from the website
         const pages = await crawlWebsite(`https://${domain}`, 10)
         
-        if (pages.length === 0) {
-          throw new Error('No pages crawled')
+        if (pages.length > 0) {
+          // Combine content from all pages
+          crawledContent = pages
+            .map(p => `## ${p.title}\n\n${p.content}`)
+            .join('\n\n---\n\n')
+          source = 'crawl'
         }
-        
-        // Combine content from all pages
-        const combinedContent = pages
-          .map(p => `## ${p.title}\n\n${p.content}`)
-          .join('\n\n---\n\n')
-        
-        // Limit content length for AI processing
-        return { content: combinedContent.slice(0, 50000), source: 'crawl' }
       } catch (crawlError) {
         console.error('Crawl error:', crawlError)
         
@@ -83,25 +82,43 @@ export const contextExtract = inngest.createFunction(
         try {
           const singlePage = await fetchUrlAsMarkdown(`https://${domain}`)
           if (singlePage.content && singlePage.content.length > 200) {
-            return { content: singlePage.content.slice(0, 30000), source: 'single-page' }
+            crawledContent = singlePage.content
+            source = 'single-page'
           }
         } catch (fetchError) {
           console.error('Single page fetch error:', fetchError)
         }
-        
-        // Fallback 2: Web search
-        console.log('Falling back to web search for:', domain)
+      }
+      
+      // Check if we got meaningful content (at least 500 chars of actual text, not just images/links)
+      const textOnlyContent = crawledContent.replace(/!\[.*?\]\(.*?\)/g, '').replace(/\[.*?\]\(.*?\)/g, '').trim()
+      const hasEnoughContent = textOnlyContent.length > 500
+      
+      // If content is sparse, augment with web search
+      if (!hasEnoughContent) {
+        console.log('Sparse homepage content detected, augmenting with web search for:', domain)
         const searchContent = await webSearchFallback(domain)
         if (searchContent && searchContent.length > 200) {
-          return { content: searchContent, source: 'web-search' }
+          if (crawledContent.length > 0) {
+            // Combine crawled content with search results
+            crawledContent = `${crawledContent}\n\n---\n\nAdditional information from web search:\n\n${searchContent}`
+            source = 'crawl+search'
+          } else {
+            crawledContent = searchContent
+            source = 'web-search'
+          }
         }
-        
-        // Final fallback: return minimal content
+      }
+      
+      // Final fallback if we still have nothing
+      if (crawledContent.length < 200) {
         return { 
-          content: `Company domain: ${domain}. Unable to crawl website directly.`, 
+          content: `Company domain: ${domain}. Unable to gather detailed information.`, 
           source: 'minimal' 
         }
       }
+      
+      return { content: crawledContent.slice(0, 50000), source }
     })
 
     // Step 2: Extract context using AI

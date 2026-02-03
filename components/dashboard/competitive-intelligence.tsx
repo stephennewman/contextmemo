@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -9,8 +10,12 @@ import {
   Trophy,
   Target,
   Users,
-  BarChart3
+  BarChart3,
+  ChevronRight,
 } from 'lucide-react'
+import { CompetitorDetail } from './competitor-detail'
+import { QueryDetail } from './query-detail'
+import { QueriesListDrawer } from './queries-list-drawer'
 
 interface Competitor {
   id: string
@@ -31,6 +36,7 @@ interface Query {
   id: string
   query_text: string
   query_type: string | null
+  priority: number
 }
 
 interface CompetitiveIntelligenceProps {
@@ -47,6 +53,9 @@ interface CompetitorStats {
   winsAgainstBrand: number  // Queries where competitor is mentioned but brand isn't
   headToHead: number        // Both mentioned
   lossesToBrand: number     // Brand mentioned, competitor isn't
+  domain?: string | null
+  description?: string | null
+  auto_discovered?: boolean
 }
 
 interface QueryBattle {
@@ -64,6 +73,10 @@ export function CompetitiveIntelligence({
   scanResults,
   queries 
 }: CompetitiveIntelligenceProps) {
+  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorStats | null>(null)
+  const [selectedQuery, setSelectedQuery] = useState<Query | null>(null)
+  const [queriesListType, setQueriesListType] = useState<'wins' | 'ties' | 'losses' | null>(null)
+
   // Build query lookup
   const queryLookup = new Map(queries.map(q => [q.id, q]))
   
@@ -154,35 +167,48 @@ export function CompetitiveIntelligence({
         <CardContent>
           {topThreats.length > 0 ? (
             <div className="space-y-3">
-              {topThreats.map((competitor) => (
-                <div 
-                  key={competitor.name} 
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">{competitor.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Mentioned in {competitor.mentionRate}% of scans
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="text-center">
-                        <p className="font-semibold text-red-600">{competitor.winsAgainstBrand}</p>
-                        <p className="text-[10px] text-muted-foreground">Wins</p>
+              {topThreats.map((competitor) => {
+                // Find the full competitor data for additional info
+                const fullCompetitor = competitors.find(c => c.name.toLowerCase() === competitor.name.toLowerCase())
+                return (
+                  <div 
+                    key={competitor.name} 
+                    className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
+                    onClick={() => setSelectedCompetitor({
+                      ...competitor,
+                      domain: fullCompetitor?.domain,
+                      description: null,
+                      auto_discovered: false,
+                    })}
+                  >
+                    <div>
+                      <p className="font-medium">{competitor.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Mentioned in {competitor.mentionRate}% of scans
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="text-center">
+                            <p className="font-semibold text-red-600">{competitor.winsAgainstBrand}</p>
+                            <p className="text-[10px] text-muted-foreground">Wins</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="font-semibold text-amber-600">{competitor.headToHead}</p>
+                            <p className="text-[10px] text-muted-foreground">Ties</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="font-semibold text-green-600">{competitor.lossesToBrand}</p>
+                            <p className="text-[10px] text-muted-foreground">Losses</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-amber-600">{competitor.headToHead}</p>
-                        <p className="text-[10px] text-muted-foreground">Ties</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-green-600">{competitor.lossesToBrand}</p>
-                        <p className="text-[10px] text-muted-foreground">Losses</p>
-                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">
@@ -206,23 +232,30 @@ export function CompetitiveIntelligence({
         <CardContent>
           {queryBattles.losses.length > 0 ? (
             <div className="space-y-2">
-              {queryBattles.losses.slice(0, 8).map((battle) => (
-                <div 
-                  key={battle.queryId} 
-                  className="p-3 border border-red-200 bg-red-50 dark:bg-red-950/20 rounded-lg"
-                >
-                  <p className="text-sm font-medium">&quot;{battle.queryText}&quot;</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-[10px]">
-                      {battle.queryType || 'general'}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Winners: {battle.competitorsMentioned.slice(0, 3).join(', ')}
-                      {battle.competitorsMentioned.length > 3 && ` +${battle.competitorsMentioned.length - 3}`}
-                    </span>
+              {queryBattles.losses.slice(0, 8).map((battle) => {
+                const query = queryLookup.get(battle.queryId)
+                return (
+                  <div 
+                    key={battle.queryId} 
+                    className="p-3 border border-red-200 bg-red-50 dark:bg-red-950/20 rounded-lg cursor-pointer hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors group"
+                    onClick={() => query && setSelectedQuery(query)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">&quot;{battle.queryText}&quot;</p>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-[10px]">
+                        {battle.queryType || 'general'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        Winners: {battle.competitorsMentioned.slice(0, 3).join(', ')}
+                        {battle.competitorsMentioned.length > 3 && ` +${battle.competitorsMentioned.length - 3}`}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
               {queryBattles.losses.length > 8 && (
                 <p className="text-xs text-muted-foreground text-center pt-2">
                   +{queryBattles.losses.length - 8} more prompts where competitors win
@@ -242,7 +275,10 @@ export function CompetitiveIntelligence({
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => queryBattles.wins.length > 0 && setQueriesListType('wins')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
               {queryBattles.wins.length > queryBattles.losses.length ? (
@@ -257,19 +293,69 @@ export function CompetitiveIntelligence({
             <p className="text-xs text-muted-foreground">Prompts You Win</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => queryBattles.ties.length > 0 && setQueriesListType('ties')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="text-2xl font-bold text-amber-600">{queryBattles.ties.length}</div>
             <p className="text-xs text-muted-foreground">Shared Prompts</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => queryBattles.losses.length > 0 && setQueriesListType('losses')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="text-2xl font-bold text-red-600">{queryBattles.losses.length}</div>
             <p className="text-xs text-muted-foreground">Prompts to Improve</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Competitor Detail Drawer */}
+      <CompetitorDetail
+        competitor={selectedCompetitor}
+        isOpen={!!selectedCompetitor}
+        onClose={() => setSelectedCompetitor(null)}
+        brandName={brandName}
+        scanResults={scanResults}
+        queries={queries}
+      />
+
+      {/* Query Detail Drawer */}
+      <QueryDetail
+        query={selectedQuery}
+        isOpen={!!selectedQuery}
+        onClose={() => setSelectedQuery(null)}
+        brandName={brandName}
+        scanResults={scanResults}
+      />
+
+      {/* Queries List Drawer */}
+      <QueriesListDrawer
+        isOpen={queriesListType !== null}
+        onClose={() => setQueriesListType(null)}
+        title={
+          queriesListType === 'wins' ? 'Prompts You Win' :
+          queriesListType === 'ties' ? 'Shared Prompts' :
+          'Prompts to Improve'
+        }
+        description={
+          queriesListType === 'wins' ? 'Prompts where you\'re mentioned but competitors aren\'t' :
+          queriesListType === 'ties' ? 'Prompts where both you and competitors are mentioned' :
+          'Prompts where competitors are mentioned but you aren\'t'
+        }
+        type={queriesListType || 'wins'}
+        queries={
+          queriesListType === 'wins' ? queryBattles.wins :
+          queriesListType === 'ties' ? queryBattles.ties :
+          queryBattles.losses
+        }
+        allQueries={queries}
+        scanResults={scanResults}
+        brandName={brandName}
+      />
     </div>
   )
 }

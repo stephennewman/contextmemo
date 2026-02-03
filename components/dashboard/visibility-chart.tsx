@@ -22,6 +22,8 @@ interface ScanResult {
   id: string
   scanned_at: string
   brand_mentioned: boolean
+  brand_in_citations: boolean | null
+  citations: string[] | null
   model: string
   query_id: string
 }
@@ -134,9 +136,9 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-medium">Visibility Over Time</CardTitle>
+          <CardTitle className="text-base font-medium">Citation Score Over Time</CardTitle>
           <CardDescription>
-            Track how often AI assistants mention your brand
+            Track how often AI assistants cite your brand as a source
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,7 +150,7 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
             </div>
             <h3 className="font-semibold text-lg mb-2">No scan data yet</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Run your first visibility scan to see how often AI assistants mention {brandName || 'your brand'} when users ask relevant questions.
+              Run your first scan to see how often AI assistants cite {brandName || 'your brand'} as a source when users ask relevant questions.
             </p>
           </div>
         </CardContent>
@@ -201,27 +203,34 @@ export function VisibilityChart({ scanResults, industryCategory = 'default', bra
       mentionedScans: number 
     }>()
     
-    // Helper to calculate visibility for a model
-    const calcModelVisibility = (scans: ScanResult[], modelMatch: string) => {
+    // Helper to calculate citation score for a model
+    // Citation score = % of scans with citations where brand was cited
+    const calcModelCitationScore = (scans: ScanResult[], modelMatch: string) => {
       const modelScans = scans.filter(s => s.model.toLowerCase().includes(modelMatch))
-      if (modelScans.length === 0) return 0
-      return Math.round((modelScans.filter(s => s.brand_mentioned).length / modelScans.length) * 100)
+      const scansWithCitations = modelScans.filter(s => s.citations && s.citations.length > 0)
+      if (scansWithCitations.length === 0) return 0
+      return Math.round((scansWithCitations.filter(s => s.brand_in_citations === true).length / scansWithCitations.length) * 100)
     }
     
     sortedActualDates.forEach(date => {
       const scans = scansByDate.get(date)!
       const totalScans = scans.length
-      const mentionedScans = scans.filter(s => s.brand_mentioned).length
-      const visibility = Math.round((mentionedScans / totalScans) * 100)
+      // Calculate citation score instead of mention visibility
+      const scansWithCitations = scans.filter(s => s.citations && s.citations.length > 0)
+      const citedScans = scansWithCitations.filter(s => s.brand_in_citations === true).length
+      const visibility = scansWithCitations.length > 0 
+        ? Math.round((citedScans / scansWithCitations.length) * 100)
+        : 0
+      const mentionedScans = citedScans // For backwards compat in data structure
 
       actualDataByDate.set(date, {
         visibility,
-        openai: calcModelVisibility(scans, 'gpt'),
-        claude: calcModelVisibility(scans, 'claude'),
-        gemini: calcModelVisibility(scans, 'gemini'),
-        llama: calcModelVisibility(scans, 'llama'),
-        mistral: calcModelVisibility(scans, 'mistral'),
-        perplexity: calcModelVisibility(scans, 'perplexity') || calcModelVisibility(scans, 'sonar'),
+        openai: calcModelCitationScore(scans, 'gpt'),
+        claude: calcModelCitationScore(scans, 'claude'),
+        gemini: calcModelCitationScore(scans, 'gemini'),
+        llama: calcModelCitationScore(scans, 'llama'),
+        mistral: calcModelCitationScore(scans, 'mistral'),
+        perplexity: calcModelCitationScore(scans, 'perplexity') || calcModelCitationScore(scans, 'sonar'),
         totalScans,
         mentionedScans,
       })

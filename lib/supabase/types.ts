@@ -539,89 +539,43 @@ export interface BrandTone {
   custom_notes?: string
 }
 
-// Prompt personas - how different user types phrase AI queries
-// Core personas (predefined)
-export type CorePersona = 
-  | 'b2b_marketer'      // Marketing leader, ROI-focused
-  | 'developer'         // Technical IC, API/integration focused
-  | 'product_leader'    // PM/Director, team workflows
-  | 'enterprise_buyer'  // Procurement/IT, security/compliance
-  | 'smb_owner'         // Small business, cost-conscious
-  | 'student'           // Early career, free tiers, learning
+// Seniority levels for personas
+export type PersonaSeniority = 'executive' | 'manager' | 'specialist'
 
-// PromptPersona can be a core persona OR a custom string for industry-specific personas
-export type PromptPersona = CorePersona | string
-
-// Custom persona detected from website
-export interface CustomPersona {
-  id: string                    // slug identifier (e.g., "restaurant_owner")
-  name: string                  // Display name (e.g., "Restaurant Owner")
-  description: string           // Who this persona is
-  phrasing_style: string        // How they phrase questions
-  priorities: string[]          // What they care about
-  detected_from: string         // What website signal detected this
+// Seniority level descriptions for UI
+export const SENIORITY_LABELS: Record<PersonaSeniority, string> = {
+  executive: 'Executive (C-level, VP)',
+  manager: 'Manager (Director, Team Lead)',
+  specialist: 'Specialist (IC, Entry-level)',
 }
 
-// Persona configuration for prompt generation
-export interface PersonaConfig {
-  id: PromptPersona
+// Target persona - flexible, brand-specific buyer profile
+// No predefined buckets - each is unique to the brand
+export interface TargetPersona {
+  id: string                    // auto-generated slug (e.g., "vp_marketing")
+  title: string                 // Job title (e.g., "VP of Marketing", "Sales Manager")
+  seniority: PersonaSeniority   // Executive, Manager, or Specialist
+  function: string              // Department/function (e.g., "Marketing", "Sales", "Operations")
+  description: string           // Who this persona is and what they do
+  phrasing_style: string        // How they phrase AI questions
+  priorities: string[]          // What they care about when evaluating solutions
+  detected_from?: string        // What website signal indicated this (for auto-detected)
+  is_auto_detected: boolean     // Was this auto-detected vs manually added
+}
+
+// Backward compatibility: PromptPersona can be a persona ID string
+export type PromptPersona = string
+
+// Legacy CustomPersona type - kept for migration compatibility
+// @deprecated Use TargetPersona instead
+export interface CustomPersona {
+  id: string
   name: string
   description: string
-  phrasingSyle: string
+  phrasing_style: string
   priorities: string[]
-  examplePhrasing: string
+  detected_from: string
 }
-
-export const PERSONA_CONFIGS: PersonaConfig[] = [
-  {
-    id: 'b2b_marketer',
-    name: 'B2B Marketer',
-    description: 'Marketing leader evaluating tools for their team',
-    phrasingSyle: 'ROI-focused, mentions integrations, campaign performance',
-    priorities: ['ROI', 'integrations', 'analytics', 'automation'],
-    examplePhrasing: 'What marketing automation integrates with our CRM and shows clear ROI?',
-  },
-  {
-    id: 'developer',
-    name: 'Developer',
-    description: 'Technical IC looking for tools and APIs',
-    phrasingSyle: 'Technical specs, API quality, documentation, rate limits',
-    priorities: ['API quality', 'documentation', 'reliability', 'developer experience'],
-    examplePhrasing: 'Which API has the best rate limits and SDK support for Node.js?',
-  },
-  {
-    id: 'product_leader',
-    name: 'Product Leader',
-    description: 'PM or Director evaluating for their team',
-    phrasingSyle: 'Team workflows, scalability, collaboration features',
-    priorities: ['team collaboration', 'scalability', 'roadmap features', 'user adoption'],
-    examplePhrasing: 'What project management tool works well as we scale from 10 to 50 people?',
-  },
-  {
-    id: 'enterprise_buyer',
-    name: 'Enterprise Buyer',
-    description: 'Procurement or IT evaluating vendors',
-    phrasingSyle: 'Security, compliance, enterprise features, pricing',
-    priorities: ['SOC 2', 'SSO', 'compliance', 'SLA', 'enterprise support'],
-    examplePhrasing: 'What solution is SOC 2 compliant and supports SSO for our enterprise?',
-  },
-  {
-    id: 'smb_owner',
-    name: 'SMB Owner',
-    description: 'Small business owner, cost-conscious',
-    phrasingSyle: 'Cost-focused, ease of use, quick setup, value',
-    priorities: ['price', 'ease of use', 'quick setup', 'value for money'],
-    examplePhrasing: 'What\'s the most affordable way to automate my invoicing?',
-  },
-  {
-    id: 'student',
-    name: 'Student/Researcher',
-    description: 'Early career, learning, budget-constrained',
-    phrasingSyle: 'Free tiers, tutorials, learning resources, simplicity',
-    priorities: ['free tier', 'tutorials', 'learning curve', 'community'],
-    examplePhrasing: 'Free tools to help me learn data analysis for my thesis?',
-  },
-]
 
 // Social links for sameAs references
 export interface SocialLinks {
@@ -666,12 +620,14 @@ export interface BrandContext {
   user_intents?: UserIntent[]
   // Social links for Schema.org sameAs references
   social_links?: SocialLinks
-  // Target personas identified from website analysis (core + custom)
-  target_personas?: PromptPersona[]
-  // Custom industry-specific personas detected from website
-  custom_personas?: CustomPersona[]
+  // Target personas - flexible buyer profiles unique to this brand
+  // Each has seniority (executive/manager/specialist) + function (marketing/sales/etc.)
+  personas?: TargetPersona[]
   // Personas that have been manually disabled (won't generate prompts)
   disabled_personas?: string[]
+  // @deprecated Legacy fields - kept for migration compatibility
+  target_personas?: PromptPersona[]
+  custom_personas?: CustomPersona[]
   // Primary and secondary offers/CTAs
   offers?: BrandOffers
   // Critical prompt themes - keyword clusters to focus on

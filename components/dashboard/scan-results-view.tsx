@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { 
   ChevronDown, 
   ChevronUp, 
+  ChevronRight,
   CheckCircle2, 
   XCircle, 
   Bot,
@@ -14,32 +15,23 @@ import {
   Users,
   AlertTriangle,
   Link,
-  ExternalLink
+  ExternalLink,
+  TrendingUp,
+  Target,
+  Lightbulb
 } from 'lucide-react'
-import type { ScanResult, Query, PromptPersona, CorePersona } from '@/lib/supabase/types'
-import { PERSONA_CONFIGS as PersonaConfigs } from '@/lib/supabase/types'
+import type { ScanResult, Query, PromptPersona } from '@/lib/supabase/types'
+import { QueryDetail } from './query-detail'
 
-// Core persona display configuration
-const CORE_PERSONA_DISPLAY: Record<CorePersona, { label: string; color: string }> = {
-  b2b_marketer: { label: 'B2B Marketer', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  developer: { label: 'Developer', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  product_leader: { label: 'Product Leader', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' },
-  enterprise_buyer: { label: 'Enterprise', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
-  smb_owner: { label: 'SMB Owner', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-  student: { label: 'Student', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
-}
-
-// Get display info for any persona (core or custom)
+// Get display info for any persona - formats the ID into a nice label
 function getPersonaDisplay(persona: string): { label: string; color: string } {
-  // Check if it's a core persona
-  if (persona in CORE_PERSONA_DISPLAY) {
-    return CORE_PERSONA_DISPLAY[persona as CorePersona]
-  }
-  // Custom persona - generate a nice label and use a neutral color
+  // Generate a nice label from the persona ID (snake_case to Title Case)
   const label = persona
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
+  
+  // Use a consistent color for all personas
   return { 
     label, 
     color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200' 
@@ -61,11 +53,21 @@ function getDomainFromUrl(url: string): string {
   }
 }
 
+// Competitor citation tracking
+interface CompetitorCitationStats {
+  name: string
+  domain: string | null
+  citationCount: number
+  mentionCount: number
+  queryCount: number // unique queries where this competitor was cited/mentioned
+}
+
 interface ScanResultsViewProps {
   scanResults: ScanResultWithQuery[]
   queries: Query[]
   brandName: string
   brandDomain?: string
+  competitors?: Array<{ id: string; name: string; domain: string | null; is_active: boolean }>
 }
 
 // Grouped scans by query
@@ -75,6 +77,10 @@ interface GroupedScan {
   isBranded: boolean
   scannedAt: string
   scans: ScanResultWithQuery[]
+  // Computed fields for insights
+  competitorsCited: string[] // competitor names that were cited (domain match)
+  competitorsMentioned: string[] // competitor names mentioned in responses
+  isOpportunity: boolean // known competitors cited/mentioned but brand isn't
 }
 
 // Helper to check if a query contains the brand name
@@ -111,14 +117,16 @@ function getModelDisplay(model: string) {
   if (m.includes('perplexity') || m.includes('sonar')) {
     return { name: 'Perplexity', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200', key: 'perplexity' }
   }
+  if (m.includes('grok')) {
+    return { name: 'Grok', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200', key: 'grok' }
+  }
   return { name: model, color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200', key: 'other' }
 }
 
-// Single model result row within a grouped card
-function ModelResult({ scan, brandDomain }: { scan: ScanResultWithQuery; brandDomain?: string }) {
+// Single model result row within a grouped card - compact version
+function ModelResult({ scan, brandDomain, compact = false }: { scan: ScanResultWithQuery; brandDomain?: string; compact?: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const modelInfo = getModelDisplay(scan.model)
-  const isPerplexity = modelInfo.key === 'perplexity'
   
   // Check if a citation URL contains the brand's domain
   const isBrandCitation = (url: string): boolean => {
@@ -128,6 +136,12 @@ function ModelResult({ scan, brandDomain }: { scan: ScanResultWithQuery; brandDo
     return citationDomain.includes(normalizedDomain) || normalizedDomain.includes(citationDomain)
   }
   
+  // Check if this scan has citation data
+  const hasCitations = scan.citations && scan.citations.length > 0
+  
+  // Get non-brand citations for insights
+  const competitorCitations = scan.citations?.filter(url => !isBrandCitation(url)) || []
+  
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -136,86 +150,74 @@ function ModelResult({ scan, brandDomain }: { scan: ScanResultWithQuery; brandDo
             <Bot className="h-3 w-3 mr-1" />
             {modelInfo.name}
           </Badge>
-          {scan.brand_mentioned ? (
-            <Badge className="bg-green-500 text-white">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Mentioned
-            </Badge>
-          ) : (
-            <Badge variant="destructive">
-              <XCircle className="h-3 w-3 mr-1" />
-              Not Mentioned
-            </Badge>
-          )}
-          {scan.brand_mentioned && scan.brand_position && (
-            <span className="text-sm text-muted-foreground">
-              Position #{scan.brand_position}
-            </span>
-          )}
-          {/* Perplexity citation status */}
-          {isPerplexity && scan.brand_in_citations !== null && (
+          {/* Citation status is the primary indicator */}
+          {hasCitations ? (
             scan.brand_in_citations ? (
-              <Badge className="bg-cyan-500 text-white" title="Your domain was cited as a source">
-                <Link className="h-3 w-3 mr-1" />
+              <Badge className="bg-emerald-500 text-white" title="Your domain was cited as a source">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
                 Cited
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-muted-foreground" title="Your domain was not cited as a source">
-                <Link className="h-3 w-3 mr-1" />
+              <Badge variant="outline" className="text-muted-foreground border-orange-300 dark:border-orange-700" title="Your domain was not cited as a source">
+                <XCircle className="h-3 w-3 mr-1" />
                 Not Cited
+              </Badge>
+            )
+          ) : (
+            // Fallback to mention status if no citation data
+            scan.brand_mentioned ? (
+              <Badge className="bg-green-500 text-white">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Mentioned
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground">
+                <XCircle className="h-3 w-3 mr-1" />
+                Not Mentioned
               </Badge>
             )
           )}
         </div>
+        {/* Show competitor names mentioned in response */}
         {scan.competitors_mentioned && scan.competitors_mentioned.length > 0 && (
           <div className="flex items-center gap-1 text-sm">
-            <Users className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">{scan.competitors_mentioned.join(', ')}</span>
+            <Users className="h-3 w-3 text-orange-500" />
+            <span className="text-orange-600 dark:text-orange-400 text-xs">{scan.competitors_mentioned.join(', ')}</span>
           </div>
         )}
       </div>
       
-      {/* Brand context snippet */}
+      {/* Brand context snippet - only show when cited/mentioned */}
       {scan.brand_mentioned && scan.brand_context && (
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded p-2 ml-0">
-          <p className="text-sm text-green-800 dark:text-green-200">
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded p-2">
+          <p className="text-sm text-emerald-800 dark:text-emerald-200">
             {scan.brand_context}
           </p>
         </div>
       )}
 
-      {/* Perplexity Citations Display */}
-      {isPerplexity && scan.citations && scan.citations.length > 0 && (
-        <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-900 rounded p-2">
-          <div className="flex items-center gap-1 mb-2">
-            <Link className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
-            <span className="text-xs font-medium text-cyan-800 dark:text-cyan-200">
-              Sources Cited ({scan.citations.length})
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {scan.citations.map((url, i) => {
-              const domain = getDomainFromUrl(url)
-              const isBrand = isBrandCitation(url)
-              return (
-                <a
-                  key={i}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
-                    isBrand
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
-                      : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300 hover:bg-cyan-200 dark:hover:bg-cyan-800'
-                  }`}
-                  title={url}
-                >
-                  {domain}
-                  <ExternalLink className="h-2.5 w-2.5" />
-                </a>
-              )
-            })}
-          </div>
+      {/* Compact citations display - just show top domains */}
+      {hasCitations && competitorCitations.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-xs text-muted-foreground">Sources:</span>
+          {competitorCitations.slice(0, 5).map((url, i) => {
+            const domain = getDomainFromUrl(url)
+            return (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-muted hover:bg-muted/80 transition-colors"
+                title={url}
+              >
+                {domain}
+              </a>
+            )
+          })}
+          {competitorCitations.length > 5 && (
+            <span className="text-xs text-muted-foreground">+{competitorCitations.length - 5} more</span>
+          )}
         </div>
       )}
 
@@ -226,7 +228,7 @@ function ModelResult({ scan, brandDomain }: { scan: ScanResultWithQuery; brandDo
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
-            className="h-7 px-2 text-xs"
+            className="h-6 px-2 text-xs"
           >
             {expanded ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
             {expanded ? 'Hide' : 'Show'} response
@@ -243,15 +245,29 @@ function ModelResult({ scan, brandDomain }: { scan: ScanResultWithQuery; brandDo
 }
 
 // Grouped card showing all model results for one query
-function GroupedScanCard({ group, brandDomain }: { group: GroupedScan; brandDomain?: string }) {
+function GroupedScanCard({ group, brandDomain, filterMode }: { group: GroupedScan; brandDomain?: string; filterMode?: string }) {
+  // Count citations across models
+  const citedCount = group.scans.filter(s => s.brand_in_citations === true).length
+  const totalWithCitations = group.scans.filter(s => s.citations && s.citations.length > 0).length
+  
+  // Filter scans based on filter mode for cleaner display
+  const scansToShow = filterMode === 'cited' 
+    ? group.scans.filter(s => s.brand_in_citations === true)
+    : filterMode === 'not_cited'
+    ? group.scans.filter(s => s.citations && s.citations.length > 0 && s.brand_in_citations !== true)
+    : group.scans
+  
   return (
-    <div className={`border rounded-lg p-4 space-y-4 ${group.isBranded ? 'opacity-60 border-dashed' : ''}`}>
+    <div className={`border rounded-lg p-4 space-y-3 ${
+      group.isBranded ? 'opacity-60 border-dashed' : 
+      group.isOpportunity ? 'border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/20' : ''
+    }`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
-            <p className="font-medium">
+            <p className="font-medium text-sm">
               &quot;{group.query?.query_text || 'Unknown prompt'}&quot;
             </p>
             {group.isBranded && (
@@ -260,19 +276,64 @@ function GroupedScanCard({ group, brandDomain }: { group: GroupedScan; brandDoma
                 Branded
               </Badge>
             )}
+            {group.isOpportunity && !group.isBranded && (
+              <Badge className="bg-orange-500 text-white text-xs shrink-0">
+                <Target className="h-3 w-3 mr-1" />
+                Opportunity
+              </Badge>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {formatDate(group.scannedAt)}
-            {group.isBranded && ' • Excluded from visibility score'}
-          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{formatDate(group.scannedAt)}</span>
+            {totalWithCitations > 0 && (
+              <>
+                <span>•</span>
+                <span className={citedCount > 0 ? 'text-emerald-600 dark:text-emerald-400' : ''}>
+                  {citedCount}/{totalWithCitations} models cite you
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Model results */}
-      <div className="space-y-3 divide-y">
-        {group.scans.map((scan, idx) => (
-          <div key={scan.id} className={idx > 0 ? 'pt-3' : ''}>
-            <ModelResult scan={scan} brandDomain={brandDomain} />
+      {/* Opportunity insight - show which competitors are winning (hide when filtering on cited) */}
+      {group.isOpportunity && filterMode !== 'cited' && (
+        <div className="bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded p-2">
+          <div className="flex items-start gap-2">
+            <Lightbulb className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              {group.competitorsCited.length > 0 ? (
+                <>
+                  <span className="font-medium text-orange-800 dark:text-orange-200">
+                    Competitors being cited:
+                  </span>
+                  <span className="text-orange-700 dark:text-orange-300 ml-1">
+                    {group.competitorsCited.slice(0, 3).join(', ')}
+                    {group.competitorsCited.length > 3 && ` +${group.competitorsCited.length - 3} more`}
+                  </span>
+                </>
+              ) : group.competitorsMentioned.length > 0 ? (
+                <>
+                  <span className="font-medium text-orange-800 dark:text-orange-200">
+                    Competitors mentioned:
+                  </span>
+                  <span className="text-orange-700 dark:text-orange-300 ml-1">
+                    {group.competitorsMentioned.slice(0, 3).join(', ')}
+                    {group.competitorsMentioned.length > 3 && ` +${group.competitorsMentioned.length - 3} more`}
+                  </span>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Model results - compact layout, filtered based on mode */}
+      <div className="space-y-2 divide-y divide-dashed">
+        {scansToShow.map((scan, idx) => (
+          <div key={scan.id} className={idx > 0 ? 'pt-2' : ''}>
+            <ModelResult scan={scan} brandDomain={brandDomain} compact />
           </div>
         ))}
       </div>
@@ -280,8 +341,8 @@ function GroupedScanCard({ group, brandDomain }: { group: GroupedScan; brandDoma
   )
 }
 
-export function ScanResultsView({ scanResults, queries, brandName, brandDomain }: ScanResultsViewProps) {
-  const [filter, setFilter] = useState<'all' | 'mentioned' | 'not_mentioned'>('all')
+export function ScanResultsView({ scanResults, queries, brandName, brandDomain, competitors = [] }: ScanResultsViewProps) {
+  const [filter, setFilter] = useState<'all' | 'opportunities' | 'cited' | 'not_cited'>('all')
   
   // Create a map of queries for easy lookup
   const queryMap = new Map(queries.map(q => [q.id, q]))
@@ -292,130 +353,321 @@ export function ScanResultsView({ scanResults, queries, brandName, brandDomain }
       .filter(q => queryContainsBrand(q.query_text, brandName))
       .map(q => q.id)
   )
-  
-  // Enrich scan results with query data and branded flag
-  const enrichedScans = scanResults.map(scan => ({
-    ...scan,
-    query: queryMap.get(scan.query_id),
-    isBrandedQuery: brandedQueryIds.has(scan.query_id)
-  }))
-  
-  // Group scans by query_id + scan date (rounded to same scan batch)
-  // Scans from the same query within 1 hour are grouped together
-  const groupedScansMap = new Map<string, GroupedScan>()
-  
-  enrichedScans.forEach(scan => {
-    // Create a group key based on query_id and scan date (rounded to hour)
-    const scanDate = new Date(scan.scanned_at)
-    const dateKey = `${scan.query_id}-${scanDate.toISOString().slice(0, 13)}` // YYYY-MM-DDTHH
-    
-    const existing = groupedScansMap.get(dateKey)
-    if (existing) {
-      existing.scans.push(scan)
-      // Update scannedAt to the most recent
-      if (new Date(scan.scanned_at) > new Date(existing.scannedAt)) {
-        existing.scannedAt = scan.scanned_at
+
+  // Helper to check if a URL is the brand's domain
+  const isBrandDomain = (url: string): boolean => {
+    if (!brandDomain) return false
+    const normalizedDomain = brandDomain.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '')
+    const citationDomain = getDomainFromUrl(url).toLowerCase()
+    return citationDomain.includes(normalizedDomain) || normalizedDomain.includes(citationDomain)
+  }
+
+  // Helper to check if a URL belongs to a known competitor
+  const getCompetitorFromUrl = (url: string): string | null => {
+    const citationDomain = getDomainFromUrl(url).toLowerCase()
+    for (const competitor of competitors) {
+      if (!competitor.domain) continue
+      const competitorDomain = competitor.domain.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '')
+      if (citationDomain.includes(competitorDomain) || competitorDomain.includes(citationDomain)) {
+        return competitor.name
       }
-    } else {
-      groupedScansMap.set(dateKey, {
-        queryId: scan.query_id,
-        query: scan.query,
-        isBranded: scan.isBrandedQuery || false,
-        scannedAt: scan.scanned_at,
-        scans: [scan]
-      })
     }
-  })
-  
-  // Convert to array and sort by date
-  let groupedScans = Array.from(groupedScansMap.values())
-    .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())
-  
-  // Apply filter
-  if (filter === 'mentioned') {
-    groupedScans = groupedScans.filter(group => 
-      group.scans.some(s => s.brand_mentioned)
-    )
-  } else if (filter === 'not_mentioned') {
-    groupedScans = groupedScans.filter(group => 
-      group.scans.every(s => !s.brand_mentioned)
-    )
+    return null
   }
   
-  // Stats - exclude branded queries from visibility calculation
-  const unbiasedScans = scanResults.filter(s => !brandedQueryIds.has(s.query_id))
-  const totalScans = unbiasedScans.length
-  const mentionedCount = unbiasedScans.filter(s => s.brand_mentioned).length
-  const visibilityPct = totalScans > 0 ? Math.round((mentionedCount / totalScans) * 100) : 0
-  const brandedCount = scanResults.length - unbiasedScans.length
-  const totalQueries = groupedScansMap.size
+  // Compute all stats using useMemo for performance
+  const {
+    groupedScans: allGroupedScans,
+    competitorStats,
+    citationPct,
+    brandCitedCount,
+    scansWithCitations,
+    opportunityCount,
+    citedCount,
+    totalQueries
+  } = useMemo(() => {
+    // Enrich scan results with query data and branded flag
+    const enrichedScans = scanResults.map(scan => ({
+      ...scan,
+      query: queryMap.get(scan.query_id),
+      isBrandedQuery: brandedQueryIds.has(scan.query_id)
+    }))
+    
+    // Track competitor citations/mentions across all scans (only known competitors)
+    const competitorTracking = new Map<string, { citationCount: number; mentionCount: number; queries: Set<string> }>()
+    
+    // Group scans by query_id + scan date (rounded to same scan batch)
+    const groupedScansMap = new Map<string, GroupedScan>()
+    
+    enrichedScans.forEach(scan => {
+      // Create a group key based on query_id and scan date (rounded to hour)
+      const scanDate = new Date(scan.scanned_at)
+      const dateKey = `${scan.query_id}-${scanDate.toISOString().slice(0, 13)}` // YYYY-MM-DDTHH
+      
+      // Track known competitor citations
+      if (scan.citations && !scan.isBrandedQuery) {
+        scan.citations.forEach(url => {
+          const competitorName = getCompetitorFromUrl(url)
+          if (competitorName) {
+            const existing = competitorTracking.get(competitorName) || { citationCount: 0, mentionCount: 0, queries: new Set() }
+            existing.citationCount++
+            existing.queries.add(scan.query_id)
+            competitorTracking.set(competitorName, existing)
+          }
+        })
+      }
+      
+      // Track known competitor mentions in response text
+      if (scan.competitors_mentioned && !scan.isBrandedQuery) {
+        scan.competitors_mentioned.forEach(name => {
+          // Check if this is a known competitor
+          const isKnown = competitors.some(c => c.name.toLowerCase() === name.toLowerCase())
+          if (isKnown) {
+            const existing = competitorTracking.get(name) || { citationCount: 0, mentionCount: 0, queries: new Set() }
+            existing.mentionCount++
+            existing.queries.add(scan.query_id)
+            competitorTracking.set(name, existing)
+          }
+        })
+      }
+      
+      const existing = groupedScansMap.get(dateKey)
+      if (existing) {
+        // Dedupe: only add if this model isn't already in the group
+        const modelKey = getModelDisplay(scan.model).key
+        const hasModel = existing.scans.some(s => getModelDisplay(s.model).key === modelKey)
+        if (!hasModel) {
+          existing.scans.push(scan)
+        }
+        // Update scannedAt to the most recent
+        if (new Date(scan.scanned_at) > new Date(existing.scannedAt)) {
+          existing.scannedAt = scan.scanned_at
+        }
+      } else {
+        groupedScansMap.set(dateKey, {
+          queryId: scan.query_id,
+          query: scan.query,
+          isBranded: scan.isBrandedQuery || false,
+          scannedAt: scan.scanned_at,
+          scans: [scan],
+          competitorsCited: [],
+          competitorsMentioned: [],
+          isOpportunity: false
+        })
+      }
+    })
+    
+    // Compute insights for each group - focused on known competitors
+    groupedScansMap.forEach(group => {
+      const competitorsCitedSet = new Set<string>()
+      const competitorsMentionedSet = new Set<string>()
+      let hasCitations = false
+      let brandCited = false
+      
+      group.scans.forEach(scan => {
+        if (scan.citations && scan.citations.length > 0) {
+          hasCitations = true
+          if (scan.brand_in_citations) brandCited = true
+          // Check each citation for known competitors
+          scan.citations.forEach(url => {
+            const competitorName = getCompetitorFromUrl(url)
+            if (competitorName) {
+              competitorsCitedSet.add(competitorName)
+            }
+          })
+        }
+        // Also track competitors mentioned in response
+        if (scan.competitors_mentioned) {
+          scan.competitors_mentioned.forEach(name => {
+            const isKnown = competitors.some(c => c.name.toLowerCase() === name.toLowerCase())
+            if (isKnown) {
+              competitorsMentionedSet.add(name)
+            }
+          })
+        }
+      })
+      
+      group.competitorsCited = Array.from(competitorsCitedSet)
+      group.competitorsMentioned = Array.from(competitorsMentionedSet)
+      
+      // It's an opportunity if:
+      // 1. Has citations AND known competitor is cited but brand isn't, OR
+      // 2. Known competitor is mentioned in responses but brand isn't
+      const hasCompetitorPresence = group.competitorsCited.length > 0 || group.competitorsMentioned.length > 0
+      const brandMentioned = group.scans.some(s => s.brand_mentioned)
+      group.isOpportunity = !group.isBranded && hasCompetitorPresence && !brandCited && !brandMentioned
+    })
+    
+    // Convert to sorted array
+    const groupedScans = Array.from(groupedScansMap.values())
+      .sort((a, b) => new Date(b.scannedAt).getTime() - new Date(a.scannedAt).getTime())
+    
+    // Convert competitor stats to sorted array
+    const competitorStats: CompetitorCitationStats[] = Array.from(competitorTracking.entries())
+      .map(([name, stats]) => {
+        const competitor = competitors.find(c => c.name === name)
+        return {
+          name,
+          domain: competitor?.domain || null,
+          citationCount: stats.citationCount,
+          mentionCount: stats.mentionCount,
+          queryCount: stats.queries.size
+        }
+      })
+      .sort((a, b) => (b.citationCount + b.mentionCount) - (a.citationCount + a.mentionCount))
+    
+    // Calculate citation rate - exclude branded queries
+    const unbiasedScans = scanResults.filter(s => !brandedQueryIds.has(s.query_id))
+    const scansWithCitations = unbiasedScans.filter(s => s.citations && s.citations.length > 0)
+    const brandCitedCount = scansWithCitations.filter(s => s.brand_in_citations === true).length
+    const citationPct = scansWithCitations.length > 0 
+      ? Math.round((brandCitedCount / scansWithCitations.length) * 100) 
+      : 0
+    
+    // Count opportunities and cited
+    const opportunityCount = groupedScans.filter(g => g.isOpportunity).length
+    const citedCount = groupedScans.filter(g => g.scans.some(s => s.brand_in_citations === true)).length
+    
+    return {
+      groupedScans,
+      competitorStats,
+      citationPct,
+      brandCitedCount,
+      scansWithCitations,
+      opportunityCount,
+      citedCount,
+      totalQueries: groupedScansMap.size
+    }
+  }, [scanResults, queries, brandName, brandDomain, competitors, queryMap, brandedQueryIds])
+  
+  // Apply filter
+  const filteredScans = useMemo(() => {
+    switch (filter) {
+      case 'opportunities':
+        return allGroupedScans.filter(g => g.isOpportunity)
+      case 'cited':
+        return allGroupedScans.filter(g => g.scans.some(s => s.brand_in_citations === true))
+      case 'not_cited':
+        return allGroupedScans.filter(g => 
+          g.scans.some(s => s.citations && s.citations.length > 0) &&
+          g.scans.every(s => s.brand_in_citations !== true)
+        )
+      default:
+        return allGroupedScans
+    }
+  }, [allGroupedScans, filter])
+  
+  // Get top competitor for display
+  const topCompetitor = competitorStats[0]
   
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
             <CardTitle>Scan Results</CardTitle>
             <CardDescription>
-              See exactly what AI models say when asked about your industry
+              See what AI models say when asked about your industry
             </CardDescription>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold">{visibilityPct}%</p>
+            <p className="text-3xl font-bold">{citationPct}%</p>
             <p className="text-xs text-muted-foreground">
-              {mentionedCount} of {totalScans} scans mention you
-              {brandedCount > 0 && (
-                <span className="block text-muted-foreground/70">
-                  ({brandedCount} branded prompt scans excluded)
-                </span>
-              )}
+              citation rate
             </p>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2">
-          <div className="flex gap-1">
-            <Button
-              variant={filter === 'all' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilter('all')}
-            >
-              All ({totalQueries})
-            </Button>
-            <Button
-              variant={filter === 'mentioned' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilter('mentioned')}
-            >
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Has Mentions
-            </Button>
-            <Button
-              variant={filter === 'not_mentioned' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilter('not_mentioned')}
-            >
-              <XCircle className="h-3 w-3 mr-1" />
-              No Mentions
-            </Button>
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-muted/50 rounded-lg">
+          <div>
+            <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">{brandCitedCount}</p>
+            <p className="text-xs text-muted-foreground">scans cite you</p>
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">{opportunityCount}</p>
+            <p className="text-xs text-muted-foreground">opportunities</p>
+          </div>
+          <div>
+            <p className="text-lg font-semibold">{scansWithCitations.length}</p>
+            <p className="text-xs text-muted-foreground">total scans</p>
+          </div>
+          <div>
+            <p className="text-lg font-semibold">{totalQueries}</p>
+            <p className="text-xs text-muted-foreground">prompts tested</p>
           </div>
         </div>
 
+        {/* Top Competitor Insight - only show if we have known competitors being cited */}
+        {topCompetitor && (topCompetitor.citationCount + topCompetitor.mentionCount) > 0 && (
+          <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
+            <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+            <p className="text-sm">
+              <span className="font-medium text-orange-800 dark:text-orange-200">{topCompetitor.name}</span>
+              <span className="text-orange-700 dark:text-orange-300">
+                {topCompetitor.citationCount > 0 
+                  ? ` is cited ${topCompetitor.citationCount}x`
+                  : ` is mentioned ${topCompetitor.mentionCount}x`
+                }
+                {' '}across {topCompetitor.queryCount} prompts
+              </span>
+            </p>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-1">
+          <Button
+            variant={filter === 'all' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter('all')}
+          >
+            All ({totalQueries})
+          </Button>
+          {opportunityCount > 0 && (
+            <Button
+              variant={filter === 'opportunities' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter('opportunities')}
+              className={filter !== 'opportunities' ? 'text-orange-600 dark:text-orange-400' : ''}
+            >
+              <Target className="h-3 w-3 mr-1" />
+              Opportunities ({opportunityCount})
+            </Button>
+          )}
+          <Button
+            variant={filter === 'cited' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter('cited')}
+          >
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Cited ({citedCount})
+          </Button>
+          <Button
+            variant={filter === 'not_cited' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter('not_cited')}
+          >
+            <XCircle className="h-3 w-3 mr-1" />
+            Not Cited
+          </Button>
+        </div>
+
         {/* Results */}
-        {groupedScans.length > 0 ? (
+        {filteredScans.length > 0 ? (
           <div className="space-y-3">
-            {groupedScans.slice(0, 50).map((group) => (
+            {filteredScans.slice(0, 50).map((group, idx) => (
               <GroupedScanCard 
-                key={`${group.queryId}-${group.scannedAt}`}
+                key={`${group.queryId}-${group.scannedAt}-${idx}`}
                 group={group}
                 brandDomain={brandDomain}
+                filterMode={filter}
               />
             ))}
-            {groupedScans.length > 50 && (
+            {filteredScans.length > 50 && (
               <p className="text-center text-sm text-muted-foreground py-2">
-                Showing 50 of {groupedScans.length} prompt results
+                Showing 50 of {filteredScans.length} prompt results
               </p>
             )}
           </div>
@@ -455,6 +707,7 @@ export const QueryVisibilityList = PromptVisibilityList
 
 export function PromptVisibilityList({ queries, scanResults, brandName }: PromptVisibilityListProps) {
   const [personaFilter, setPersonaFilter] = useState<PromptPersona | 'all'>('all')
+  const [selectedQuery, setSelectedQuery] = useState<Query | null>(null)
   
   // Calculate visibility per prompt
   const promptStats = new Map<string, { mentioned: number; total: number }>()
@@ -546,53 +799,58 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
 
         {filteredPrompts.length > 0 ? (
           <div className="space-y-2">
-            {filteredPrompts.map((prompt) => (
-              <div 
-                key={prompt.id} 
-                className={`flex items-center justify-between p-3 border rounded-lg ${
-                  prompt.isBranded ? 'opacity-60 border-dashed' : ''
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium truncate">&quot;{prompt.query_text}&quot;</p>
-                    {prompt.persona && (
-                      <Badge className={`text-xs ${getPersonaDisplay(prompt.persona).color}`}>
-                        {getPersonaDisplay(prompt.persona).label}
-                      </Badge>
-                    )}
-                    {prompt.isBranded && (
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Branded
-                      </Badge>
-                    )}
+            {filteredPrompts.map((prompt) => {
+              const query = queries.find(q => q.id === prompt.id)
+              return (
+                <div 
+                  key={prompt.id} 
+                  className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group ${
+                    prompt.isBranded ? 'opacity-60 border-dashed' : ''
+                  }`}
+                  onClick={() => query && setSelectedQuery(query)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium truncate">&quot;{prompt.query_text}&quot;</p>
+                      {prompt.persona && (
+                        <Badge className={`text-xs ${getPersonaDisplay(prompt.persona).color}`}>
+                          {getPersonaDisplay(prompt.persona).label}
+                        </Badge>
+                      )}
+                      {prompt.isBranded && (
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Branded
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {prompt.query_type?.replace('_', ' ')}
+                      {prompt.totalScans > 0 && (
+                        <span className="ml-2">
+                          • {prompt.mentionedCount}/{prompt.totalScans} scans
+                        </span>
+                      )}
+                      {prompt.isBranded && ' • Excluded from visibility score'}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {prompt.query_type?.replace('_', ' ')}
-                    {prompt.totalScans > 0 && (
-                      <span className="ml-2">
-                        • {prompt.mentionedCount}/{prompt.totalScans} scans
-                      </span>
+                  <div className="flex items-center gap-2 ml-2">
+                    {prompt.isBranded ? (
+                      <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
+                    ) : prompt.visibility === -1 ? (
+                      <Badge variant="outline">No scans</Badge>
+                    ) : prompt.visibility >= 70 ? (
+                      <Badge className="bg-green-500 text-white">{prompt.visibility}%</Badge>
+                    ) : prompt.visibility >= 30 ? (
+                      <Badge className="bg-yellow-500 text-white">{prompt.visibility}%</Badge>
+                    ) : (
+                      <Badge variant="destructive">{prompt.visibility}%</Badge>
                     )}
-                    {prompt.isBranded && ' • Excluded from visibility score'}
-                  </p>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 ml-2">
-                  {prompt.isBranded ? (
-                    <Badge variant="outline" className="text-muted-foreground">N/A</Badge>
-                  ) : prompt.visibility === -1 ? (
-                    <Badge variant="outline">No scans</Badge>
-                  ) : prompt.visibility >= 70 ? (
-                    <Badge className="bg-green-500 text-white">{prompt.visibility}%</Badge>
-                  ) : prompt.visibility >= 30 ? (
-                    <Badge className="bg-yellow-500 text-white">{prompt.visibility}%</Badge>
-                  ) : (
-                    <Badge variant="destructive">{prompt.visibility}%</Badge>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-muted-foreground text-sm">
@@ -601,6 +859,16 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
               : 'No prompts match the selected filter.'}
           </p>
         )}
+
+        {/* Query Detail Drawer */}
+        <QueryDetail
+          query={selectedQuery}
+          isOpen={!!selectedQuery}
+          onClose={() => setSelectedQuery(null)}
+          brandName={brandName}
+          scanResults={scanResults}
+          isBranded={selectedQuery ? queryContainsBrand(selectedQuery.query_text, brandName) : false}
+        />
       </CardContent>
     </Card>
   )

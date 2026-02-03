@@ -308,7 +308,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         let contextSummary = ''
         if (hasContext) {
           const products = (context.products as unknown[])?.length || 0
-          const personas = (context.target_personas as unknown[])?.length || 0
+          const personas = (context.personas as unknown[])?.length || 0
           contextSummary = `${products} products, ${personas} personas detected`
         }
         

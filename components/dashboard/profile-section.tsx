@@ -12,6 +12,15 @@ import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
 import { BrandContext, PromptTheme } from '@/lib/supabase/types'
 
+interface Competitor {
+  id: string
+  name: string
+  domain: string | null
+  description: string | null
+  auto_discovered: boolean
+  is_active: boolean
+}
+
 interface ProfileSectionProps {
   brandId: string
   brandName: string
@@ -19,6 +28,7 @@ interface ProfileSectionProps {
   context: BrandContext | null
   contextExtractedAt: string | null
   hasContext: boolean
+  competitors?: Competitor[]
 }
 
 export function ProfileSection({
@@ -28,6 +38,7 @@ export function ProfileSection({
   context,
   contextExtractedAt,
   hasContext,
+  competitors = [],
 }: ProfileSectionProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [newTheme, setNewTheme] = useState('')
@@ -413,7 +424,7 @@ export function ProfileSection({
                 </div>
                 {context?.brand_voice && (
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Brand Voice</label>
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">Brand Voice</label>
                     <Badge variant="outline" className="capitalize mt-1">{context.brand_voice}</Badge>
                   </div>
                 )}
@@ -442,6 +453,39 @@ export function ProfileSection({
                   <div className="flex flex-wrap gap-2">
                     {context.features.map((feature: string, i: number) => (
                       <Badge key={i} variant="outline" className="text-xs">{feature}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Competitors */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Competitors</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {competitors.filter(c => c.is_active).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {competitors.filter(c => c.is_active).map((competitor) => (
+                    <Badge key={competitor.id} variant="secondary" className="flex items-center gap-1">
+                      {competitor.name}
+                      {competitor.auto_discovered && (
+                        <Sparkles className="h-3 w-3 opacity-60" />
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No competitors detected</p>
+              )}
+              {competitors.filter(c => !c.is_active).length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Excluded</label>
+                  <div className="flex flex-wrap gap-2">
+                    {competitors.filter(c => !c.is_active).map((competitor) => (
+                      <Badge key={competitor.id} variant="outline" className="text-xs opacity-60">{competitor.name}</Badge>
                     ))}
                   </div>
                 </div>
@@ -486,13 +530,12 @@ export function ProfileSection({
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base">Target Personas</CardTitle>
-              <CardDescription>User types this brand targets - used for generating relevant prompts</CardDescription>
+              <CardDescription>Buyer profiles by seniority (executive/manager/specialist) and function - used for generating targeted prompts</CardDescription>
             </CardHeader>
             <CardContent>
               <PersonaManager 
                 brandId={brandId}
-                targetPersonas={context?.target_personas || []}
-                customPersonas={context?.custom_personas || []}
+                personas={context?.personas || []}
                 disabledPersonas={context?.disabled_personas || []}
               />
             </CardContent>
@@ -525,7 +568,7 @@ export function ProfileSection({
                           href={context.offers.primary.url.startsWith('http') ? context.offers.primary.url : `https://${brandDomain}${context.offers.primary.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-emerald-600 hover:underline mt-2 inline-block"
+                          className="text-sm text-emerald-600 hover:underline mt-2 block truncate"
                         >
                           {context.offers.primary.url} →
                         </a>
@@ -551,7 +594,7 @@ export function ProfileSection({
                           href={context.offers.secondary.url.startsWith('http') ? context.offers.secondary.url : `https://${brandDomain}${context.offers.secondary.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                          className="text-sm text-blue-600 hover:underline mt-2 block truncate"
                         >
                           {context.offers.secondary.url} →
                         </a>

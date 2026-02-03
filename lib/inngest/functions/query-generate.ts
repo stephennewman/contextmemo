@@ -8,7 +8,7 @@ import {
   INTENT_BASED_QUERY_PROMPT,
   PERSONA_PROMPT_GENERATION,
 } from '@/lib/ai/prompts/context-extraction'
-import { BrandContext, UserIntent, PERSONA_CONFIGS, PromptPersona, CustomPersona, PersonaConfig } from '@/lib/supabase/types'
+import { BrandContext, UserIntent, TargetPersona, PromptPersona } from '@/lib/supabase/types'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,7 +56,8 @@ export const queryGenerate = inngest.createFunction(
 
     const context = brand.context as BrandContext
 
-    if (!context || !context.description) {
+    // Check if we have any meaningful context (allow empty description)
+    if (!context || (!context.description && !context.company_name && !context.homepage_content)) {
       throw new Error('Brand context not available. Run context extraction first.')
     }
 
@@ -93,13 +94,17 @@ export const queryGenerate = inngest.createFunction(
 
     // Step 3: Generate category-based queries (existing approach)
     const categoryQueries = await step.run('generate-category-queries', async () => {
-      const competitorNames = competitors.map(c => c.name).join(', ')
+      const competitorNames = competitors.map(c => c.name).join(', ') || 'Unknown competitors'
+      
+      // Use description if available, otherwise use homepage content summary
+      const descriptionText = context.description || 
+        (context.homepage_content ? `Based on website content: ${context.homepage_content.slice(0, 2000)}` : `Company: ${brand.name}`)
       
       const prompt = QUERY_GENERATION_PROMPT
         .replace(/\{\{company_name\}\}/g, context.company_name || brand.name)
-        .replace('{{description}}', context.description || '')
-        .replace('{{products}}', (context.products || []).join(', '))
-        .replace('{{markets}}', (context.markets || []).join(', '))
+        .replace('{{description}}', descriptionText)
+        .replace('{{products}}', (context.products || []).join(', ') || 'Not specified')
+        .replace('{{markets}}', (context.markets || []).join(', ') || 'Not specified')
         .replace('{{competitors}}', competitorNames)
 
       const { text } = await generateText({
@@ -154,59 +159,41 @@ export const queryGenerate = inngest.createFunction(
       }
     })
 
-    // Step 5: Generate persona-based prompts for the brand's target personas (core + custom)
+    // Step 5: Generate persona-based prompts for the brand's target personas
     const personaQueries = await step.run('generate-persona-prompts', async () => {
       const allPersonaQueries: GeneratedQuery[] = []
       const competitorNames = competitors.map(c => c.name).join(', ')
 
-      // Use brand's extracted target personas, or fall back to sensible defaults
-      const targetPersonaIds = context.target_personas && context.target_personas.length > 0
-        ? context.target_personas
-        : ['b2b_marketer', 'developer', 'smb_owner'] as PromptPersona[]
+      // Get personas from the new flexible structure
+      const personas = context.personas || []
       
       // Filter out disabled personas
       const disabledPersonas = context.disabled_personas || []
-      const enabledPersonaIds = targetPersonaIds.filter(id => !disabledPersonas.includes(id))
+      const enabledPersonas = personas.filter(p => !disabledPersonas.includes(p.id))
       
-      console.log(`Target personas: ${targetPersonaIds.length}, Disabled: ${disabledPersonas.length}, Enabled: ${enabledPersonaIds.length}`)
+      console.log(`Target personas: ${personas.length}, Disabled: ${disabledPersonas.length}, Enabled: ${enabledPersonas.length}`)
       
-      // Get core persona configs that match enabled personas
-      const corePersonas = PERSONA_CONFIGS.filter(p => enabledPersonaIds.includes(p.id))
-      
-      // Get custom personas from brand context
-      const customPersonas = context.custom_personas || []
-      
-      // Convert custom personas to the same format as core personas (only enabled ones)
-      const customAsConfigs: PersonaConfig[] = customPersonas
-        .filter(cp => enabledPersonaIds.includes(cp.id))
-        .map(cp => ({
-          id: cp.id as PromptPersona,
-          name: cp.name,
-          description: cp.description,
-          phrasingSyle: cp.phrasing_style,
-          priorities: cp.priorities,
-          examplePhrasing: `${cp.phrasing_style} - e.g., asking about ${cp.priorities[0] || 'their needs'}`,
-        }))
-      
-      // Combine core + custom personas
-      const allPersonas = [...corePersonas, ...customAsConfigs]
-      
-      console.log(`Generating prompts for ${allPersonas.length} personas (${corePersonas.length} core, ${customAsConfigs.length} custom):`, 
-        allPersonas.map(p => p.id))
+      if (enabledPersonas.length === 0) {
+        console.log('No enabled personas found, skipping persona-based prompts')
+        return [] as GeneratedQuery[]
+      }
 
-      for (const persona of allPersonas) {
+      for (const persona of enabledPersonas) {
         try {
+          // Build an example phrasing from persona data
+          const examplePhrasing = `${persona.phrasing_style} - e.g., asking about ${persona.priorities[0] || 'their needs'}`
+          
           const prompt = PERSONA_PROMPT_GENERATION
             .replace(/\{\{company_name\}\}/g, context.company_name || brand.name)
             .replace('{{description}}', context.description || '')
             .replace('{{products}}', (context.products || []).join(', '))
             .replace('{{markets}}', (context.markets || []).join(', '))
             .replace('{{competitors}}', competitorNames)
-            .replace('{{persona_name}}', persona.name)
+            .replace('{{persona_name}}', persona.title)
             .replace('{{persona_description}}', persona.description)
-            .replace('{{persona_phrasing}}', persona.phrasingSyle)
+            .replace('{{persona_phrasing}}', persona.phrasing_style)
             .replace('{{persona_priorities}}', persona.priorities.join(', '))
-            .replace('{{persona_example}}', persona.examplePhrasing)
+            .replace('{{persona_example}}', examplePhrasing)
 
           const { text } = await generateText({
             model: openai('gpt-4o'),
@@ -236,11 +223,19 @@ export const queryGenerate = inngest.createFunction(
     })
 
     // Combine all query types, prioritizing persona and intent-based queries
-    const queries = [
+    const allQueries = [
       ...personaQueries.map(q => ({ ...q, priority: Math.min(100, q.priority + 15) })), // Boost persona queries most
       ...intentQueries.map(q => ({ ...q, priority: Math.min(100, q.priority + 10) })), // Boost intent queries
       ...categoryQueries.map(q => ({ ...q, persona: null as PromptPersona | null })), // Legacy queries have no persona
     ]
+
+    // Cap total queries at 100 to keep scans manageable (sorted by priority, highest first)
+    const MAX_QUERIES = 100
+    const queries = allQueries
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, MAX_QUERIES)
+    
+    console.log(`Total queries generated: ${allQueries.length}, capped to: ${queries.length}`)
 
     // Step 5: Map competitor names to IDs
     const competitorIdMap = new Map(

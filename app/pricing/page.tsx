@@ -127,6 +127,11 @@ export default function PricingPage() {
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
             Start free, upgrade when you need more. No hidden fees, cancel anytime.
           </p>
+          <p className="mt-4">
+            <Link href="/pricing/calculator" className="text-[#0EA5E9] hover:underline font-medium">
+              Or try our flexible usage-based pricing →
+            </Link>
+          </p>
         </div>
       </section>
 

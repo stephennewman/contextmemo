@@ -336,16 +336,27 @@ export default async function MemoPage({ params }: Props) {
       {/* Content */}
       <main className="max-w-3xl mx-auto px-6 py-12">
         <article 
-          className="prose prose-slate prose-lg max-w-none
-            prose-headings:font-semibold prose-headings:text-slate-900
-            prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-200
-            prose-h3:text-xl prose-h3:mt-8
-            prose-p:text-slate-600 prose-p:leading-relaxed
-            prose-li:text-slate-600
-            prose-strong:text-slate-900 prose-strong:font-semibold
-            prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-            prose-blockquote:border-l-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:py-1 prose-blockquote:not-italic
-            prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none"
+          className="memo-content text-slate-600 text-[1.0625rem] leading-7
+            [&>h1]:hidden
+            [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-slate-900 [&>h2]:mt-12 [&>h2]:mb-4 [&>h2]:pb-3 [&>h2]:border-b [&>h2]:border-slate-200
+            [&>h2:first-of-type]:mt-0
+            [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-slate-800 [&>h3]:mt-8 [&>h3]:mb-3
+            [&>p]:mb-5
+            [&_strong]:text-slate-800 [&_strong]:font-semibold
+            [&>ul]:my-6 [&>ul]:space-y-2 [&>ul]:list-none [&>ul]:pl-0
+            [&>ul>li]:relative [&>ul>li]:pl-7
+            [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-1.5 [&>ul>li]:before:h-1.5 [&>ul>li]:before:bg-blue-500 [&>ul>li]:before:rounded-full
+            [&>ol]:my-6 [&>ol]:pl-6 [&>ol]:space-y-3
+            [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline hover:[&_a]:underline
+            [&>table]:w-full [&>table]:my-8 [&>table]:border-collapse [&>table]:text-[0.9375rem]
+            [&_th]:p-3 [&_th]:text-left [&_th]:border [&_th]:border-slate-200 [&_th]:bg-slate-50 [&_th]:font-semibold [&_th]:text-slate-800
+            [&_td]:p-3 [&_td]:border [&_td]:border-slate-200
+            [&_tr:nth-child(even)_td]:bg-slate-50
+            [&>blockquote]:my-6 [&>blockquote]:py-4 [&>blockquote]:px-6 [&>blockquote]:bg-blue-50 [&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:rounded-r-lg
+            [&>blockquote_p]:m-0 [&>blockquote_p]:text-blue-900
+            [&>hr]:my-10 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-slate-200
+            [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
+            [&_em]:text-slate-500 [&_em]:italic"
           dangerouslySetInnerHTML={{ __html: contentHtml }} 
         />
       </main>

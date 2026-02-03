@@ -28,6 +28,7 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message)
+        setLoading(false)
         return
       }
 
@@ -37,11 +38,11 @@ export default function LoginPage() {
         .update({ last_login_at: new Date().toISOString() })
         .eq('email', email)
 
+      // Keep loading state true - let it persist through navigation
       router.push('/dashboard')
       router.refresh()
     } catch {
       setError('An unexpected error occurred')
-    } finally {
       setLoading(false)
     }
   }

@@ -39,17 +39,22 @@ export const competitorDiscover = inngest.createFunction(
 
     const context = brand.context as BrandContext
 
-    if (!context || !context.description) {
+    // Check if we have any meaningful context (allow empty description)
+    if (!context || (!context.description && !context.company_name && !context.homepage_content)) {
       throw new Error('Brand context not available. Run context extraction first.')
     }
 
     // Step 2: Discover competitors using AI
     const competitors = await step.run('discover-competitors', async () => {
+      // Use description if available, otherwise use homepage content summary
+      const descriptionText = context.description || 
+        (context.homepage_content ? `Based on website content: ${context.homepage_content.slice(0, 2000)}` : `Company: ${brand.name}`)
+      
       const prompt = COMPETITOR_DISCOVERY_PROMPT
         .replace('{{company_name}}', context.company_name || brand.name)
-        .replace('{{description}}', context.description || '')
-        .replace('{{products}}', (context.products || []).join(', '))
-        .replace('{{markets}}', (context.markets || []).join(', '))
+        .replace('{{description}}', descriptionText)
+        .replace('{{products}}', (context.products || []).join(', ') || 'Not specified')
+        .replace('{{markets}}', (context.markets || []).join(', ') || 'Not specified')
 
       const { text } = await generateText({
         model: openai('gpt-4o'),
