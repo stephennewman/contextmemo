@@ -155,9 +155,10 @@ export const analyzeModelPerformance = inngest.createFunction(
           stats[model].citations++
         }
 
-        // Track success by query type
-        const queryData = scan.query as unknown as { query_type: string } | null
-        const queryType = queryData?.query_type || 'unknown'
+        // Track success by query type - cast through unknown for TS compatibility
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const queryData = (scan as any).query as { query_type?: string } | null
+        const queryType: string = queryData?.query_type || 'unknown'
         if (!stats[model].queryTypeSuccess[queryType]) {
           stats[model].queryTypeSuccess[queryType] = { total: 0, cited: 0 }
         }
