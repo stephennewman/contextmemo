@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -151,6 +151,46 @@ export default function BrandSettingsPage() {
   const [newTheme, setNewTheme] = useState('')
   const [isAddingTheme, setIsAddingTheme] = useState(false)
 
+  // Initial state for dirty tracking
+  const initialState = useRef<{
+    name: string
+    companyName: string
+    description: string
+    products: string
+    markets: string
+    features: string
+    certifications: string
+    customers: string
+    founded: string
+    headquarters: string
+    autoPublish: boolean
+    brandTone: BrandTone
+    hubspotConfig: HubSpotConfig
+    searchConsoleConfig: SearchConsoleConfig
+  } | null>(null)
+
+  // Check if form has unsaved changes
+  const isDirty = useMemo(() => {
+    if (!initialState.current) return false
+    
+    return (
+      name !== initialState.current.name ||
+      companyName !== initialState.current.companyName ||
+      description !== initialState.current.description ||
+      products !== initialState.current.products ||
+      markets !== initialState.current.markets ||
+      features !== initialState.current.features ||
+      certifications !== initialState.current.certifications ||
+      customers !== initialState.current.customers ||
+      founded !== initialState.current.founded ||
+      headquarters !== initialState.current.headquarters ||
+      autoPublish !== initialState.current.autoPublish ||
+      JSON.stringify(brandTone) !== JSON.stringify(initialState.current.brandTone) ||
+      JSON.stringify(hubspotConfig) !== JSON.stringify(initialState.current.hubspotConfig) ||
+      JSON.stringify(searchConsoleConfig) !== JSON.stringify(initialState.current.searchConsoleConfig)
+    )
+  }, [name, companyName, description, products, markets, features, certifications, customers, founded, headquarters, autoPublish, brandTone, hubspotConfig, searchConsoleConfig])
+
   useEffect(() => {
     const loadBrand = async () => {
       const supabase = createClient()
@@ -194,10 +234,29 @@ export default function BrandSettingsPage() {
           }
         }
         
-        setSearchConsoleConfig({
+        const loadedSearchConsoleConfig = {
           ...defaultSearchConsoleConfig,
           bing: { ...defaultSearchConsoleConfig.bing, ...context.search_console?.bing },
-        })
+        }
+        setSearchConsoleConfig(loadedSearchConsoleConfig)
+
+        // Store initial state for dirty tracking
+        initialState.current = {
+          name: data.name,
+          companyName: context.company_name || '',
+          description: context.description || '',
+          products: (context.products || []).join(', '),
+          markets: (context.markets || []).join(', '),
+          features: (context.features || []).join(', '),
+          certifications: (context.certifications || []).join(', '),
+          customers: (context.customers || []).join(', '),
+          founded: context.founded || '',
+          headquarters: context.headquarters || '',
+          autoPublish: data.auto_publish,
+          brandTone: { ...defaultBrandTone, ...context.brand_tone },
+          hubspotConfig: { ...defaultHubSpotConfig, ...context.hubspot },
+          searchConsoleConfig: loadedSearchConsoleConfig,
+        }
       }
       
       setLoading(false)
@@ -355,6 +414,23 @@ export default function BrandSettingsPage() {
     if (error) {
       toast.error('Failed to save settings')
     } else {
+      // Update initial state to reflect saved values
+      initialState.current = {
+        name,
+        companyName,
+        description,
+        products,
+        markets,
+        features,
+        certifications,
+        customers,
+        founded,
+        headquarters,
+        autoPublish,
+        brandTone,
+        hubspotConfig,
+        searchConsoleConfig,
+      }
       toast.success('Settings saved')
     }
   }
@@ -575,10 +651,10 @@ export default function BrandSettingsPage() {
   })
 
   return (
-    <div className="flex gap-8 max-w-6xl mx-auto">
+    <div className="flex gap-8 max-w-6xl mx-auto relative">
       {/* Side Navigation */}
-      <nav className="w-56 shrink-0">
-        <div className="sticky top-6 space-y-1">
+      <nav className="w-56 shrink-0 hidden md:block">
+        <div className="sticky top-24 space-y-1">
           <h2 className="text-lg font-semibold mb-4">Settings</h2>
           {NAV_SECTIONS.map((section) => {
             const Icon = section.icon
@@ -602,10 +678,15 @@ export default function BrandSettingsPage() {
           
           <Separator className="my-4" />
           
-          <Button onClick={handleSave} disabled={saving} className="w-full">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving || !isDirty} 
+            variant={isDirty ? "default" : "outline"}
+            className={`w-full ${!isDirty ? 'text-muted-foreground' : ''}`}
+          >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Save className="mr-2 h-4 w-4" />
-            Save Changes
+            {isDirty ? 'Save Changes' : 'No Changes'}
           </Button>
         </div>
       </nav>
@@ -618,7 +699,7 @@ export default function BrandSettingsPage() {
         </div>
 
         {/* General Section */}
-        <section id="general" ref={(el) => { sectionRefs.current['general'] = el }}>
+        <section id="general" ref={(el) => { sectionRefs.current['general'] = el }} className="scroll-mt-24">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -649,7 +730,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Brand Context Section */}
-        <section id="brand-context" ref={(el) => { sectionRefs.current['brand-context'] = el }}>
+        <section id="brand-context" ref={(el) => { sectionRefs.current['brand-context'] = el }} className="scroll-mt-24">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -707,7 +788,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Brand Voice Section */}
-        <section id="brand-voice" ref={(el) => { sectionRefs.current['brand-voice'] = el }}>
+        <section id="brand-voice" ref={(el) => { sectionRefs.current['brand-voice'] = el }} className="scroll-mt-24">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -823,7 +904,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Content Settings Section */}
-        <section id="content" ref={(el) => { sectionRefs.current['content'] = el }}>
+        <section id="content" ref={(el) => { sectionRefs.current['content'] = el }} className="scroll-mt-24">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -848,7 +929,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Personas Section */}
-        <section id="personas" ref={(el) => { sectionRefs.current['personas'] = el }}>
+        <section id="personas" ref={(el) => { sectionRefs.current['personas'] = el }} className="scroll-mt-24">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -956,7 +1037,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Prompt Themes Section */}
-        <section id="themes" ref={(el) => { sectionRefs.current['themes'] = el }}>
+        <section id="themes" ref={(el) => { sectionRefs.current['themes'] = el }} className="scroll-mt-24">
           <Card className="border-2 border-[#0EA5E9]/30" style={{ borderLeft: '4px solid #0EA5E9' }}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1020,7 +1101,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Integrations Section */}
-        <section id="integrations" ref={(el) => { sectionRefs.current['integrations'] = el }}>
+        <section id="integrations" ref={(el) => { sectionRefs.current['integrations'] = el }} className="scroll-mt-24">
           <div className="space-y-6">
             {/* HubSpot */}
             <Card>
@@ -1157,7 +1238,7 @@ export default function BrandSettingsPage() {
         </section>
 
         {/* Danger Zone Section */}
-        <section id="danger" ref={(el) => { sectionRefs.current['danger'] = el }}>
+        <section id="danger" ref={(el) => { sectionRefs.current['danger'] = el }} className="scroll-mt-24">
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
