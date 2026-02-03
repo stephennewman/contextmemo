@@ -69,31 +69,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // Fetch all published memos with their brand subdomain
+  // Use a simple join approach - get memos then lookup brands
   const { data: memos } = await supabase
     .from('memos')
-    .select(`
-      slug,
-      updated_at,
-      published_at,
-      brand_id,
-      brands!memos_brand_id_fkey(subdomain)
-    `)
+    .select('slug, updated_at, published_at, brand_id')
     .eq('status', 'published')
 
-  const memoPages: MetadataRoute.Sitemap = (memos || [])
-    .filter((memo) => {
-      const brand = memo.brands as { subdomain: string } | null
-      return brand?.subdomain
-    })
-    .map((memo) => {
-      const brand = memo.brands as { subdomain: string }
-      return {
-        url: `${baseUrl}/memo/${brand.subdomain}/${memo.slug}`,
-        lastModified: new Date(memo.updated_at || memo.published_at),
-        changeFrequency: 'weekly' as const,
-        priority: 0.8,
+  // Get brand subdomains for memos
+  const brandIds = [...new Set((memos || []).map(m => m.brand_id).filter(Boolean))]
+  const { data: memoBrands } = await supabase
+    .from('brands')
+    .select('id, subdomain')
+    .in('id', brandIds)
+    .not('subdomain', 'is', null)
+
+  const brandMap = new Map<string, string>()
+  if (memoBrands) {
+    for (const b of memoBrands) {
+      if (b.subdomain) {
+        brandMap.set(b.id, b.subdomain)
       }
-    })
+    }
+  }
+
+  const memoPages: MetadataRoute.Sitemap = (memos || [])
+    .filter((memo) => memo.brand_id && brandMap.has(memo.brand_id))
+    .map((memo) => ({
+      url: `${baseUrl}/memo/${brandMap.get(memo.brand_id)}/${memo.slug}`,
+      lastModified: new Date(memo.updated_at || memo.published_at),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    }))
 
   return [...staticPages, ...brandPages, ...memoPages]
 }
