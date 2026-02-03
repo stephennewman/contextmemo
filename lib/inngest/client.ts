@@ -128,4 +128,28 @@ export type InngestEvents = {
       brandId: string
     }
   }
+  // Competitor content monitoring
+  'competitor/content-scan': {
+    data: {
+      brandId: string
+      retroactive?: boolean
+      daysBack?: number
+    }
+  }
+  'competitor/content-classify': {
+    data: {
+      brandId: string
+    }
+  }
+  'competitor/content-respond': {
+    data: {
+      brandId: string
+    }
+  }
+  'competitor/content-backfill': {
+    data: {
+      brandId: string
+      competitorId?: string
+    }
+  }
 }

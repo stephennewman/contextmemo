@@ -24,6 +24,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { MemoAnalyticsCard } from '@/components/dashboard/memo-analytics-card'
 
 interface Memo {
   id: string
@@ -612,6 +613,9 @@ export default function MemoEditPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Analytics Card */}
+          <MemoAnalyticsCard brandId={brandId} memoId={memoId} />
         </div>
       </div>
     </div>

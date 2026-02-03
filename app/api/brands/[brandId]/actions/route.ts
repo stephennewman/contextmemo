@@ -229,15 +229,114 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
 
       case 'content-scan':
-        // Scan competitor content
+        // Scan competitor content (incremental)
         await inngest.send({
           name: 'competitor/content-scan',
-          data: { brandId },
+          data: { brandId, retroactive: false },
         })
         return NextResponse.json({ 
           success: true, 
           message: 'Competitor content scan started' 
         })
+
+      case 'content-backfill':
+        // Backfill all historical competitor content
+        await inngest.send({
+          name: 'competitor/content-backfill',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Historical content backfill started - fetching all available content from competitor feeds' 
+        })
+
+      case 'add-feed': {
+        // Manually add an RSS feed for a competitor
+        const { competitorId, feedUrl } = body
+        if (!competitorId || !feedUrl) {
+          return NextResponse.json({ error: 'competitorId and feedUrl required' }, { status: 400 })
+        }
+
+        // Verify competitor belongs to this brand
+        const { data: competitor } = await supabase
+          .from('competitors')
+          .select('id')
+          .eq('id', competitorId)
+          .eq('brand_id', brandId)
+          .single()
+
+        if (!competitor) {
+          return NextResponse.json({ error: 'Competitor not found' }, { status: 404 })
+        }
+
+        // Insert the feed
+        const { error: feedError } = await supabase
+          .from('competitor_feeds')
+          .insert({
+            competitor_id: competitorId,
+            feed_url: feedUrl,
+            feed_type: feedUrl.includes('atom') ? 'atom' : 'rss',
+            is_active: true,
+            is_manually_added: true,
+          })
+
+        if (feedError) {
+          if (feedError.code === '23505') {
+            return NextResponse.json({ error: 'This feed already exists' }, { status: 400 })
+          }
+          throw feedError
+        }
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'RSS feed added' 
+        })
+      }
+
+      case 'remove-feed': {
+        // Remove a manually-added RSS feed
+        const { feedId } = body
+        if (!feedId) {
+          return NextResponse.json({ error: 'feedId required' }, { status: 400 })
+        }
+
+        // Only allow removing manually-added feeds, verify it belongs to a competitor of this brand
+        const { data: feed } = await supabase
+          .from('competitor_feeds')
+          .select('id, competitor_id, is_manually_added')
+          .eq('id', feedId)
+          .single()
+
+        if (!feed) {
+          return NextResponse.json({ error: 'Feed not found' }, { status: 404 })
+        }
+
+        if (!feed.is_manually_added) {
+          return NextResponse.json({ error: 'Cannot remove auto-discovered feeds' }, { status: 400 })
+        }
+
+        // Verify the competitor belongs to this brand
+        const { data: feedCompetitor } = await supabase
+          .from('competitors')
+          .select('id')
+          .eq('id', feed.competitor_id)
+          .eq('brand_id', brandId)
+          .single()
+
+        if (!feedCompetitor) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        }
+
+        await supabase
+          .from('competitor_feeds')
+          .delete()
+          .eq('id', feedId)
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Feed removed' 
+        })
+      }
 
       case 'ai_overview_scan':
         // Scan Google AI Overviews (requires SERPAPI_KEY)

@@ -728,6 +728,39 @@ export type VisibilityHistory = Database['public']['Tables']['visibility_history
 export type CompetitorContent = Database['public']['Tables']['competitor_content']['Row']
 export type SearchConsoleStat = Database['public']['Tables']['search_console_stats']['Row']
 
+// Competitor feed tracking for RSS/blog monitoring
+export interface CompetitorFeed {
+  id: string
+  competitor_id: string
+  feed_url: string
+  feed_type: 'rss' | 'atom' | 'blog_index' | 'sitemap'
+  title: string | null
+  description: string | null
+  is_active: boolean
+  is_manually_added: boolean
+  last_checked_at: string | null
+  last_successful_at: string | null
+  last_etag: string | null
+  last_modified: string | null
+  last_build_date: string | null
+  total_items_found: number
+  check_failures: number
+  last_error: string | null
+  last_error_at: string | null
+  discovered_at: string
+  created_at: string
+  updated_at: string
+}
+
+// Extended competitor content with new fields
+export interface CompetitorContentExtended extends CompetitorContent {
+  published_at?: string | null
+  source_feed_id?: string | null
+  author?: string | null
+  word_count?: number | null
+  full_content?: string | null
+}
+
 // AI Traffic tracking - detect visits from AI platforms
 export interface AITrafficEvent {
   id?: string
