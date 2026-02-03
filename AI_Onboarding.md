@@ -390,6 +390,20 @@ _Most recent deploys first_
 
 ### February 2, 2026
 
+**Improve: Competitor discovery accuracy and context** (c962a82)
+- Enhanced AI prompt with more context (domain, features, homepage mentions)
+- Added confidence scoring (high/medium) and competition type (direct/partial)
+- System now learns from user corrections - won't re-suggest deleted competitors
+- Domain validation to filter invalid suggestions
+- UI shows confidence indicators and reasoning for each competitor
+
+**Files changed:**
+- `lib/ai/prompts/context-extraction.ts` - Completely rewritten competitor discovery prompt
+- `lib/inngest/functions/competitor-discover.ts` - Added validation, learning, metadata
+- `components/dashboard/competitor-list.tsx` - Added confidence indicators and descriptions
+
+---
+
 **Fix: Activity feed brand filter and competitor management** (fc29713)
 - Activity feed now auto-filters to current brand when viewing a brand page
 - Added delete functionality for competitors (to remove incorrect ones)
