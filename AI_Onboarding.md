@@ -390,6 +390,23 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**UI Cleanup: Tab-Contextual Action Buttons** (f6a8167)
+- Moved "Critical Prompt Themes" from Profile tab to Prompts tab (at bottom)
+- Fixed "Add Prompt" button - now has working input form with API action
+- Changed "Run Scan" button label to just "Scan"
+- Removed persistent Export/Scan buttons from global header area
+- Added contextual action buttons to Scans tab (Export + Scan)
+- Each tab now has its own relevant action button instead of all in header
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Removed header buttons, added to scans tab, passed themes to prompts
+- `app/api/brands/[brandId]/actions/route.ts` - Added `add_prompt` action for custom prompts
+- `components/dashboard/scan-results-view.tsx` - Added PromptThemesSection and working Add Prompt input
+- `components/dashboard/profile-section.tsx` - Removed prompt themes section (moved to prompts tab)
+- `components/dashboard/brand-actions.tsx` - Changed "Run Scan" to "Scan"
+
+---
+
 **Improve: Settings Page Reorganization** 
 - Completely redesigned brand settings page with side navigation
 - Added scroll-to-section behavior when clicking nav items
