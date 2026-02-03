@@ -335,8 +335,9 @@ export const analyzeModelPerformance = inngest.createFunction(
 /**
  * Helper: Analyze content preferences for a model
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function analyzeContentPreferences(
-  scans: Array<{ brand_in_citations: boolean | null; query: { query_text: string } | null }>,
+  scans: any[],
   model: string
 ): Array<{ pattern: string; score: number }> {
   const patterns: Record<string, { total: number; success: number }> = {
@@ -349,7 +350,7 @@ function analyzeContentPreferences(
   }
 
   for (const scan of scans) {
-    const queryText = (scan.query as { query_text: string } | null)?.query_text?.toLowerCase() || ''
+    const queryText = scan.query?.query_text?.toLowerCase() || ''
     
     if (queryText.includes(' vs ') || queryText.includes('versus') || queryText.includes('compared')) {
       patterns['comparison'].total++

@@ -428,7 +428,7 @@ Built 5 major differentiation features to set Context Memo apart from competitor
 - `scripts/sql/attribution_events.sql` - Revenue attribution tracking
 - `scripts/sql/prompt_intelligence.sql` - Prompt intelligence data
 
-**Files changed:**
+**Backend Files:**
 - `lib/inngest/functions/citation-verify.ts` - NEW
 - `lib/inngest/functions/revenue-attribution.ts` - NEW
 - `lib/inngest/functions/model-insights.ts` - NEW
@@ -437,6 +437,14 @@ Built 5 major differentiation features to set Context Memo apart from competitor
 - `lib/inngest/functions/daily-run.ts` - Added verification step
 - `app/api/inngest/route.ts` - Registered new functions
 - `docs/HUBSPOT_MARKETPLACE.md` - NEW
+
+**UI Components:**
+- `components/dashboard/verification-badge.tsx` - NEW: Shows citation verification status on memos
+- `components/dashboard/attribution-dashboard.tsx` - NEW: Revenue funnel from AI traffic
+- `components/dashboard/prompt-intelligence-feed.tsx` - NEW: Trending prompts and competitor wins
+- `components/dashboard/model-insights-panel.tsx` - NEW: Per-model citation analysis
+- `components/ui/tooltip.tsx` - NEW: Tooltip component for verification badges
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Added new INTELLIGENCE tab with all components
 
 ---
 

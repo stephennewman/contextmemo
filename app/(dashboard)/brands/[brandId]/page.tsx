@@ -21,6 +21,10 @@ import { CompetitorList } from '@/components/dashboard/competitor-list'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
 import { AlertsList } from '@/components/dashboard/alerts-list'
+import { VerificationBadge } from '@/components/dashboard/verification-badge'
+import { AttributionDashboard } from '@/components/dashboard/attribution-dashboard'
+import { PromptIntelligenceFeed } from '@/components/dashboard/prompt-intelligence-feed'
+import { ModelInsightsPanel } from '@/components/dashboard/model-insights-panel'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -132,6 +136,57 @@ export default async function BrandPage({ params }: Props) {
     .limit(100)
 
   const unreadAlerts = alerts?.filter(a => !a.read) || []
+
+  // Get attribution events
+  const { data: attributionEvents } = await supabase
+    .from('attribution_events')
+    .select('*')
+    .eq('brand_id', brandId)
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  // Get prompt intelligence
+  const { data: promptIntelligence } = await supabase
+    .from('prompt_intelligence')
+    .select('*')
+    .eq('brand_id', brandId)
+    .order('opportunity_score', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  // Get model insights from most recent alert
+  const { data: modelInsightsAlert } = await supabase
+    .from('alerts')
+    .select('*')
+    .eq('brand_id', brandId)
+    .eq('alert_type', 'model_insights')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const modelInsights = modelInsightsAlert?.data as {
+    models?: Array<{
+      model: string
+      displayName: string
+      totalScans: number
+      brandMentions: number
+      brandCitations: number
+      mentionRate: number
+      citationRate: number
+      avgPosition: number | null
+      topQueryTypes: Array<{ type: string; successRate: number }>
+      contentPreferences: Array<{ pattern: string; score: number }>
+    }>
+    recommendations?: Array<{
+      model: string
+      priority: 'high' | 'medium' | 'low'
+      title: string
+      description: string
+      actionItems: string[]
+    }>
+    overallCitationRate?: number
+    totalScans?: number
+  } | null
 
   // Get latest discovery scan result
   const { data: discoveryAlert } = await supabase
@@ -358,6 +413,14 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
           <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
           <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC{(aiTraffic?.length || 0) > 0 && ` (${aiTraffic?.length})`}</TabsTrigger>
+          <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+            INTELLIGENCE
+            {(promptIntelligence?.filter(p => p.status === 'new')?.length || 0) > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
+                {promptIntelligence?.filter(p => p.status === 'new')?.length}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
             ALERTS{(alerts?.length || 0) > 0 && ` (${alerts?.length})`}
             {unreadAlerts.length > 0 && (
@@ -421,7 +484,18 @@ export default async function BrandPage({ params }: Props) {
                 {memos && memos.length > 0 ? (
                   <div className="space-y-2">
                     {memos.map((memo) => {
-                      const schemaJson = memo.schema_json as { hubspot_synced_at?: string } | null
+                      const schemaJson = memo.schema_json as { 
+                        hubspot_synced_at?: string
+                        source_gap_id?: string
+                        verification?: {
+                          verified?: boolean
+                          verified_at?: string
+                          time_to_citation_hours?: number | null
+                          citation_rate?: number
+                          mention_rate?: number
+                          models_citing?: string[]
+                        }
+                      } | null
                       const liveUrl = `https://${brand.subdomain}.contextmemo.com/${memo.slug}`
                       return (
                         <div key={memo.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -444,6 +518,11 @@ export default async function BrandPage({ params }: Props) {
                             </p>
                           </div>
                           <div className="flex items-center gap-2 ml-2">
+                            <VerificationBadge 
+                              schemaJson={schemaJson}
+                              status={memo.status}
+                              publishedAt={memo.published_at}
+                            />
                             <Badge variant={memo.status === 'published' ? 'default' : 'secondary'} className="text-xs">
                               {memo.status}
                             </Badge>
@@ -536,6 +615,48 @@ export default async function BrandPage({ params }: Props) {
               memo?: { title: string; slug: string } | null
             }>}
             brandName={brand.name}
+          />
+        </TabsContent>
+
+        <TabsContent value="intelligence" className="space-y-6">
+          {/* Attribution Dashboard */}
+          <AttributionDashboard
+            events={(attributionEvents || []) as Array<{
+              id: string
+              event_type: 'traffic' | 'contact' | 'deal' | 'closed_won'
+              ai_source: string | null
+              memo_id: string | null
+              deal_value: number | null
+              created_at: string
+              metadata?: Record<string, unknown>
+            }>}
+            brandName={brand.name}
+            hubspotEnabled={hubspotEnabled}
+          />
+
+          {/* Prompt Intelligence Feed */}
+          <PromptIntelligenceFeed
+            items={(promptIntelligence || []) as Array<{
+              id: string
+              category: 'trending' | 'competitor_win' | 'emerging' | 'declining'
+              prompt_text: string
+              insight_title: string
+              insight_description: string
+              competitors_winning: string[]
+              opportunity_score: number
+              action_suggestion: string
+              status: 'new' | 'reviewed' | 'actioned' | 'dismissed'
+              created_at: string
+            }>}
+            brandName={brand.name}
+          />
+
+          {/* Model Insights Panel */}
+          <ModelInsightsPanel
+            models={modelInsights?.models || []}
+            recommendations={modelInsights?.recommendations || []}
+            overallCitationRate={modelInsights?.overallCitationRate || citationScore}
+            totalScans={modelInsights?.totalScans || recentScans?.length || 0}
           />
         </TabsContent>
 
