@@ -22,7 +22,6 @@ import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
 import { AlertsList } from '@/components/dashboard/alerts-list'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
-import { VerificationBadge } from '@/components/dashboard/verification-badge'
 import { AttributionDashboard } from '@/components/dashboard/attribution-dashboard'
 import { PromptIntelligenceFeed } from '@/components/dashboard/prompt-intelligence-feed'
 import { ModelInsightsPanel } from '@/components/dashboard/model-insights-panel'
@@ -540,11 +539,6 @@ export default async function BrandPage({ params }: Props) {
                             </p>
                           </div>
                           <div className="flex items-center gap-2 ml-2">
-                            <VerificationBadge 
-                              schemaJson={schemaJson}
-                              status={memo.status}
-                              publishedAt={memo.published_at}
-                            />
                             <Badge variant={memo.status === 'published' ? 'default' : 'secondary'} className="text-xs">
                               {memo.status}
                             </Badge>
