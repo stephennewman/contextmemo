@@ -361,6 +361,24 @@ export const memoGenerate = inngest.createFunction(
       },
     ])
 
+    // Step 9: Submit to IndexNow for instant search engine indexing
+    // This helps AI models with web search find our content faster
+    if (memo.status === 'published' && brand.subdomain) {
+      await step.run('submit-indexnow', async () => {
+        try {
+          const { submitUrlToIndexNow, buildMemoUrl } = await import('@/lib/utils/indexnow')
+          const memoUrl = buildMemoUrl(brand.subdomain, memoContent.slug)
+          const results = await submitUrlToIndexNow(memoUrl)
+          console.log(`IndexNow submission for ${memoUrl}:`, results)
+          return results
+        } catch (error) {
+          console.error('IndexNow submission failed:', error)
+          // Don't throw - indexing failure shouldn't break memo generation
+          return null
+        }
+      })
+    }
+
     return {
       success: true,
       memoId: memo.id,
