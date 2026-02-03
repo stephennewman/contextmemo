@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,11 +16,8 @@ import {
   FileText,
   CheckCircle2,
   RefreshCw,
-  TrendingUp,
-  BarChart3,
   Sparkles,
   Bot,
-  Eye,
   X,
   Lock
 } from 'lucide-react'
@@ -72,11 +70,11 @@ export default function HubSpotLandingPage() {
       {/* Header - Minimal, no prominent auth links */}
       <header className="sticky top-0 bg-[#0F172A]/95 backdrop-blur-sm z-40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Zap className="h-8 w-8 text-[#FF5C35]" />
             <span className="font-black text-xl tracking-tight">CONTEXT MEMO</span>
             <span className="text-xs font-bold text-[#FF5C35] border border-[#FF5C35] px-2 py-0.5 ml-2">FOR HUBSPOT</span>
-          </Link>
+          </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wide">
             <Link href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">HOW IT WORKS</Link>
             <Link href="#pricing" className="text-slate-400 hover:text-white transition-colors">PRICING</Link>
@@ -188,11 +186,11 @@ export default function HubSpotLandingPage() {
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <Search className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">UNDERSTAND YOUR BRAND</h3>
+                <h3 className="font-black text-lg">UNDERSTAND</h3>
               </div>
               <p className="text-slate-400">
-                We crawl your website and extract your products, features, differentiators, and target personas. 
-                No questionnaires—just your actual content.
+                We learn your brand, your market, your competitors, your personas, and the 
+                high-intent prompts your buyers are actually searching.
               </p>
             </div>
             
@@ -206,8 +204,8 @@ export default function HubSpotLandingPage() {
                 <h3 className="font-black text-lg">FIND THE GAPS</h3>
               </div>
               <p className="text-slate-400">
-                Generate high-intent prompts your personas actually search. Test 9 AI models. 
-                Discover where competitors get cited—and you don't.
+                We test 9 AI models with those prompts. We find where your competitors get 
+                cited—and you don't. These are your content gaps.
               </p>
             </div>
             
@@ -217,12 +215,12 @@ export default function HubSpotLandingPage() {
                 3
               </div>
               <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">REVERSE ENGINEER</h3>
+                <FileText className="h-5 w-5 text-[#FF5C35]" />
+                <h3 className="font-black text-lg">GENERATE & PUBLISH</h3>
               </div>
               <p className="text-slate-400">
-                Capture competitors that show up. Run them through the same analysis. 
-                Build a complete map of content opportunities.
+                We auto-generate content based on your brand—not made up out of thin air. 
+                Then we publish it directly to your HubSpot blog.
               </p>
             </div>
             
@@ -232,26 +230,164 @@ export default function HubSpotLandingPage() {
                 4
               </div>
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="h-5 w-5 text-[#FF5C35]" />
-                <h3 className="font-black text-lg">AUTO-PUBLISH TO HUBSPOT</h3>
+                <RefreshCw className="h-5 w-5 text-[#FF5C35]" />
+                <h3 className="font-black text-lg">MONITOR & IMPROVE</h3>
               </div>
               <p className="text-slate-400">
-                Generate content based on your brand—not made up. Publish directly to HubSpot 
-                as well-structured blogs with proper tags, images, and SEO.
+                We continuously monitor if you're now getting cited. We validate what's working. 
+                We find new gaps. The cycle never stops.
               </p>
             </div>
           </div>
-          
-          {/* Continuous Loop */}
-          <div className="mt-12 flex items-center justify-center">
-            <div className="flex items-center gap-4 px-8 py-4 bg-white/5 border border-white/20">
-              <RefreshCw className="h-6 w-6 text-[#FF5C35]" />
+        </div>
+      </section>
+
+      {/* See It In Action */}
+      <section className="py-24 bg-slate-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">SEE IT IN ACTION</h2>
+            <p className="mt-4 text-xl text-slate-400">
+              Here's what the platform looks like
+            </p>
+          </div>
+
+          {/* Step 1: Understand */}
+          <div className="mb-20">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
+                1
+              </div>
               <div>
-                <p className="font-black text-lg">CONTINUOUS CYCLE</p>
-                <p className="text-slate-400 text-sm">
-                  We keep running this loop—finding new gaps, discovering new competitors, 
-                  generating content that fills the gaps. Daily automation.
-                </p>
+                <h3 className="font-black text-2xl">UNDERSTAND YOUR BRAND</h3>
+                <p className="text-slate-400">We extract your brand context, competitors, markets, and personas</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-1.png" 
+                  alt="Dashboard with brand profile, citation score, and key metrics" 
+                  width={800} 
+                  height={500}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Brand dashboard with citation score, prompts tracked, and profile</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-2.png" 
+                  alt="Competitors, markets, and target personas" 
+                  width={800} 
+                  height={500}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Auto-discovered competitors, target markets, and buyer personas</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2: Find the Gaps */}
+          <div className="mb-20">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
+                2
+              </div>
+              <div>
+                <h3 className="font-black text-2xl">FIND THE GAPS</h3>
+                <p className="text-slate-400">Test 9 AI models and see exactly where competitors win</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-3.png" 
+                  alt="Scan results showing AI model responses" 
+                  width={600} 
+                  height={400}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Scan results across GPT, Claude, Perplexity, Grok and more</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-4.png" 
+                  alt="Prompt performance by persona" 
+                  width={600} 
+                  height={400}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Prompt performance filtered by persona and intent</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-5.png" 
+                  alt="Share of voice competitor comparison" 
+                  width={600} 
+                  height={400}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Share of voice—see who dominates AI mentions</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3: Generate & Publish */}
+          <div className="mb-20">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
+                3
+              </div>
+              <div>
+                <h3 className="font-black text-2xl">GENERATE & PUBLISH TO HUBSPOT</h3>
+                <p className="text-slate-400">AI-optimized content pushed directly to your HubSpot blog</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-7.png" 
+                  alt="Memo editor with AI optimization score" 
+                  width={800} 
+                  height={500}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Content editor with 100% AI optimization score</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-8.png" 
+                  alt="HubSpot integration connection" 
+                  width={800} 
+                  height={500}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">One-click HubSpot connection—content pushed as drafts</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 4: Monitor & Improve */}
+          <div>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
+                4
+              </div>
+              <div>
+                <h3 className="font-black text-2xl">MONITOR & IMPROVE</h3>
+                <p className="text-slate-400">Stay notified as content goes live and citations improve</p>
+              </div>
+            </div>
+            <div className="max-w-2xl">
+              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                <Image 
+                  src="/screenshot-6.png" 
+                  alt="Notifications showing published memos" 
+                  width={800} 
+                  height={400}
+                  className="w-full h-auto"
+                />
+                <p className="p-4 text-sm text-slate-400">Real-time notifications as content gets published</p>
               </div>
             </div>
           </div>
@@ -445,28 +581,31 @@ export default function HubSpotLandingPage() {
                     <p className="text-sm text-slate-400 mb-4 text-center">
                       Lock in this price for 12 months
                     </p>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Base platform</span>
-                        <span>${PRICING.baseMonthly}</span>
+                    {!submitted ? (
+                      <form onSubmit={handleSubmit} className="space-y-3">
+                        <Input
+                          type="email"
+                          placeholder="your@company.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 h-12"
+                        />
+                        <Button 
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full bg-[#FF5C35] hover:bg-[#FF5C35]/90 text-white font-bold h-12"
+                        >
+                          {isSubmitting ? 'JOINING...' : 'JOIN BETA'}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="text-center py-2">
+                        <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-[#FF5C35]" />
+                        <p className="text-sm text-white font-semibold">You're on the list!</p>
                       </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>{competitors} competitors</span>
-                        <span>${competitors * PRICING.perCompetitor}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>{personas} personas</span>
-                        <span>${personas * PRICING.perPersona}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>{prompts} prompts</span>
-                        <span>${Math.round(prompts * PRICING.perPrompt)}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>{contentPerWeek}/week content</span>
-                        <span>${contentPerWeek * PRICING.perContentWeekly * 4}</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -475,127 +614,7 @@ export default function HubSpotLandingPage() {
         </div>
       </section>
 
-      {/* Beta Signup */}
-      <section className="py-24 bg-[#FF5C35]">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          {!submitted ? (
-            <>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white text-sm font-bold tracking-wide mb-8">
-                <Lock className="h-4 w-4" />
-                INVITE-ONLY BETA
-              </div>
-              
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white mb-6">
-                LOCK IN YOUR PRODUCTION PRICE
-              </h2>
-              
-              <p className="text-xl text-white/80 mb-10 max-w-xl mx-auto">
-                Join the beta now and lock in 50% off for your first 12 months. 
-                Limited spots available for HubSpot users.
-              </p>
 
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                <Input
-                  type="email"
-                  placeholder="your@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-white text-[#0F172A] border-0 h-14 text-lg px-6 rounded-none flex-1"
-                />
-                <Button 
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="bg-[#0F172A] hover:bg-[#0F172A]/90 text-white font-bold text-lg rounded-none px-8 h-14"
-                >
-                  {isSubmitting ? 'JOINING...' : 'JOIN BETA'}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </form>
-
-              <p className="mt-6 text-sm text-white/60">
-                We'll reach out within 24 hours to set up your account.
-              </p>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="h-16 w-16 mx-auto mb-6 text-white" />
-              <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-6">
-                YOU'RE ON THE LIST
-              </h2>
-              <p className="text-xl text-white/80 max-w-xl mx-auto">
-                We'll reach out to <span className="font-bold text-white">{email}</span> within 24 hours 
-                to get you set up with your HubSpot integration.
-              </p>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* What's Included */}
-      <section className="py-24 bg-white text-[#0F172A]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight">EVERYTHING INCLUDED</h2>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
-            <div className="p-8 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <Eye className="h-10 w-10 text-[#FF5C35] mb-4" />
-              <h3 className="font-black text-xl mb-3">9 AI MODELS SCANNED</h3>
-              <p className="text-slate-600 mb-4">
-                GPT-4o, Claude, Gemini, Perplexity, Llama, Mistral, DeepSeek, Qwen, and Grok.
-              </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#FF5C35]" />
-                  Daily visibility scans
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#FF5C35]" />
-                  Google AI Overviews
-                </li>
-              </ul>
-            </div>
-
-            <div className="p-8 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <TrendingUp className="h-10 w-10 text-[#FF5C35] mb-4" />
-              <h3 className="font-black text-xl mb-3">COMPETITIVE INTELLIGENCE</h3>
-              <p className="text-slate-600 mb-4">
-                Track competitors automatically. See where they win. Get notified of their new content.
-              </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#FF5C35]" />
-                  Share-of-voice tracking
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#FF5C35]" />
-                  Content gap alerts
-                </li>
-              </ul>
-            </div>
-
-            <div className="p-8">
-              <FileText className="h-10 w-10 text-[#FF5C35] mb-4" />
-              <h3 className="font-black text-xl mb-3">HUBSPOT AUTO-PUBLISH</h3>
-              <p className="text-slate-600 mb-4">
-                Content goes straight to your HubSpot blog. Properly tagged, with images, ready to rank.
-              </p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#FF5C35]" />
-                  OAuth integration
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#FF5C35]" />
-                  Auto SEO optimization
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="py-12 bg-[#0F172A] border-t border-white/10">
@@ -604,10 +623,6 @@ export default function HubSpotLandingPage() {
             <div className="flex items-center gap-2">
               <Zap className="h-6 w-6 text-[#FF5C35]" />
               <span className="font-black tracking-tight">CONTEXT MEMO</span>
-            </div>
-            <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
-              <Link href="/changelog" className="hover:text-white transition-colors">CHANGELOG</Link>
-              <Link href="/about/editorial" className="hover:text-white transition-colors">EDITORIAL</Link>
             </div>
             <p className="text-sm text-slate-500 font-semibold">
               © 2026 CONTEXT MEMO
