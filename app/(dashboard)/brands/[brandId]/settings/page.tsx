@@ -153,25 +153,32 @@ export default function BrandSettingsPage() {
     loadBrand()
   }, [brandId, router])
 
-  // Check HubSpot connection health
+  // Check HubSpot connection health (only once when connected)
   useEffect(() => {
+    let cancelled = false
+    
     const checkHubSpotStatus = async () => {
       if (!brandId || !hubspotConnected) return
       
       try {
         const response = await fetch(`/api/auth/hubspot/status?brandId=${brandId}`)
+        if (cancelled) return
         const data = await response.json()
         setHubspotHealthy(data.healthy)
+        // Only log once, not on every render
         if (!data.healthy && data.error) {
           console.warn('HubSpot connection unhealthy:', data.error)
         }
       } catch (error) {
+        if (cancelled) return
         console.error('Failed to check HubSpot status:', error)
         setHubspotHealthy(false)
       }
     }
 
     checkHubSpotStatus()
+    
+    return () => { cancelled = true }
   }, [brandId, hubspotConnected])
 
   // Handle URL params for OAuth success/error
