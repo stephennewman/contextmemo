@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.0] - 2026-02-02
+
+### Added
+- **Automated memo generation with daily caps**: System now enforces `memos_per_month / 30` daily limit
+- **Competitor-linked queries**: Query generation now creates proper `alternative` and `versus` queries with competitor IDs linked
+- **sanitizeSlug helper**: Removes special characters (?!., etc.) from memo URLs
+- **Live page links**: Published memos now show clickable links to live pages with external link icon
+- **Full URL display**: Dashboard shows `subdomain.contextmemo.com/slug` instead of just `/slug`
+
+### Changed
+- Query generation prompt now requires 5-8 alternative + 5-8 versus queries with competitor names
+- Memo generation now handles `persona_based`, `problem_solution`, `best_of` query types
+- Improved memo template styling with better typography, spacing, and visual hierarchy
+- Scan-run orders gap queries by priority (high-value first)
+
+### Fixed
+- Memos no longer generate with trailing `?` in URLs
+- Query types `persona_based` and `problem_solution` now trigger memo generation (previously ignored)
+- `best_of` queries now properly map to industry memos
+
+---
+
 ## [0.11.0] - 2026-02-01
 
 ### Added
