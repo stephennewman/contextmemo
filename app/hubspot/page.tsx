@@ -242,153 +242,56 @@ export default function HubSpotLandingPage() {
         </div>
       </section>
 
-      {/* See It In Action */}
-      <section className="py-24 bg-slate-900">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight">SEE IT IN ACTION</h2>
-            <p className="mt-4 text-xl text-slate-400">
-              Here's what the platform looks like
+      {/* Product Preview */}
+      <section className="py-24 bg-slate-900 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">THE DASHBOARD</h2>
+            <p className="mt-4 text-lg text-slate-400">
+              Everything you need to dominate AI search visibility
             </p>
           </div>
 
-          {/* Step 1: Understand */}
-          <div className="mb-20">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
-                1
+          {/* Main Screenshot with Browser Frame */}
+          <div className="relative">
+            {/* Browser Chrome */}
+            <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
               </div>
-              <div>
-                <h3 className="font-black text-2xl">UNDERSTAND YOUR BRAND</h3>
-                <p className="text-slate-400">We extract your brand context, competitors, markets, and personas</p>
+              <div className="flex-1 mx-4">
+                <div className="bg-slate-700 rounded px-3 py-1 text-xs text-slate-400 max-w-md mx-auto text-center">
+                  app.contextmemo.com/brands/your-brand
+                </div>
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-1.png" 
-                  alt="Dashboard with brand profile, citation score, and key metrics" 
-                  width={800} 
-                  height={500}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Brand dashboard with citation score, prompts tracked, and profile</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-2.png" 
-                  alt="Competitors, markets, and target personas" 
-                  width={800} 
-                  height={500}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Auto-discovered competitors, target markets, and buyer personas</p>
-              </div>
+            {/* Screenshot */}
+            <div className="bg-white rounded-b-xl overflow-hidden shadow-2xl shadow-black/50">
+              <Image 
+                src="/screenshot-1.png" 
+                alt="Context Memo dashboard showing brand profile, citation score, and AI visibility metrics" 
+                width={1200} 
+                height={750}
+                className="w-full h-auto"
+              />
             </div>
           </div>
 
-          {/* Step 2: Find the Gaps */}
-          <div className="mb-20">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
-                2
-              </div>
-              <div>
-                <h3 className="font-black text-2xl">FIND THE GAPS</h3>
-                <p className="text-slate-400">Test 9 AI models and see exactly where competitors win</p>
-              </div>
+          {/* Feature Highlights */}
+          <div className="grid md:grid-cols-3 gap-6 mt-12">
+            <div className="text-center">
+              <div className="text-4xl font-black text-[#FF5C35] mb-2">9</div>
+              <p className="text-slate-400 text-sm">AI models scanned daily</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-3.png" 
-                  alt="Scan results showing AI model responses" 
-                  width={600} 
-                  height={400}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Scan results across GPT, Claude, Perplexity, Grok and more</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-4.png" 
-                  alt="Prompt performance by persona" 
-                  width={600} 
-                  height={400}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Prompt performance filtered by persona and intent</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-5.png" 
-                  alt="Share of voice competitor comparison" 
-                  width={600} 
-                  height={400}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Share of voice—see who dominates AI mentions</p>
-              </div>
+            <div className="text-center">
+              <div className="text-4xl font-black text-[#FF5C35] mb-2">100+</div>
+              <p className="text-slate-400 text-sm">Prompts monitored per brand</p>
             </div>
-          </div>
-
-          {/* Step 3: Generate & Publish */}
-          <div className="mb-20">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
-                3
-              </div>
-              <div>
-                <h3 className="font-black text-2xl">GENERATE & PUBLISH TO HUBSPOT</h3>
-                <p className="text-slate-400">AI-optimized content pushed directly to your HubSpot blog</p>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-7.png" 
-                  alt="Memo editor with AI optimization score" 
-                  width={800} 
-                  height={500}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Content editor with 100% AI optimization score</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-8.png" 
-                  alt="HubSpot integration connection" 
-                  width={800} 
-                  height={500}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">One-click HubSpot connection—content pushed as drafts</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 4: Monitor & Improve */}
-          <div>
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-[#FF5C35] text-white flex items-center justify-center font-black text-xl shrink-0">
-                4
-              </div>
-              <div>
-                <h3 className="font-black text-2xl">MONITOR & IMPROVE</h3>
-                <p className="text-slate-400">Stay notified as content goes live and citations improve</p>
-              </div>
-            </div>
-            <div className="max-w-2xl">
-              <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-                <Image 
-                  src="/screenshot-6.png" 
-                  alt="Notifications showing published memos" 
-                  width={800} 
-                  height={400}
-                  className="w-full h-auto"
-                />
-                <p className="p-4 text-sm text-slate-400">Real-time notifications as content gets published</p>
-              </div>
+            <div className="text-center">
+              <div className="text-4xl font-black text-[#FF5C35] mb-2">1-click</div>
+              <p className="text-slate-400 text-sm">HubSpot publish</p>
             </div>
           </div>
         </div>
