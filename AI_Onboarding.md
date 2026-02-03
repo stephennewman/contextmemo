@@ -390,6 +390,16 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**Fix: HubSpot Sync Token Refresh & Deleted Post Recovery** (8d89b20)
+- Fixed 401 errors by using `getHubSpotToken()` for automatic token refresh
+- Fixed 404 errors when syncing memos previously deleted in HubSpot - now gracefully creates new posts
+- Updated error messages to be more helpful for users
+
+**Files changed:**
+- `app/api/brands/[brandId]/memos/[memoId]/hubspot/route.ts` - Token refresh + 404 fallback
+
+---
+
 **UI Cleanup: Tab-Contextual Action Buttons** (f6a8167)
 - Moved "Critical Prompt Themes" from Profile tab to Prompts tab (at bottom)
 - Fixed "Add Prompt" button - now has working input form with API action
