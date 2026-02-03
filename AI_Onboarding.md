@@ -390,6 +390,9 @@ _Most recent deploys first_
 
 ### February 2, 2026
 
+**Fix: Remove unsupported maxTokens from generateText** (cce4ce7)
+- Vercel AI SDK with OpenRouter doesn't support maxTokens in CallSettings
+
 **Fix: rss-parser types with proper generics** (a4c89c0)
 - Defined `CustomFeed` and `CustomItem` types for Parser generic parameters
 - Properly typed all custom RSS fields (contentEncoded, creator, author, etc.)
