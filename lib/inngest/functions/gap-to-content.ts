@@ -267,10 +267,10 @@ export const gapToContent = inngest.createFunction(
         const image = TOPIC_IMAGES[topic] || TOPIC_IMAGES['default']
         const tagIds = KEYWORD_TO_TAGS[topic] || []
         
-        // Create excerpt from first paragraph (avoid 's' flag for ES compatibility)
-        const paragraphs = content.content.split('\n\n')
-        const firstParagraph = paragraphs.find((p: string) => p.trim() && !p.startsWith('#')) || ''
-        const postSummary = firstParagraph
+        // Create excerpt from first non-heading paragraph
+        const contentParagraphs: string[] = content.content.split('\n\n')
+        const firstParagraph: string = contentParagraphs.find((p: string) => p.trim() && !p.startsWith('#')) || ''
+        const postSummary: string = firstParagraph
           ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300) + '...'
           : content.meta_description
 
