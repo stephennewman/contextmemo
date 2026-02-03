@@ -28,10 +28,22 @@ export async function GET(request: NextRequest) {
   }
 
   // Use service role to bypass RLS for brand lookup
-  const serviceClient = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  console.log('Authorize - brandId:', brandId)
+  console.log('Authorize - supabaseUrl exists:', !!supabaseUrl)
+  console.log('Authorize - serviceKey exists:', !!serviceKey)
+  
+  if (!supabaseUrl || !serviceKey) {
+    console.error('Missing Supabase env vars')
+    return NextResponse.json({ 
+      error: 'Server configuration error',
+      details: { supabaseUrl: !!supabaseUrl, serviceKey: !!serviceKey }
+    }, { status: 500 })
+  }
+  
+  const serviceClient = createServiceClient(supabaseUrl, serviceKey)
 
   // Verify brand exists
   const { data: brand, error: brandError } = await serviceClient
@@ -40,12 +52,19 @@ export async function GET(request: NextRequest) {
     .eq('id', brandId)
     .single()
 
+  console.log('Authorize - brand lookup result:', { brand: !!brand, error: brandError?.message })
+
   if (brandError) {
     console.error('Brand lookup error:', brandError)
+    return NextResponse.json({ 
+      error: 'Brand not found', 
+      details: brandError.message,
+      brandId 
+    }, { status: 404 })
   }
 
   if (!brand) {
-    return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Brand not found', brandId }, { status: 404 })
   }
 
   // Check user has access to this brand
