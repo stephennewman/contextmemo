@@ -1,7 +1,7 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 2, 2026  
-> **Version:** 0.13.0  
+> **Last Updated:** February 3, 2026  
+> **Version:** 0.13.1  
 > **Status:** MVP Complete + Active Development
 
 ---
@@ -389,6 +389,16 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 3, 2026
+
+**Improve: HubSpot Content Generation Quality** (0e37800)
+- Enhanced content generation prompt for richer articles (1800-2500 words vs ~500)
+- Require naming real competitors (SafetyCulture, Monnit, Zenput, etc.) instead of "Tool A"
+- Mandate 8-10 statistics with sources (FDA, WHO, industry data)
+- Add detailed comparison tables with 8+ features
+- Include 5-7 specific FAQs for AI citation
+- Add regulatory references (FDA FSMA, HACCP, ISO 22000)
+- Fixed multiple TypeScript errors with Supabase type inference (cast through `any` for query relations)
+- Regenerated all 14 Checkit content gap articles with improved quality
 
 **Add: Competitive Differentiation Features**
 
