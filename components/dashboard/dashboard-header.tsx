@@ -65,12 +65,12 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
               >
                 DASHBOARD
               </Link>
-              {currentBrand && (
+              {(currentBrand || currentBrandId) && (
                 <Link 
-                  href={`/brands/${currentBrand.id}`}
+                  href={`/brands/${currentBrand?.id || currentBrandId}`}
                   className={`px-4 py-2 text-sm font-semibold tracking-wide ${currentBrandId ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white'} transition-colors`}
                 >
-                  {currentBrand.name.toUpperCase()}
+                  {currentBrand?.name?.toUpperCase() || 'BRAND'}
                 </Link>
               )}
             </nav>
@@ -106,9 +106,9 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
                     DASHBOARD
                   </Link>
                 </DropdownMenuItem>
-                {currentBrand && (
+                {(currentBrand || currentBrandId) && (
                   <DropdownMenuItem asChild className="rounded-none">
-                    <Link href={`/brands/${currentBrand.id}/settings`} className="font-medium">
+                    <Link href={`/brands/${currentBrand?.id || currentBrandId}/settings`} className="font-medium">
                       <Settings className="mr-2 h-4 w-4" />
                       SETTINGS
                     </Link>
