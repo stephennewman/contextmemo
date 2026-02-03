@@ -284,24 +284,11 @@ export function BrandTabs({
             />
             <CompetitorContentFeed
               brandId={brandId}
-              content={(tabData.competitorContent || []) as Array<{
-                id: string
-                competitor_id: string
-                url: string
-                title: string
-                content_type: string
-                published_at: string | null
-                first_seen_at: string
-                response_memo?: { id: string; title: string; slug: string; status: string } | null
-              }>}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              content={(tabData.competitorContent || []) as any}
               competitors={activeCompetitors}
-              feeds={(tabData.competitorFeeds || []) as Array<{
-                id: string
-                competitor_id: string
-                feed_url: string
-                feed_type: string
-                is_active: boolean
-              }>}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              feeds={(tabData.competitorFeeds || []) as any}
             />
             <CompetitorList brandId={brandId} competitors={competitors} />
           </>
