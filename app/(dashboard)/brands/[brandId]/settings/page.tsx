@@ -164,10 +164,17 @@ export default function BrandSettingsPage() {
         const response = await fetch(`/api/auth/hubspot/status?brandId=${brandId}`)
         if (cancelled) return
         const data = await response.json()
-        setHubspotHealthy(data.healthy)
-        // Only log once, not on every render
-        if (!data.healthy && data.error) {
+        
+        if (data.healthy) {
+          setHubspotHealthy(true)
+        } else {
+          // If health check fails, treat as disconnected
           console.warn('HubSpot connection unhealthy:', data.error)
+          setHubspotHealthy(false)
+          // If explicitly "Not connected", update UI state
+          if (data.error?.includes('Not connected') || !data.connected) {
+            setHubspotConnected(false)
+          }
         }
       } catch (error) {
         if (cancelled) return
