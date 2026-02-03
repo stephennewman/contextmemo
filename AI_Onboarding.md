@@ -390,6 +390,9 @@ _Most recent deploys first_
 
 ### February 2, 2026
 
+**Fix: Inngest step.run type serialization** (15601b1)
+- Cast validatedCompetitors to restore type info lost during Inngest JSON serialization
+
 **Fix: Remove unsupported maxTokens from generateText** (cce4ce7)
 - Vercel AI SDK with OpenRouter doesn't support maxTokens in CallSettings
 
