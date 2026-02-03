@@ -26,7 +26,7 @@ const rssParser = new Parser({
       ['media:content', 'mediaContent'],
     ],
     feed: [
-      ['lastBuildDate', 'lastBuildDate'],
+      'lastBuildDate',
     ],
   },
   timeout: 10000,
