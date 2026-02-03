@@ -316,20 +316,34 @@ export default async function MemoPage({ params }: Props) {
       {/* Hero */}
       <div className="bg-white border-b">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Verified {formattedDate}</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-6">
             {memo.title}
           </h1>
           {memo.meta_description && (
-            <p className="mt-4 text-lg text-slate-600 leading-relaxed">
+            <p className="text-lg text-slate-600 leading-relaxed mb-6">
               {memo.meta_description}
             </p>
           )}
+          {/* Author and verification byline */}
+          <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-900">Context Memo</p>
+                <p className="text-xs text-slate-500">Automated brand intelligence</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-slate-500 ml-auto">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Verified {formattedDate}</span>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -338,24 +352,29 @@ export default async function MemoPage({ params }: Props) {
         <article 
           className="memo-content text-slate-600 text-[1.0625rem] leading-7
             [&>h1]:hidden
-            [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-slate-900 [&>h2]:mt-12 [&>h2]:mb-4 [&>h2]:pb-3 [&>h2]:border-b [&>h2]:border-slate-200
+            [&>p:first-child]:hidden
+            [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-slate-900 [&>h2]:mt-14 [&>h2]:mb-5 [&>h2]:pb-3 [&>h2]:border-b [&>h2]:border-slate-200
             [&>h2:first-of-type]:mt-0
-            [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-slate-800 [&>h3]:mt-8 [&>h3]:mb-3
-            [&>p]:mb-5
+            [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-slate-800 [&>h3]:mt-10 [&>h3]:mb-4
+            [&>h3+p]:mt-0
+            [&>p]:mb-6 [&>p]:leading-relaxed
             [&_strong]:text-slate-800 [&_strong]:font-semibold
-            [&>ul]:my-6 [&>ul]:space-y-2 [&>ul]:list-none [&>ul]:pl-0
-            [&>ul>li]:relative [&>ul>li]:pl-7
+            [&>ul]:my-8 [&>ul]:space-y-3 [&>ul]:list-none [&>ul]:pl-0
+            [&>ul>li]:relative [&>ul>li]:pl-7 [&>ul>li]:leading-relaxed
             [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-1.5 [&>ul>li]:before:h-1.5 [&>ul>li]:before:bg-blue-500 [&>ul>li]:before:rounded-full
-            [&>ol]:my-6 [&>ol]:pl-6 [&>ol]:space-y-3
+            [&>ol]:my-8 [&>ol]:pl-6 [&>ol]:space-y-4
             [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline hover:[&_a]:underline
-            [&>table]:w-full [&>table]:my-8 [&>table]:border-collapse [&>table]:text-[0.9375rem]
-            [&_th]:p-3 [&_th]:text-left [&_th]:border [&_th]:border-slate-200 [&_th]:bg-slate-50 [&_th]:font-semibold [&_th]:text-slate-800
-            [&_td]:p-3 [&_td]:border [&_td]:border-slate-200
-            [&_tr:nth-child(even)_td]:bg-slate-50
-            [&>blockquote]:my-6 [&>blockquote]:py-4 [&>blockquote]:px-6 [&>blockquote]:bg-blue-50 [&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:rounded-r-lg
+            [&>table]:w-full [&>table]:my-10 [&>table]:border-collapse [&>table]:text-[0.9375rem] [&>table]:rounded-lg [&>table]:overflow-hidden [&>table]:border [&>table]:border-slate-200
+            [&_thead]:bg-slate-50
+            [&_th]:p-4 [&_th]:text-left [&_th]:border-b [&_th]:border-slate-200 [&_th]:font-semibold [&_th]:text-slate-800
+            [&_td]:p-4 [&_td]:border-b [&_td]:border-slate-100
+            [&_tbody_tr:last-child_td]:border-b-0
+            [&_tr:nth-child(even)_td]:bg-slate-50/50
+            [&>blockquote]:my-8 [&>blockquote]:py-4 [&>blockquote]:px-6 [&>blockquote]:bg-blue-50 [&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:rounded-r-lg
             [&>blockquote_p]:m-0 [&>blockquote_p]:text-blue-900
-            [&>hr]:my-10 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-slate-200
+            [&>hr]:my-12 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-slate-200
             [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
+            [&>p>em:only-child]:text-slate-500 [&>p>em:only-child]:text-sm [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
             [&_em]:text-slate-500 [&_em]:italic"
           dangerouslySetInnerHTML={{ __html: contentHtml }} 
         />

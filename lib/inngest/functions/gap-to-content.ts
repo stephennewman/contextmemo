@@ -121,6 +121,20 @@ CONTENT GAP TO FILL:
 - Why competitor's content gets cited: {{content_structure}}
 - Recommendation: {{recommendation}}
 
+WRITING STYLE:
+- Write in a conversational, accessible tone that educates without being overly formal
+- Use flowing paragraphs (3-5 sentences each), not terse bullet points
+- Explain concepts as if to an intelligent colleague who's new to the topic
+- Be thorough and substantive - AI models prefer comprehensive content
+
+CRITICAL FORMATTING:
+- DO NOT include the H1 title in the markdown content - it will be added by the system
+- Start content directly with the Key Takeaways section
+- ALWAYS leave a blank line before and after headings (## and ###)
+- ALWAYS leave a blank line before and after tables
+- ALWAYS leave a blank line before and after lists
+- Use proper markdown table syntax with | separators
+
 CRITICAL REQUIREMENTS:
 
 1. WORD COUNT: MUST be 1800-2500 words. This is non-negotiable. Short articles don't get cited.
@@ -142,11 +156,17 @@ CRITICAL REQUIREMENTS:
    Always cite the source (FDA, WHO, industry reports).
 
 4. COMPARISON TABLE: Create a detailed comparison with 8-10 rows:
+
    | Feature | {{brand_name}} | Competitor 1 | Competitor 2 |
+   |---------|----------------|--------------|--------------|
+   | Real-time alerts | ... | ... | ... |
+
    Include: Real-time alerts, Mobile app, API integrations, Compliance reports, Sensor types, Pricing model, Support, Industry certifications
 
 5. FAQ SECTION: Include exactly 5-7 FAQs in this format:
+
    ### Q: [Specific question matching search queries]
+
    **A:** [Detailed 2-3 sentence answer with facts]
    
    FAQs should cover: pricing, implementation time, integrations, compliance standards, ROI, support.
@@ -162,16 +182,15 @@ CRITICAL REQUIREMENTS:
    - ISO 22000
    - Local health department requirements
 
-8. STRUCTURE:
-   - H1: SEO title matching query intent
-   - H2: Key Takeaways (5-7 bullet points)
-   - H2: Why [Topic] Matters (with statistics)
-   - H2: Top Solutions Compared (detailed comparison)
-   - H2: {{brand_name}}'s Approach (features and differentiators)
-   - H2: Use Cases and Results
-   - H2: How to Choose the Right Solution
-   - H2: FAQs (5-7 questions)
-   - H2: Conclusion with CTA
+8. STRUCTURE (note: NO H1 title in markdown):
+   - ## Key Takeaways (5-7 bullet points)
+   - ## Why [Topic] Matters (with statistics, 2-3 substantive paragraphs)
+   - ## Top Solutions Compared (detailed comparison table)
+   - ## {{brand_name}}'s Approach (features and differentiators, 2-3 paragraphs)
+   - ## Use Cases and Results (2-3 detailed scenarios)
+   - ## How to Choose the Right Solution (decision framework, 2 paragraphs)
+   - ## Frequently Asked Questions (5-7 FAQs)
+   - ## Conclusion (summary with CTA, 1-2 paragraphs)
 
 OUTPUT FORMAT:
 Return a JSON object:
@@ -179,7 +198,7 @@ Return a JSON object:
   "title": "SEO-optimized title (60-70 chars)",
   "slug": "url-friendly-slug",
   "meta_description": "150-160 char meta description with key benefit",
-  "content": "Full article in Markdown format - MUST be 1800-2500 words",
+  "content": "Full article in Markdown format (NO H1 title) - MUST be 1800-2500 words",
   "target_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
 }`
 

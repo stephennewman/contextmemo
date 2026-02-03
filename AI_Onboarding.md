@@ -390,6 +390,26 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**Improve: Memo Generation Quality & Display** 
+- Fixed duplicate title issue - prompts no longer generate `# Title` since page renders it separately
+- Added visible author byline ("Context Memo - Automated brand intelligence") in memo hero section
+- Improved spacing between headings, paragraphs, tables, and lists in CSS
+- Enhanced table styling with better borders, backgrounds, and rounded corners
+- Updated all memo prompts (comparison, industry, how-to, alternative) with:
+  - More conversational, verbose tone (600-900 words vs 400-600)
+  - Explicit formatting instructions for blank lines between sections
+  - AI-readability best practices (topic sentences, specific claims, takeaways)
+  - Full paragraph requirements (3-5 sentences) instead of terse bullet points
+- Updated gap-to-content prompt with same formatting improvements
+- Changed default tone from terse/professional to "conversational, easy to read"
+
+**Files changed:**
+- `lib/ai/prompts/memo-generation.ts` - All 4 memo prompts rewritten
+- `lib/inngest/functions/gap-to-content.ts` - Content gap prompt improved
+- `app/memo/[subdomain]/[[...slug]]/page.tsx` - Author byline + improved CSS
+
+---
+
 **Add: HubSpot Landing Page** (330b138)
 - New `/hubspot` landing page with focused value proposition for HubSpot users
 - Hero: "Fill the gaps in your content strategy" messaging
