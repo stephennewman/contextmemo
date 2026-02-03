@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { BrandContext } from '@/lib/supabase/types'
+import { BrandContext, ScanResult, Query } from '@/lib/supabase/types'
 import { ProfileSection } from './profile-section'
 import { ScanResultsView, PromptVisibilityList } from './scan-results-view'
 import { CompetitiveIntelligence } from './competitive-intelligence'
@@ -136,23 +136,8 @@ export function BrandTabs({
       <TabsContent value="scans" className="space-y-4">
         {loading === 'scans' ? <TabLoader /> : (
           <ScanResultsView 
-            scanResults={(tabData.scans || []) as Array<{
-              id: string
-              query_id: string
-              model: string
-              brand_mentioned: boolean
-              brand_in_citations: boolean
-              citations: string[] | null
-              competitor_mentions: Record<string, boolean> | null
-              response_text: string | null
-              scanned_at: string
-            }>}
-            queries={(tabData.queries || []) as Array<{
-              id: string
-              query_text: string
-              query_type: string
-              priority: number
-            }>}
+            scanResults={(tabData.scans || []) as ScanResult[]}
+            queries={(tabData.queries || []) as Query[]}
             brandName={brandName}
             brandDomain={brandDomain}
             competitors={activeCompetitors}
@@ -280,23 +265,8 @@ export function BrandTabs({
       <TabsContent value="prompts">
         {loading === 'prompts' ? <TabLoader /> : (
           <PromptVisibilityList 
-            queries={(tabData.queries || []) as Array<{
-              id: string
-              query_text: string
-              query_type: string
-              priority: number
-            }>}
-            scanResults={(tabData.scans || []) as Array<{
-              id: string
-              query_id: string
-              model: string
-              brand_mentioned: boolean
-              brand_in_citations: boolean
-              citations: string[] | null
-              competitor_mentions: Record<string, boolean> | null
-              response_text: string | null
-              scanned_at: string
-            }>}
+            queries={(tabData.queries || []) as Query[]}
+            scanResults={(tabData.scans || []) as ScanResult[]}
             brandName={brandName}
           />
         )}
@@ -309,23 +279,8 @@ export function BrandTabs({
             <CompetitiveIntelligence
               brandName={brandName}
               competitors={activeCompetitors}
-              scanResults={(tabData.scans || []) as Array<{
-                id: string
-                query_id: string
-                model: string
-                brand_mentioned: boolean
-                brand_in_citations: boolean
-                citations: string[] | null
-                competitor_mentions: Record<string, boolean> | null
-                response_text: string | null
-                scanned_at: string
-              }>}
-              queries={(tabData.queries || []) as Array<{
-                id: string
-                query_text: string
-                query_type: string
-                priority: number
-              }>}
+              scanResults={(tabData.scans || []) as ScanResult[]}
+              queries={(tabData.queries || []) as Query[]}
             />
             <CompetitorContentFeed
               brandId={brandId}
@@ -369,12 +324,7 @@ export function BrandTabs({
               date: string
               source: string
             }>}
-            queries={(tabData.queries || []) as Array<{
-              id: string
-              query_text: string
-              query_type: string
-              priority: number
-            }>}
+            queries={(tabData.queries || []) as Query[]}
             bingEnabled={!!(context?.search_console?.bing?.enabled && context?.search_console?.bing?.api_key)}
             bingLastSyncedAt={context?.search_console?.bing?.last_synced_at}
             googleEnabled={!!(context?.search_console?.google?.enabled && context?.search_console?.google?.refresh_token)}
