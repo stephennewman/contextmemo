@@ -751,7 +751,7 @@ export default function BrandSettingsPage() {
                 <div>
                   <p className="font-medium">Auto-sync content</p>
                   <p className="text-sm text-muted-foreground">
-                    Automatically push generated content to HubSpot as drafts
+                    Automatically push generated content to HubSpot
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -764,6 +764,27 @@ export default function BrandSettingsPage() {
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
+
+              {/* Auto-publish Toggle */}
+              {hubspotConfig.auto_sync && (
+                <div className="flex items-center justify-between pt-2 ml-4 border-l-2 border-muted pl-4">
+                  <div>
+                    <p className="font-medium">Publish immediately</p>
+                    <p className="text-sm text-muted-foreground">
+                      Publish content live instead of creating as draft
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hubspotConfig.auto_publish || false}
+                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, auto_publish: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+              )}
             </>
           ) : (
             <>

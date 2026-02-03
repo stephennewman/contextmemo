@@ -491,7 +491,8 @@ export interface HubSpotConfig {
   refresh_token?: string
   expires_at?: string
   blog_id?: string  // content_group_id in HubSpot
-  auto_sync?: boolean  // Auto-push memos on publish
+  auto_sync?: boolean  // Auto-push content to HubSpot
+  auto_publish?: boolean  // Publish immediately vs create as draft
   // OAuth connection metadata
   connected_at?: string
   connected_by?: string

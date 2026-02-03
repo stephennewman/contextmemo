@@ -194,7 +194,7 @@ export const gapToContent = inngest.createFunction(
   },
   { event: 'gap/process' },
   async ({ event, step }) => {
-    const { gapId, publishImmediately = false } = event.data
+    const { gapId, publishImmediately } = event.data
 
     // Step 1: Get gap and brand data
     const { gap, brand } = await step.run('get-data', async () => {
@@ -224,8 +224,14 @@ export const gapToContent = inngest.createFunction(
     const context = brand.context as BrandContext
     const hubspotConfig = context?.hubspot as HubSpotConfig | undefined
 
+    // Determine if we should publish immediately
+    // Use event parameter if provided, otherwise fall back to brand's auto_publish setting
+    const shouldPublish = publishImmediately !== undefined 
+      ? publishImmediately 
+      : (hubspotConfig?.auto_publish ?? false)
+
     // Check HubSpot is configured
-    if (!hubspotConfig?.enabled || !hubspotConfig?.access_token || !hubspotConfig?.blog_id) {
+    if (!hubspotConfig?.enabled || !hubspotConfig?.blog_id) {
       // Still generate content, just save as memo instead
       console.log('HubSpot not configured, will save as memo')
     }
@@ -289,7 +295,7 @@ export const gapToContent = inngest.createFunction(
           postSummary: postSummary,
           metaDescription: content.meta_description,
           slug: content.slug,
-          state: publishImmediately ? 'PUBLISHED' : 'DRAFT',
+          state: shouldPublish ? 'PUBLISHED' : 'DRAFT',
           // Featured image
           featuredImage: image.url,
           featuredImageAltText: image.alt,
@@ -317,7 +323,7 @@ export const gapToContent = inngest.createFunction(
         const hubspotPost = await response.json()
 
         // Publish if requested
-        if (publishImmediately && hubspotPost.state !== 'PUBLISHED') {
+        if (shouldPublish && hubspotPost.state !== 'PUBLISHED') {
           await fetch(
             `https://api.hubapi.com/cms/v3/blogs/posts/${hubspotPost.id}/draft/push-live`,
             {
@@ -333,7 +339,7 @@ export const gapToContent = inngest.createFunction(
         return {
           postId: hubspotPost.id,
           url: hubspotPost.url,
-          state: publishImmediately ? 'PUBLISHED' : 'DRAFT',
+          state: shouldPublish ? 'PUBLISHED' : 'DRAFT',
         }
       })
     }
