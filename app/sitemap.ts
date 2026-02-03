@@ -68,24 +68,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  // Fetch all published memos
+  // Fetch all published memos with their brand subdomain
   const { data: memos } = await supabase
     .from('memos')
     .select(`
       slug,
       updated_at,
       published_at,
-      brands!inner(subdomain)
+      brand_id,
+      brands!memos_brand_id_fkey(subdomain)
     `)
     .eq('status', 'published')
-    .not('brands.subdomain', 'is', null)
 
-  const memoPages: MetadataRoute.Sitemap = (memos || []).map((memo) => ({
-    url: `${baseUrl}/memo/${(memo.brands as { subdomain: string }).subdomain}/${memo.slug}`,
-    lastModified: new Date(memo.updated_at || memo.published_at),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
+  const memoPages: MetadataRoute.Sitemap = (memos || [])
+    .filter((memo) => {
+      const brand = memo.brands as { subdomain: string } | null
+      return brand?.subdomain
+    })
+    .map((memo) => {
+      const brand = memo.brands as { subdomain: string }
+      return {
+        url: `${baseUrl}/memo/${brand.subdomain}/${memo.slug}`,
+        lastModified: new Date(memo.updated_at || memo.published_at),
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }
+    })
 
   return [...staticPages, ...brandPages, ...memoPages]
 }
