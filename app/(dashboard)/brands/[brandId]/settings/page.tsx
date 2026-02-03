@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { Loader2, Save, Trash2, ExternalLink } from 'lucide-react'
+import { Loader2, Save, Trash2, ExternalLink, CheckCircle2, XCircle, Link2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { BrandContext, BrandTone, HubSpotConfig, SearchConsoleConfig } from '@/lib/supabase/types'
 
@@ -82,6 +82,9 @@ export default function BrandSettingsPage() {
   const [hubspotConfig, setHubspotConfig] = useState<HubSpotConfig>(defaultHubSpotConfig)
   const [hubspotBlogs, setHubspotBlogs] = useState<{ id: string; name: string; url?: string }[]>([])
   const [hubspotTesting, setHubspotTesting] = useState(false)
+  const [hubspotConnected, setHubspotConnected] = useState(false)
+  const [hubspotHealthy, setHubspotHealthy] = useState(false)
+  const [hubspotDisconnecting, setHubspotDisconnecting] = useState(false)
   
   // Search Console integration state
   const [searchConsoleConfig, setSearchConsoleConfig] = useState<SearchConsoleConfig>(defaultSearchConsoleConfig)
@@ -126,6 +129,14 @@ export default function BrandSettingsPage() {
           ...defaultHubSpotConfig,
           ...context.hubspot,
         })
+        // Set HubSpot connection status based on stored config
+        if (context.hubspot?.enabled && context.hubspot?.access_token) {
+          setHubspotConnected(true)
+          // Load available blogs from stored config
+          if (context.hubspot?.available_blogs) {
+            setHubspotBlogs(context.hubspot.available_blogs)
+          }
+        }
         // Load Search Console config with defaults
         setSearchConsoleConfig({
           ...defaultSearchConsoleConfig,
@@ -141,6 +152,83 @@ export default function BrandSettingsPage() {
 
     loadBrand()
   }, [brandId, router])
+
+  // Check HubSpot connection health
+  useEffect(() => {
+    const checkHubSpotStatus = async () => {
+      if (!brandId || !hubspotConnected) return
+      
+      try {
+        const response = await fetch(`/api/auth/hubspot/status?brandId=${brandId}`)
+        const data = await response.json()
+        setHubspotHealthy(data.healthy)
+        if (!data.healthy && data.error) {
+          console.warn('HubSpot connection unhealthy:', data.error)
+        }
+      } catch (error) {
+        console.error('Failed to check HubSpot status:', error)
+        setHubspotHealthy(false)
+      }
+    }
+
+    checkHubSpotStatus()
+  }, [brandId, hubspotConnected])
+
+  // Handle URL params for OAuth success/error
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const success = urlParams.get('success')
+    const error = urlParams.get('error')
+    const message = urlParams.get('message')
+
+    if (success === 'hubspot_connected') {
+      toast.success('HubSpot connected successfully!')
+      setHubspotConnected(true)
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+
+    if (error) {
+      toast.error(message || `HubSpot connection failed: ${error}`)
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  const handleHubSpotConnect = () => {
+    // Redirect to HubSpot OAuth
+    window.location.href = `/api/auth/hubspot/authorize?brandId=${brandId}`
+  }
+
+  const handleHubSpotDisconnect = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to disconnect HubSpot? You will need to reconnect to push content to HubSpot.'
+    )
+    if (!confirmed) return
+
+    setHubspotDisconnecting(true)
+    try {
+      const response = await fetch('/api/auth/hubspot/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandId }),
+      })
+
+      if (response.ok) {
+        toast.success('HubSpot disconnected')
+        setHubspotConnected(false)
+        setHubspotHealthy(false)
+        setHubspotConfig({ ...hubspotConfig, enabled: false })
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to disconnect')
+      }
+    } catch (error) {
+      toast.error('Failed to disconnect HubSpot')
+    } finally {
+      setHubspotDisconnecting(false)
+    }
+  }
 
   const testHubSpotConnection = async () => {
     if (!hubspotConfig.access_token) {
@@ -595,134 +683,118 @@ export default function BrandSettingsPage() {
         <CardHeader>
           <CardTitle>HubSpot Integration</CardTitle>
           <CardDescription>
-            Push memos directly to your HubSpot blog with one click
+            Push AI-generated content directly to your HubSpot blog
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Enable HubSpot</p>
-              <p className="text-sm text-muted-foreground">
-                Connect your HubSpot account to push memos as blog posts
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={hubspotConfig.enabled}
-                onChange={(e) => setHubspotConfig({ ...hubspotConfig, enabled: e.target.checked })}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
-          </div>
-          
-          {hubspotConfig.enabled && (
+          {hubspotConnected ? (
             <>
-              <Separator />
-              <div className="space-y-4">
-                <Alert>
-                  <AlertDescription>
-                    <p className="mb-2">To get your HubSpot credentials:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-sm">
-                      <li>Go to HubSpot → Settings → Integrations → Private Apps</li>
-                      <li>Create a new Private App with &quot;CMS Blog&quot; read/write scopes</li>
-                      <li>Copy the Access Token</li>
-                      <li>Find your Blog ID from any existing blog post URL or via the API</li>
-                    </ol>
-                    <a 
-                      href="https://developers.hubspot.com/docs/api/private-apps" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline mt-2"
-                    >
-                      HubSpot Private Apps Documentation
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="hubspot_token">Access Token</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="hubspot_token"
-                      type="password"
-                      value={hubspotConfig.access_token || ''}
-                      onChange={(e) => {
-                        setHubspotConfig({ ...hubspotConfig, access_token: e.target.value })
-                        setHubspotBlogs([]) // Clear blogs when token changes
-                      }}
-                      placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={testHubSpotConnection}
-                      disabled={hubspotTesting || !hubspotConfig.access_token}
-                    >
-                      {hubspotTesting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Test & Fetch Blogs'
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Your HubSpot Private App access token. Click &quot;Test & Fetch Blogs&quot; to verify and load your blogs.
+              {/* Connected State */}
+              <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div className="flex-1">
+                  <p className="font-medium text-green-900">HubSpot Connected</p>
+                  <p className="text-sm text-green-700">
+                    {hubspotHealthy 
+                      ? 'Connection is healthy and ready to push content'
+                      : 'Connection established - verifying...'}
                   </p>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="hubspot_blog_id">Target Blog</Label>
-                  {hubspotBlogs.length > 0 ? (
-                    <select
-                      id="hubspot_blog_id"
-                      value={hubspotConfig.blog_id || ''}
-                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="">Select a blog...</option>
-                      {hubspotBlogs.map((blog) => (
-                        <option key={blog.id} value={blog.id}>
-                          {blog.name} (ID: {blog.id})
-                        </option>
-                      ))}
-                    </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleHubSpotDisconnect}
+                  disabled={hubspotDisconnecting}
+                >
+                  {hubspotDisconnecting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Input
-                      id="hubspot_blog_id"
-                      value={hubspotConfig.blog_id || ''}
-                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
-                      placeholder="Click 'Test & Fetch Blogs' to load your blogs"
-                    />
+                    'Disconnect'
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    {hubspotBlogs.length > 0 
-                      ? 'Select the blog where memos will be published'
-                      : 'Enter your access token and click "Test & Fetch Blogs" to see available blogs'}
+                </Button>
+              </div>
+
+              <Separator />
+
+              {/* Blog Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="hubspot_blog_id">Target Blog</Label>
+                {hubspotBlogs.length > 0 ? (
+                  <select
+                    id="hubspot_blog_id"
+                    value={hubspotConfig.blog_id || ''}
+                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Select a blog...</option>
+                    {hubspotBlogs.map((blog) => (
+                      <option key={blog.id} value={blog.id}>
+                        {blog.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id="hubspot_blog_id"
+                    value={hubspotConfig.blog_id || ''}
+                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, blog_id: e.target.value })}
+                    placeholder="Enter your HubSpot Blog ID"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Select which blog to publish generated content to
+                </p>
+              </div>
+
+              {/* Auto-sync Toggle */}
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  <p className="font-medium">Auto-sync content</p>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically push generated content to HubSpot as drafts
                   </p>
                 </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <div>
-                    <p className="font-medium">Auto-sync to HubSpot</p>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically push memos to HubSpot when published
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={hubspotConfig.auto_sync || false}
-                      onChange={(e) => setHubspotConfig({ ...hubspotConfig, auto_sync: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hubspotConfig.auto_sync || false}
+                    onChange={(e) => setHubspotConfig({ ...hubspotConfig, auto_sync: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
               </div>
+            </>
+          ) : (
+            <>
+              {/* Not Connected State */}
+              <div className="text-center py-6">
+                <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                  <Link2 className="h-6 w-6 text-orange-600" />
+                </div>
+                <h3 className="font-medium mb-2">Connect your HubSpot account</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+                  Automatically push AI-generated content to your HubSpot blog. 
+                  Content is created as drafts for your review.
+                </p>
+                <Button onClick={handleHubSpotConnect}>
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.164 7.93V5.084a2.198 2.198 0 001.267-1.984 2.21 2.21 0 00-4.42 0c0 .873.51 1.627 1.248 1.984v2.846a5.267 5.267 0 00-3.222 1.778l-6.84-5.073a2.628 2.628 0 00.044-.457 2.616 2.616 0 10-2.615 2.615c.461 0 .893-.12 1.269-.33l6.696 4.963a5.264 5.264 0 00-.163 1.31c0 .47.062.925.178 1.358l-3.478 1.665a2.1 2.1 0 00-1.84-1.086 2.114 2.114 0 100 4.227 2.114 2.114 0 002.063-1.673l3.618-1.732a5.28 5.28 0 009.236-3.498 5.28 5.28 0 00-3.041-4.767zm-.95 7.586a2.633 2.633 0 110-5.266 2.633 2.633 0 010 5.266z"/>
+                  </svg>
+                  Connect HubSpot
+                </Button>
+              </div>
+              <Alert>
+                <AlertDescription className="text-sm">
+                  <p className="font-medium mb-1">What happens when you connect:</p>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>You&apos;ll be redirected to HubSpot to authorize access</li>
+                    <li>Context Memo gets permission to create blog posts</li>
+                    <li>Your content is pushed as drafts (never auto-published)</li>
+                    <li>You can disconnect at any time</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
             </>
           )}
         </CardContent>

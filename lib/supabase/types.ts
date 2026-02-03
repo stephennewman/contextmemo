@@ -488,8 +488,19 @@ export interface Database {
 export interface HubSpotConfig {
   enabled: boolean
   access_token?: string
+  refresh_token?: string
+  expires_at?: string
   blog_id?: string  // content_group_id in HubSpot
   auto_sync?: boolean  // Auto-push memos on publish
+  // OAuth connection metadata
+  connected_at?: string
+  connected_by?: string
+  disconnected_at?: string
+  disconnected_by?: string
+  disconnect_reason?: string
+  last_refreshed_at?: string
+  // Available blogs from HubSpot
+  available_blogs?: Array<{ id: string; name: string; slug?: string }>
 }
 
 // Search Console integrations (Bing + Google)
