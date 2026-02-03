@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { disconnectHubSpot } from '@/lib/hubspot/oauth'
 
 export async function POST(request: NextRequest) {
@@ -24,12 +25,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Verify brand ownership
-  const { data: brand } = await supabase
+  // Use service role to bypass RLS for brand lookup
+  const serviceClient = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // Verify brand exists
+  const { data: brand, error: brandError } = await serviceClient
     .from('brands')
     .select('id, organization_id, user_id')
     .eq('id', brandId)
     .single()
+  
+  if (brandError) {
+    console.error('Brand lookup error:', brandError)
+  }
 
   if (!brand) {
     return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
@@ -45,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   // Check organization membership if brand has an organization
   if (!hasAccess && brand.organization_id) {
-    const { data: membership } = await supabase
+    const { data: membership } = await serviceClient
       .from('organization_members')
       .select('role')
       .eq('organization_id', brand.organization_id)
