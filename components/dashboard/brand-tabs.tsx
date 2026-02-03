@@ -157,13 +157,8 @@ export function BrandTabs({
               <CardContent>
                 <GenerateMemoDropdown 
                   brandId={brandId} 
-                  lowVisibilityQueries={(tabData.lowVisibilityQueries || []) as Array<{
-                    id: string
-                    query_text: string
-                    query_type: string
-                    visibility: number
-                    competitor_name?: string
-                  }>}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  lowVisibilityQueries={(tabData.lowVisibilityQueries || []) as any}
                 />
               </CardContent>
             </Card>
@@ -300,17 +295,8 @@ export function BrandTabs({
         {loading === 'search' ? <TabLoader /> : (
           <SearchConsoleView
             brandId={brandId}
-            stats={(tabData.searchConsoleStats || []) as Array<{
-              id: string
-              query: string
-              page_url: string
-              clicks: number
-              impressions: number
-              ctr: number
-              position: number
-              date: string
-              source: string
-            }>}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            stats={(tabData.searchConsoleStats || []) as any}
             queries={(tabData.queries || []) as Query[]}
             bingEnabled={!!(context?.search_console?.bing?.enabled && context?.search_console?.bing?.api_key)}
             bingLastSyncedAt={context?.search_console?.bing?.last_synced_at}
@@ -324,15 +310,8 @@ export function BrandTabs({
       <TabsContent value="traffic">
         {loading === 'traffic' ? <TabLoader /> : (
           <AITrafficView
-            traffic={(tabData.aiTraffic || []) as Array<{
-              id: string
-              memo_id: string | null
-              page_url: string
-              referrer: string | null
-              referrer_source: 'chatgpt' | 'perplexity' | 'claude' | 'gemini' | 'copilot' | 'meta_ai' | 'poe' | 'you' | 'phind' | 'direct' | 'unknown_ai' | 'organic' | 'direct_nav'
-              timestamp: string
-              memo?: { title: string; slug: string } | null
-            }>}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            traffic={(tabData.aiTraffic || []) as any}
             brandName={brandName}
           />
         )}
@@ -343,53 +322,21 @@ export function BrandTabs({
         {loading === 'intelligence' ? <TabLoader /> : (
           <>
             <AttributionDashboard
-              events={(tabData.attributionEvents || []) as Array<{
-                id: string
-                event_type: 'traffic' | 'contact' | 'deal' | 'closed_won'
-                ai_source: string | null
-                memo_id: string | null
-                deal_value: number | null
-                created_at: string
-                metadata?: Record<string, unknown>
-              }>}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              events={(tabData.attributionEvents || []) as any}
               brandName={brandName}
               hubspotEnabled={hubspotEnabled}
             />
             <PromptIntelligenceFeed
-              items={(tabData.promptIntelligence || []) as Array<{
-                id: string
-                category: 'trending' | 'competitor_win' | 'emerging' | 'declining'
-                prompt_text: string
-                insight_title: string
-                insight_description: string
-                competitors_winning: string[]
-                opportunity_score: number
-                action_suggestion: string
-                status: 'new' | 'reviewed' | 'actioned' | 'dismissed'
-                created_at: string
-              }>}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              items={(tabData.promptIntelligence || []) as any}
               brandName={brandName}
             />
             <ModelInsightsPanel
-              models={((tabData.modelInsights as { models?: unknown[] })?.models || []) as Array<{
-                model: string
-                displayName: string
-                totalScans: number
-                brandMentions: number
-                brandCitations: number
-                mentionRate: number
-                citationRate: number
-                avgPosition: number | null
-                topQueryTypes: Array<{ type: string; successRate: number }>
-                contentPreferences: Array<{ pattern: string; score: number }>
-              }>}
-              recommendations={((tabData.modelInsights as { recommendations?: unknown[] })?.recommendations || []) as Array<{
-                model: string
-                priority: 'high' | 'medium' | 'low'
-                title: string
-                description: string
-                actionItems: string[]
-              }>}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              models={((tabData.modelInsights as any)?.models || []) as any}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              recommendations={((tabData.modelInsights as any)?.recommendations || []) as any}
               overallCitationRate={((tabData.modelInsights as { overallCitationRate?: number })?.overallCitationRate) || 0}
               totalScans={((tabData.modelInsights as { totalScans?: number })?.totalScans) || 0}
             />
@@ -401,17 +348,10 @@ export function BrandTabs({
       <TabsContent value="alerts">
         {loading === 'alerts' ? <TabLoader /> : (
           <AlertsList 
-            alerts={(tabData.alerts || []) as Array<{
-              id: string
-              brand_id: string
-              alert_type: string
-              title: string
-              message: string | null
-              read: boolean
-              data: Record<string, unknown> | null
-              created_at: string
-            }>}
-            unreadCount={(tabData.alerts as Array<{ read: boolean }> || []).filter(a => !a.read).length}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            alerts={(tabData.alerts || []) as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            unreadCount={((tabData.alerts as any) || []).filter((a: any) => !a.read).length}
           />
         )}
       </TabsContent>
