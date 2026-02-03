@@ -390,6 +390,9 @@ _Most recent deploys first_
 
 ### February 2, 2026
 
+**Fix: rss-parser customFields type error** (8fb8709)
+- Feed custom fields expect `string|number`, not tuple format like item fields
+
 **Fix: TypeScript build error in analytics route** (16876b7)
 - Fixed `Object.entries()` type assertion in memo analytics API
 - Cast entries result to preserve value types, resolving spread type error
