@@ -17,6 +17,7 @@ import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
+import { getHubSpotToken } from '@/lib/hubspot/oauth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -258,8 +259,14 @@ export const gapToContent = inngest.createFunction(
 
     // Step 3: Push to HubSpot if configured
     let hubspotResult = null
-    if (hubspotConfig?.enabled && hubspotConfig?.access_token && hubspotConfig?.blog_id) {
+    if (hubspotConfig?.enabled && hubspotConfig?.blog_id) {
       hubspotResult = await step.run('push-to-hubspot', async () => {
+        // Get a valid token (handles refresh automatically)
+        const accessToken = await getHubSpotToken(gap.brand_id)
+        if (!accessToken) {
+          throw new Error('HubSpot not connected or token expired')
+        }
+
         const htmlContent = await marked(content.content, { gfm: true, breaks: true })
         
         // Detect topic for image and tags
@@ -296,7 +303,7 @@ export const gapToContent = inngest.createFunction(
         const response = await fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${hubspotConfig.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(blogPost),
@@ -316,7 +323,7 @@ export const gapToContent = inngest.createFunction(
             {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${hubspotConfig.access_token}`,
+                'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
               },
             }
