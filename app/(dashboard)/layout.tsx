@@ -29,27 +29,27 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  // Get user's organization memberships
+  // Get brands - use service role or rely on RLS
+  // First try to get via organization membership
   const { data: memberships } = await supabase
     .from('organization_members')
     .select('organization_id')
     .eq('user_id', user.id)
 
-  const orgIds = memberships?.map(m => m.organization_id) || []
+  const orgIds = memberships?.map(m => m.organization_id).filter(Boolean) || []
 
-  // Get user's brands (direct ownership or via organization)
-  let brandsQuery = supabase
-    .from('brands')
-    .select('id, name, subdomain')
-    .order('created_at', { ascending: false })
-
-  if (orgIds.length > 0) {
-    brandsQuery = brandsQuery.or(`user_id.eq.${user.id},organization_id.in.(${orgIds.join(',')})`)
-  } else {
-    brandsQuery = brandsQuery.eq('user_id', user.id)
-  }
-
-  const { data: brands } = await brandsQuery
+  // Query brands the user has access to
+  const { data: brands } = orgIds.length > 0
+    ? await supabase
+        .from('brands')
+        .select('id, name, subdomain')
+        .in('organization_id', orgIds)
+        .order('created_at', { ascending: false })
+    : await supabase
+        .from('brands')
+        .select('id, name, subdomain')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
 
   return (
     <div className="min-h-screen bg-white">
