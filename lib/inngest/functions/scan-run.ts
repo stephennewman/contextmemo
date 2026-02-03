@@ -39,6 +39,7 @@ interface ModelConfig {
 
 // Citation-capable models only
 // All OpenRouter models use :online suffix for native web search with citations
+// NOTE: Only GPT-4o Mini enabled for cost/speed optimization during testing
 const SCAN_MODELS: ModelConfig[] = [
   // Perplexity - direct API for rich citation data
   { 
@@ -46,7 +47,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Perplexity Sonar', 
     provider: 'perplexity-direct', 
     modelId: 'sonar', 
-    enabled: true,
+    enabled: false, // Disabled for testing
     citationSource: 'perplexity',
   },
   
@@ -57,7 +58,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'GPT-4o Mini', 
     provider: 'openrouter', 
     modelId: 'openai/gpt-4o-mini:online', 
-    enabled: true,
+    enabled: true, // Primary model for testing
     citationSource: 'openrouter-native',
   },
   { 
@@ -65,7 +66,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Claude 3.5 Haiku', 
     provider: 'openrouter', 
     modelId: 'anthropic/claude-3.5-haiku:online', 
-    enabled: true,
+    enabled: false, // Disabled for testing
     citationSource: 'openrouter-native',
   },
   { 
@@ -73,7 +74,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Grok 4 Fast', 
     provider: 'openrouter', 
     modelId: 'x-ai/grok-4-fast:online', 
-    enabled: true,
+    enabled: false, // Disabled for testing
     citationSource: 'openrouter-native',
   },
 ]
