@@ -27,6 +27,85 @@ const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 })
 
+// Stock images by topic (Unsplash direct URLs - free to use)
+const TOPIC_IMAGES: Record<string, { url: string; alt: string }> = {
+  'cold_chain': {
+    url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&h=630&fit=crop',
+    alt: 'Cold chain logistics and temperature-controlled storage facility'
+  },
+  'temperature_monitoring': {
+    url: 'https://images.unsplash.com/photo-1581093458791-9d42e3c2fd45?w=1200&h=630&fit=crop',
+    alt: 'Digital temperature monitoring and sensor technology'
+  },
+  'food_safety': {
+    url: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=1200&h=630&fit=crop',
+    alt: 'Food safety and quality control in commercial kitchen'
+  },
+  'haccp': {
+    url: 'https://images.unsplash.com/photo-1581093458791-9d42e3c2fd45?w=1200&h=630&fit=crop',
+    alt: 'HACCP compliance and food safety monitoring systems'
+  },
+  'pharmaceutical': {
+    url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=1200&h=630&fit=crop',
+    alt: 'Pharmaceutical storage and medical supply chain'
+  },
+  'hospitality': {
+    url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&h=630&fit=crop',
+    alt: 'Hotel and hospitality temperature management'
+  },
+  'restaurant': {
+    url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=630&fit=crop',
+    alt: 'Restaurant kitchen food safety and compliance'
+  },
+  'default': {
+    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop',
+    alt: 'Business technology and monitoring solutions'
+  }
+}
+
+// Map content keywords to HubSpot tag IDs (Checkit's tags)
+const KEYWORD_TO_TAGS: Record<string, string[]> = {
+  'cold_chain': ['47070366612', '47075785730'], // Logistics, Connected Automated Monitoring
+  'pharmaceutical': ['47070366832', '47281943480'], // Healthcare | Life Sciences, Life Sciences
+  'food_safety': ['47075785549', '47075785730'], // Food Services, Connected Automated Monitoring
+  'haccp': ['47075785549', '47075785730'], // Food Services, Connected Automated Monitoring
+  'hospitality': ['47286228633', '47075785730'], // Leisure & Entertainment, Connected Automated Monitoring
+  'restaurant': ['47075785549', '47296146462'], // Food Services, Contract Catering
+  'healthcare': ['47281801038', '47070366832'], // Healthcare, Healthcare | Life Sciences
+  'retail': ['47282168456', '47075785730'], // Retail, Connected Automated Monitoring
+}
+
+/**
+ * Detect topic from content/query for image and tag selection
+ */
+function detectTopic(query: string, title: string): string {
+  const text = `${query} ${title}`.toLowerCase()
+  
+  if (text.includes('cold chain') || text.includes('cold storage') || text.includes('freezer')) {
+    return 'cold_chain'
+  }
+  if (text.includes('haccp') || text.includes('hazard analysis')) {
+    return 'haccp'
+  }
+  if (text.includes('pharma') || text.includes('vaccine') || text.includes('medical')) {
+    return 'pharmaceutical'
+  }
+  if (text.includes('food safety') || text.includes('food service')) {
+    return 'food_safety'
+  }
+  if (text.includes('hotel') || text.includes('hospitality') || text.includes('lodging')) {
+    return 'hospitality'
+  }
+  if (text.includes('restaurant') || text.includes('kitchen') || text.includes('catering')) {
+    return 'restaurant'
+  }
+  if (text.includes('temperature') || text.includes('monitoring') || text.includes('sensor')) {
+    return 'temperature_monitoring'
+  }
+  
+  return 'default'
+}
+
 // Prompt for generating gap-filling content
 const GAP_CONTENT_PROMPT = `You are creating content that will be published on a brand's website to help them get cited by AI assistants.
 
@@ -154,14 +233,35 @@ export const gapToContent = inngest.createFunction(
     if (hubspotConfig?.enabled && hubspotConfig?.access_token && hubspotConfig?.blog_id) {
       hubspotResult = await step.run('push-to-hubspot', async () => {
         const htmlContent = await marked(content.content, { gfm: true, breaks: true })
+        
+        // Detect topic for image and tags
+        const topic = detectTopic(gap.source_query, content.title)
+        const image = TOPIC_IMAGES[topic] || TOPIC_IMAGES['default']
+        const tagIds = KEYWORD_TO_TAGS[topic] || []
+        
+        // Create excerpt from first paragraph
+        const excerptMatch = content.content.match(/^[^#].*?(?=\n\n|\n#)/s)
+        const postSummary = excerptMatch 
+          ? excerptMatch[0].replace(/[*_`]/g, '').slice(0, 300) + '...'
+          : content.meta_description
 
         const blogPost = {
           name: content.title,
+          htmlTitle: `${content.title} | Checkit`,
           contentGroupId: hubspotConfig.blog_id,
           postBody: htmlContent,
+          postSummary: postSummary,
           metaDescription: content.meta_description,
           slug: content.slug,
           state: publishImmediately ? 'PUBLISHED' : 'DRAFT',
+          // Featured image
+          featuredImage: image.url,
+          featuredImageAltText: image.alt,
+          useFeaturedImage: true,
+          // Tags
+          tagIds: tagIds.map(id => parseInt(id)),
+          // Publish date
+          publishDate: new Date().toISOString(),
         }
 
         const response = await fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
