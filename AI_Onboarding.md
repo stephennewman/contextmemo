@@ -388,6 +388,36 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 3, 2026
+
+**Experiment: 10X AI Citations Strategy for Checkit**
+
+**Analysis & Fix: Checkit competitor/query configuration**
+- Discovered root cause: Checkit had wrong competitors (Asana, Monday.com, Trello) instead of temperature monitoring competitors
+- Fixed competitor list: ComplianceMate, SafetyCulture, Zenput, Monnit, Dickson, Therma, Controlant
+- Added 33 relevant queries for temperature monitoring, food safety, HACCP compliance
+- Key finding: Even with correct queries, 0% mention rate - problem is content discovery not query targeting
+
+**Add: AI discoverability infrastructure**
+- Created `public/robots.txt` with explicit AI crawler permissions (GPTBot, ClaudeBot, PerplexityBot)
+- Created `public/llms.txt` - AI instruction file explaining Context Memo's purpose
+- Created `app/sitemap.xml/route.ts` - Dynamic sitemap for all published memos
+- Created `docs/10X_CITATIONS_STRATEGY.md` - Strategic analysis document
+
+**Files changed:**
+- `public/robots.txt` - AI crawler permissions
+- `public/llms.txt` - AI assistant instructions
+- `app/sitemap.xml/route.ts` - Dynamic XML sitemap
+- `docs/10X_CITATIONS_STRATEGY.md` - Strategic analysis
+
+**Database changes (Checkit brand):**
+- Deactivated 7 wrong competitors (project management tools)
+- Added 7 correct competitors (temperature monitoring/compliance)
+- Deactivated 72 wrong queries
+- Added 33 relevant queries
+
+---
+
 ### February 2, 2026
 
 **Fix: Inngest step.run type serialization** (15601b1)
