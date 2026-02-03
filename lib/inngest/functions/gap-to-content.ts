@@ -233,7 +233,7 @@ export const gapToContent = inngest.createFunction(
     const content = await step.run('generate-content', async () => {
       const prompt = GAP_CONTENT_PROMPT
         .replace(/\{\{brand_name\}\}/g, brand.name)
-        .replace('{{brand_description}}', context?.brand_description || brand.description || '')
+        .replace('{{brand_description}}', context?.description || brand.description || '')
         .replace('{{brand_products}}', JSON.stringify(context?.products || []))
         .replace('{{source_query}}', gap.source_query)
         .replace('{{competitor_name}}', gap.competitor_name)
@@ -391,6 +391,16 @@ export const gapToContent = inngest.createFunction(
       })
     })
 
+    // Step 7: Schedule verification 24 hours after publish (if published)
+    if (hubspotResult?.state === 'PUBLISHED') {
+      await step.sendEvent('schedule-verification', {
+        name: 'gap/verify',
+        data: { gapId },
+        // Verify 24 hours after publish to allow indexing
+        ts: Date.now() + (24 * 60 * 60 * 1000),
+      })
+    }
+
     return {
       success: true,
       gapId,
@@ -398,6 +408,7 @@ export const gapToContent = inngest.createFunction(
       hubspotPostId: hubspotResult?.postId,
       hubspotState: hubspotResult?.state,
       title: content.title,
+      verificationScheduled: hubspotResult?.state === 'PUBLISHED',
     }
   }
 )

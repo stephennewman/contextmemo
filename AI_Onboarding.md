@@ -390,6 +390,56 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**Add: Competitive Differentiation Features**
+
+Built 5 major differentiation features to set Context Memo apart from competitors:
+
+1. **Closed-Loop Citation Verification** (`lib/inngest/functions/citation-verify.ts`)
+   - Re-runs prompts 24h after content publish to verify brand now gets cited
+   - Tracks "time to citation" metric (hours from publish to first citation)
+   - Auto-retries up to 3 times over 72 hours if not verified
+   - Updates memo with verification metrics
+
+2. **Revenue Attribution** (`lib/inngest/functions/revenue-attribution.ts`)
+   - Connects AI traffic to HubSpot contacts and deals
+   - Tracks full funnel: traffic → contact → deal → closed won
+   - Calculates ROI metrics and attributed revenue
+   - Daily sync job to match AI visitors to CRM records
+
+3. **Per-Model Optimization** (`lib/inngest/functions/model-insights.ts`)
+   - Analyzes which AI models cite the brand most
+   - Identifies content preferences per model (FAQ, comparison, etc.)
+   - Generates model-specific recommendations
+   - Weekly analysis job
+
+4. **Prompt Intelligence Feed** (`lib/inngest/functions/prompt-intelligence.ts`)
+   - Tracks trending prompts and competitor wins
+   - Identifies emerging query patterns to target
+   - AI-powered insights generation
+   - Weekly intelligence analysis
+
+5. **HubSpot Marketplace Preparation** (`docs/HUBSPOT_MARKETPLACE.md`)
+   - Complete listing guide with categories, descriptions, assets
+   - Technical requirements and OAuth scope documentation
+   - Pricing strategy and competitive positioning
+   - Launch strategy and action items
+
+**New SQL Tables:**
+- `scripts/sql/attribution_events.sql` - Revenue attribution tracking
+- `scripts/sql/prompt_intelligence.sql` - Prompt intelligence data
+
+**Files changed:**
+- `lib/inngest/functions/citation-verify.ts` - NEW
+- `lib/inngest/functions/revenue-attribution.ts` - NEW
+- `lib/inngest/functions/model-insights.ts` - NEW
+- `lib/inngest/functions/prompt-intelligence.ts` - NEW
+- `lib/inngest/functions/gap-to-content.ts` - Added verification scheduling
+- `lib/inngest/functions/daily-run.ts` - Added verification step
+- `app/api/inngest/route.ts` - Registered new functions
+- `docs/HUBSPOT_MARKETPLACE.md` - NEW
+
+---
+
 **Experiment: 10X AI Citations Strategy for Checkit**
 
 **Analysis & Fix: Checkit competitor/query configuration**

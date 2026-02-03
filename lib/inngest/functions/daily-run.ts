@@ -229,7 +229,18 @@ export const dailyRun = inngest.createFunction(
       })
     }
 
-    // Step 7: Record daily snapshot for trend tracking
+    // Step 7: Verify content gaps that have matured (24+ hours since publish)
+    await step.run('trigger-gap-verification', async () => {
+      // Trigger verification for all brands
+      const events = brands.map(brand => ({
+        name: 'gap/verify-all' as const,
+        data: { brandId: brand.id, minAgeHours: 24 },
+      }))
+      await inngest.send(events)
+      return events.length
+    })
+
+    // Step 8: Record daily snapshot for trend tracking
     await step.run('record-daily-snapshot', async () => {
       const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
       
@@ -290,7 +301,7 @@ export const dailyRun = inngest.createFunction(
       }
     })
 
-    // Step 8: Log completion
+    // Step 9: Log completion
     await step.run('log-completion', async () => {
       const summary = {
         fullRefresh: fullRefreshBrands.length,

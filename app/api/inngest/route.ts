@@ -28,6 +28,19 @@ import { googleSearchConsoleSync, googleWeeklySync } from '@/lib/inngest/functio
 import { aiOverviewScan } from '@/lib/inngest/functions/ai-overview-scan'
 import { citationLoopRun, analyzeCitation } from '@/lib/inngest/functions/citation-loop'
 import { gapToContent, processAllGaps } from '@/lib/inngest/functions/gap-to-content'
+import { verifyGap, verifyAllGaps, getVerificationMetrics } from '@/lib/inngest/functions/citation-verify'
+import { 
+  syncAITrafficAttribution, 
+  syncDealAttribution, 
+  getAttributionMetrics,
+  dailyAttributionSync,
+} from '@/lib/inngest/functions/revenue-attribution'
+import { analyzeModelPerformance, weeklyModelInsights } from '@/lib/inngest/functions/model-insights'
+import { 
+  analyzePromptIntelligence, 
+  getPromptIntelligenceFeed, 
+  weeklyPromptIntelligence 
+} from '@/lib/inngest/functions/prompt-intelligence'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -48,6 +61,26 @@ export const { GET, POST, PUT } = serve({
     // Gap-to-content pipeline - automated content generation
     gapToContent,       // Generate content from a single gap → push to HubSpot
     processAllGaps,     // Process all pending gaps for a brand
+    
+    // Citation verification - closed-loop validation
+    verifyGap,              // Verify a single gap is now being cited
+    verifyAllGaps,          // Verify all pending gaps for a brand
+    getVerificationMetrics, // Calculate verification metrics
+    
+    // Revenue attribution - connect AI traffic to CRM revenue
+    syncAITrafficAttribution,  // Match AI traffic to HubSpot contacts
+    syncDealAttribution,       // Track deals from attributed contacts
+    getAttributionMetrics,     // Calculate ROI metrics
+    dailyAttributionSync,      // Daily sync job
+    
+    // Per-model insights and optimization
+    analyzeModelPerformance,   // Analyze which models cite what content
+    weeklyModelInsights,       // Weekly analysis job
+    
+    // Prompt intelligence feed
+    analyzePromptIntelligence,    // Analyze trending prompts and competitor wins
+    getPromptIntelligenceFeed,    // Get intelligence feed for a brand
+    weeklyPromptIntelligence,     // Weekly analysis job
     
     // Competitor content intelligence
     competitorContentScan,     // Scan competitor sites for new content
