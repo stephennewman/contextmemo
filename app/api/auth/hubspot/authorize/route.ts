@@ -63,10 +63,13 @@ export async function GET(request: NextRequest) {
   const scopes = ['oauth', 'content']
 
   const authUrl = new URL(HUBSPOT_AUTH_URL)
+  authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('client_id', clientId)
   authUrl.searchParams.set('redirect_uri', redirectUri)
   authUrl.searchParams.set('scope', scopes.join(' '))
   authUrl.searchParams.set('state', state)
+
+  console.log('HubSpot OAuth URL:', authUrl.toString())
 
   return NextResponse.redirect(authUrl.toString())
 }
