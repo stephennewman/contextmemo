@@ -104,6 +104,16 @@ export default async function BrandPage({ params }: Props) {
         .limit(50)
     : { data: [] }
 
+  // Get competitor RSS feeds
+  const { data: competitorFeeds } = competitorIds.length > 0
+    ? await supabase
+        .from('competitor_feeds')
+        .select('*')
+        .in('competitor_id', competitorIds)
+        .eq('is_active', true)
+        .order('discovered_at', { ascending: false })
+    : { data: [] }
+
   // Get AI traffic data (last 90 days)
   const { data: aiTraffic } = await supabase
     .from('ai_traffic')
@@ -492,6 +502,7 @@ export default async function BrandPage({ params }: Props) {
             brandId={brandId}
             content={competitorContent || []}
             competitors={competitors || []}
+            feeds={competitorFeeds || []}
           />
           
           {/* Competitor List */}
