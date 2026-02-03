@@ -137,7 +137,7 @@ export const scanRun = inngest.createFunction(
               .eq('brand_id', brandId)
               .eq('is_active', true)
               .order('priority', { ascending: false })
-              .limit(30), // Limit to top 30 queries per scan for faster scans
+              .limit(100), // Scan up to 100 queries per run
         supabase
           .from('competitors')
           .select('name')
@@ -165,19 +165,17 @@ export const scanRun = inngest.createFunction(
     // Step 2: Run scans for each query across all enabled models
     const scanResults: ScanResult[] = []
     
-    // Process queries in batches of 5 (smaller batches since we're running more models)
-    const batchSize = 5
+    // Process queries in batches - larger batches with parallel execution
+    // With 1 model, we can run 10 queries in parallel safely
+    const batchSize = 10
     for (let i = 0; i < queries.length; i += batchSize) {
       const batch = queries.slice(i, i + batchSize)
       
       const batchResults = await step.run(`scan-batch-${i}`, async () => {
-        const results: ScanResult[] = []
-        
-        for (const query of batch) {
-          // Scan with each enabled model
-          for (const modelConfig of enabledModels) {
+        // Run all queries in this batch in parallel
+        const batchPromises = batch.flatMap(query => 
+          enabledModels.map(async modelConfig => {
             try {
-              // Use direct Perplexity API for citation data
               if (modelConfig.provider === 'perplexity-direct') {
                 const scanResult = await scanWithPerplexityDirect(
                   query.query_text,
@@ -185,14 +183,13 @@ export const scanRun = inngest.createFunction(
                   brand.domain,
                   competitorNames
                 )
-                results.push({
+                return {
                   queryId: query.id,
                   model: modelConfig.id,
                   citationSource: modelConfig.citationSource,
                   ...scanResult,
-                })
+                } as ScanResult
               } else {
-                // OpenRouter with :online suffix for native web search
                 const scanResult = await scanWithOpenRouter(
                   query.query_text,
                   modelConfig,
@@ -200,30 +197,30 @@ export const scanRun = inngest.createFunction(
                   brand.domain,
                   competitorNames
                 )
-                results.push({
+                return {
                   queryId: query.id,
                   model: modelConfig.id,
                   citationSource: modelConfig.citationSource,
                   ...scanResult,
-                })
+                } as ScanResult
               }
             } catch (error) {
               console.error(`${modelConfig.displayName} scan failed for query ${query.id}:`, error)
-              // Continue with other models even if one fails
+              return null // Return null for failed scans
             }
-            
-            // Small delay between model calls to avoid rate limits
-            await new Promise(resolve => setTimeout(resolve, 150))
-          }
-          
-          // Slightly longer delay between queries
-          await new Promise(resolve => setTimeout(resolve, 100))
-        }
+          })
+        )
         
-        return results
+        const results = await Promise.all(batchPromises)
+        return results.filter((r): r is ScanResult => r !== null)
       })
       
       scanResults.push(...batchResults)
+      
+      // Small delay between batches to be respectful to APIs
+      if (i + batchSize < queries.length) {
+        await step.sleep('batch-delay', '500ms')
+      }
     }
 
     // Step 3: Save scan results

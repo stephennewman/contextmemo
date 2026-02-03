@@ -140,18 +140,16 @@ export const discoveryScan = inngest.createFunction(
       return { success: false, error: 'Failed to generate discovery queries' }
     }
 
-    // Step 3: Run discovery scans in batches (single model via OpenRouter for speed)
+    // Step 3: Run discovery scans in batches with parallel execution
     const allResults: DiscoveryResult[] = []
-    const batchSize = 15 // Larger batches since we're only running 1 model
+    const batchSize = 15 // Run 15 queries in parallel per batch
 
     for (let i = 0; i < discoveryQueries.length; i += batchSize) {
       const batch = discoveryQueries.slice(i, i + batchSize)
       
       const batchResults = await step.run(`discovery-batch-${i}`, async () => {
-        const results: DiscoveryResult[] = []
-
-        for (const dq of batch) {
-          // Test with GPT-4o-mini via OpenRouter (fast + cheap)
+        // Run all queries in batch in parallel
+        const promises = batch.map(async (dq): Promise<DiscoveryResult | null> => {
           try {
             const { text } = await generateText({
               model: openrouter('openai/gpt-4o-mini'),
@@ -168,7 +166,7 @@ export const discoveryScan = inngest.createFunction(
               mentionContext = text.slice(Math.max(0, idx - 50), idx + brandName.length + 100)
             }
 
-            results.push({
+            return {
               query: dq.query,
               category: dq.category,
               hypothesis: dq.hypothesis,
@@ -176,19 +174,23 @@ export const discoveryScan = inngest.createFunction(
               brandMentioned: mentioned,
               mentionContext,
               responseSnippet: text.slice(0, 300),
-            })
+            }
           } catch (e) {
             console.error('OpenRouter scan failed:', e)
+            return null
           }
+        })
 
-          // Minimal delay - OpenRouter handles rate limiting
-          await new Promise(r => setTimeout(r, 50))
-        }
-
-        return results
+        const results = await Promise.all(promises)
+        return results.filter((r): r is DiscoveryResult => r !== null)
       })
 
       allResults.push(...batchResults)
+      
+      // Small delay between batches
+      if (i + batchSize < discoveryQueries.length) {
+        await step.sleep('batch-delay', '300ms')
+      }
     }
 
     // Step 4: Analyze results
