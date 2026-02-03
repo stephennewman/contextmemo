@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Zap, LayoutDashboard, Settings, LogOut, Activity } from 'lucide-react'
-import { ActivityFeed } from './activity-feed'
+import { Zap, Settings, LogOut } from 'lucide-react'
 
 interface DashboardHeaderProps {
   user: {
@@ -31,7 +28,6 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHeaderProps) {
-  const [activityOpen, setActivityOpen] = useState(false)
   const pathname = usePathname()
 
   // Extract current brandId from URL if on a brand page
@@ -61,31 +57,14 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
             <nav className="hidden md:flex items-center gap-1">
               <Link 
                 href="/dashboard" 
-                className={`px-4 py-2 text-sm font-semibold tracking-wide ${!currentBrandId ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white'} transition-colors`}
+                className={`px-4 py-2 text-sm font-semibold tracking-wide bg-[#0EA5E9] text-white transition-colors`}
               >
                 DASHBOARD
               </Link>
-              {(currentBrand || currentBrandId) && (
-                <Link 
-                  href={`/brands/${currentBrand?.id || currentBrandId}`}
-                  className={`px-4 py-2 text-sm font-semibold tracking-wide ${currentBrandId ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white'} transition-colors`}
-                >
-                  {currentBrand?.name?.toUpperCase() || 'BRAND'}
-                </Link>
-              )}
             </nav>
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Activity Feed Button */}
-            <button 
-              onClick={() => setActivityOpen(true)}
-              className="p-2 text-slate-400 hover:text-white transition-colors relative"
-              title="Activity Feed"
-            >
-              <Activity className="h-5 w-5" strokeWidth={2.5} />
-            </button>
-            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button 
@@ -100,12 +79,6 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
                   <p className="text-sm font-bold">{tenant?.name || 'User'}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
-                <DropdownMenuItem asChild className="rounded-none">
-                  <Link href="/dashboard" className="font-medium">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    DASHBOARD
-                  </Link>
-                </DropdownMenuItem>
                 {(currentBrand || currentBrandId) && (
                   <DropdownMenuItem asChild className="rounded-none">
                     <Link href={`/brands/${currentBrand?.id || currentBrandId}/settings`} className="font-medium">
@@ -128,13 +101,6 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
           </div>
         </div>
       </header>
-
-      {/* Activity Feed Sidebar */}
-      <ActivityFeed 
-        isOpen={activityOpen} 
-        onOpenChange={setActivityOpen}
-        brands={brands.map(b => ({ id: b.id, name: b.name }))}
-      />
     </>
   )
 }

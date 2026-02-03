@@ -6,11 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Input } from '@/components/ui/input'
-import { Loader2, RefreshCw, Plus, X, Target, Sparkles } from 'lucide-react'
+import { Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
-import { BrandContext, PromptTheme } from '@/lib/supabase/types'
+import { BrandContext } from '@/lib/supabase/types'
 
 interface Competitor {
   id: string
@@ -41,113 +40,9 @@ export function ProfileSection({
   competitors = [],
 }: ProfileSectionProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [newTheme, setNewTheme] = useState('')
-  const [isAddingTheme, setIsAddingTheme] = useState(false)
-  const [themes, setThemes] = useState<PromptTheme[]>(context?.prompt_themes || [])
   const initialTimestampRef = useRef<string | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
-
-  // Sync themes with context when it updates
-  useEffect(() => {
-    if (context?.prompt_themes) {
-      setThemes(context.prompt_themes)
-    }
-  }, [context?.prompt_themes])
-
-  const addTheme = async () => {
-    if (!newTheme.trim()) return
-    
-    // Check for duplicates
-    if (themes.some(t => t.theme.toLowerCase() === newTheme.toLowerCase().trim())) {
-      toast.error('This theme already exists')
-      return
-    }
-
-    const theme: PromptTheme = {
-      theme: newTheme.trim(),
-      priority: 'high',
-      auto_detected: false
-    }
-    
-    const updatedThemes = [...themes, theme]
-    setThemes(updatedThemes)
-    setNewTheme('')
-    setIsAddingTheme(false)
-    
-    // Save to database
-    try {
-      const response = await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'update_themes',
-          themes: updatedThemes
-        }),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to save')
-      }
-      
-      toast.success('Theme added')
-      router.refresh()
-    } catch {
-      toast.error('Failed to save theme')
-      setThemes(themes) // Revert on error
-    }
-  }
-
-  const removeTheme = async (themeToRemove: string) => {
-    const updatedThemes = themes.filter(t => t.theme !== themeToRemove)
-    setThemes(updatedThemes)
-    
-    try {
-      const response = await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'update_themes',
-          themes: updatedThemes
-        }),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to save')
-      }
-      
-      toast.success('Theme removed')
-      router.refresh()
-    } catch {
-      toast.error('Failed to remove theme')
-      setThemes(themes) // Revert on error
-    }
-  }
-
-  const togglePriority = async (themeText: string) => {
-    const updatedThemes = themes.map(t => {
-      if (t.theme === themeText) {
-        const newPriority = t.priority === 'high' ? 'medium' : t.priority === 'medium' ? 'low' : 'high'
-        return { ...t, priority: newPriority }
-      }
-      return t
-    })
-    setThemes(updatedThemes as PromptTheme[])
-    
-    try {
-      await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'update_themes',
-          themes: updatedThemes
-        }),
-      })
-      router.refresh()
-    } catch {
-      // Silent fail for priority toggle
-    }
-  }
 
   const refreshContext = async () => {
     // Store the current timestamp to detect when it changes
@@ -282,115 +177,6 @@ export function ProfileSection({
         </div>
       ) : hasContext && context ? (
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Critical Prompt Themes - Full width at top */}
-          <Card className="lg:col-span-2 border-2 border-[#0EA5E9]/30" style={{ borderLeft: '4px solid #0EA5E9' }}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-[#0EA5E9]" />
-                  <CardTitle className="text-base">Critical Prompt Themes</CardTitle>
-                </div>
-                {!isAddingTheme && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsAddingTheme(true)}
-                    className="gap-1"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add Theme
-                  </Button>
-                )}
-              </div>
-              <CardDescription>
-                1-3 keyword clusters that define what prompts should target. Click priority to change.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Add theme input */}
-              {isAddingTheme && (
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    placeholder="e.g., temperature monitoring, food safety..."
-                    value={newTheme}
-                    onChange={(e) => setNewTheme(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addTheme()}
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <Button size="sm" onClick={addTheme}>Add</Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setIsAddingTheme(false); setNewTheme('') }}>
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              {/* Theme badges */}
-              {themes.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {themes
-                    .sort((a, b) => {
-                      const order = { high: 0, medium: 1, low: 2 }
-                      return order[a.priority] - order[b.priority]
-                    })
-                    .map((theme, i) => (
-                      <div 
-                        key={i} 
-                        className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${
-                          theme.priority === 'high' 
-                            ? 'bg-[#0EA5E9]/10 border-[#0EA5E9] text-[#0EA5E9]' 
-                            : theme.priority === 'medium'
-                            ? 'bg-[#F59E0B]/10 border-[#F59E0B] text-[#F59E0B]'
-                            : 'bg-zinc-100 border-zinc-300 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        <button 
-                          onClick={() => togglePriority(theme.theme)}
-                          className="font-medium text-sm hover:underline"
-                          title={`Priority: ${theme.priority} (click to change)`}
-                        >
-                          {theme.theme}
-                        </button>
-                        {theme.auto_detected && (
-                          <span title="Auto-detected">
-                            <Sparkles className="h-3 w-3 opacity-60" />
-                          </span>
-                        )}
-                        <button 
-                          onClick={() => removeTheme(theme.theme)}
-                          className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground py-4 text-center">
-                  No prompt themes defined yet. Add keyword clusters like &quot;temperature monitoring&quot; or &quot;compliance automation&quot; to focus your prompts.
-                </div>
-              )}
-
-              {/* Legend */}
-              {themes.length > 0 && (
-                <div className="flex items-center gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-[#0EA5E9]"></span>
-                    High priority
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
-                    Medium
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-zinc-400"></span>
-                    Low
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Company Info */}
           <Card>
             <CardHeader>

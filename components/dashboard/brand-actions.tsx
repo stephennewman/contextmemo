@@ -247,7 +247,7 @@ export function ScanButton({ brandId }: { brandId: string }) {
         ) : (
           <RefreshCw className="h-4 w-4" />
         )}
-        {loading ? 'Scanning...' : 'Run Scan'}
+        {loading ? 'Scanning...' : 'Scan'}
       </Button>
       {scanStatus && (
         <span className="text-sm text-muted-foreground animate-pulse">

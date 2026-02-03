@@ -375,6 +375,46 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'add_prompt': {
+        // Add a custom prompt/query
+        const { query_text } = body
+        if (!query_text || typeof query_text !== 'string') {
+          return NextResponse.json({ error: 'query_text required' }, { status: 400 })
+        }
+
+        // Check for duplicates
+        const { data: existingQuery } = await supabase
+          .from('queries')
+          .select('id')
+          .eq('brand_id', brandId)
+          .ilike('query_text', query_text.trim())
+          .single()
+
+        if (existingQuery) {
+          return NextResponse.json({ error: 'This prompt already exists' }, { status: 400 })
+        }
+
+        // Insert the new query
+        const { error: insertError } = await supabase
+          .from('queries')
+          .insert({
+            brand_id: brandId,
+            query_text: query_text.trim(),
+            query_type: 'custom',
+            priority: 5,
+            is_active: true,
+          })
+
+        if (insertError) {
+          throw insertError
+        }
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Prompt added' 
+        })
+      }
+
       case 'check_status': {
         // Check onboarding status - used by terminal to poll for completion
         const context = brand.context as Record<string, unknown> | null

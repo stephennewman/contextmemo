@@ -657,3 +657,277 @@ export function ActivityFeedTrigger({
     </button>
   )
 }
+
+// Inline Activity Tab component for displaying within tabs
+interface ActivityTabProps {
+  brandId: string
+  brandName: string
+}
+
+export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [offset, setOffset] = useState(0)
+  
+  // Filters
+  const [selectedCategories, setSelectedCategories] = useState<ActivityCategory[]>([])
+  
+  // Activity detail
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null)
+
+  const fetchActivities = useCallback(async (reset = false) => {
+    if (reset) {
+      setLoading(true)
+      setOffset(0)
+    } else {
+      setLoadingMore(true)
+    }
+
+    try {
+      const params = new URLSearchParams()
+      if (selectedCategories.length > 0) {
+        params.set('categories', selectedCategories.join(','))
+      }
+      params.set('brands', brandId)
+      params.set('limit', '30')
+      params.set('offset', reset ? '0' : offset.toString())
+
+      const res = await fetch(`/api/activity?${params.toString()}`)
+      const data = await res.json()
+
+      if (reset) {
+        setActivities(data.activities || [])
+      } else {
+        setActivities(prev => [...prev, ...(data.activities || [])])
+      }
+      setHasMore(data.hasMore || false)
+      setOffset(reset ? 30 : offset + 30)
+    } catch (error) {
+      console.error('Failed to fetch activities:', error)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [brandId, selectedCategories, offset])
+
+  useEffect(() => {
+    fetchActivities(true)
+  }, [selectedCategories, brandId])
+
+  const toggleCategory = (category: ActivityCategory) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    )
+  }
+
+  const clearFilters = () => {
+    setSelectedCategories([])
+  }
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+
+    if (minutes < 1) return 'Just now'
+    if (minutes < 60) return `${minutes}m ago`
+    if (hours < 24) return `${hours}h ago`
+    if (days < 7) return `${days}d ago`
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const hasActiveFilters = selectedCategories.length > 0
+
+  return (
+    <div className="border-[3px] border-[#0F172A] bg-white">
+      {/* Header */}
+      <div className="p-4 border-b-[3px] border-[#0F172A] bg-[#0F172A] text-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-[#0EA5E9]" />
+            <h2 className="text-white font-bold tracking-wide">ACTIVITY FOR {brandName.toUpperCase()}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 text-white hover:bg-white/10 relative">
+                  <Filter className="h-4 w-4 mr-1" />
+                  Filter
+                  {hasActiveFilters && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#0EA5E9] text-[10px] font-bold flex items-center justify-center">
+                      {selectedCategories.length}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 border-2 border-[#0F172A] rounded-none">
+                <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+                {(Object.keys(ACTIVITY_CATEGORY_META) as ActivityCategory[]).map(cat => {
+                  const meta = ACTIVITY_CATEGORY_META[cat]
+                  const Icon = ICONS[meta.icon] || Activity
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={cat}
+                      checked={selectedCategories.includes(cat)}
+                      onCheckedChange={() => toggleCategory(cat)}
+                      className="rounded-none"
+                    >
+                      <Icon className="h-4 w-4 mr-2" style={{ color: meta.color }} />
+                      {meta.label}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+                
+                {hasActiveFilters && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={clearFilters}
+                      className="rounded-none text-red-600"
+                    >
+                      Clear All Filters
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
+      {/* Activity List */}
+      <div className="max-h-[600px] overflow-y-auto">
+        {loading ? (
+          <div className="p-4 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton className="h-10 w-10 rounded-none" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activities.length === 0 ? (
+          <div className="p-8 text-center">
+            <Activity className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+            <p className="font-semibold text-[#0F172A]">No activity yet</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {hasActiveFilters 
+                ? 'Try adjusting your filters'
+                : 'Activity will appear here as you use the platform'
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-200">
+            {activities.map((activity) => {
+              const meta = ACTIVITY_TYPE_META[activity.activity_type]
+              const Icon = ICONS[activity.icon] || ICONS[meta?.icon] || Activity
+              
+              return (
+                <div 
+                  key={activity.id}
+                  className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedActivity(activity)}
+                >
+                  <div className="flex gap-3">
+                    {/* Icon */}
+                    <div 
+                      className="h-10 w-10 flex items-center justify-center shrink-0"
+                      style={{ 
+                        backgroundColor: `${meta?.color || '#6B7280'}15`,
+                        borderLeft: `4px solid ${meta?.color || '#6B7280'}`
+                      }}
+                    >
+                      <Icon 
+                        className="h-5 w-5" 
+                        style={{ color: meta?.color || '#6B7280' }}
+                      />
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-sm text-[#0F172A] leading-tight">
+                            {activity.title}
+                          </p>
+                          {activity.description && (
+                            <p className="text-sm text-slate-600 mt-0.5 line-clamp-2">
+                              {activity.description}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-400 whitespace-nowrap">
+                          {formatTime(activity.created_at)}
+                        </span>
+                      </div>
+                      
+                      {/* Footer */}
+                      {activity.link_url && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Link
+                            href={activity.link_url}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {activity.link_label || 'View'}
+                            {activity.link_url.startsWith('http') ? (
+                              <ExternalLink className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            
+            {/* Load More */}
+            {hasMore && (
+              <div className="p-4">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-none border-2 border-[#0F172A]"
+                  onClick={() => fetchActivities(false)}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More'
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Activity Detail Modal */}
+      <ActivityDetail
+        activity={selectedActivity}
+        isOpen={!!selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+      />
+    </div>
+  )
+}

@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -18,10 +20,224 @@ import {
   ExternalLink,
   TrendingUp,
   Target,
-  Lightbulb
+  Lightbulb,
+  Plus,
+  X,
+  Sparkles
 } from 'lucide-react'
-import type { ScanResult, Query, PromptPersona } from '@/lib/supabase/types'
+import { toast } from 'sonner'
+import type { ScanResult, Query, PromptPersona, PromptTheme } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
+
+// Prompt Themes Section - Critical keyword clusters for prompt targeting
+interface PromptThemesSectionProps {
+  brandId: string
+  themes: PromptTheme[]
+}
+
+export function PromptThemesSection({ brandId, themes: initialThemes }: PromptThemesSectionProps) {
+  const [isAddingTheme, setIsAddingTheme] = useState(false)
+  const [newTheme, setNewTheme] = useState('')
+  const [themes, setThemes] = useState<PromptTheme[]>(initialThemes)
+  const router = useRouter()
+
+  useEffect(() => {
+    setThemes(initialThemes)
+  }, [initialThemes])
+
+  const addTheme = async () => {
+    if (!newTheme.trim()) return
+    
+    if (themes.some(t => t.theme.toLowerCase() === newTheme.toLowerCase().trim())) {
+      toast.error('This theme already exists')
+      return
+    }
+
+    const theme: PromptTheme = {
+      theme: newTheme.trim(),
+      priority: 'high',
+      auto_detected: false
+    }
+    
+    const updatedThemes = [...themes, theme]
+    setThemes(updatedThemes)
+    setNewTheme('')
+    setIsAddingTheme(false)
+    
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'update_themes',
+          themes: updatedThemes
+        }),
+      })
+      
+      if (!response.ok) throw new Error('Failed to save')
+      toast.success('Theme added')
+      router.refresh()
+    } catch {
+      toast.error('Failed to save theme')
+      setThemes(themes)
+    }
+  }
+
+  const removeTheme = async (themeToRemove: string) => {
+    const updatedThemes = themes.filter(t => t.theme !== themeToRemove)
+    setThemes(updatedThemes)
+    
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'update_themes',
+          themes: updatedThemes
+        }),
+      })
+      
+      if (!response.ok) throw new Error('Failed to save')
+      toast.success('Theme removed')
+      router.refresh()
+    } catch {
+      toast.error('Failed to remove theme')
+      setThemes(themes)
+    }
+  }
+
+  const togglePriority = async (themeText: string) => {
+    const updatedThemes = themes.map(t => {
+      if (t.theme === themeText) {
+        const newPriority = t.priority === 'high' ? 'medium' : t.priority === 'medium' ? 'low' : 'high'
+        return { ...t, priority: newPriority }
+      }
+      return t
+    })
+    setThemes(updatedThemes as PromptTheme[])
+    
+    try {
+      await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'update_themes',
+          themes: updatedThemes
+        }),
+      })
+      router.refresh()
+    } catch {
+      // Silent fail for priority toggle
+    }
+  }
+
+  return (
+    <Card className="border-2 border-[#10B981]/30" style={{ borderLeft: '4px solid #10B981' }}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-[#10B981]" />
+            <CardTitle className="text-base">Prompt Themes</CardTitle>
+          </div>
+          {!isAddingTheme && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsAddingTheme(true)}
+              className="gap-1"
+            >
+              <Plus className="h-3 w-3" />
+              Add Theme
+            </Button>
+          )}
+        </div>
+        <CardDescription>
+          Keyword clusters that define what prompts should target. Click priority to change.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isAddingTheme && (
+          <div className="flex gap-2 mb-4">
+            <Input
+              placeholder="e.g., temperature monitoring, food safety..."
+              value={newTheme}
+              onChange={(e) => setNewTheme(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addTheme()}
+              className="flex-1"
+              autoFocus
+            />
+            <Button size="sm" onClick={addTheme}>Add</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setIsAddingTheme(false); setNewTheme('') }}>
+              Cancel
+            </Button>
+          </div>
+        )}
+
+        {themes.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {themes
+              .sort((a, b) => {
+                const order = { high: 0, medium: 1, low: 2 }
+                return order[a.priority] - order[b.priority]
+              })
+              .map((theme, i) => (
+                <div 
+                  key={i} 
+                  className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${
+                    theme.priority === 'high' 
+                      ? 'bg-[#10B981]/10 border-[#10B981] text-[#10B981]' 
+                      : theme.priority === 'medium'
+                      ? 'bg-[#F59E0B]/10 border-[#F59E0B] text-[#F59E0B]'
+                      : 'bg-zinc-100 border-zinc-300 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <button 
+                    onClick={() => togglePriority(theme.theme)}
+                    className="font-medium text-sm hover:underline"
+                    title={`Priority: ${theme.priority} (click to change)`}
+                  >
+                    {theme.theme}
+                  </button>
+                  {theme.auto_detected && (
+                    <span title="Auto-detected">
+                      <Sparkles className="h-3 w-3 opacity-60" />
+                    </span>
+                  )}
+                  <button 
+                    onClick={() => removeTheme(theme.theme)}
+                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground py-4 text-center">
+            No prompt themes defined. Add keyword clusters like &quot;temperature monitoring&quot; or &quot;compliance automation&quot;.
+          </div>
+        )}
+
+        {themes.length > 0 && (
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-[#10B981]"></span>
+              High priority
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
+              Medium
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-zinc-400"></span>
+              Low
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 // Get display info for any persona - formats the ID into a nice label
 function getPersonaDisplay(persona: string): { label: string; color: string } {
@@ -700,14 +916,50 @@ interface PromptVisibilityListProps {
   queries: Query[]
   scanResults: ScanResult[]
   brandName: string
+  brandId?: string
+  themes?: PromptTheme[]
 }
 
 // Keep old name as alias for backward compatibility
 export const QueryVisibilityList = PromptVisibilityList
 
-export function PromptVisibilityList({ queries, scanResults, brandName }: PromptVisibilityListProps) {
+export function PromptVisibilityList({ queries, scanResults, brandName, brandId, themes = [] }: PromptVisibilityListProps) {
   const [personaFilter, setPersonaFilter] = useState<PromptPersona | 'all'>('all')
   const [selectedQuery, setSelectedQuery] = useState<Query | null>(null)
+  const [isAddingPrompt, setIsAddingPrompt] = useState(false)
+  const [newPrompt, setNewPrompt] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
+
+  const addPrompt = async () => {
+    if (!newPrompt.trim() || !brandId) return
+    
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'add_prompt',
+          query_text: newPrompt.trim()
+        }),
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to add prompt')
+      }
+      
+      toast.success('Prompt added')
+      setNewPrompt('')
+      setIsAddingPrompt(false)
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add prompt')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
   
   // Calculate visibility per prompt
   const promptStats = new Map<string, { mentioned: number; total: number }>()
@@ -760,6 +1012,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
   }, {} as Record<string, number>)
 
   return (
+    <div className="space-y-4">
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -769,10 +1022,36 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
               See which prompts mention you and which need attention
             </CardDescription>
           </div>
-          <Button variant="outline">Add Prompt</Button>
+          {brandId && !isAddingPrompt && (
+            <Button variant="outline" onClick={() => setIsAddingPrompt(true)} className="gap-1">
+              <Plus className="h-4 w-4" />
+              Add Prompt
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Add Prompt Input */}
+        {isAddingPrompt && (
+          <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
+            <Input
+              placeholder="Enter a prompt to track, e.g., 'best CRM for small business'"
+              value={newPrompt}
+              onChange={(e) => setNewPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addPrompt()}
+              className="flex-1"
+              autoFocus
+              disabled={isSubmitting}
+            />
+            <Button size="sm" onClick={addPrompt} disabled={isSubmitting || !newPrompt.trim()}>
+              {isSubmitting ? 'Adding...' : 'Add'}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setIsAddingPrompt(false); setNewPrompt('') }} disabled={isSubmitting}>
+              Cancel
+            </Button>
+          </div>
+        )}
+        
         {/* Persona filter */}
         <div className="flex flex-wrap gap-2">
           <Button
@@ -871,5 +1150,11 @@ export function PromptVisibilityList({ queries, scanResults, brandName }: Prompt
         />
       </CardContent>
     </Card>
+    
+    {/* Prompt Themes Section */}
+    {brandId && (
+      <PromptThemesSection brandId={brandId} themes={themes} />
+    )}
+    </div>
   )
 }

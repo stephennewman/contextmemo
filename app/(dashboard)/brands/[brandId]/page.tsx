@@ -21,6 +21,7 @@ import { CompetitorList } from '@/components/dashboard/competitor-list'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
 import { AlertsList } from '@/components/dashboard/alerts-list'
+import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { VerificationBadge } from '@/components/dashboard/verification-badge'
 import { AttributionDashboard } from '@/components/dashboard/attribution-dashboard'
 import { PromptIntelligenceFeed } from '@/components/dashboard/prompt-intelligence-feed'
@@ -350,10 +351,6 @@ export default async function BrandPage({ params }: Props) {
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-        <div className="flex gap-2">
-          <ExportDropdown brandId={brandId} />
-          <ScanButton brandId={brandId} />
-        </div>
       </div>
 
       {/* Citation Score Hero - only show if we have scans */}
@@ -407,20 +404,30 @@ export default async function BrandPage({ params }: Props) {
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto flex-wrap">
           <TabsTrigger value="profile" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROFILE</TabsTrigger>
+          <TabsTrigger value="activity" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">ACTIVITY</TabsTrigger>
           <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
-          <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
-          <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC{(aiTraffic?.length || 0) > 0 && ` (${aiTraffic?.length})`}</TabsTrigger>
-          <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
-            INTELLIGENCE
-            {(promptIntelligence?.filter(p => p.status === 'new')?.length || 0) > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
-                {promptIntelligence?.filter(p => p.status === 'new')?.length}
-              </span>
-            )}
-          </TabsTrigger>
+          {/* Only show Search tab if Google or Bing is configured */}
+          {(context?.search_console?.google?.enabled || context?.search_console?.bing?.enabled) && (
+            <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
+          )}
+          {/* Only show AI Traffic tab if there's data */}
+          {(aiTraffic?.length || 0) > 0 && (
+            <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC ({aiTraffic?.length})</TabsTrigger>
+          )}
+          {/* Only show Intelligence tab if there's data */}
+          {((promptIntelligence?.length || 0) > 0 || (attributionEvents?.length || 0) > 0 || modelInsights?.models?.length) && (
+            <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+              INTELLIGENCE
+              {(promptIntelligence?.filter(p => p.status === 'new')?.length || 0) > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
+                  {promptIntelligence?.filter(p => p.status === 'new')?.length}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
             ALERTS{(alerts?.length || 0) > 0 && ` (${alerts?.length})`}
             {unreadAlerts.length > 0 && (
@@ -444,7 +451,22 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
+        {/* Activity Tab */}
+        <TabsContent value="activity">
+          <ActivityTab brandId={brandId} brandName={brand.name} />
+        </TabsContent>
+
         <TabsContent value="scans" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Scan Results</h2>
+              <p className="text-sm text-muted-foreground">See what AI models say when asked about your industry</p>
+            </div>
+            <div className="flex gap-2">
+              <ExportDropdown brandId={brandId} />
+              <ScanButton brandId={brandId} />
+            </div>
+          </div>
           <ScanResultsView 
             scanResults={recentScans} 
             queries={queries || []} 
@@ -564,6 +586,8 @@ export default async function BrandPage({ params }: Props) {
             queries={queries || []} 
             scanResults={recentScans}
             brandName={brand.name}
+            brandId={brandId}
+            themes={context?.prompt_themes || []}
           />
         </TabsContent>
 

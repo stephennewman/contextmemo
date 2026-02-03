@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-import { Plus, TrendingUp, FileText, Search, AlertCircle } from 'lucide-react'
+import { Plus, FileText, Search } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -13,14 +13,18 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Get brands with stats
+  // Get brands with basic counts only - fast query
   const { data: brands } = await supabase
     .from('brands')
     .select(`
-      *,
+      id,
+      name,
+      subdomain,
+      domain,
+      verified,
+      created_at,
       memos:memos(count),
-      queries:queries(count),
-      scan_results:scan_results(count)
+      queries:queries(count)
     `)
     .order('created_at', { ascending: false })
 
@@ -28,57 +32,6 @@ export default async function DashboardPage() {
   if (!brands || brands.length === 0) {
     redirect('/brands/new')
   }
-
-  // Calculate visibility score for each brand (excluding branded queries)
-  const brandsWithStats = await Promise.all(
-    brands.map(async (brand) => {
-      // Get queries to identify branded ones
-      const { data: queries } = await supabase
-        .from('queries')
-        .select('id, query_text')
-        .eq('brand_id', brand.id)
-        .eq('is_active', true)
-
-      // Create set of branded query IDs (queries containing the brand name)
-      const brandNameLower = brand.name.toLowerCase()
-      const brandedQueryIds = new Set(
-        (queries || [])
-          .filter(q => q.query_text.toLowerCase().includes(brandNameLower))
-          .map(q => q.id)
-      )
-
-      // Get latest scan results with query_id and citation data
-      const { data: scans } = await supabase
-        .from('scan_results')
-        .select('brand_mentioned, brand_in_citations, citations, query_id')
-        .eq('brand_id', brand.id)
-        .order('scanned_at', { ascending: false })
-        .limit(100)
-
-      // Filter out branded queries for unbiased score calculation
-      const unbiasedScans = (scans || []).filter(s => !brandedQueryIds.has(s.query_id))
-      
-      // Calculate citation score (primary metric)
-      const scansWithCitations = unbiasedScans.filter(s => s.citations && s.citations.length > 0)
-      const brandCitedCount = scansWithCitations.filter(s => s.brand_in_citations === true).length
-      const citationScore = scansWithCitations.length > 0 
-        ? Math.round((brandCitedCount / scansWithCitations.length) * 100)
-        : 0
-
-      // Get unread alerts count
-      const { count: alertsCount } = await supabase
-        .from('alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('brand_id', brand.id)
-        .eq('read', false)
-
-      return {
-        ...brand,
-        citationScore,
-        alertsCount: alertsCount || 0,
-      }
-    })
-  )
 
   return (
     <div className="space-y-8">
