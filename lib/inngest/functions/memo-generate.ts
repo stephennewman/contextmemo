@@ -379,6 +379,76 @@ export const memoGenerate = inngest.createFunction(
       })
     }
 
+    // Step 10: Auto-sync to HubSpot if enabled
+    // This pushes the memo directly to the brand's HubSpot blog
+    const hubspotConfig = brandContext?.hubspot
+    if (hubspotConfig?.enabled && hubspotConfig?.auto_sync && hubspotConfig?.access_token && hubspotConfig?.blog_id) {
+      await step.run('sync-to-hubspot', async () => {
+        try {
+          const { marked } = await import('marked')
+          const htmlContent = await marked(memoContent.content, { gfm: true, breaks: true })
+          
+          const blogPost = {
+            name: memoContent.title,
+            contentGroupId: hubspotConfig.blog_id,
+            postBody: htmlContent,
+            metaDescription: metaDescription || undefined,
+            slug: memoContent.slug.replace(/\//g, '-'),
+            state: memo.status === 'published' ? 'PUBLISHED' : 'DRAFT',
+          }
+
+          const response = await fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${hubspotConfig.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(blogPost),
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            console.error('HubSpot auto-sync failed:', errorData)
+            return { success: false, error: errorData.message }
+          }
+
+          const hubspotPost = await response.json()
+
+          // If published, push live
+          if (memo.status === 'published' && hubspotPost.state !== 'PUBLISHED') {
+            await fetch(
+              `https://api.hubapi.com/cms/v3/blogs/posts/${hubspotPost.id}/draft/push-live`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${hubspotConfig.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+          }
+
+          // Update memo with HubSpot post ID
+          await supabase
+            .from('memos')
+            .update({
+              schema_json: {
+                ...memo.schema_json,
+                hubspot_post_id: hubspotPost.id,
+                hubspot_synced_at: new Date().toISOString(),
+              },
+            })
+            .eq('id', memo.id)
+
+          console.log(`Auto-synced to HubSpot: ${hubspotPost.id}`)
+          return { success: true, hubspotPostId: hubspotPost.id }
+        } catch (error) {
+          console.error('HubSpot auto-sync error:', error)
+          return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+        }
+      })
+    }
+
     return {
       success: true,
       memoId: memo.id,

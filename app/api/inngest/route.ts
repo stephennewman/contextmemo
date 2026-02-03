@@ -27,6 +27,7 @@ import { bingSync, bingWeeklySync } from '@/lib/inngest/functions/bing-sync'
 import { googleSearchConsoleSync, googleWeeklySync } from '@/lib/inngest/functions/google-search-console-sync'
 import { aiOverviewScan } from '@/lib/inngest/functions/ai-overview-scan'
 import { citationLoopRun, analyzeCitation } from '@/lib/inngest/functions/citation-loop'
+import { gapToContent, processAllGaps } from '@/lib/inngest/functions/gap-to-content'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -43,6 +44,10 @@ export const { GET, POST, PUT } = serve({
     // Citation loop - autonomous competitor analysis
     citationLoopRun,    // Full loop: analyze competitors → find content gaps → recommendations
     analyzeCitation,    // Analyze why specific competitor was cited
+    
+    // Gap-to-content pipeline - automated content generation
+    gapToContent,       // Generate content from a single gap → push to HubSpot
+    processAllGaps,     // Process all pending gaps for a brand
     
     // Competitor content intelligence
     competitorContentScan,     // Scan competitor sites for new content
