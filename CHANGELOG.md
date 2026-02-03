@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **HubSpot Landing Page**: New `/hubspot` page for marketing to HubSpot users
+  - Focused value proposition: "Fill the gaps in your content strategy"
+  - 4-step workflow visualization with product screenshots
+  - Consumption-based pricing calculator with interactive sliders
+  - Beta signup with 50% discount offer
+
 ### Planned
 - Email notifications for visibility changes
 - Additional memo templates (best-of, what-is)

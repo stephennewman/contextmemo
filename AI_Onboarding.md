@@ -390,6 +390,16 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**Add: HubSpot Landing Page** (330b138)
+- New `/hubspot` landing page with focused value proposition for HubSpot users
+- Hero: "Fill the gaps in your content strategy" messaging
+- 4-step workflow: Understand → Find the Gaps → Generate & Publish → Monitor & Improve
+- "See It In Action" section with 8 product screenshots organized by step
+- Consumption-based pricing calculator with interactive sliders
+- Beta signup with 50% discount messaging and email capture
+- Removed tiered pricing confusion, prominent auth links
+- Clean, self-contained page for marketing to HubSpot users
+
 **Improve: HubSpot Content Generation Quality** (0e37800)
 - Enhanced content generation prompt for richer articles (1800-2500 words vs ~500)
 - Require naming real competitors (SafetyCulture, Monnit, Zenput, etc.) instead of "Tool A"
