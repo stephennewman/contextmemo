@@ -120,61 +120,6 @@ export default function HubSpotLandingPage() {
         </div>
       </section>
 
-      {/* The Solution - Dashboard */}
-      <section className="py-24 bg-slate-900 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight">THE SOLUTION</h2>
-            <p className="mt-4 text-lg text-slate-400">
-              Make sure AI gets the memo about your brand
-            </p>
-          </div>
-
-          {/* Main Screenshot with Browser Frame */}
-          <div className="relative">
-            {/* Browser Chrome */}
-            <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                <div className="w-3 h-3 rounded-full bg-green-500/80" />
-              </div>
-              <div className="flex-1 mx-4">
-                <div className="bg-slate-700 rounded px-3 py-1 text-xs text-slate-400 max-w-md mx-auto text-center">
-                  app.contextmemo.com/brands/your-brand
-                </div>
-              </div>
-            </div>
-            {/* Screenshot */}
-            <div className="bg-white rounded-b-xl overflow-hidden shadow-2xl shadow-black/50">
-              <Image 
-                src="/screenshot-hero.png" 
-                alt="Context Memo dashboard showing brand profile, citation score, and AI visibility metrics" 
-                width={1200} 
-                height={750}
-                className="w-full h-auto"
-              />
-            </div>
-          </div>
-
-          {/* Feature Highlights */}
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            <div className="text-center">
-              <div className="text-4xl font-black text-[#FF5C35] mb-2">9</div>
-              <p className="text-slate-400 text-sm">AI models scanned daily</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-black text-[#FF5C35] mb-2">100+</div>
-              <p className="text-slate-400 text-sm">Prompts monitored per brand</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-black text-[#FF5C35] mb-2">1-click</div>
-              <p className="text-slate-400 text-sm">HubSpot publish</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* The Problem */}
       <section className="py-20 bg-white text-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
@@ -243,19 +188,74 @@ export default function HubSpotLandingPage() {
         </div>
       </section>
 
+      {/* The Solution - Dashboard */}
+      <section className="py-24 bg-[#0F172A] overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight">THE SOLUTION</h2>
+            <p className="mt-4 text-lg text-slate-400">
+              Make sure AI gets the memo about your brand
+            </p>
+          </div>
+
+          {/* Main Screenshot with Browser Frame */}
+          <div className="relative">
+            {/* Browser Chrome */}
+            <div className="bg-slate-800 rounded-t-xl px-4 py-3 flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
+              </div>
+              <div className="flex-1 mx-4">
+                <div className="bg-slate-700 rounded px-3 py-1 text-xs text-slate-400 max-w-md mx-auto text-center">
+                  app.contextmemo.com/brands/your-brand
+                </div>
+              </div>
+            </div>
+            {/* Screenshot */}
+            <div className="bg-white rounded-b-xl overflow-hidden shadow-2xl shadow-black/50">
+              <Image 
+                src="/screenshot-hero.png" 
+                alt="Context Memo dashboard showing brand profile, citation score, and AI visibility metrics" 
+                width={1200} 
+                height={750}
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+
+          {/* Feature Highlights */}
+          <div className="grid md:grid-cols-3 gap-6 mt-12">
+            <div className="text-center">
+              <div className="text-4xl font-black text-[#FF5C35] mb-2">9</div>
+              <p className="text-slate-400 text-sm">AI models scanned daily</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-black text-[#FF5C35] mb-2">100+</div>
+              <p className="text-slate-400 text-sm">Prompts monitored per brand</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-black text-[#FF5C35] mb-2">1-click</div>
+              <p className="text-slate-400 text-sm">HubSpot publish</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-[#0F172A]">
+      <section id="how-it-works" className="py-24 bg-white text-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">HOW IT WORKS</h2>
-            <p className="mt-4 text-xl text-slate-400">
+            <p className="mt-4 text-xl text-slate-600">
               From brand analysis to published content in HubSpot
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-white/20">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
             {/* Step 1 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
               <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
                 1
               </div>
@@ -263,13 +263,13 @@ export default function HubSpotLandingPage() {
                 <Search className="h-5 w-5 text-[#FF5C35]" />
                 <h3 className="font-black text-lg">UNDERSTAND</h3>
               </div>
-              <p className="text-slate-400">
+              <p className="text-slate-600">
                 We learn your brand, your market, and your competitors to understand where you fit.
               </p>
             </div>
             
             {/* Step 2 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
               <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
                 2
               </div>
@@ -277,13 +277,13 @@ export default function HubSpotLandingPage() {
                 <Target className="h-5 w-5 text-[#FF5C35]" />
                 <h3 className="font-black text-lg">IDENTIFY GAPS</h3>
               </div>
-              <p className="text-slate-400">
+              <p className="text-slate-600">
                 We find the content gaps and opportunities—prompts where competitors get cited and you don't.
               </p>
             </div>
             
             {/* Step 3 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
               <div className="w-16 h-16 bg-[#FF5C35] text-white flex items-center justify-center font-black text-2xl mb-6">
                 3
               </div>
@@ -291,7 +291,7 @@ export default function HubSpotLandingPage() {
                 <FileText className="h-5 w-5 text-[#FF5C35]" />
                 <h3 className="font-black text-lg">GENERATE & PUBLISH</h3>
               </div>
-              <p className="text-slate-400">
+              <p className="text-slate-600">
                 Automatically generate content in your brand tone and publish directly to HubSpot.
               </p>
             </div>
@@ -305,7 +305,7 @@ export default function HubSpotLandingPage() {
                 <RefreshCw className="h-5 w-5 text-[#FF5C35]" />
                 <h3 className="font-black text-lg">MONITOR & IMPROVE</h3>
               </div>
-              <p className="text-slate-400">
+              <p className="text-slate-600">
                 Continuously monitor your citations, validate what's working, and find new opportunities.
               </p>
             </div>
@@ -314,12 +314,12 @@ export default function HubSpotLandingPage() {
       </section>
 
       {/* Social Proof */}
-      <section className="py-20 bg-white text-[#0F172A]">
+      <section className="py-20 bg-[#0F172A]">
         <div className="max-w-4xl mx-auto px-6">
-          <div className="relative p-10 bg-slate-50 border-2 border-slate-200">
-            <Quote className="absolute top-6 left-6 h-12 w-12 text-[#FF5C35]/20" />
+          <div className="relative p-10 bg-white/5 border-2 border-white/20">
+            <Quote className="absolute top-6 left-6 h-12 w-12 text-[#FF5C35]/30" />
             <blockquote className="relative z-10">
-              <p className="text-xl md:text-2xl font-medium text-slate-700 leading-relaxed mb-6">
+              <p className="text-xl md:text-2xl font-medium text-white leading-relaxed mb-6">
                 "Our company provides solutions across many industries, but it's hard to get AI 
                 models to understand that—especially with a small marketing team. Context Memo 
                 helps me ensure all the content gaps are filled so I can focus on high-value 
@@ -330,8 +330,8 @@ export default function HubSpotLandingPage() {
                   SN
                 </div>
                 <div>
-                  <p className="font-bold text-[#0F172A]">Stephen Newman</p>
-                  <p className="text-slate-500">Head of Marketing, Checkit</p>
+                  <p className="font-bold text-white">Stephen Newman</p>
+                  <p className="text-slate-400">Head of Marketing, Checkit</p>
                 </div>
               </footer>
             </blockquote>
@@ -340,18 +340,18 @@ export default function HubSpotLandingPage() {
       </section>
 
       {/* What Makes This Different */}
-      <section className="py-24 bg-[#0F172A]">
+      <section className="py-24 bg-white text-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">NOT JUST ANOTHER AI CONTENT TOOL</h2>
-            <p className="mt-4 text-xl text-slate-400 max-w-3xl mx-auto">
+            <p className="mt-4 text-xl text-slate-600 max-w-3xl mx-auto">
               You can generate AI content in ChatGPT and paste it into HubSpot. So what makes this different?
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* What we don't do */}
-            <div className="p-8 border-2 border-white/20 bg-white/5">
+            <div className="p-8 border-2 border-slate-200 bg-slate-50">
               <div className="flex items-center gap-3 mb-6">
                 <X className="h-8 w-8 text-red-500" />
                 <h3 className="font-black text-xl">WHAT WE DON'T DO</h3>
@@ -359,25 +359,25 @@ export default function HubSpotLandingPage() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-400">Generate generic content from thin air</span>
+                  <span className="text-slate-600">Generate generic content from thin air</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-400">Guess what topics you should write about</span>
+                  <span className="text-slate-600">Guess what topics you should write about</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-400">Create content that's not grounded in your brand</span>
+                  <span className="text-slate-600">Create content that's not grounded in your brand</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-slate-400">Leave you to figure out distribution</span>
+                  <span className="text-slate-600">Leave you to figure out distribution</span>
                 </li>
               </ul>
             </div>
 
             {/* What we do */}
-            <div className="p-8 border-2 border-[#FF5C35] bg-[#FF5C35]/10">
+            <div className="p-8 border-2 border-[#FF5C35] bg-[#FF5C35]/5">
               <div className="flex items-center gap-3 mb-6">
                 <CheckCircle2 className="h-8 w-8 text-[#FF5C35]" />
                 <h3 className="font-black text-xl">WHAT WE DO</h3>
@@ -385,19 +385,19 @@ export default function HubSpotLandingPage() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-white font-medium">Identify specific gaps where you're losing to competitors</span>
+                  <span className="text-slate-700 font-medium">Identify specific gaps where you're losing to competitors</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-white font-medium">Generate content based on real facts from your website</span>
+                  <span className="text-slate-700 font-medium">Generate content based on real facts from your website</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-white font-medium">Target high-intent prompts your personas actually ask</span>
+                  <span className="text-slate-700 font-medium">Target high-intent prompts your personas actually ask</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-5 w-5 text-[#FF5C35] mt-0.5 shrink-0" />
-                  <span className="text-white font-medium">Auto-publish to HubSpot with proper structure and tags</span>
+                  <span className="text-slate-700 font-medium">Auto-publish to HubSpot with proper structure and tags</span>
                 </li>
               </ul>
             </div>
