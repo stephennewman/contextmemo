@@ -390,11 +390,10 @@ _Most recent deploys first_
 
 ### February 2, 2026
 
-**Fix: rss-parser Item type for author access** (84ae08b)
-- Use Record type assertion for non-standard RSS item properties
-
-**Fix: rss-parser customFields type error** (8fb8709)
-- Feed custom fields expect `string|number`, not tuple format like item fields
+**Fix: rss-parser types with proper generics** (a4c89c0)
+- Defined `CustomFeed` and `CustomItem` types for Parser generic parameters
+- Properly typed all custom RSS fields (contentEncoded, creator, author, etc.)
+- Root cause fix replacing previous workarounds
 
 **Fix: TypeScript build error in analytics route** (16876b7)
 - Fixed `Object.entries()` type assertion in memo analytics API
