@@ -398,16 +398,21 @@ _Most recent deploys first_
 - Added 33 relevant queries for temperature monitoring, food safety, HACCP compliance
 - Key finding: Even with correct queries, 0% mention rate - problem is content discovery not query targeting
 
-**Add: AI discoverability infrastructure**
-- Created `public/robots.txt` with explicit AI crawler permissions (GPTBot, ClaudeBot, PerplexityBot)
+**Add: AI discoverability infrastructure** (ff4c88c)
+- Updated `app/robots.ts` with explicit AI crawler permissions (GPTBot, ClaudeBot, PerplexityBot, etc.)
 - Created `public/llms.txt` - AI instruction file explaining Context Memo's purpose
-- Created `app/sitemap.xml/route.ts` - Dynamic sitemap for all published memos
+- Updated `app/sitemap.ts` - Dynamic sitemap including all published memos
 - Created `docs/10X_CITATIONS_STRATEGY.md` - Strategic analysis document
 
+**Verified live:**
+- https://contextmemo.com/robots.txt - AI crawlers explicitly allowed to /memo/
+- https://contextmemo.com/sitemap.xml - Includes all 6 Checkit memos
+- https://contextmemo.com/llms.txt - AI assistant instructions
+
 **Files changed:**
-- `public/robots.txt` - AI crawler permissions
+- `app/robots.ts` - AI crawler permissions
+- `app/sitemap.ts` - Dynamic sitemap with memo pages
 - `public/llms.txt` - AI assistant instructions
-- `app/sitemap.xml/route.ts` - Dynamic XML sitemap
 - `docs/10X_CITATIONS_STRATEGY.md` - Strategic analysis
 
 **Database changes (Checkit brand):**
