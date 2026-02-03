@@ -157,7 +157,8 @@ export const promptEnrich = inngest.createFunction(
       // Group scans by query
       const scansByQuery = new Map<string, typeof recentScans>()
       for (const scan of recentScans) {
-        const queryText = (scan.query as { query_text: string })?.query_text || ''
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const queryText = (scan as any).query?.query_text || ''
         if (!scansByQuery.has(queryText)) {
           scansByQuery.set(queryText, [])
         }
@@ -179,7 +180,8 @@ export const promptEnrich = inngest.createFunction(
 
         // This is a gap: brand not mentioned, but competitors were
         if (!brandMentioned && competitorsMentioned.size > 0) {
-          const queryType = (scans[0].query as { query_type: string })?.query_type || 'unknown'
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const queryType = (scans[0] as any).query?.query_type || 'unknown'
           gaps.push({
             query: queryText,
             queryType,

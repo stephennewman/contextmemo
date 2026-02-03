@@ -105,7 +105,8 @@ export const analyzePromptIntelligence = inngest.createFunction(
       for (const scan of scans) {
         // Scans where brand wasn't cited but competitors were mentioned
         if (!scan.brand_in_citations && scan.competitors_mentioned?.length > 0) {
-          const queryText = (scan.query as { query_text: string } | null)?.query_text
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const queryText = (scan as any).query?.query_text as string | undefined
           if (!queryText) continue
 
           for (const competitor of scan.competitors_mentioned) {
@@ -144,7 +145,8 @@ export const analyzePromptIntelligence = inngest.createFunction(
       const midpoint = new Date(Date.now() - (days / 2) * 24 * 60 * 60 * 1000)
 
       for (const scan of scans) {
-        const query = scan.query as { id: string; query_text: string; query_type: string } | null
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const query = (scan as any).query as { id: string; query_text: string; query_type: string } | null
         if (!query?.id) continue
 
         if (!queryStats[query.id]) {
