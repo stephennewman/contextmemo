@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
+import { getHubSpotToken } from '@/lib/hubspot/oauth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,10 +57,19 @@ export async function POST(
       )
     }
 
-    if (!hubspotConfig.access_token || !hubspotConfig.blog_id) {
+    if (!hubspotConfig.blog_id) {
       return NextResponse.json(
-        { error: 'HubSpot access token and blog ID are required' },
+        { error: 'HubSpot blog ID is required' },
         { status: 400 }
+      )
+    }
+
+    // Get a fresh/refreshed access token
+    const accessToken = await getHubSpotToken(brandId)
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: 'HubSpot connection expired. Please reconnect HubSpot in settings.' },
+        { status: 401 }
       )
     }
 
@@ -92,34 +102,46 @@ export async function POST(
     }
 
     // Check if we already have a HubSpot post ID (for updates)
-    const existingHubspotId = memo.schema_json?.hubspot_post_id
+    let existingHubspotId = memo.schema_json?.hubspot_post_id
 
     let response: Response
     let hubspotPost: HubSpotResponse
 
+    // Helper to create a new post
+    const createNewPost = async () => {
+      return fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(blogPost),
+      })
+    }
+
     if (existingHubspotId) {
-      // Update existing post
+      // Try to update existing post
       response = await fetch(
         `https://api.hubapi.com/cms/v3/blogs/posts/${existingHubspotId}`,
         {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${hubspotConfig.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(blogPost),
         }
       )
+
+      // If post was deleted in HubSpot (404), create a new one instead
+      if (response.status === 404) {
+        console.log(`HubSpot post ${existingHubspotId} not found, creating new post`)
+        existingHubspotId = null // Clear so we report as "Created" not "Updated"
+        response = await createNewPost()
+      }
     } else {
       // Create new post
-      response = await fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${hubspotConfig.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(blogPost),
-      })
+      response = await createNewPost()
     }
 
     if (!response.ok) {
@@ -129,13 +151,13 @@ export async function POST(
       // Handle specific error cases
       if (response.status === 401) {
         return NextResponse.json(
-          { error: 'Invalid HubSpot access token. Please check your credentials.' },
+          { error: 'HubSpot access token expired. Please reconnect HubSpot in settings.' },
           { status: 401 }
         )
       }
       if (response.status === 403) {
         return NextResponse.json(
-          { error: 'Access denied. Make sure your Private App has CMS Blog permissions.' },
+          { error: 'Access denied. Make sure your HubSpot app has CMS Blog permissions.' },
           { status: 403 }
         )
       }
@@ -155,7 +177,7 @@ export async function POST(
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${hubspotConfig.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         }
