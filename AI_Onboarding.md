@@ -390,6 +390,28 @@ _Most recent deploys first_
 
 ### February 3, 2026
 
+**Improve: Settings Page Reorganization** 
+- Completely redesigned brand settings page with side navigation
+- Added scroll-to-section behavior when clicking nav items
+- Organized settings into 8 logical sections:
+  1. **General** - Brand name, domain, subdomain
+  2. **Brand Context** - Company info, products, markets, customers
+  3. **Brand Voice** - Personality, formality, technical level, writing style
+  4. **Content Settings** - Auto-publish toggle
+  5. **Target Personas** - Buyer profiles with seniority/function (moved from profile page)
+  6. **Prompt Themes** - Critical keyword clusters (moved from profile page)
+  7. **Integrations** - HubSpot, Bing Webmaster, Google Search Console
+  8. **Danger Zone** - Delete brand
+- Sticky side nav with active section highlighting
+- IntersectionObserver-based scroll spy for section tracking
+- Save button always visible in sidebar for quick access
+- Personas and Prompt Themes now manageable directly in settings (previously only on brand profile)
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/settings/page.tsx` - Complete rewrite with new layout
+
+---
+
 **Improve: Memo Generation Quality & Display** 
 - Fixed duplicate title issue - prompts no longer generate `# Title` since page renders it separately
 - Added visible author byline ("Context Memo - Automated brand intelligence") in memo hero section
