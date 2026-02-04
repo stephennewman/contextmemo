@@ -102,6 +102,7 @@ CREATE POLICY "Service role has full access to brand_settings" ON brand_settings
   WITH CHECK (true);
 
 -- Function to auto-create settings when a brand is created
+-- SECURITY DEFINER allows this function to bypass RLS when inserting brand_settings
 CREATE OR REPLACE FUNCTION create_default_brand_settings()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -110,7 +111,7 @@ BEGIN
   ON CONFLICT (brand_id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to auto-create settings for new brands
 DROP TRIGGER IF EXISTS create_brand_settings_trigger ON brands;

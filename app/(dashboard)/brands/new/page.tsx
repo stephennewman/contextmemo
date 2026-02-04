@@ -134,7 +134,17 @@ export default function NewBrandPage() {
 
       if (brandError) {
         console.error('Brand creation error:', brandError)
-        setError('Failed to create brand')
+        console.error('Error details:', {
+          code: brandError.code,
+          message: brandError.message,
+          details: brandError.details,
+          hint: brandError.hint,
+          user_id: user.id,
+          tenant_id: tenant?.id || user.id,
+          brand_name: brandName,
+          subdomain: subdomain
+        })
+        setError(`Failed to create brand: ${brandError.message}`)
         setLoading(false)
         return
       }
