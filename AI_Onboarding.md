@@ -390,6 +390,24 @@ _Most recent deploys first_
 
 ### February 4, 2026
 
+**Improve: HubSpot Content Sync Quality** (51dcbf9)
+- Added featured images from Unsplash based on memo topic/content type
+- Fixed duplicate title issue - title now removed from body (HubSpot displays it separately)
+- Added inline styles for better spacing, tables, and typography in HubSpot
+- Created `lib/hubspot/image-selector.ts` utility for topic-based image selection
+- Applied same improvements to both manual sync and auto-sync flows
+- Added `postSummary` and `htmlTitle` for better HubSpot blog listings
+
+**Files created:**
+- `lib/hubspot/image-selector.ts` - Topic detection and Unsplash image selection
+
+**Files modified:**
+- `lib/hubspot/content-sanitizer.ts` - Title removal, HTML formatting with inline styles
+- `app/api/brands/[brandId]/memos/[memoId]/hubspot/route.ts` - Featured image, formatting
+- `lib/inngest/functions/memo-generate.ts` - Auto-sync now uses same improvements
+
+---
+
 **Feature: Usage/Cost Tracking Badge**
 - Added usage badge in header showing monthly cost (`$X.XX this month`)
 - Created `/api/usage` endpoint to fetch tenant usage stats

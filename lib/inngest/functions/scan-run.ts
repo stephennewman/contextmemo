@@ -1069,7 +1069,7 @@ async function scanWithPerplexityDirect(
     citations,
     searchResults: searchResultsJson.length > 0 ? searchResultsJson : null,
     brandInCitations,
-    inputTokens: usage?.promptTokens || 0,
-    outputTokens: usage?.completionTokens || 0,
+    inputTokens: usage?.inputTokens || 0,
+    outputTokens: usage?.outputTokens || 0,
   }
 }

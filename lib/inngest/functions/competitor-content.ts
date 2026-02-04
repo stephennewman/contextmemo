@@ -1106,9 +1106,9 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
             generationModel,
             durationMs,
             tokens: {
-              prompt: usage?.promptTokens || 0,
-              completion: usage?.completionTokens || 0,
-              total: (usage?.promptTokens || 0) + (usage?.completionTokens || 0),
+              prompt: usage?.inputTokens || 0,
+              completion: usage?.outputTokens || 0,
+              total: (usage?.inputTokens || 0) + (usage?.outputTokens || 0),
             },
           }
         } catch (e) {
