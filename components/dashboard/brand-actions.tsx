@@ -503,6 +503,56 @@ export function DiscoveryScanButton({ brandId }: { brandId: string }) {
   )
 }
 
+// Find and replicate competitor content gaps
+export function FindContentGapsButton({ brandId, competitorCount }: { brandId: string; competitorCount?: number }) {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const findGaps = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'content-scan' }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Content scan failed')
+      }
+
+      toast.success(`Scanning ${competitorCount || 'competitor'} feeds for citable content. New memos will be auto-generated.`, {
+        duration: 10000,
+      })
+      
+      // Refresh after processing
+      setTimeout(() => router.refresh(), 60000)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Content scan failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button 
+      onClick={findGaps} 
+      disabled={loading}
+      size="sm"
+      className="gap-2 rounded-none bg-[#10B981] hover:bg-[#059669] text-white"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <FileText className="h-4 w-4" />
+      )}
+      Find Gaps
+    </Button>
+  )
+}
+
 // Refresh context extraction (re-analyze website for updated personas, products, etc.)
 export function RefreshContextButton({ brandId }: { brandId: string }) {
   const [loading, setLoading] = useState(false)
