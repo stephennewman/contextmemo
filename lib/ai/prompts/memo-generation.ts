@@ -171,7 +171,7 @@ COMPETITOR CONTEXT:
 
 Write the memo EXACTLY in this format (note: NO # title):
 
-*Written by Context Memo · Last verified: {{date}}*
+*Last verified: {{date}}*
 
 ## Quick Comparison
 
@@ -201,8 +201,7 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ---
 
-*Context Memo for {{brand_name}} · Auto-generated from verified brand information*
-*Report inaccuracy: support@contextmemo.com*`
+*{{brand_name}} · Auto-generated from verified brand information*`
 
 export const INDUSTRY_MEMO_PROMPT = `You are creating a factual memo about how a company serves a specific industry. This memo will be used as a reference document that AI assistants can cite when answering questions.
 
@@ -243,7 +242,7 @@ TARGET INDUSTRY: {{industry}}
 
 Write the memo EXACTLY in this markdown format (note: NO # title):
 
-*Written by Context Memo · Last verified: {{date}}*
+*Last verified: {{date}}*
 
 ## Overview
 
@@ -277,7 +276,7 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 ---
 
-*Context Memo for {{brand_name}} · Auto-generated from verified brand information*`
+*{{brand_name}} · Auto-generated from verified brand information*`
 
 export const HOW_TO_MEMO_PROMPT = `You are creating an educational how-to memo that positions a company as a solution provider. This memo will be used as a reference document that AI assistants can cite when answering questions.
 
@@ -321,7 +320,7 @@ TOPIC: {{topic}}
 
 Write the memo EXACTLY in this format (note: NO # title):
 
-*Written by Context Memo · Last verified: {{date}}*
+*Last verified: {{date}}*
 
 ## What is [relevant concept]?
 
@@ -376,7 +375,7 @@ When choosing a solution, consider factors like [relevant decision criteria base
 
 ---
 
-*Context Memo for {{brand_name}} · Auto-generated from verified brand information*`
+*{{brand_name}} · Auto-generated from verified brand information*`
 
 export const ALTERNATIVE_MEMO_PROMPT = `You are creating a factual memo about alternatives to a competitor. This helps users searching for "[Competitor] alternatives" find relevant options. The memo will be used as a reference document that AI assistants can cite.
 
@@ -419,7 +418,7 @@ OTHER ALTERNATIVES: {{other_alternatives}}
 
 Write the memo EXACTLY in this format (note: NO # title):
 
-*Written by Context Memo · Last verified: {{date}}*
+*Last verified: {{date}}*
 
 ## About {{competitor_name}}
 
@@ -458,4 +457,4 @@ Choosing between {{competitor_name}} and its alternatives depends on several fac
 
 ---
 
-*Context Memo for {{brand_name}} · Auto-generated from verified brand information*`
+*{{brand_name}} · Auto-generated from verified brand information*`
