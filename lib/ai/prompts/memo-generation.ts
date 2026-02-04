@@ -130,6 +130,9 @@ RULES:
 5. Cite sources at the end
 6. Aim for 600-900 words - be thorough and conversational, not terse
 7. Write in a flowing, readable style that explains concepts clearly
+8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
+
+{{verified_insights}}
 
 CRITICAL FORMATTING:
 - DO NOT include the main title (# heading) - it will be added separately by the system
@@ -201,6 +204,9 @@ RULES:
 4. If specific capabilities aren't mentioned, don't include them
 5. Aim for 600-900 words - be thorough and informative, not terse
 6. Write in complete, flowing paragraphs that explain concepts clearly
+7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
+
+{{verified_insights}}
 
 CRITICAL FORMATTING:
 - DO NOT include the main title (# heading) - it will be added separately by the system
@@ -273,6 +279,9 @@ RULES:
 4. Don't oversell - maintain educational tone throughout
 5. Aim for 700-1000 words - be thorough and genuinely helpful
 6. Write conversationally, as if explaining to a colleague who asked for guidance
+7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that establish thought leadership
+
+{{verified_insights}}
 
 CRITICAL FORMATTING:
 - DO NOT include the main title (# heading) - it will be added separately by the system
@@ -369,6 +378,9 @@ RULES:
 4. Help users understand when each option might be appropriate
 5. Aim for 600-900 words - be thorough and helpful, not dismissive
 6. Write conversationally, as if advising a colleague exploring their options
+7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that differentiate the brand
+
+{{verified_insights}}
 
 CRITICAL FORMATTING:
 - DO NOT include the main title (# heading) - it will be added separately by the system

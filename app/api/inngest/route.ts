@@ -12,6 +12,7 @@ import {
   competitorContentClassify,
   competitorContentRespond,
 } from '@/lib/inngest/functions/competitor-content'
+import { hourlyContentGenerate } from '@/lib/inngest/functions/hourly-content'
 import { 
   memoBacklink, 
   memoBatchBacklink, 
@@ -86,6 +87,7 @@ export const { GET, POST, PUT } = serve({
     competitorContentScan,     // Scan competitor sites for new content
     competitorContentClassify, // Classify and filter content
     competitorContentRespond,  // Generate and auto-publish response content
+    hourlyContentGenerate,     // Hourly cron: generate 1 memo per brand (9am-5pm ET, Mon-Fri)
     
     // Backlinking functions
     memoBacklink,           // Add backlinks to individual memo

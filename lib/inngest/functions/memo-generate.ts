@@ -7,9 +7,10 @@ import {
   INDUSTRY_MEMO_PROMPT, 
   HOW_TO_MEMO_PROMPT,
   ALTERNATIVE_MEMO_PROMPT,
-  generateToneInstructions
+  generateToneInstructions,
+  formatVoiceInsightsForPrompt
 } from '@/lib/ai/prompts/memo-generation'
-import { BrandContext } from '@/lib/supabase/types'
+import { BrandContext, VoiceInsight } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
 
 const supabase = createClient(
@@ -41,9 +42,9 @@ export const memoGenerate = inngest.createFunction(
   async ({ event, step }) => {
     const { brandId, queryId, memoType, competitorId } = event.data
 
-    // Step 1: Get brand, query, and related data
-    const { brand, query, competitor, competitors } = await step.run('get-data', async () => {
-      const [brandResult, queryResult, directCompetitorResult] = await Promise.all([
+    // Step 1: Get brand, query, related data, and voice insights
+    const { brand, query, competitor, competitors, voiceInsights } = await step.run('get-data', async () => {
+      const [brandResult, queryResult, directCompetitorResult, voiceInsightsResult] = await Promise.all([
         supabase
           .from('brands')
           .select('*')
@@ -64,6 +65,14 @@ export const memoGenerate = inngest.createFunction(
               .eq('id', competitorId)
               .single()
           : Promise.resolve({ data: null, error: null }),
+        // Fetch active voice insights for the brand
+        supabase
+          .from('voice_insights')
+          .select('*')
+          .eq('brand_id', brandId)
+          .eq('status', 'active')
+          .order('recorded_at', { ascending: false })
+          .limit(10),
       ])
 
       if (brandResult.error || !brandResult.data) {
@@ -85,6 +94,7 @@ export const memoGenerate = inngest.createFunction(
         query: queryResult.data,
         competitor: resolvedCompetitor,
         competitors: allCompetitors || [],
+        voiceInsights: (voiceInsightsResult.data || []) as VoiceInsight[],
       }
     })
 
@@ -97,6 +107,9 @@ export const memoGenerate = inngest.createFunction(
 
     // Generate tone instructions from brand settings
     const toneInstructions = generateToneInstructions(brandContext.brand_tone)
+    
+    // Format voice insights for inclusion in prompts
+    const verifiedInsights = formatVoiceInsightsForPrompt(voiceInsights)
 
     // Step 2: Generate memo based on type
     const memoContent = await step.run('generate-memo', async () => {
@@ -111,6 +124,7 @@ export const memoGenerate = inngest.createFunction(
           }
           prompt = COMPARISON_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
+            .replace('{{verified_insights}}', verifiedInsights)
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
             .replace(/\{\{brand_name\}\}/g, brand.name)
@@ -131,6 +145,7 @@ export const memoGenerate = inngest.createFunction(
             .join(', ')
           prompt = ALTERNATIVE_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
+            .replace('{{verified_insights}}', verifiedInsights)
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
             .replace('{{competitor_name}}', competitor.name)
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
@@ -148,6 +163,7 @@ export const memoGenerate = inngest.createFunction(
             || 'business'
           prompt = INDUSTRY_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
+            .replace('{{verified_insights}}', verifiedInsights)
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
             .replace('{{industry}}', industry)
             .replace(/\{\{brand_name\}\}/g, brand.name)
@@ -163,6 +179,7 @@ export const memoGenerate = inngest.createFunction(
           const competitorList = competitors.slice(0, 3).map(c => c.name).join(', ')
           prompt = HOW_TO_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
+            .replace('{{verified_insights}}', verifiedInsights)
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
             .replace('{{competitors}}', competitorList)
             .replace('{{topic}}', topic)

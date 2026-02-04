@@ -758,7 +758,9 @@ export const competitorContentClassify = inngest.createFunction(
   },
   { event: 'competitor/content-classify' },
   async ({ event, step }) => {
-    const { brandId } = event.data
+    const { brandId, limit: requestedLimit } = event.data
+    // Use requested limit or default to 20
+    const classifyLimit = requestedLimit || 20
 
     // Step 1: Get brand and new content to classify
     const { brand, newContent } = await step.run('get-new-content', async () => {
@@ -786,7 +788,7 @@ export const competitorContentClassify = inngest.createFunction(
         .in('competitor_id', competitorIds)
         .eq('status', 'new')
         .order('first_seen_at', { ascending: true })
-        .limit(20)
+        .limit(classifyLimit)
 
       return {
         brand: brandResult.data,
@@ -942,7 +944,9 @@ export const competitorContentRespond = inngest.createFunction(
   },
   { event: 'competitor/content-respond' },
   async ({ event, step }) => {
-    const { brandId } = event.data
+    const { brandId, limit: requestedLimit } = event.data
+    // Use requested limit or default to 5
+    const processLimit = requestedLimit || 5
 
     // Step 1: Get brand and content pending response
     const { brand, pendingContent } = await step.run('get-pending-content', async () => {
@@ -970,7 +974,7 @@ export const competitorContentRespond = inngest.createFunction(
         .in('competitor_id', competitorIds)
         .eq('status', 'pending_response')
         .order('first_seen_at', { ascending: true })
-        .limit(5) // Process 5 at a time to avoid overwhelming
+        .limit(processLimit)
 
       return {
         brand: brandResult.data,
