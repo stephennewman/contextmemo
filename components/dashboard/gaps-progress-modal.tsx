@@ -96,27 +96,38 @@ export function GapsProgressModal({
       addLine(`▶ Content scan initiated`, 'info')
       addLine(``, 'info')
 
-      // Add phases
+      // Phase 1: RSS discovery
       const phase1Id = addLine(`Discovering RSS feeds...`, 'working')
-      
-      // Simulate progress (the actual work happens in background via Inngest)
-      await new Promise(r => setTimeout(r, 2000))
-      updateLine(phase1Id, `RSS feeds discovered ✓`, 'success')
-      
-      const phase2Id = addLine(`Fetching new articles...`, 'working')
       await new Promise(r => setTimeout(r, 3000))
+      updateLine(phase1Id, `Feeds checked ✓`, 'success')
+      
+      // Phase 2: Fetching articles
+      const phase2Id = addLine(`Fetching competitor articles...`, 'working')
+      await new Promise(r => setTimeout(r, 4000))
       updateLine(phase2Id, `Articles fetched ✓`, 'success')
       
-      const phase3Id = addLine(`Classifying content...`, 'working')
-      await new Promise(r => setTimeout(r, 2000))
+      addLine(``, 'info')
+      addLine(`▶ Triggering AI classification...`, 'info')
+      
+      // Trigger classification
+      await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'content-classify' }),
+      })
+      
+      // Phase 3: Classification
+      const phase3Id = addLine(`Classifying content types...`, 'working')
+      await new Promise(r => setTimeout(r, 5000))
       updateLine(phase3Id, `Content classified ✓`, 'success')
       
-      addLine(``, 'info')
-      addLine(`▶ Identifying respondable content...`, 'info')
+      // Phase 4: Filtering
+      const phase4Id = addLine(`Identifying universal topics...`, 'working')
+      await new Promise(r => setTimeout(r, 3000))
+      updateLine(phase4Id, `Topics identified ✓`, 'success')
       
-      const phase4Id = addLine(`Filtering for universal topics...`, 'working')
-      await new Promise(r => setTimeout(r, 2000))
-      updateLine(phase4Id, `Universal topics identified ✓`, 'success')
+      addLine(``, 'info')
+      addLine(`▶ Generating response content...`, 'info')
 
       // Poll for competitor_content status
       let pollCount = 0

@@ -250,6 +250,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Historical content backfill started - fetching all available content from competitor feeds' 
         })
 
+      case 'content-classify':
+        // Classify competitor content and generate response memos
+        await inngest.send({
+          name: 'competitor/content-classify',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Content classification started - will generate memos for respondable content' 
+        })
+
       case 'add-feed': {
         // Manually add an RSS feed for a competitor
         const { competitorId, feedUrl } = body
