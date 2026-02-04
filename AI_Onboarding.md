@@ -390,6 +390,40 @@ _Most recent deploys first_
 
 ### February 4, 2026
 
+**Feature: Prompt Lab - Citation Research UI** (bf18f40)
+- Added prompt visibility in Lab UI - now shows all generated prompts with citation stats
+- Added summary stats card showing total scans, citations, mentions, and overall citation rate
+- "Prompts That Get Citations" section ranks prompts by citation success
+- Per-prompt stats: runs, citations, mentions, citation rate
+- API returns topPrompts aggregated by prompt text with performance metrics
+
+**Files modified:**
+- `app/api/brands/[brandId]/lab/route.ts` - Added topPrompts and summary stats to GET response
+- `components/dashboard/prompt-lab.tsx` - Added summary card and prompts list UI
+
+**Feature: Prompt Lab - High-Volume Citation Research System** (previous commits)
+- New "LAB" tab on brand page for running high-volume conversational prompts
+- Multi-model scanning: GPT-4o Mini, Claude 3.5 Haiku, Grok 4 Fast, Perplexity Sonar
+- Configurable duration (1-60 min) and budget limits ($1-$50)
+- 20 conversational prompt templates for long-tail, natural-language queries
+- AI-generated prompts based on brand context and buyer intent
+- Live model comparison chart showing citation rates per model
+- Top entities discovery - who gets cited for similar content
+- Cost tracking with real-time budget monitoring
+- Stop/resume functionality via Inngest
+
+**Files created:**
+- `lib/inngest/functions/prompt-lab.ts` - Core lab runner with multi-model execution
+- `scripts/sql/prompt_lab.sql` - Database schema (prompt_lab_runs, lab_scan_results)
+- `app/api/brands/[brandId]/lab/route.ts` - Lab API endpoint
+- `components/dashboard/prompt-lab.tsx` - Lab UI component
+
+**Files modified:**
+- `app/api/inngest/route.ts` - Registered promptLabRun and promptLabStop functions
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Added LAB tab
+
+---
+
 **Improve: HubSpot Content Sync Quality** (51dcbf9)
 - Added featured images from Unsplash based on memo topic/content type
 - Fixed duplicate title issue - title now removed from body (HubSpot displays it separately)
