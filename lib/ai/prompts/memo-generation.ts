@@ -134,6 +134,8 @@ export const COMPARISON_MEMO_PROMPT = `You are creating a factual comparison mem
 BRAND TONE:
 {{tone_instructions}}
 
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
+
 RULES:
 1. Only include information from the provided context - DO NOT make up any features, pricing, or capabilities
 2. Use neutral, factual language - no marketing speak
@@ -207,6 +209,8 @@ export const INDUSTRY_MEMO_PROMPT = `You are creating a factual memo about how a
 
 BRAND TONE:
 {{tone_instructions}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
 
 RULES:
 1. Only include information from the provided context - DO NOT make up features or capabilities
@@ -282,6 +286,8 @@ export const HOW_TO_MEMO_PROMPT = `You are creating an educational how-to memo t
 
 BRAND TONE:
 {{tone_instructions}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
 
 RULES:
 1. Provide genuinely helpful educational content that teaches the reader
@@ -381,6 +387,8 @@ export const ALTERNATIVE_MEMO_PROMPT = `You are creating a factual memo about al
 
 BRAND TONE:
 {{tone_instructions}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
 
 RULES:
 1. Be fair to the competitor - don't disparage them, acknowledge their strengths

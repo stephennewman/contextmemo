@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
 import { getHubSpotToken } from '@/lib/hubspot/oauth'
+import { sanitizeContentForHubspot } from '@/lib/hubspot/content-sanitizer'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -85,8 +86,9 @@ export async function POST(
       return NextResponse.json({ error: 'Memo not found' }, { status: 404 })
     }
 
-    // Convert markdown to HTML
-    const htmlContent = await marked(memo.content_markdown, {
+    // Sanitize content to remove any Contextmemo references, then convert to HTML
+    const sanitizedMarkdown = sanitizeContentForHubspot(memo.content_markdown, { brandName: brand.name })
+    const htmlContent = await marked(sanitizedMarkdown, {
       gfm: true,
       breaks: true,
     })

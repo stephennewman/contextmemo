@@ -38,6 +38,22 @@ interface Memo {
   published_at: string | null
   created_at: string
   updated_at: string
+  // Provenance fields
+  generation_model?: string
+  generation_duration_ms?: number
+  generation_tokens?: { prompt?: number; completion?: number; total?: number }
+  review_status?: 'ai_generated' | 'human_reviewed' | 'human_edited' | 'human_approved'
+  reviewed_by?: string
+  reviewed_at?: string
+  reviewer_notes?: string
+  human_edits_count?: number
+  provenance?: {
+    generated_at?: string
+    source_type?: string
+    source_competitor?: string
+    source_url?: string
+    topic_extracted?: string
+  }
 }
 
 interface Brand {
@@ -65,6 +81,8 @@ export default function MemoEditPage() {
   const [content, setContent] = useState('')
   const [metaDescription, setMetaDescription] = useState('')
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
+  const [reviewerNotes, setReviewerNotes] = useState('')
+  const [reviewStatus, setReviewStatus] = useState<string>('ai_generated')
 
   useEffect(() => {
     async function loadData() {
@@ -105,6 +123,8 @@ export default function MemoEditPage() {
       setContent(memoData.content_markdown)
       setMetaDescription(memoData.meta_description || '')
       setStatus(memoData.status)
+      setReviewerNotes(memoData.reviewer_notes || '')
+      setReviewStatus(memoData.review_status || 'ai_generated')
       
       setLoading(false)
     }
@@ -117,6 +137,10 @@ export default function MemoEditPage() {
     try {
       const supabase = createClient()
       
+      // Determine if this is a human edit (content changed from original)
+      const isHumanEdit = content !== memo?.content_markdown
+      const newEditCount = isHumanEdit ? (memo?.human_edits_count || 0) + 1 : memo?.human_edits_count || 0
+      
       const { error } = await supabase
         .from('memos')
         .update({
@@ -127,6 +151,10 @@ export default function MemoEditPage() {
           status,
           published_at: status === 'published' ? new Date().toISOString() : memo?.published_at,
           updated_at: new Date().toISOString(),
+          reviewer_notes: reviewerNotes || null,
+          review_status: reviewStatus,
+          reviewed_at: reviewStatus !== 'ai_generated' ? new Date().toISOString() : memo?.reviewed_at,
+          human_edits_count: newEditCount,
         })
         .eq('id', memoId)
 
@@ -588,6 +616,126 @@ export default function MemoEditPage() {
                 />
                 <p className="text-xs text-muted-foreground">
                   {metaDescription.length}/160 characters
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Generation Provenance */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Provenance
+                </CardTitle>
+                <Badge variant={
+                  reviewStatus === 'human_approved' ? 'default' : 
+                  reviewStatus === 'human_edited' ? 'secondary' :
+                  reviewStatus === 'human_reviewed' ? 'outline' : 'destructive'
+                } className="text-xs">
+                  {reviewStatus === 'human_approved' ? '✓ Approved' :
+                   reviewStatus === 'human_edited' ? 'Edited' :
+                   reviewStatus === 'human_reviewed' ? 'Reviewed' : 'AI Generated'}
+                </Badge>
+              </div>
+              <CardDescription>How this memo was created</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {memo.generation_model && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Model</span>
+                  <span className="font-mono text-xs">{memo.generation_model}</span>
+                </div>
+              )}
+              {memo.generation_duration_ms && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Generation time</span>
+                  <span>{(memo.generation_duration_ms / 1000).toFixed(1)}s</span>
+                </div>
+              )}
+              {memo.generation_tokens?.total && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tokens used</span>
+                  <span>{memo.generation_tokens.total.toLocaleString()}</span>
+                </div>
+              )}
+              {memo.provenance?.source_competitor && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Inspired by</span>
+                  <span>{memo.provenance.source_competitor}</span>
+                </div>
+              )}
+              {memo.provenance?.generated_at && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Generated</span>
+                  <span>{new Date(memo.provenance.generated_at).toLocaleDateString()}</span>
+                </div>
+              )}
+              {(memo.human_edits_count || 0) > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Human edits</span>
+                  <span>{memo.human_edits_count}</span>
+                </div>
+              )}
+              {memo.reviewed_at && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Last review</span>
+                  <span>{new Date(memo.reviewed_at).toLocaleDateString()}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Human Review */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-500" />
+                Human Review
+              </CardTitle>
+              <CardDescription>
+                Verify and add context to build trust
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Review Status</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'ai_generated', label: 'AI Only', color: 'bg-slate-100' },
+                    { value: 'human_reviewed', label: 'Reviewed', color: 'bg-blue-100' },
+                    { value: 'human_edited', label: 'Edited', color: 'bg-amber-100' },
+                    { value: 'human_approved', label: 'Approved', color: 'bg-green-100' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setReviewStatus(option.value)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                        reviewStatus === option.value 
+                          ? `${option.color} ring-2 ring-offset-1 ring-slate-400` 
+                          : 'bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="reviewer-notes">Reviewer Notes</Label>
+                <Textarea
+                  id="reviewer-notes"
+                  value={reviewerNotes}
+                  onChange={(e) => setReviewerNotes(e.target.value)}
+                  placeholder="Add context, corrections, or verification notes..."
+                  className="min-h-[80px] text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Visible in public memo to show human oversight
                 </p>
               </div>
             </CardContent>

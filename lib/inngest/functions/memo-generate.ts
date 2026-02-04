@@ -12,6 +12,7 @@ import {
 } from '@/lib/ai/prompts/memo-generation'
 import { BrandContext, VoiceInsight } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
+import { sanitizeContentForHubspot } from '@/lib/hubspot/content-sanitizer'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -483,7 +484,10 @@ ${memoContent.content.slice(0, 1000)}`,
       await step.run('sync-to-hubspot', async () => {
         try {
           const { marked } = await import('marked')
-          const htmlContent = await marked(memoContent.content, { gfm: true, breaks: true })
+          
+          // Sanitize content to remove any Contextmemo references before HubSpot sync
+          const sanitizedContent = sanitizeContentForHubspot(memoContent.content, { brandName: brand.name })
+          const htmlContent = await marked(sanitizedContent, { gfm: true, breaks: true })
           
           const blogPost = {
             name: memoContent.title,

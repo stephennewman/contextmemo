@@ -1076,12 +1076,17 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
           .replace('{{content_summary}}', contentAnalysis)
           .replace(/\{\{brand_name\}\}/g, brand.name)
 
+        const generationModel = 'openai/gpt-4o'
+        const startTime = Date.now()
+
         try {
-          const { text } = await generateText({
-            model: openrouter('openai/gpt-4o'),
+          const { text, usage } = await generateText({
+            model: openrouter(generationModel),
             prompt,
-            temperature: 0.5, // Slightly higher for more creative differentiation
+            temperature: 0.5,
           })
+
+          const durationMs = Date.now() - startTime
 
           // Extract title from generated content (first # heading)
           const titleMatch = text.match(/^#\s+(.+)$/m)
@@ -1098,6 +1103,13 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
             title,
             slug,
             content: text,
+            generationModel,
+            durationMs,
+            tokens: {
+              prompt: usage?.promptTokens || 0,
+              completion: usage?.completionTokens || 0,
+              total: (usage?.promptTokens || 0) + (usage?.completionTokens || 0),
+            },
           }
         } catch (e) {
           console.error('Failed to generate response:', e)
@@ -1229,6 +1241,20 @@ ${memo.content.slice(0, 1000)}`,
             published_at: new Date().toISOString(),
             last_verified_at: new Date().toISOString(),
             version: 1,
+            // Provenance tracking
+            generation_model: memo.generationModel,
+            generation_duration_ms: memo.durationMs,
+            generation_tokens: memo.tokens,
+            review_status: 'ai_generated',
+            provenance: {
+              generated_at: new Date().toISOString(),
+              source_type: 'competitor_response',
+              source_content_id: content.id,
+              source_competitor: (content as { competitor?: { name?: string } }).competitor?.name,
+              source_url: content.url,
+              topic_extracted: content.universal_topic,
+              brand_context_version: brand.updated_at,
+            },
           })
           .select()
           .single()
