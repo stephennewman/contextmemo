@@ -390,6 +390,26 @@ _Most recent deploys first_
 
 ### February 4, 2026
 
+**Feature: Terminal-Style Scan Progress Modal**
+- New `ScanProgressModal` component with real-time progress feed
+- Shows scan status across all AI models (GPT-4o, Claude, Gemini, Llama, Perplexity, DeepSeek)
+- Displays live stats: scans completed, mentions found, citations
+- Terminal-style UI matching the onboarding flow aesthetic
+- Replaces toast-only feedback with engaging visual experience
+
+**Fix: Onboarding Infinite Loop**
+- Fixed bug where onboarding would loop forever if context extraction/competitor discovery failed
+- Now properly checks if data was actually created before redirecting to dashboard
+- Shows "Setup Incomplete" state with retry button if Inngest jobs fail or timeout
+- Prevents redirect unless context, competitors, AND queries are all present
+
+**Fix: Email Verification Localhost URLs**
+- Fixed issue where verification emails used localhost instead of production URL
+- Changed `window.location.origin` to use `NEXT_PUBLIC_SITE_URL` env var (defaults to contextmemo.com)
+- Updated `app/(auth)/signup/page.tsx` and `app/(auth)/verify-email/page.tsx`
+- Added `NEXT_PUBLIC_SITE_URL` to `.env.local`
+- Note: Also requires setting Site URL in Supabase Dashboard Auth settings + adding env var to Vercel
+
 **Feature: Prompt-Centric Feed System**
 - Transformed feed from scan-level summaries to per-prompt events
 - Each prompt scan now emits its own feed event with full context

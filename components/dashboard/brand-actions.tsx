@@ -177,7 +177,7 @@ export function BrandActions({
   )
 }
 
-export function ScanButton({ brandId, brandName, queryCount }: { brandId: string; brandName?: string; queryCount?: number }) {
+export function ScanButton({ brandId, brandName }: { brandId: string; brandName?: string }) {
   const [showModal, setShowModal] = useState(false)
 
   // Lazy load the modal component
@@ -200,7 +200,6 @@ export function ScanButton({ brandId, brandName, queryCount }: { brandId: string
           brandName={brandName || 'Brand'}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          queryCount={queryCount || 10}
         />
       )}
     </>

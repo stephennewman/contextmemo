@@ -391,10 +391,10 @@ export default async function BrandPage({ params }: Props) {
                 Setup complete. Run your first scan to see how visible {brand.name} is across AI assistants.
               </p>
               <p className="text-xs text-zinc-500 mt-2">
-                {queries?.length || 0} prompts • {competitors?.length || 0} competitors • 6 AI models
+                {queries?.length || 0} prompts • {competitors?.length || 0} competitors • 1 AI model (GPT-4o Mini)
               </p>
             </div>
-            <ScanButton brandId={brandId} brandName={brand.name} queryCount={queries?.length || 0} />
+            <ScanButton brandId={brandId} brandName={brand.name} />
           </div>
         </div>
       )}
@@ -463,7 +463,7 @@ export default async function BrandPage({ params }: Props) {
             </div>
             <div className="flex gap-2">
               <ExportDropdown brandId={brandId} />
-              <ScanButton brandId={brandId} brandName={brand.name} queryCount={queries?.length || 0} />
+              <ScanButton brandId={brandId} brandName={brand.name} />
             </div>
           </div>
           <ScanResultsView 

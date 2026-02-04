@@ -4,44 +4,46 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { CheckCircle2, Loader2, Zap, X } from 'lucide-react'
+import { CheckCircle2, Loader2, Zap, X, DollarSign } from 'lucide-react'
 
 interface ScanProgressModalProps {
   brandId: string
   brandName: string
   isOpen: boolean
   onClose: () => void
-  queryCount: number
+  queryCount?: number
 }
 
 interface ProgressLine {
+  id: string
   text: string
-  type: 'info' | 'success' | 'working' | 'result'
+  type: 'info' | 'success' | 'working' | 'result' | 'model-working' | 'model-done'
 }
 
 // Currently enabled models (matches scan-run.ts config)
 const AI_MODELS = [
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini (with web search)' },
-  // More models coming soon:
-  // { id: 'perplexity', name: 'Perplexity Sonar' },
-  // { id: 'claude-3-5-haiku', name: 'Claude 3.5 Haiku' },
-  // { id: 'grok', name: 'Grok 4 Fast' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', costPer1k: 0.15 },
 ]
+
+// Cost estimate per scan (input + output tokens)
+const COST_PER_SCAN = 0.003 // ~$0.003 per scan with GPT-4o-mini
 
 export function ScanProgressModal({
   brandId,
   brandName,
   isOpen,
   onClose,
-  queryCount,
 }: ScanProgressModalProps) {
   const router = useRouter()
   const [progressLines, setProgressLines] = useState<ProgressLine[]>([])
   const [isComplete, setIsComplete] = useState(false)
   const [scanStats, setScanStats] = useState({ scanned: 0, mentioned: 0, cited: 0 })
   const [hasStarted, setHasStarted] = useState(false)
+  const [estimatedCost, setEstimatedCost] = useState(0)
+  const [actualQueryCount, setActualQueryCount] = useState(0)
   const progressRef = useRef<HTMLDivElement>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lineIdCounter = useRef(0)
 
   // Auto-scroll progress
   useEffect(() => {
@@ -64,8 +66,16 @@ export function ScanProgressModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
-  const addLine = (text: string, type: ProgressLine['type'] = 'info') => {
-    setProgressLines(prev => [...prev, { text, type }])
+  const addLine = (text: string, type: ProgressLine['type'] = 'info'): string => {
+    const id = `line-${lineIdCounter.current++}`
+    setProgressLines(prev => [...prev, { id, text, type }])
+    return id
+  }
+
+  const updateLine = (id: string, text: string, type: ProgressLine['type']) => {
+    setProgressLines(prev => prev.map(line => 
+      line.id === id ? { ...line, text, type } : line
+    ))
   }
 
   const startScan = async () => {
@@ -73,14 +83,27 @@ export function ScanProgressModal({
     setProgressLines([])
     setIsComplete(false)
     setScanStats({ scanned: 0, mentioned: 0, cited: 0 })
+    setEstimatedCost(0)
 
     addLine(`Starting AI visibility scan for ${brandName}...`, 'info')
     addLine(``, 'info')
-    addLine(`Testing ${queryCount} prompts across ${AI_MODELS.length} AI models`, 'info')
-    addLine(`Total scans: ${queryCount * AI_MODELS.length}`, 'info')
-    addLine(``, 'info')
 
+    // Fetch actual query count first
     try {
+      const countRes = await fetch(`/api/brands/${brandId}/scan-status`)
+      const countData = await countRes.json()
+      const queryCount = countData.totalQueries || 10
+      setActualQueryCount(queryCount)
+      
+      const totalScans = queryCount * AI_MODELS.length
+      const estCost = totalScans * COST_PER_SCAN
+      setEstimatedCost(estCost)
+
+      addLine(`Found ${queryCount} prompts to test`, 'info')
+      addLine(`Testing across ${AI_MODELS.length} AI model${AI_MODELS.length > 1 ? 's' : ''}`, 'info')
+      addLine(`Estimated cost: $${estCost.toFixed(3)}`, 'info')
+      addLine(``, 'info')
+
       // Trigger the scan
       const response = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
@@ -93,12 +116,14 @@ export function ScanProgressModal({
         throw new Error(data.error || 'Scan failed to start')
       }
 
-      addLine(`▶ Scan initiated - querying AI models...`, 'info')
+      addLine(`▶ Scan initiated`, 'info')
       addLine(``, 'info')
 
-      // Show model status
+      // Add model status lines (we'll update these)
+      const modelLineIds: Record<string, string> = {}
       AI_MODELS.forEach(model => {
-        addLine(`⏳ ${model.name}`, 'working')
+        const lineId = addLine(`${model.name}: scanning ${queryCount} prompts...`, 'model-working')
+        modelLineIds[model.id] = lineId
       })
 
       // Poll for results
@@ -117,17 +142,20 @@ export function ScanProgressModal({
             
             // Update stats
             if (status.recentScans > lastScanCount) {
-              const newScans = status.recentScans - lastScanCount
               setScanStats({
                 scanned: status.recentScans,
                 mentioned: status.mentionedCount || 0,
                 cited: status.citedCount || 0,
               })
               
-              // Add result lines for new scans
-              if (newScans > 0 && lastScanCount > 0) {
-                addLine(`✓ ${newScans} new scan results received`, 'success')
-              }
+              // Update model lines with progress
+              const scansPerModel = Math.floor(status.recentScans / AI_MODELS.length)
+              AI_MODELS.forEach(model => {
+                const lineId = modelLineIds[model.id]
+                if (lineId) {
+                  updateLine(lineId, `${model.name}: ${scansPerModel}/${queryCount} prompts tested`, 'model-working')
+                }
+              })
               
               lastScanCount = status.recentScans
               stableCount = 0
@@ -135,9 +163,9 @@ export function ScanProgressModal({
               stableCount++
             }
 
-            // Check if complete (no new results for 30 seconds or max polls reached)
+            // Check if complete
             const expectedScans = queryCount * AI_MODELS.length
-            const isLikelyComplete = status.recentScans >= expectedScans * 0.8 || // 80% complete
+            const isLikelyComplete = status.recentScans >= expectedScans * 0.9 || // 90% complete
                                      stableCount >= 6 || // No new results for 30 seconds
                                      pollCount >= maxPolls
 
@@ -146,33 +174,41 @@ export function ScanProgressModal({
                 clearInterval(pollIntervalRef.current)
               }
               
+              // Mark models as complete
+              AI_MODELS.forEach(model => {
+                const lineId = modelLineIds[model.id]
+                if (lineId) {
+                  const scansForModel = Math.floor(status.recentScans / AI_MODELS.length)
+                  updateLine(lineId, `${model.name}: ${scansForModel} prompts tested ✓`, 'model-done')
+                }
+              })
+
               // Final stats
               const mentionRate = status.recentScans > 0 
                 ? Math.round((status.mentionedCount / status.recentScans) * 100) 
                 : 0
-              const citationRate = status.citedCount > 0 && status.mentionedCount > 0
-                ? Math.round((status.citedCount / status.mentionedCount) * 100)
-                : 0
 
               addLine(``, 'info')
               addLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
-              addLine(`✓ SCAN COMPLETE`, 'success')
+              addLine(`SCAN COMPLETE`, 'success')
               addLine(``, 'info')
-              addLine(`📊 Results Summary:`, 'info')
-              addLine(`   Total scans: ${status.recentScans}`, 'result')
-              addLine(`   Brand mentioned: ${status.mentionedCount} (${mentionRate}%)`, 'result')
-              addLine(`   Brand cited: ${status.citedCount}`, 'result')
+              addLine(`📊 Results:`, 'info')
+              addLine(`   ${status.recentScans} total scans`, 'result')
+              addLine(`   ${status.mentionedCount || 0} mentions (${mentionRate}% visibility)`, 'result')
+              addLine(`   ${status.citedCount || 0} citations`, 'result')
+              addLine(`   Cost: ~$${(status.recentScans * COST_PER_SCAN).toFixed(3)}`, 'result')
               addLine(``, 'info')
               
               if (mentionRate >= 50) {
-                addLine(`🎉 Great visibility! Your brand is mentioned in ${mentionRate}% of responses.`, 'success')
+                addLine(`🎉 Great visibility! Consider adding more AI models.`, 'success')
               } else if (mentionRate >= 20) {
-                addLine(`📈 Moderate visibility. Consider generating memos to improve.`, 'info')
+                addLine(`📈 Moderate visibility. Generate memos to improve.`, 'info')
               } else {
-                addLine(`⚠️ Low visibility. Generate memos to help AI models cite you.`, 'info')
+                addLine(`⚠️ Low visibility. Generate memos to help AI cite you.`, 'info')
               }
 
               setIsComplete(true)
+              setEstimatedCost(status.recentScans * COST_PER_SCAN)
               setScanStats({
                 scanned: status.recentScans,
                 mentioned: status.mentionedCount || 0,
@@ -217,12 +253,21 @@ export function ScanProgressModal({
               <p className="text-sm text-slate-300">{brandName}</p>
             </div>
           </div>
-          <button 
-            onClick={handleClose}
-            className="text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Cost indicator */}
+            <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded">
+              <DollarSign className="h-4 w-4 text-[#10B981]" />
+              <span className="text-sm font-mono text-[#10B981]">
+                ${estimatedCost.toFixed(3)}
+              </span>
+            </div>
+            <button 
+              onClick={handleClose}
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Progress Log */}
@@ -230,8 +275,14 @@ export function ScanProgressModal({
           ref={progressRef}
           className="h-80 overflow-y-auto bg-[#1a1b26] p-4 font-mono text-sm"
         >
-          {progressLines.map((line, i) => (
-            <div key={i} className="flex items-start gap-2 py-0.5">
+          {progressLines.map((line) => (
+            <div key={line.id} className="flex items-start gap-2 py-0.5">
+              {line.type === 'model-working' && (
+                <Loader2 className="h-4 w-4 text-[#F59E0B] animate-spin shrink-0 mt-0.5" />
+              )}
+              {line.type === 'model-done' && (
+                <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
+              )}
               {line.type === 'working' && (
                 <Loader2 className="h-4 w-4 text-[#F59E0B] animate-spin shrink-0 mt-0.5" />
               )}
@@ -245,7 +296,9 @@ export function ScanProgressModal({
                 <span className="text-[#0EA5E9] shrink-0">•</span>
               )}
               <span className={
-                line.type === 'success' ? 'text-[#10B981]' :
+                line.type === 'success' ? 'text-[#10B981] font-bold' :
+                line.type === 'model-working' ? 'text-[#F59E0B]' :
+                line.type === 'model-done' ? 'text-[#10B981]' :
                 line.type === 'working' ? 'text-[#F59E0B]' :
                 line.type === 'result' ? 'text-[#0EA5E9]' :
                 line.text.startsWith('▶') ? 'text-[#7aa2f7] font-bold' :

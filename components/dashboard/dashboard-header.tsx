@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Zap, Settings, LogOut } from 'lucide-react'
+import { UsageBadge } from './usage-badge'
 
 interface DashboardHeaderProps {
   user: {
@@ -65,6 +66,7 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
           </div>
           
           <div className="flex items-center gap-4">
+            <UsageBadge />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button 
