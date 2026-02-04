@@ -392,18 +392,82 @@ export default async function MemoPage({ params }: Props) {
               </div>
             )}
             
-            {/* Transparency info */}
+            {/* Transparency statement */}
             {memo.generation_model && (
-              <details className="text-xs text-slate-500">
-                <summary className="cursor-pointer hover:text-slate-700">View generation details</summary>
-                <div className="mt-2 p-3 bg-slate-50 rounded-lg space-y-1">
-                  <p><strong>Model:</strong> {memo.generation_model}</p>
-                  {memo.generation_duration_ms && <p><strong>Generation time:</strong> {(memo.generation_duration_ms / 1000).toFixed(1)} seconds</p>}
-                  {memo.generation_tokens?.total && <p><strong>Tokens used:</strong> {memo.generation_tokens.total.toLocaleString()}</p>}
-                  {memo.human_edits_count > 0 && <p><strong>Human edits:</strong> {memo.human_edits_count}</p>}
-                  {memo.provenance?.source_competitor && <p><strong>Topic inspired by:</strong> {memo.provenance.source_competitor} content</p>}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-800 mb-1">About This Article</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      {memo.provenance?.source_competitor ? (
+                        <>
+                          This article was inspired by content from <strong>{memo.provenance.source_competitor}</strong> and 
+                          generated using <strong>{brand.name}&apos;s</strong> verified brand profile to create authentic, 
+                          accurate content that reflects our expertise and perspective.
+                        </>
+                      ) : (
+                        <>
+                          This article was generated using <strong>{brand.name}&apos;s</strong> verified brand profile 
+                          to create authentic, accurate content that reflects our expertise and perspective.
+                        </>
+                      )}
+                    </p>
+                    
+                    <details className="mt-3 text-xs text-slate-500">
+                      <summary className="cursor-pointer hover:text-slate-700 font-medium">View full provenance</summary>
+                      <div className="mt-2 p-3 bg-white rounded border border-slate-100 space-y-1.5">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">AI Model</span>
+                          <span className="font-mono">{memo.generation_model}</span>
+                        </div>
+                        {memo.generation_duration_ms && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Generation time</span>
+                            <span>{(memo.generation_duration_ms / 1000).toFixed(1)}s</span>
+                          </div>
+                        )}
+                        {memo.generation_tokens?.total && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Tokens used</span>
+                            <span>{memo.generation_tokens.total.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {memo.provenance?.source_url && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Inspired by</span>
+                            <a href={memo.provenance.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-48">
+                              {new URL(memo.provenance.source_url).hostname}
+                            </a>
+                          </div>
+                        )}
+                        {memo.provenance?.generated_at && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Generated</span>
+                            <span>{new Date(memo.provenance.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        )}
+                        {(memo.human_edits_count || 0) > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Human edits</span>
+                            <span>{memo.human_edits_count} revision{memo.human_edits_count > 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {memo.reviewed_at && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Human verified</span>
+                            <span>{new Date(memo.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  </div>
                 </div>
-              </details>
+              </div>
             )}
           </div>
         </div>
