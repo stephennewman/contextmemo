@@ -269,6 +269,32 @@ export const memoGenerate = inngest.createFunction(
     // Deduplicate
     const uniqueSameAs = [...new Set(brandSameAs)]
 
+    // Build citations array from voice insights (Schema.org Quotation)
+    const expertCitations = voiceInsights.map(insight => ({
+      '@type': 'Quotation',
+      text: insight.transcript,
+      creator: {
+        '@type': 'Person',
+        name: insight.recorded_by_name,
+        jobTitle: insight.recorded_by_title || undefined,
+        sameAs: insight.recorded_by_linkedin_url || undefined,
+      },
+      dateCreated: insight.recorded_at,
+      // Mark as verified primary source
+      additionalType: 'https://schema.org/Statement',
+      isBasedOn: {
+        '@type': 'AudioObject',
+        name: `Voice recording: ${insight.title}`,
+        dateCreated: insight.recorded_at,
+      },
+    }))
+
+    // Build speakable specification for key content
+    const speakableSpec = voiceInsights.length > 0 ? {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['blockquote', '.expert-insight'],
+    } : undefined
+
     const schemaJson = {
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -304,11 +330,16 @@ export const memoGenerate = inngest.createFunction(
         '@type': 'Organization',
         name: brand.name,
       },
+      // Primary source - the brand's website
       citation: {
         '@type': 'WebSite',
         name: brand.name,
         url: `https://${brand.domain}`,
       },
+      // Expert quotes as structured citations
+      ...(expertCitations.length > 0 && { hasPart: expertCitations }),
+      // Speakable content for voice assistants
+      ...(speakableSpec && { speakable: speakableSpec }),
     }
 
     // Step 5: Save memo to database

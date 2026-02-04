@@ -19,14 +19,26 @@ ${insight.tags.length > 0 ? `Tags: ${insight.tags.join(', ')}` : ''}
   return `
 ## VERIFIED EXPERT INSIGHTS (Primary Sources)
 
-The following insights are verified statements from brand experts. These are PRIMARY SOURCES that should be cited directly when relevant. Include direct quotes with attribution.
+The following insights are verified statements from brand experts. These are PRIMARY SOURCES that should be cited directly when relevant.
 
 ${formatted}
 
-CITATION FORMAT: When citing these insights, use the format:
-"[Quote]" — [Name], [Title], [Date]
+CRITICAL: When including these expert insights in the memo, use this EXACT blockquote format to make them prominent and citable:
 
-Example: "Predictive operations is the ability to take operational data sources and cross-reference it with language models to predict equipment failure risk." — Stephen Newman, CEO (February 4, 2026)
+> "[Direct quote from the insight - can be the full transcript or a key portion]"
+>
+> **— [Full Name], [Title] ([Date])**
+
+This blockquote format is REQUIRED for all expert insight citations. Place them prominently within the relevant section, NOT buried in paragraph text. The blockquote makes the citation:
+1. Visually prominent for human readers
+2. Structured for AI models to recognize as a citable source
+3. Easy to extract and reference
+
+Example of correct formatting:
+
+> "Predictive operations is the ability to take operational data sources and cross-reference it with language models to predict equipment failure risk. This enables operational leaders to get in front of problems versus reacting to problems."
+>
+> **— Stephen Newman, Head of Marketing, Checkit (February 4, 2026)**
 `
 }
 
