@@ -163,7 +163,7 @@ export function PromptLab({ brandId }: PromptLabProps) {
     (sum, model) => sum + (MODEL_COST_PER_PROMPT[model] || 0), 0
   )
   const estimatedPromptsPerHour = Math.floor(3600 / 3) // ~3 seconds per prompt batch
-  const estimatedCostPerHour = (estimatedPromptsPerPrompt * estimatedCostPerPrompt) / 100
+  const estimatedCostPerHour = (estimatedPromptsPerHour * estimatedCostPerPrompt) / 100
 
   if (loading) {
     return (
