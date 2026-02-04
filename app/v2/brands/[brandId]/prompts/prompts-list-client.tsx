@@ -751,23 +751,23 @@ export function PromptsListClient({
               {selectedCompetitor.context && (
                 <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                   <h4 className="text-sm font-medium text-muted-foreground">Discovery Info</h4>
-                  {selectedCompetitor.context.citation_count && (
+                  {typeof selectedCompetitor.context.citation_count === 'number' && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Citation count:</span>
-                      <span className="font-medium">{selectedCompetitor.context.citation_count as number}</span>
+                      <span className="font-medium">{selectedCompetitor.context.citation_count}</span>
                     </div>
                   )}
-                  {selectedCompetitor.context.discovered_from && (
+                  {typeof selectedCompetitor.context.discovered_from === 'string' && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Discovered from:</span>
-                      <span className="font-medium capitalize">{selectedCompetitor.context.discovered_from as string}</span>
+                      <span className="font-medium capitalize">{selectedCompetitor.context.discovered_from}</span>
                     </div>
                   )}
-                  {selectedCompetitor.context.discovered_at && (
+                  {typeof selectedCompetitor.context.discovered_at === 'string' && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Discovered:</span>
                       <span className="font-medium">
-                        {formatDistanceToNow(new Date(selectedCompetitor.context.discovered_at as string), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(selectedCompetitor.context.discovered_at), { addSuffix: true })}
                       </span>
                     </div>
                   )}
