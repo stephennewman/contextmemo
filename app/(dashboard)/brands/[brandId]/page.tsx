@@ -25,6 +25,7 @@ import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { AttributionDashboard } from '@/components/dashboard/attribution-dashboard'
 import { PromptIntelligenceFeed } from '@/components/dashboard/prompt-intelligence-feed'
 import { ModelInsightsPanel } from '@/components/dashboard/model-insights-panel'
+import { PromptLab } from '@/components/dashboard/prompt-lab'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -439,6 +440,9 @@ export default async function BrandPage({ params }: Props) {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="lab" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
+            LAB
+          </TabsTrigger>
         </TabsList>
 
         {/* Brand Profile Tab - All extracted brand information */}
@@ -698,6 +702,11 @@ export default async function BrandPage({ params }: Props) {
             }>}
             unreadCount={unreadAlerts.length}
           />
+        </TabsContent>
+
+        {/* Prompt Lab - High-volume citation research */}
+        <TabsContent value="lab">
+          <PromptLab brandId={brandId} />
         </TabsContent>
       </Tabs>
     </div>

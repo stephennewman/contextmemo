@@ -41,15 +41,15 @@ interface ModelConfig {
 
 // Citation-capable models only
 // All OpenRouter models use :online suffix for native web search with citations
-// NOTE: Only GPT-4o Mini enabled for cost/speed optimization during testing
+// Multi-model scanning enabled for cross-model citation comparison
 const SCAN_MODELS: ModelConfig[] = [
-  // Perplexity - direct API for rich citation data
+  // Perplexity - direct API for rich citation data (cheapest ~$0.01/prompt)
   { 
     id: 'perplexity-sonar', 
     displayName: 'Perplexity Sonar', 
     provider: 'perplexity-direct', 
     modelId: 'sonar', 
-    enabled: false, // Disabled for testing
+    enabled: true, // Enabled for multi-model comparison
     citationSource: 'perplexity',
   },
   
@@ -60,7 +60,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'GPT-4o Mini', 
     provider: 'openrouter', 
     modelId: 'openai/gpt-4o-mini:online', 
-    enabled: true, // Primary model for testing
+    enabled: true, // Primary model
     citationSource: 'openrouter-native',
   },
   { 
@@ -68,7 +68,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Claude 3.5 Haiku', 
     provider: 'openrouter', 
     modelId: 'anthropic/claude-3.5-haiku:online', 
-    enabled: false, // Disabled for testing
+    enabled: true, // Enabled for multi-model comparison
     citationSource: 'openrouter-native',
   },
   { 
@@ -76,7 +76,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Grok 4 Fast', 
     provider: 'openrouter', 
     modelId: 'x-ai/grok-4-fast:online', 
-    enabled: false, // Disabled for testing
+    enabled: true, // Enabled for multi-model comparison
     citationSource: 'openrouter-native',
   },
 ]
@@ -1069,7 +1069,7 @@ async function scanWithPerplexityDirect(
     citations,
     searchResults: searchResultsJson.length > 0 ? searchResultsJson : null,
     brandInCitations,
-    inputTokens: usage?.inputTokens || 0,
-    outputTokens: usage?.outputTokens || 0,
+    inputTokens: usage?.promptTokens || 0,
+    outputTokens: usage?.completionTokens || 0,
   }
 }

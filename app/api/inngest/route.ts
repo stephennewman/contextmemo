@@ -42,6 +42,10 @@ import {
   getPromptIntelligenceFeed, 
   weeklyPromptIntelligence 
 } from '@/lib/inngest/functions/prompt-intelligence'
+import { 
+  promptLabRun, 
+  promptLabStop 
+} from '@/lib/inngest/functions/prompt-lab'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -108,6 +112,10 @@ export const { GET, POST, PUT } = serve({
     
     // Google AI Overviews (requires SERPAPI_KEY)
     aiOverviewScan,          // Scan Google AI Overviews for brand queries
+    
+    // Prompt Lab - high-volume citation research
+    promptLabRun,            // Run prompts continuously for X minutes
+    promptLabStop,           // Stop a running lab
   ],
 })
 // Sync trigger Wed Feb  4 13:26:53 EST 2026
