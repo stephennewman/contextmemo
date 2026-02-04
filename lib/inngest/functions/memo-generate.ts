@@ -12,7 +12,8 @@ import {
 } from '@/lib/ai/prompts/memo-generation'
 import { BrandContext, VoiceInsight } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
-import { sanitizeContentForHubspot } from '@/lib/hubspot/content-sanitizer'
+import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
+import { selectImageForMemo } from '@/lib/hubspot/image-selector'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -174,15 +175,41 @@ export const memoGenerate = inngest.createFunction(
           break
 
         case 'how_to':
-          // Extract topic from query - remove various question prefixes
+          // Extract topic from query - convert to action verb form
           let topic = query?.query_text || 'get started'
-          // Remove common question prefixes to get the core topic
+          
+          // Remove question prefixes and convert to imperative form
           topic = topic
             .replace(/^how\s+(to|can\s+i|do\s+i|should\s+i)\s+/i, '')
             .replace(/^what\s+(are|is)\s+(the\s+)?(best\s+)?(ways?\s+to\s+)?/i, '')
+            .replace(/^what\s+(are|is)\s+(the\s+)?(most\s+)?(effective\s+)?(methods?\s+(for|to)\s+)?/i, '')
             .replace(/^why\s+(should\s+i|do\s+i\s+need\s+to)\s+/i, '')
             .replace(/\?$/g, '') // Remove trailing question mark
             .trim()
+          
+          // Ensure topic starts with a verb for "How to X" format
+          // If it starts with a noun/adjective pattern, add an appropriate verb
+          const startsWithVerb = /^(implement|create|build|use|set|get|make|choose|select|find|monitor|track|automate|manage|improve|optimize|ensure|establish|develop|deploy|configure|enable|install|integrate|maintain|prevent|reduce|increase|measure|analyze|verify|validate|secure|protect|customize|streamline|simplify|digitize|transform)/i.test(topic)
+          
+          if (!startsWithVerb) {
+            // Convert noun phrases to verb phrases
+            if (/^(effective|best|optimal|proper|correct|safe|reliable|accurate|efficient)\s+(methods?|ways?|practices?|strategies?|approaches?|techniques?|solutions?)\s+(for|to)\s+/i.test(topic)) {
+              // "effective methods for monitoring X" -> "effectively monitor X"
+              topic = topic
+                .replace(/^effective\s+(methods?|ways?|practices?)\s+(for|to)\s+/i, 'effectively ')
+                .replace(/^best\s+(methods?|ways?|practices?)\s+(for|to)\s+/i, 'best ')
+                .replace(/^optimal\s+(methods?|ways?|practices?)\s+(for|to)\s+/i, 'optimize ')
+            } else if (/^(iot|digital|automated?|smart|wireless|cloud|remote)\s+/i.test(topic)) {
+              // "IoT solutions for X" -> "implement IoT solutions for X"
+              topic = `implement ${topic}`
+            } else if (/monitoring|tracking|compliance|reporting|management/i.test(topic)) {
+              // Topic about monitoring/tracking -> "set up X"
+              topic = `set up ${topic}`
+            }
+          }
+          
+          // Ensure first letter is lowercase (since "How to" will precede it)
+          topic = topic.charAt(0).toLowerCase() + topic.slice(1)
           
           const competitorList = competitors.slice(0, 3).map(c => c.name).join(', ')
           prompt = HOW_TO_MEMO_PROMPT
@@ -194,7 +221,7 @@ export const memoGenerate = inngest.createFunction(
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
           slug = `how/${sanitizeSlug(topic)}`
-          // Capitalize first letter properly
+          // Capitalize first letter of action word after "How to"
           title = `How to ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
           break
 
@@ -485,17 +512,41 @@ ${memoContent.content.slice(0, 1000)}`,
         try {
           const { marked } = await import('marked')
           
-          // Sanitize content to remove any Contextmemo references before HubSpot sync
-          const sanitizedContent = sanitizeContentForHubspot(memoContent.content, { brandName: brand.name })
-          const htmlContent = await marked(sanitizedContent, { gfm: true, breaks: true })
+          // Sanitize content to remove any Contextmemo references and title before HubSpot sync
+          const sanitizedContent = sanitizeContentForHubspot(memoContent.content, { 
+            brandName: brand.name,
+            title: memoContent.title, // Remove title from body - HubSpot displays it separately
+          })
+          const rawHtml = await marked(sanitizedContent, { gfm: true, breaks: true })
+          // Apply HubSpot-specific formatting (inline styles for spacing, tables, etc.)
+          const htmlContent = formatHtmlForHubspot(rawHtml)
+          
+          // Select a featured image based on the memo content
+          const featuredImage = selectImageForMemo(memoContent.title, memoContent.content, memoType)
+          
+          // Create a summary from the first paragraph
+          const contentParagraphs = sanitizedContent.split('\n\n')
+          const firstParagraph = contentParagraphs.find((p: string) => p.trim() && !p.startsWith('#') && !p.startsWith('*Last'))
+          const postSummary = firstParagraph
+            ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300) + (firstParagraph.length > 300 ? '...' : '')
+            : metaDescription || ''
           
           const blogPost = {
             name: memoContent.title,
+            htmlTitle: `${memoContent.title} | ${brand.name}`,
             contentGroupId: hubspotConfig.blog_id,
             postBody: htmlContent,
+            postSummary: postSummary,
             metaDescription: metaDescription || undefined,
             slug: memoContent.slug.replace(/\//g, '-'),
             state: memo.status === 'published' ? 'PUBLISHED' : 'DRAFT',
+            authorName: brand.name, // Auto-generated content uses brand name as author
+            // Featured image from Unsplash
+            featuredImage: featuredImage.url,
+            featuredImageAltText: featuredImage.alt,
+            useFeaturedImage: true,
+            // Publish date
+            publishDate: new Date().toISOString(),
           }
 
           const response = await fetch('https://api.hubapi.com/cms/v3/blogs/posts', {
@@ -537,6 +588,8 @@ ${memoContent.content.slice(0, 1000)}`,
                 ...memo.schema_json,
                 hubspot_post_id: hubspotPost.id,
                 hubspot_synced_at: new Date().toISOString(),
+                hubspot_synced_by: 'Auto-sync',
+                hubspot_auto_synced: true,
               },
             })
             .eq('id', memo.id)

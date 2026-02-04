@@ -1,22 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
 import { getHubSpotToken } from '@/lib/hubspot/oauth'
-import { sanitizeContentForHubspot } from '@/lib/hubspot/content-sanitizer'
+import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
+import { selectImageForMemo } from '@/lib/hubspot/image-selector'
 
-const supabase = createClient(
+// Service role client for database operations
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Create authenticated client to get current user
+async function getAuthClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+}
+
 interface HubSpotBlogPost {
   name: string
+  htmlTitle?: string
   contentGroupId: string
   postBody: string
+  postSummary?: string
   metaDescription?: string
   slug?: string
   state: 'DRAFT' | 'PUBLISHED'
+  authorName?: string  // User who pushed content - shows in HubSpot as the author
+  // Featured image
+  featuredImage?: string
+  featuredImageAltText?: string
+  useFeaturedImage?: boolean
+  // Publish date
+  publishDate?: string
 }
 
 interface HubSpotResponse {
@@ -37,8 +71,26 @@ export async function POST(
     const body = await request.json()
     const { publish = false } = body
 
+    // Get authenticated user
+    const supabase = await getAuthClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user's name from tenants table
+    const { data: tenant } = await supabaseAdmin
+      .from('tenants')
+      .select('name, email')
+      .eq('id', user.id)
+      .single()
+    
+    // Use the user's name, or fall back to email prefix
+    const userName = tenant?.name || user.email?.split('@')[0] || 'Unknown User'
+
     // Get brand with HubSpot config
-    const { data: brand, error: brandError } = await supabase
+    const { data: brand, error: brandError } = await supabaseAdmin
       .from('brands')
       .select('*')
       .eq('id', brandId)
@@ -75,7 +127,7 @@ export async function POST(
     }
 
     // Get memo
-    const { data: memo, error: memoError } = await supabase
+    const { data: memo, error: memoError } = await supabaseAdmin
       .from('memos')
       .select('*')
       .eq('id', memoId)
@@ -86,21 +138,45 @@ export async function POST(
       return NextResponse.json({ error: 'Memo not found' }, { status: 404 })
     }
 
-    // Sanitize content to remove any Contextmemo references, then convert to HTML
-    const sanitizedMarkdown = sanitizeContentForHubspot(memo.content_markdown, { brandName: brand.name })
-    const htmlContent = await marked(sanitizedMarkdown, {
+    // Sanitize content to remove any Contextmemo references and the title, then convert to HTML
+    const sanitizedMarkdown = sanitizeContentForHubspot(memo.content_markdown, { 
+      brandName: brand.name,
+      title: memo.title, // Remove title from body - HubSpot displays it separately
+    })
+    const rawHtml = await marked(sanitizedMarkdown, {
       gfm: true,
       breaks: true,
     })
+    // Apply HubSpot-specific formatting (inline styles for spacing, tables, etc.)
+    const htmlContent = formatHtmlForHubspot(rawHtml)
+
+    // Select a featured image based on the memo content
+    const featuredImage = selectImageForMemo(memo.title, memo.content_markdown, memo.memo_type)
+    
+    // Create a summary from the first paragraph for HubSpot blog listing
+    const contentParagraphs = sanitizedMarkdown.split('\n\n')
+    const firstParagraph = contentParagraphs.find((p: string) => p.trim() && !p.startsWith('#') && !p.startsWith('*Last'))
+    const postSummary = firstParagraph
+      ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300) + (firstParagraph.length > 300 ? '...' : '')
+      : memo.meta_description || ''
 
     // Prepare HubSpot blog post payload
     const blogPost: HubSpotBlogPost = {
       name: memo.title,
+      htmlTitle: `${memo.title} | ${brand.name}`,
       contentGroupId: hubspotConfig.blog_id,
       postBody: htmlContent,
+      postSummary: postSummary,
       metaDescription: memo.meta_description || undefined,
       slug: memo.slug.replace(/\//g, '-'), // HubSpot doesn't allow slashes in slugs
       state: publish ? 'PUBLISHED' : 'DRAFT',
+      authorName: userName, // User who pushed - appears in HubSpot as author
+      // Featured image from Unsplash
+      featuredImage: featuredImage.url,
+      featuredImageAltText: featuredImage.alt,
+      useFeaturedImage: true,
+      // Publish date
+      publishDate: new Date().toISOString(),
     }
 
     // Check if we already have a HubSpot post ID (for updates)
@@ -194,25 +270,42 @@ export async function POST(
     }
 
     // Store HubSpot post ID in memo's schema_json for future updates
-    await supabase
+    await supabaseAdmin
       .from('memos')
       .update({
         schema_json: {
           ...memo.schema_json,
           hubspot_post_id: hubspotPost.id,
           hubspot_synced_at: new Date().toISOString(),
+          hubspot_synced_by: userName,
+          hubspot_synced_by_user_id: user.id,
         },
         updated_at: new Date().toISOString(),
       })
       .eq('id', memoId)
 
+    // Log the HubSpot sync activity with user attribution
+    await supabaseAdmin.from('activity_log').insert({
+      brand_id: brandId,
+      user_id: user.id,
+      action: existingHubspotId ? 'hubspot_content_updated' : 'hubspot_content_created',
+      details: {
+        memo_id: memoId,
+        memo_title: memo.title,
+        hubspot_post_id: hubspotPost.id,
+        state: hubspotPost.state,
+        synced_by: userName,
+      },
+    })
+
     return NextResponse.json({
       success: true,
       hubspotPostId: hubspotPost.id,
       state: hubspotPost.state,
+      syncedBy: userName,
       message: existingHubspotId 
-        ? `Updated blog post in HubSpot (${hubspotPost.state})`
-        : `Created new blog post in HubSpot (${hubspotPost.state})`,
+        ? `Updated blog post in HubSpot by ${userName} (${hubspotPost.state})`
+        : `Created new blog post in HubSpot by ${userName} (${hubspotPost.state})`,
     })
   } catch (error) {
     console.error('HubSpot sync error:', error)
