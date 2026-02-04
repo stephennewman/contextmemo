@@ -6,6 +6,7 @@ import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations, OpenRouter
 import { calculateTotalCost } from '@/lib/config/costs'
 import { PerplexitySearchResultJson, QueryStatus } from '@/lib/supabase/types'
 import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorDiscovered } from '@/lib/feed/emit'
+import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -159,6 +160,11 @@ export const scanRun = inngest.createFunction(
 
     const brandName = brand.name.toLowerCase()
     const competitorNames = competitors.map(c => c.name.toLowerCase())
+
+    // Track job start
+    const jobId = await step.run('track-job-start', async () => {
+      return await trackJobStart(brandId, 'scan', { queryCount: queries.length })
+    })
 
     // Get enabled models
     const enabledModels = SCAN_MODELS.filter(m => m.enabled)
@@ -843,6 +849,11 @@ export const scanRun = inngest.createFunction(
     await step.sendEvent('trigger-prompt-enrichment', {
       name: 'prompt/enrich',
       data: { brandId },
+    })
+
+    // Track job end
+    await step.run('track-job-end', async () => {
+      await trackJobEnd(jobId)
     })
 
     return {

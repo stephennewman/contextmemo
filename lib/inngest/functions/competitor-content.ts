@@ -6,6 +6,7 @@ import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
 import { BrandContext, CompetitorFeed } from '@/lib/supabase/types'
 import { generateToneInstructions } from '@/lib/ai/prompts/memo-generation'
 import { emitCompetitorPublished } from '@/lib/feed/emit'
+import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import crypto from 'crypto'
 import Parser from 'rss-parser'
 
@@ -797,6 +798,11 @@ export const competitorContentClassify = inngest.createFunction(
       return { success: true, message: 'No content to classify', classified: 0 }
     }
 
+    // Track job start
+    const jobId = await step.run('track-job-start', async () => {
+      return await trackJobStart(brandId, 'classify', { contentCount: newContent.length })
+    })
+
     let classifiedCount = 0
     let respondableCount = 0
 
@@ -911,6 +917,11 @@ export const competitorContentClassify = inngest.createFunction(
       })
     }
 
+    // Track job end
+    await step.run('track-job-end', async () => {
+      await trackJobEnd(jobId)
+    })
+
     return {
       success: true,
       classified: classifiedCount,
@@ -970,6 +981,11 @@ export const competitorContentRespond = inngest.createFunction(
     if (pendingContent.length === 0) {
       return { success: true, message: 'No content to respond to', generated: 0 }
     }
+
+    // Track job start
+    const jobId = await step.run('track-job-start', async () => {
+      return await trackJobStart(brandId, 'generate', { contentCount: pendingContent.length })
+    })
 
     const brandContext = brand.context as BrandContext
     const toneInstructions = generateToneInstructions(brandContext?.brand_tone)
@@ -1169,6 +1185,11 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
         })
       })
     }
+
+    // Track job end
+    await step.run('track-job-end', async () => {
+      await trackJobEnd(jobId)
+    })
 
     return {
       success: true,
