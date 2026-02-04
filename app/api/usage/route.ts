@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Margin multiplier: for every $1 shown to user, we pay $0.20 to OpenRouter
+// So displayed cost = actual cost * 5
+const MARGIN_MULTIPLIER = 5
+
+// Default starting balance per brand (in dollars)
+const DEFAULT_BRAND_BALANCE = 50
+
 export async function GET() {
   const supabase = await createClient()
   
@@ -12,102 +19,64 @@ export async function GET() {
   // Get tenant
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, plan_limits')
+    .select('id')
     .eq('user_id', user.id)
     .single()
 
-  // Try to get real costs from OpenRouter
-  let openRouterCredits = null
-  try {
-    const openRouterKey = process.env.OPENROUTER_API_KEY
-    if (openRouterKey) {
-      const res = await fetch('https://openrouter.ai/api/v1/credits', {
-        headers: {
-          'Authorization': `Bearer ${openRouterKey}`,
-        },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        openRouterCredits = data.data
-      }
-    }
-  } catch (error) {
-    console.error('Failed to fetch OpenRouter credits:', error)
+  if (!tenant) {
+    return NextResponse.json({ error: 'No tenant found' }, { status: 404 })
   }
 
-  // Get per-brand costs from usage_events
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
+  // Get brands for this tenant
+  const { data: brands } = await supabase
+    .from('brands')
+    .select('id, name')
+    .eq('tenant_id', tenant.id)
 
-  let brandCosts: { brandId: string; brandName: string; costCents: number }[] = []
-  
-  if (tenant) {
-    // Get usage by brand for this tenant
-    const { data: usageByBrand } = await supabase
-      .from('usage_events')
-      .select('brand_id, total_cost_cents')
-      .eq('tenant_id', tenant.id)
-      .gte('created_at', startOfMonth.toISOString())
+  const brandIds = (brands || []).map(b => b.id)
+  const brandMap = new Map((brands || []).map(b => [b.id, b.name]))
 
-    // Group by brand
-    const brandTotals = new Map<string, number>()
-    for (const event of usageByBrand || []) {
-      if (event.brand_id) {
-        const current = brandTotals.get(event.brand_id) || 0
-        brandTotals.set(event.brand_id, current + (event.total_cost_cents || 0))
-      }
-    }
+  // Get all-time usage from our database (for balance calculation)
+  const { data: usageEvents } = await supabase
+    .from('usage_events')
+    .select('total_cost_cents, brand_id')
+    .eq('tenant_id', tenant.id)
 
-    // Get brand names
-    if (brandTotals.size > 0) {
-      const { data: brands } = await supabase
-        .from('brands')
-        .select('id, name')
-        .in('id', Array.from(brandTotals.keys()))
+  // Calculate per-brand costs (actual cost from OpenRouter)
+  const brandActualCosts = new Map<string, number>()
 
-      brandCosts = (brands || []).map(b => ({
-        brandId: b.id,
-        brandName: b.name,
-        costCents: brandTotals.get(b.id) || 0,
-      })).sort((a, b) => b.costCents - a.costCents)
+  for (const event of usageEvents || []) {
+    const cost = event.total_cost_cents || 0
+    if (event.brand_id) {
+      brandActualCosts.set(event.brand_id, (brandActualCosts.get(event.brand_id) || 0) + cost)
     }
   }
 
-  // Calculate total internal cost
-  const totalInternalCostCents = brandCosts.reduce((sum, b) => sum + b.costCents, 0)
+  // Build per-brand breakdown with margin applied
+  const byBrand = brandIds.map((brandId) => {
+    const actualCostCents = brandActualCosts.get(brandId) || 0
+    // Apply margin: displayed cost = actual cost * multiplier
+    const displayedCostCents = actualCostCents * MARGIN_MULTIPLIER
+    const displayedCostDollars = displayedCostCents / 100
+    // Balance = starting balance - displayed spend
+    const balance = DEFAULT_BRAND_BALANCE - displayedCostDollars
 
-  // If we have OpenRouter data, use it for balance
-  if (openRouterCredits) {
-    const totalCredits = openRouterCredits.total_credits || 0
-    const totalUsage = openRouterCredits.total_usage || 0
-    const remaining = totalCredits - totalUsage
+    return {
+      brandId,
+      brandName: brandMap.get(brandId) || 'Unknown',
+      spent: displayedCostDollars,
+      balance: Math.max(0, balance),
+      startingBalance: DEFAULT_BRAND_BALANCE,
+    }
+  }).sort((a, b) => b.spent - a.spent)
 
-    return NextResponse.json({
-      source: 'openrouter',
-      totalCredits: totalCredits.toFixed(2),
-      totalUsage: totalUsage.toFixed(2),
-      remaining: remaining.toFixed(2),
-      costDollars: totalUsage.toFixed(2),
-      byBrand: brandCosts.map(b => ({
-        brandId: b.brandId,
-        brandName: b.brandName,
-        costDollars: (b.costCents / 100).toFixed(2),
-      })),
-    })
-  }
+  // Calculate totals
+  const totalSpent = byBrand.reduce((sum, b) => sum + b.spent, 0)
+  const totalBalance = byBrand.reduce((sum, b) => sum + b.balance, 0)
 
-  // Fallback to internal tracking
   return NextResponse.json({
-    source: 'internal',
-    costDollars: (totalInternalCostCents / 100).toFixed(2),
-    totalCredits: '100.00',
-    totalUsage: (totalInternalCostCents / 100).toFixed(2),
-    remaining: (100 - totalInternalCostCents / 100).toFixed(2),
-    byBrand: brandCosts.map(b => ({
-      brandId: b.brandId,
-      brandName: b.brandName,
-      costDollars: (b.costCents / 100).toFixed(2),
-    })),
+    totalSpent,
+    totalBalance,
+    byBrand,
   })
 }

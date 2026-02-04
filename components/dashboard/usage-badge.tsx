@@ -5,24 +5,21 @@ import { Wallet, ChevronDown } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
 interface BrandUsage {
   brandId: string
   brandName: string
-  costDollars: string
+  spent: number
+  balance: number
+  startingBalance: number
 }
 
 interface UsageData {
-  totalCredits: string
-  totalUsage: string
-  remaining: string
-  costDollars: string
-  source: string
-  byBrand?: BrandUsage[]
+  totalSpent: number
+  totalBalance: number
+  byBrand: BrandUsage[]
 }
 
 export function UsageBadge() {
@@ -50,8 +47,8 @@ export function UsageBadge() {
     return () => clearInterval(interval)
   }, [])
 
-  const remaining = parseFloat(usage?.remaining || '0')
-  const isLow = remaining < 5
+  const totalBalance = usage?.totalBalance || 0
+  const isLow = totalBalance < 10
 
   return (
     <DropdownMenu>
@@ -61,46 +58,57 @@ export function UsageBadge() {
         >
           <Wallet className={`h-4 w-4 ${isLow ? 'text-[#F59E0B]' : 'text-[#10B981]'}`} />
           <span className={`text-sm font-mono ${isLow ? 'text-[#F59E0B]' : 'text-[#10B981]'}`}>
-            {isLoading ? '...' : `$${usage?.remaining || '0.00'}`}
+            {isLoading ? '...' : `$${totalBalance.toFixed(2)}`}
           </span>
           <ChevronDown className="h-3 w-3 text-slate-500" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 border-2 border-[#0F172A] rounded-none">
-        <div className="px-3 py-2 border-b border-slate-200">
-          <p className="text-xs text-muted-foreground">OpenRouter Balance</p>
-          <p className="text-lg font-bold font-mono text-[#10B981]">${usage?.remaining || '0.00'}</p>
+      <DropdownMenuContent align="end" className="w-64 border-2 border-[#0F172A] rounded-none p-0">
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Balance</p>
+          <p className={`text-2xl font-bold font-mono ${isLow ? 'text-[#F59E0B]' : 'text-[#10B981]'}`}>
+            ${totalBalance.toFixed(2)}
+          </p>
           <p className="text-xs text-muted-foreground">
-            Used: ${usage?.totalUsage || '0.00'} this month
+            ${usage?.totalSpent.toFixed(2) || '0.00'} spent total
           </p>
         </div>
         
         {usage?.byBrand && usage.byBrand.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="px-3 py-2">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">BY BRAND</p>
-              {usage.byBrand.map((brand) => (
-                <div key={brand.brandId} className="flex justify-between items-center py-1">
-                  <span className="text-sm truncate max-w-32">{brand.brandName}</span>
-                  <span className="text-sm font-mono">${brand.costDollars}</span>
-                </div>
-              ))}
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+              By Brand
+            </p>
+            <div className="space-y-3">
+              {usage.byBrand.map((brand) => {
+                const percentUsed = (brand.spent / brand.startingBalance) * 100
+                const brandIsLow = brand.balance < 10
+                
+                return (
+                  <div key={brand.brandId}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium truncate max-w-36">
+                        {brand.brandName}
+                      </span>
+                      <span className={`text-sm font-mono ${brandIsLow ? 'text-[#F59E0B]' : 'text-[#10B981]'}`}>
+                        ${brand.balance.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${brandIsLow ? 'bg-[#F59E0B]' : 'bg-[#10B981]'}`}
+                        style={{ width: `${Math.min(100, 100 - percentUsed)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      ${brand.spent.toFixed(2)} of ${brand.startingBalance} spent
+                    </p>
+                  </div>
+                )
+              })}
             </div>
-          </>
+          </div>
         )}
-        
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="rounded-none">
-          <a 
-            href="https://openrouter.ai/credits" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-xs text-muted-foreground"
-          >
-            Add credits on OpenRouter →
-          </a>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
