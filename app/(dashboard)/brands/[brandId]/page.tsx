@@ -394,7 +394,7 @@ export default async function BrandPage({ params }: Props) {
                 {queries?.length || 0} prompts • {competitors?.length || 0} competitors • 6 AI models
               </p>
             </div>
-            <ScanButton brandId={brandId} />
+            <ScanButton brandId={brandId} brandName={brand.name} queryCount={queries?.length || 0} />
           </div>
         </div>
       )}
@@ -463,7 +463,7 @@ export default async function BrandPage({ params }: Props) {
             </div>
             <div className="flex gap-2">
               <ExportDropdown brandId={brandId} />
-              <ScanButton brandId={brandId} />
+              <ScanButton brandId={brandId} brandName={brand.name} queryCount={queries?.length || 0} />
             </div>
           </div>
           <ScanResultsView 

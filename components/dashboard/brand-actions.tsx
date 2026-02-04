@@ -177,84 +177,33 @@ export function BrandActions({
   )
 }
 
-export function ScanButton({ brandId }: { brandId: string }) {
-  const [loading, setLoading] = useState(false)
-  const [scanStatus, setScanStatus] = useState<string | null>(null)
-  const router = useRouter()
+export function ScanButton({ brandId, brandName, queryCount }: { brandId: string; brandName?: string; queryCount?: number }) {
+  const [showModal, setShowModal] = useState(false)
 
-  const runScan = async () => {
-    setLoading(true)
-    setScanStatus('Starting scan...')
-    
-    try {
-      const response = await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'run_scan' }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Scan failed')
-      }
-
-      toast.success('Scan started! This takes 2-5 minutes.')
-      setScanStatus('Scanning prompts...')
-      
-      // Poll for completion
-      let attempts = 0
-      const maxAttempts = 60 // 5 minutes max
-      const pollInterval = setInterval(async () => {
-        attempts++
-        try {
-          const statusRes = await fetch(`/api/brands/${brandId}/scan-status`)
-          if (statusRes.ok) {
-            const status = await statusRes.json()
-            if (status.recentScans > 0) {
-              setScanStatus(`Scanned ${status.recentScans} prompts...`)
-            }
-            if (status.isComplete || attempts >= maxAttempts) {
-              clearInterval(pollInterval)
-              setLoading(false)
-              setScanStatus(null)
-              toast.success(`Scan complete! ${status.recentScans} new results.`)
-              router.refresh()
-            }
-          }
-        } catch {
-          // Ignore polling errors
-        }
-      }, 5000) // Check every 5 seconds
-      
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Scan failed')
-      setLoading(false)
-      setScanStatus(null)
-    }
-  }
+  // Lazy load the modal component
+  const ScanProgressModal = require('./scan-progress-modal').ScanProgressModal
 
   return (
-    <div className="flex items-center gap-2">
+    <>
       <Button 
-        onClick={runScan} 
-        disabled={loading}
+        onClick={() => setShowModal(true)} 
         size="sm"
         className="gap-2 rounded-none bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
       >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <RefreshCw className="h-4 w-4" />
-        )}
-        {loading ? 'Scanning...' : 'Scan'}
+        <RefreshCw className="h-4 w-4" />
+        Scan
       </Button>
-      {scanStatus && (
-        <span className="text-sm text-muted-foreground animate-pulse">
-          {scanStatus}
-        </span>
+      
+      {showModal && (
+        <ScanProgressModal
+          brandId={brandId}
+          brandName={brandName || 'Brand'}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          queryCount={queryCount || 10}
+        />
       )}
-    </div>
+    </>
   )
 }
 
