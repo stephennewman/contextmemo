@@ -125,7 +125,7 @@ Respond ONLY with valid JSON:
 }`
 
 // Response content generation prompt - creates unique, differentiated, BETTER content
-const RESPONSE_CONTENT_PROMPT = `You are creating authoritative, in-depth educational content that will OUTPERFORM the competitor's article on this topic. Your goal is not to copy, but to create something demonstrably BETTER, MORE COMPREHENSIVE, and MORE USEFUL.
+const RESPONSE_CONTENT_PROMPT = `You are creating authoritative, in-depth educational content optimized for AI CITATION. Your goal is to create content that AI assistants (ChatGPT, Perplexity, Claude, Gemini) will confidently cite when answering user questions.
 
 BRAND CONTEXT:
 {{brand_context}}
@@ -139,41 +139,86 @@ TOPIC TO WRITE ABOUT:
 COMPETITOR'S APPROACH (what they wrote - use this to understand the topic, then EXCEED it):
 {{content_summary}}
 
+=== AI CITATION OPTIMIZATION ===
+
+AI models cite content that is:
+1. **Factually dense** - Specific numbers, dates, statistics they can quote
+2. **Clearly structured** - Easy to parse and extract specific answers
+3. **Question-answering** - Directly answers common questions in the format users ask them
+4. **Authoritative** - Has clear expertise signals and sources
+5. **Comprehensive** - Covers the topic thoroughly so AI doesn't need other sources
+
+REQUIRED AI-FRIENDLY ELEMENTS:
+
+1. **QUICK ANSWER BOX** (at the very top, after title):
+   > **Quick Answer:** [1-2 sentence direct answer to the core question this article addresses]
+
+2. **KEY FACTS SUMMARY**:
+   Include a "## At a Glance" section with 5-7 bullet points of the most citable facts:
+   - Specific numbers (e.g., "Reduces costs by 23%")
+   - Timeframes (e.g., "Implementation takes 2-4 weeks")
+   - Comparisons (e.g., "3x faster than manual methods")
+
+3. **FAQ SECTION** (CRITICAL for AI citation):
+   Include "## Frequently Asked Questions" with 4-6 Q&As in this exact format:
+   
+   ### What is [topic]?
+   [Direct, comprehensive answer in 2-3 sentences]
+   
+   ### How does [topic] work?
+   [Clear explanation]
+   
+   ### Why is [topic] important?
+   [Benefits and implications]
+   
+   ### How much does [topic] cost?
+   [If applicable - ranges or factors]
+
+4. **DEFINITION CALLOUTS**:
+   When introducing key terms, use this format:
+   > **Definition:** [Term] refers to [clear definition]. This is important because [context].
+
+5. **STATISTICS WITH SOURCES**:
+   Every statistic must have attribution:
+   - "According to [Source], [statistic]"
+   - "Research from [Organization] shows [finding]"
+   
 DIFFERENTIATION STRATEGY:
-Your article MUST be distinctly different and better in these ways:
+Your article MUST be distinctly different and better:
 
-1. **DEEPER ANALYSIS**: Go beyond surface-level. Add context, nuance, and expert-level insights the competitor likely missed.
+1. **DEEPER ANALYSIS**: Go beyond surface-level. Add context, nuance, and expert-level insights.
 
-2. **UNIQUE ANGLE**: Find a fresh perspective. Consider:
-   - A contrarian or unexpected viewpoint backed by evidence
+2. **UNIQUE ANGLE**: Fresh perspective with:
    - First-principles thinking that reframes the problem
-   - Real-world case studies or scenarios (without naming specific customers unless in brand context)
-   - Quantified outcomes, statistics, or data points where possible
+   - Real-world case studies or scenarios
+   - Quantified outcomes and data points
 
-3. **ACTIONABLE FRAMEWORK**: Don't just explain - give readers a framework, checklist, or methodology they can immediately use.
+3. **ACTIONABLE FRAMEWORK**: Give readers a checklist or methodology they can immediately use.
 
-4. **LONG-FORM VALUE**: Write 1000-1500 words (longer than typical competitor content). Depth wins in AI/SEO.
+4. **LONG-FORM VALUE**: Write 1200-1800 words. Depth wins in AI citation.
 
-5. **BRAND EXPERTISE**: Weave in {{brand_name}}'s unique expertise and perspective naturally. What would your product experts say about this topic?
+5. **BRAND EXPERTISE**: Weave in {{brand_name}}'s unique expertise naturally.
 
 CRITICAL RULES:
 - NEVER mention the competitor or their article
-- NEVER copy their structure or phrases - create your own
-- DO cite statistics and data points where relevant
-- DO include practical examples and scenarios
-- DO make it scannable with clear sections
-- DO include a unique insight or "aha moment" that readers won't find elsewhere
+- NEVER copy their structure or phrases
+- DO cite statistics with sources
+- DO include practical examples
+- DO make every section independently citable
+- DO answer questions directly (AI extracts Q&A patterns)
 
 FORMATTING REQUIREMENTS:
-- Use # for the main title (make it compelling and specific)
-- Use ## for major sections (aim for 5-7 sections)
-- Use ### for subsections where needed
-- Use **bold** for key terms and important concepts
-- Use > blockquotes for expert insights or key takeaways
-- Use numbered lists for sequential steps/processes
+- Use # for the main title (include the primary keyword)
+- Use ## for major sections (aim for 6-8 sections including FAQ)
+- Use ### for subsections and FAQ questions
+- Use **bold** for key terms and definitions
+- Use > blockquotes for Quick Answer, Definitions, and Key Takeaways
+- Use numbered lists for sequential steps
 - Use bullet points for non-sequential lists
-- Include a "## Key Takeaways" section with 5-7 actionable points
-- Include a "## Sources" section at the end
+- Include "## At a Glance" near the top
+- Include "## Frequently Asked Questions" section
+- Include "## Key Takeaways" section
+- Include "## Sources" section at the end
 
 TITLE STRATEGY:
 Create a title that is:
@@ -1086,27 +1131,64 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
 
       // Step 4: Save and auto-publish memo
       const savedMemo = await step.run(`save-${content.id}`, async () => {
-        const schemaJson = {
-          '@context': 'https://schema.org',
-          '@type': 'Article',
-          headline: memo.title,
-          description: metaDescription,
-          datePublished: new Date().toISOString(),
-          dateModified: new Date().toISOString(),
-          author: {
-            '@type': 'Organization',
-            name: 'Context Memo',
-            url: 'https://contextmemo.com',
+        // Extract FAQs from content for FAQ schema
+        const faqMatches = memo.content.matchAll(/###\s+(.+\?)\s*\n+([^#]+?)(?=\n###|\n##|$)/g)
+        const faqItems = Array.from(faqMatches).map(match => ({
+          '@type': 'Question',
+          name: match[1].trim(),
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: match[2].trim().slice(0, 500), // Limit answer length
           },
-          publisher: {
-            '@type': 'Organization',
-            name: brand.name,
+        }))
+
+        // Extract key facts for speakable schema (Quick Answer box)
+        const quickAnswerMatch = memo.content.match(/>\s*\*?\*?Quick Answer:?\*?\*?\s*(.+?)(?:\n|$)/i)
+        const quickAnswer = quickAnswerMatch?.[1]?.trim()
+
+        // Build comprehensive schema
+        const schemas: Record<string, unknown>[] = [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: memo.title,
+            description: metaDescription,
+            datePublished: new Date().toISOString(),
+            dateModified: new Date().toISOString(),
+            author: {
+              '@type': 'Organization',
+              name: 'Context Memo',
+              url: 'https://contextmemo.com',
+            },
+            publisher: {
+              '@type': 'Organization',
+              name: brand.name,
+              url: brand.domain ? `https://${brand.domain}` : undefined,
+            },
+            mainEntityOfPage: {
+              '@type': 'WebPage',
+            },
+            articleSection: content.universal_topic,
+            keywords: content.universal_topic,
+            ...(quickAnswer && {
+              speakable: {
+                '@type': 'SpeakableSpecification',
+                cssSelector: ['.quick-answer', 'blockquote'],
+              },
+            }),
           },
-          mainEntityOfPage: {
-            '@type': 'WebPage',
-            '@id': `https://${brand.subdomain}.contextmemo.com/${memo.slug}`,
-          },
+        ]
+
+        // Add FAQ schema if we found Q&A patterns
+        if (faqItems.length > 0) {
+          schemas.push({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqItems,
+          })
         }
+
+        const schemaJson = schemas.length === 1 ? schemas[0] : schemas
 
         // Check if slug already exists
         const { data: existing } = await supabase
