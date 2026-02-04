@@ -15,10 +15,11 @@ import {
   Loader2, Save, Trash2, ExternalLink, CheckCircle2, Link2,
   Settings, Building2, MessageSquare, FileText, Users, Target,
   Plug, AlertTriangle, ChevronRight, Plus, X, Sparkles, RefreshCw,
-  Crown, User
+  Crown, User, Mic
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { BrandContext, BrandTone, HubSpotConfig, SearchConsoleConfig, TargetPersona, PersonaSeniority, PromptTheme } from '@/lib/supabase/types'
+import { VoiceInsightsSection } from '@/components/voice-insights-section'
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ interface Brand {
 const NAV_SECTIONS = [
   { id: 'general', label: 'General', icon: Settings },
   { id: 'brand-context', label: 'Brand Context', icon: Building2 },
+  { id: 'expert-insights', label: 'Expert Insights', icon: Mic, highlight: true },
   { id: 'brand-voice', label: 'Brand Voice', icon: MessageSquare },
   { id: 'content', label: 'Content Settings', icon: FileText },
   { id: 'personas', label: 'Target Personas', icon: Users },
@@ -664,25 +666,29 @@ export default function BrandSettingsPage() {
       <nav className="w-56 shrink-0 hidden md:block">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-4">Settings</h2>
-          {NAV_SECTIONS.map((section) => {
-            const Icon = section.icon
-            const isActive = activeSection === section.id
-            return (
-              <button
-                key={section.id}
-                onClick={() => scrollToSection(section.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                } ${section.id === 'danger' ? 'text-destructive hover:text-destructive' : ''}`}
-              >
-                <Icon className="h-4 w-4" />
-                {section.label}
-                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-              </button>
-            )
-          })}
+{NAV_SECTIONS.map((section) => {
+                            const Icon = section.icon
+                            const isActive = activeSection === section.id
+                            const isHighlight = 'highlight' in section && section.highlight
+                            return (
+                              <button
+                                key={section.id}
+                                onClick={() => scrollToSection(section.id)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left ${
+                                  isActive
+                                    ? 'bg-primary text-primary-foreground'
+                                    : isHighlight
+                                    ? 'hover:bg-purple-100 dark:hover:bg-purple-950/30 text-purple-700 dark:text-purple-400 hover:text-purple-800'
+                                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                } ${section.id === 'danger' ? 'text-destructive hover:text-destructive' : ''}`}
+                              >
+                                <Icon className={`h-4 w-4 ${isHighlight && !isActive ? 'text-purple-600' : ''}`} />
+                                {section.label}
+                                {isHighlight && !isActive && <Sparkles className="h-3 w-3 ml-auto text-purple-500" />}
+                                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                              </button>
+                            )
+                          })}
           
           <Separator className="my-4" />
           
@@ -793,6 +799,11 @@ export default function BrandSettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </section>
+
+        {/* Expert Insights Section */}
+        <section id="expert-insights" ref={(el) => { sectionRefs.current['expert-insights'] = el }} className="scroll-mt-24">
+          <VoiceInsightsSection brandId={brandId} />
         </section>
 
         {/* Brand Voice Section */}

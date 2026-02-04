@@ -1,4 +1,34 @@
-import { BrandTone } from '@/lib/supabase/types'
+import { BrandTone, VoiceInsight, formatVoiceInsightCitation } from '@/lib/supabase/types'
+
+// Format voice insights for inclusion in AI prompts
+export function formatVoiceInsightsForPrompt(insights: VoiceInsight[]): string {
+  if (!insights || insights.length === 0) {
+    return ''
+  }
+
+  const formatted = insights.map(insight => {
+    const citation = formatVoiceInsightCitation(insight)
+    return `### ${insight.title}
+Topic: ${insight.topic}
+"${insight.transcript}"
+${citation}
+${insight.tags.length > 0 ? `Tags: ${insight.tags.join(', ')}` : ''}
+`
+  }).join('\n')
+
+  return `
+## VERIFIED EXPERT INSIGHTS (Primary Sources)
+
+The following insights are verified statements from brand experts. These are PRIMARY SOURCES that should be cited directly when relevant. Include direct quotes with attribution.
+
+${formatted}
+
+CITATION FORMAT: When citing these insights, use the format:
+"[Quote]" — [Name], [Title], [Date]
+
+Example: "Predictive operations is the ability to take operational data sources and cross-reference it with language models to predict equipment failure risk." — Stephen Newman, CEO (February 4, 2026)
+`
+}
 
 // Generate tone instructions from brand tone settings
 export function generateToneInstructions(tone?: BrandTone): string {

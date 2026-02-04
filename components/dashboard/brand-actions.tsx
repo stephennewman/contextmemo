@@ -534,6 +534,52 @@ export function FindContentGapsButton({ brandId, brandName, competitorCount }: {
   )
 }
 
+// Generate memos from competitor content
+export function GenerateMemosButton({ brandId }: { brandId: string }) {
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  const handleClick = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'content-generate' }),
+      })
+      
+      if (res.ok) {
+        toast.success('Content pipeline started - scanning, classifying, and generating memos')
+        // Refresh after a delay
+        setTimeout(() => router.refresh(), 5000)
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to start')
+      }
+    } catch {
+      toast.error('Failed to start content generation')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Button 
+      onClick={handleClick}
+      disabled={isLoading}
+      size="sm"
+      className="gap-2 rounded-none bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+    >
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <FileText className="h-4 w-4" />
+      )}
+      Generate Memos
+    </Button>
+  )
+}
+
 // Refresh context extraction (re-analyze website for updated personas, products, etc.)
 export function RefreshContextButton({ brandId }: { brandId: string }) {
   const [loading, setLoading] = useState(false)

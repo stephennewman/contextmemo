@@ -261,6 +261,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Content classification started - will generate memos for respondable content' 
         })
 
+      case 'content-generate':
+        // Full content pipeline: scan → classify → generate memos
+        // First trigger content scan, it will chain to classify → respond
+        await inngest.send({
+          name: 'competitor/content-scan',
+          data: { brandId, retroactive: false },
+        })
+        // Also trigger classification for existing unclassified content
+        await inngest.send({
+          name: 'competitor/content-classify',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Content generation pipeline started - scanning, classifying, and generating memos' 
+        })
+
+      case 'content-respond':
+        // Just trigger memo generation for pending content
+        await inngest.send({
+          name: 'competitor/content-respond',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Memo generation started for pending content' 
+        })
+
       case 'add-feed': {
         // Manually add an RSS feed for a competitor
         const { competitorId, feedUrl } = body

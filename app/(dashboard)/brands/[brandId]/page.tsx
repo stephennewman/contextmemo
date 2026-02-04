@@ -10,7 +10,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
-import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, FindContentGapsButton } from '@/components/dashboard/brand-actions'
+import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, FindContentGapsButton, GenerateMemosButton } from '@/components/dashboard/brand-actions'
 import { ProfileSection } from '@/components/dashboard/profile-section'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
@@ -397,6 +397,7 @@ export default async function BrandPage({ params }: Props) {
             <div className="flex gap-2">
               <ScanButton brandId={brandId} brandName={brand.name} />
               <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
+              <GenerateMemosButton brandId={brandId} />
             </div>
           </div>
         </div>
@@ -467,6 +468,7 @@ export default async function BrandPage({ params }: Props) {
             <div className="flex gap-2">
               <ExportDropdown brandId={brandId} />
               <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
+              <GenerateMemosButton brandId={brandId} />
               <ScanButton brandId={brandId} brandName={brand.name} />
             </div>
           </div>

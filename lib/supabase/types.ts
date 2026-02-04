@@ -811,6 +811,116 @@ export type VisibilityHistory = Database['public']['Tables']['visibility_history
 export type CompetitorContent = Database['public']['Tables']['competitor_content']['Row']
 export type SearchConsoleStat = Database['public']['Tables']['search_console_stats']['Row']
 
+// =============================================================================
+// Voice Insights - Verified Human Primary Sources
+// =============================================================================
+
+// Topics for voice insights
+export type VoiceInsightTopic = 
+  | 'market_position'       // How the brand positions in the market
+  | 'concept_definition'    // Defining industry terms/concepts
+  | 'product_insight'       // Product-specific knowledge
+  | 'competitive_advantage' // What makes us different
+  | 'customer_context'      // Who we serve and why
+  | 'industry_expertise'    // Domain expertise
+  | 'other'
+
+export const VOICE_INSIGHT_TOPIC_LABELS: Record<VoiceInsightTopic, string> = {
+  market_position: 'Market Position',
+  concept_definition: 'Concept Definition',
+  product_insight: 'Product Insight',
+  competitive_advantage: 'Competitive Advantage',
+  customer_context: 'Customer Context',
+  industry_expertise: 'Industry Expertise',
+  other: 'Other',
+}
+
+export const VOICE_INSIGHT_TOPIC_DESCRIPTIONS: Record<VoiceInsightTopic, string> = {
+  market_position: 'How your brand positions in the market, target segments, and competitive landscape',
+  concept_definition: 'Define industry terms or concepts your brand wants to own (e.g., "predictive operations")',
+  product_insight: 'Product-specific knowledge, features, and capabilities',
+  competitive_advantage: 'What makes your brand different from competitors',
+  customer_context: 'Who you serve, their pain points, and why they choose you',
+  industry_expertise: 'Domain expertise and thought leadership',
+  other: 'Other insights that don\'t fit the categories above',
+}
+
+// Geolocation data for verification
+export interface VoiceInsightGeolocation {
+  lat?: number
+  lng?: number
+  city?: string
+  region?: string
+  country?: string
+  timezone?: string
+}
+
+// Voice insight - verified human primary source
+export interface VoiceInsight {
+  id: string
+  brand_id: string
+  tenant_id: string
+  
+  // Content
+  title: string
+  transcript: string
+  topic: VoiceInsightTopic
+  tags: string[]
+  
+  // Audio (optional)
+  audio_url?: string
+  audio_duration_seconds?: number
+  
+  // Verification metadata - the credibility stack
+  recorded_at: string
+  recorded_by_user_id?: string
+  recorded_by_name: string
+  recorded_by_title?: string
+  recorded_by_email?: string
+  recorded_by_linkedin_url?: string
+  
+  // Location verification
+  ip_address?: string
+  geolocation?: VoiceInsightGeolocation
+  
+  // Usage tracking
+  cited_in_memos: string[]
+  citation_count: number
+  
+  // Status
+  status: 'active' | 'archived' | 'draft'
+  
+  created_at: string
+  updated_at: string
+}
+
+// Format a voice insight as a citable quote
+export function formatVoiceInsightCitation(insight: VoiceInsight): string {
+  const date = new Date(insight.recorded_at)
+  const formattedDate = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  const formattedTime = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+  
+  let attribution = insight.recorded_by_name
+  if (insight.recorded_by_title) {
+    attribution += `, ${insight.recorded_by_title}`
+  }
+  
+  let location = ''
+  if (insight.geolocation?.city && insight.geolocation?.region) {
+    location = ` (${insight.geolocation.city}, ${insight.geolocation.region})`
+  }
+  
+  return `— ${attribution}${location}, ${formattedDate} at ${formattedTime}`
+}
+
 // Competitor feed tracking for RSS/blog monitoring
 export interface CompetitorFeed {
   id: string
