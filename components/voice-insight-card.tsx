@@ -117,6 +117,25 @@ export function VoiceInsightCard({
           </DropdownMenu>
         </div>
         
+        {/* Audio Player - if audio recording exists */}
+        {insight.audio_url && (
+          <div className="bg-muted/50 rounded-md p-2">
+            <audio 
+              controls 
+              className="w-full h-8"
+              preload="metadata"
+            >
+              <source src={insight.audio_url} type={insight.audio_url.includes('.webm') ? 'audio/webm' : 'audio/mp4'} />
+              Your browser does not support the audio element.
+            </audio>
+            {insight.audio_duration_seconds && (
+              <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                Original recording • {Math.floor(insight.audio_duration_seconds / 60)}:{(insight.audio_duration_seconds % 60).toString().padStart(2, '0')}
+              </p>
+            )}
+          </div>
+        )}
+        
         {/* Transcript */}
         <div className="relative">
           <Quote className="absolute -left-1 -top-1 h-4 w-4 text-muted-foreground/30" />

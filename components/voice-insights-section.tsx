@@ -46,6 +46,7 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
     recorded_by_linkedin_url: '',
   })
   const [audioDuration, setAudioDuration] = useState<number | null>(null)
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
 
   // Load insights
   useEffect(() => {
@@ -66,9 +67,12 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
     }
   }
 
-  const handleTranscription = (transcript: string, durationSeconds: number) => {
+  const handleTranscription = (transcript: string, durationSeconds: number, blob?: Blob) => {
     setNewInsight(prev => ({ ...prev, transcript }))
     setAudioDuration(durationSeconds)
+    if (blob) {
+      setAudioBlob(blob)
+    }
     // Auto-switch to show the transcript
     setActiveTab('text')
   }
@@ -81,6 +85,27 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
 
     setIsSaving(true)
     try {
+      let audio_url: string | undefined
+
+      // Upload audio if we have a recording
+      if (audioBlob) {
+        const uploadFormData = new FormData()
+        const extension = audioBlob.type.includes('webm') ? 'webm' : 'mp4'
+        uploadFormData.append('audio', audioBlob, `recording.${extension}`)
+        
+        const uploadResponse = await fetch(`/api/brands/${brandId}/voice-insights/upload-audio`, {
+          method: 'POST',
+          body: uploadFormData,
+        })
+        
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          audio_url = uploadData.audio_url
+        } else {
+          console.warn('Audio upload failed, proceeding without audio URL')
+        }
+      }
+
       const response = await fetch(`/api/brands/${brandId}/voice-insights`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,6 +113,7 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
           ...newInsight,
           tags: newInsight.tags.split(',').map(t => t.trim()).filter(Boolean),
           audio_duration_seconds: audioDuration,
+          audio_url,
         }),
       })
 
@@ -100,7 +126,10 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
       setInsights([data.insight, ...insights])
       setIsAddOpen(false)
       resetForm()
-      toast.success('Voice insight saved with verification')
+      toast.success(audio_url 
+        ? 'Voice insight saved with audio recording' 
+        : 'Voice insight saved with verification'
+      )
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save insight')
     } finally {
@@ -137,6 +166,7 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
       recorded_by_linkedin_url: '',
     })
     setAudioDuration(null)
+    setAudioBlob(null)
     setActiveTab('voice')
   }
 

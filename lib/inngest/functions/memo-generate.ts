@@ -286,6 +286,15 @@ export const memoGenerate = inngest.createFunction(
         '@type': 'AudioObject',
         name: `Voice recording: ${insight.title}`,
         dateCreated: insight.recorded_at,
+        // Include direct audio URL if available for verification
+        ...(insight.audio_url && {
+          contentUrl: insight.audio_url,
+          encodingFormat: insight.audio_url.includes('.webm') ? 'audio/webm' : 'audio/mp4',
+        }),
+        // Duration in ISO 8601 format if available
+        ...(insight.audio_duration_seconds && {
+          duration: `PT${insight.audio_duration_seconds}S`,
+        }),
       },
     }))
 
