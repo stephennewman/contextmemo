@@ -97,6 +97,8 @@ export function OnboardingFlow({
   const [progressLines, setProgressLines] = useState<ProgressLine[]>([])
   const [isComplete, setIsComplete] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
+  const [hasError, setHasError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
   const progressRef = useRef<HTMLDivElement>(null)
   const messageIndexRef = useRef(0)
 
@@ -236,11 +238,19 @@ export function OnboardingFlow({
           }
         }
 
-        // If we hit max time, assume success and continue
+        // If we hit max time and step didn't complete, mark as failed for critical steps
         if (!completedSteps.has(step)) {
           completeWorkingLines() // Stop spinners
-          addProgressLine(`✓ ${config.shortTitle} processing...`, 'success')
-          setCompletedSteps(prev => new Set([...prev, step]))
+          
+          // For critical steps (extract, competitors, queries), this is a real failure
+          if (step !== 'scan') {
+            addProgressLine(`⚠ ${config.shortTitle} timed out - may still be processing in background`, 'info')
+            // Don't mark as complete - let the final check determine if we should retry
+          } else {
+            // Scan is non-critical, mark as complete
+            addProgressLine(`✓ ${config.shortTitle} processing...`, 'success')
+            setCompletedSteps(prev => new Set([...prev, step]))
+          }
         }
 
       } catch (error) {
@@ -250,19 +260,49 @@ export function OnboardingFlow({
       }
     }
 
-    // All done
+    // Check if we actually completed the critical steps
     setCurrentStep(null)
-    setIsComplete(true)
     completeWorkingLines() // Stop any remaining spinners
-    addProgressLine(``, 'info')
-    addProgressLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
-    addProgressLine(`✓ Setup complete! Redirecting to dashboard...`, 'success')
+    
+    // Do a final status check to see if we have the data we need
+    try {
+      const finalStatus = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check_status' }),
+      })
+      
+      if (finalStatus.ok) {
+        const status = await finalStatus.json()
+        const hasRequiredData = status.hasContext && status.hasCompetitors && status.hasQueries
+        
+        if (hasRequiredData) {
+          setIsComplete(true)
+          addProgressLine(``, 'info')
+          addProgressLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+          addProgressLine(`✓ Setup complete! Redirecting to dashboard...`, 'success')
 
-    // Navigate to brand page after a short delay
-    setTimeout(() => {
-      // Force a full navigation to reload server data
-      window.location.href = `/brands/${brandId}`
-    }, 1500)
+          // Navigate to brand page after a short delay
+          setTimeout(() => {
+            window.location.href = `/brands/${brandId}`
+          }, 1500)
+        } else {
+          // Setup didn't complete fully
+          setHasError(true)
+          addProgressLine(``, 'info')
+          addProgressLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+          addProgressLine(`⚠ Setup incomplete - some steps are still processing`, 'info')
+          addProgressLine(`   Context: ${status.hasContext ? '✓' : '⏳'}`, 'info')
+          addProgressLine(`   Competitors: ${status.hasCompetitors ? '✓' : '⏳'}`, 'info')
+          addProgressLine(`   Prompts: ${status.hasQueries ? '✓' : '⏳'}`, 'info')
+          addProgressLine(``, 'info')
+          addProgressLine(`Click "Retry" below or refresh the page in a minute.`, 'info')
+        }
+      }
+    } catch {
+      setHasError(true)
+      addProgressLine(`⚠ Could not verify setup status. Please refresh the page.`, 'info')
+    }
   }
 
   const steps: { id: OnboardingStep; label: string }[] = [
@@ -382,11 +422,11 @@ export function OnboardingFlow({
           <div className="bg-[#0F172A] px-4 py-3 border-t border-slate-700">
             <div className="flex items-center justify-between text-sm">
               <span className={`font-mono ${
-                isComplete ? 'text-[#10B981]' : 'text-[#0EA5E9]'
+                isComplete ? 'text-[#10B981]' : hasError ? 'text-[#F59E0B]' : 'text-[#0EA5E9]'
               }`}>
-                {isComplete ? '● SETUP COMPLETE' : '● PROCESSING'}
+                {isComplete ? '● SETUP COMPLETE' : hasError ? '● SETUP INCOMPLETE' : '● PROCESSING'}
               </span>
-              {!isComplete && (
+              {!isComplete && !hasError && (
                 <span className="text-slate-400">
                   Fully automated - no action needed
                 </span>
@@ -395,6 +435,20 @@ export function OnboardingFlow({
                 <span className="text-slate-400">
                   Dashboard loading...
                 </span>
+              )}
+              {hasError && (
+                <button
+                  onClick={() => {
+                    setHasError(false)
+                    setProgressLines([])
+                    setCompletedSteps(new Set())
+                    setRetryCount(prev => prev + 1)
+                    startPipeline()
+                  }}
+                  className="px-4 py-1.5 bg-[#F59E0B] text-white font-bold text-xs rounded hover:bg-[#D97706] transition-colors"
+                >
+                  RETRY SETUP
+                </button>
               )}
             </div>
           </div>
