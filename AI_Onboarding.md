@@ -390,6 +390,20 @@ _Most recent deploys first_
 
 ### February 4, 2026
 
+**Feature: Usage/Cost Tracking Badge**
+- Added usage badge in header showing monthly cost (`$X.XX this month`)
+- Created `/api/usage` endpoint to fetch tenant usage stats
+- Real-time cost display updates every 30 seconds
+- Tracks credits used vs limit, shows warning when usage > 80%
+
+**Fix: Scan Progress Modal Improvements**
+- Fixed model spinners not completing after scan finished
+- Modal now fetches actual query count from API (was showing wrong count)
+- Model status lines update to show checkmarks on completion
+- Accurate model count display (only 1 model enabled currently: GPT-4o Mini)
+- Removed unused `queryCount` prop from `ScanButton`
+- Updated dashboard to show "1 AI model (GPT-4o Mini)" instead of "6 AI models"
+
 **Feature: Terminal-Style Scan Progress Modal**
 - New `ScanProgressModal` component with real-time progress feed
 - Shows scan status across all AI models (GPT-4o, Claude, Gemini, Llama, Perplexity, DeepSeek)
