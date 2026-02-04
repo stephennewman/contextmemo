@@ -10,6 +10,7 @@ import {
   generateToneInstructions
 } from '@/lib/ai/prompts/memo-generation'
 import { BrandContext } from '@/lib/supabase/types'
+import { emitFeedEvent } from '@/lib/feed/emit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -337,14 +338,37 @@ export const memoGenerate = inngest.createFunction(
       })
     })
 
-    // Step 7: Create alert
-    await step.run('create-alert', async () => {
+    // Step 7: Create alert and feed event
+    await step.run('create-alert-and-feed', async () => {
+      // Legacy alert (v1 compatibility)
       await supabase.from('alerts').insert({
         brand_id: brandId,
         alert_type: 'memo_published',
         title: 'New Memo Published',
         message: `"${memoContent.title}" is now live at ${brand.subdomain}.contextmemo.com/${memoContent.slug}`,
         data: { memoId: memo.id, slug: memoContent.slug },
+      })
+      
+      // V2 Feed event
+      await emitFeedEvent({
+        tenant_id: brand.tenant_id,
+        brand_id: brandId,
+        workflow: 'core_discovery',
+        event_type: memo.status === 'published' ? 'scan_complete' : 'gap_identified', // Using available types
+        title: `Memo ${memo.status === 'published' ? 'published' : 'drafted'}: "${memoContent.title}"`,
+        description: memo.status === 'published' 
+          ? `Live at ${brand.subdomain}.contextmemo.com/${memoContent.slug}`
+          : 'Memo saved as draft - review and publish when ready',
+        severity: 'success',
+        action_available: memo.status === 'published' ? ['view_memo'] : ['view_memo'],
+        related_memo_id: memo.id,
+        related_query_id: queryId || undefined,
+        data: {
+          memo_title: memoContent.title,
+          memo_slug: memoContent.slug,
+          memo_type: memoType,
+          status: memo.status,
+        },
       })
     })
 

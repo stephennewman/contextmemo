@@ -13,6 +13,7 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations } from '@/lib/utils/openrouter'
+import { emitCitationVerified } from '@/lib/feed/emit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -276,9 +277,10 @@ export const verifyGap = inngest.createFunction(
       })
     }
 
-    // Step 6: Create alert
-    await step.run('create-alert', async () => {
+    // Step 6: Create alert and feed event
+    await step.run('create-alert-and-feed', async () => {
       if (analysis.verified) {
+        // Legacy alert (v1)
         await supabase.from('alerts').insert({
           brand_id: brand.id,
           alert_type: 'citation_verified',
@@ -292,6 +294,20 @@ export const verifyGap = inngest.createFunction(
             modelsWithCitation: analysis.modelsWithCitation,
           },
         })
+        
+        // V2 Feed event
+        if (memo) {
+          await emitCitationVerified({
+            tenant_id: brand.tenant_id,
+            brand_id: brand.id,
+            memo_id: memo.id,
+            memo_title: memo.title,
+            memo_slug: memo.slug,
+            time_to_citation_hours: analysis.timeToCitationHours || 0,
+            citing_models: analysis.modelsWithCitation,
+            citation_rate: analysis.citationRate,
+          })
+        }
       } else {
         // Not yet verified - schedule re-check
         await supabase.from('alerts').insert({

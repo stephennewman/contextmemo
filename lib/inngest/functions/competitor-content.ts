@@ -5,6 +5,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
 import { BrandContext, CompetitorFeed } from '@/lib/supabase/types'
 import { generateToneInstructions } from '@/lib/ai/prompts/memo-generation'
+import { emitCompetitorPublished } from '@/lib/feed/emit'
 import crypto from 'crypto'
 import Parser from 'rss-parser'
 
@@ -880,6 +881,22 @@ export const competitorContentClassify = inngest.createFunction(
             status: shouldRespond ? 'pending_response' : 'skipped',
           })
           .eq('id', content.id)
+        
+        // Emit feed event for relevant competitor content
+        if (shouldRespond) {
+          const competitorName = (content.competitor as { name: string })?.name || 'Competitor'
+          
+          await emitCompetitorPublished({
+            tenant_id: brand.tenant_id,
+            brand_id: brandId,
+            competitor_id: content.competitor_id,
+            competitor_name: competitorName,
+            article_title: content.title,
+            article_url: content.url,
+            relevance_score: 0.7, // High relevance if it passed filter
+            matched_prompts: classification.topics || [],
+          })
+        }
       })
 
       classifiedCount++

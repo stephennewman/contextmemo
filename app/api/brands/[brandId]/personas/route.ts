@@ -8,6 +8,55 @@ interface RouteParams {
   params: Promise<{ brandId: string }>
 }
 
+// Simple PATCH for updating disabled_personas list
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const { brandId } = await params
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: brand } = await supabase
+    .from('brands')
+    .select('*')
+    .eq('id', brandId)
+    .single()
+
+  if (!brand) {
+    return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
+  }
+
+  const body = await request.json()
+  const { disabled_personas } = body
+
+  if (!Array.isArray(disabled_personas)) {
+    return NextResponse.json({ error: 'disabled_personas must be an array' }, { status: 400 })
+  }
+
+  const context = (brand.context || {}) as BrandContext
+  context.disabled_personas = disabled_personas
+
+  const { error } = await supabase
+    .from('brands')
+    .update({ 
+      context,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', brandId)
+
+  if (error) {
+    console.error('Failed to update personas:', error)
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+
+  return NextResponse.json({ 
+    success: true, 
+    disabled_personas 
+  })
+}
+
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { brandId } = await params
   const supabase = await createClient()

@@ -4,7 +4,8 @@ import { generateText } from 'ai'
 import { queryPerplexity, checkBrandInCitations } from '@/lib/utils/perplexity'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations, OpenRouterAnnotation } from '@/lib/utils/openrouter'
 import { calculateTotalCost } from '@/lib/config/costs'
-import { PerplexitySearchResultJson } from '@/lib/supabase/types'
+import { PerplexitySearchResultJson, QueryStatus } from '@/lib/supabase/types'
+import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorDiscovered } from '@/lib/feed/emit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -138,11 +139,11 @@ export const scanRun = inngest.createFunction(
               .eq('is_active', true)
               .order('priority', { ascending: false })
               .limit(100), // Scan up to 100 queries per run
+        // Get ALL competitors (tracked + discovered) for mention detection
         supabase
           .from('competitors')
           .select('name')
-          .eq('brand_id', brandId)
-          .eq('is_active', true),
+          .eq('brand_id', brandId),
       ])
 
       if (brandResult.error || !brandResult.data) {
@@ -282,6 +283,173 @@ export const scanRun = inngest.createFunction(
       }
     })
 
+    // Step 3.6: Per-prompt tracking and feed event emission
+    await step.run('per-prompt-tracking', async () => {
+      // Get unique query IDs from scan results
+      const queryIds = Array.from(new Set(scanResults.map(r => r.queryId)))
+      
+      // Fetch current query tracking data
+      const { data: queryData } = await supabase
+        .from('queries')
+        .select('id, query_text, scan_count, citation_streak, longest_streak, current_status, first_cited_at, last_cited_at, citation_lost_at, persona, source_type')
+        .in('id', queryIds)
+      
+      const queryMap = new Map(queryData?.map(q => [q.id, q]) || [])
+      
+      // Fetch previous scan results for each query (most recent before this scan)
+      const scanTime = new Date().toISOString()
+      const { data: previousScans } = await supabase
+        .from('scan_results')
+        .select('query_id, brand_in_citations, brand_position, competitors_mentioned')
+        .in('query_id', queryIds)
+        .lt('scanned_at', scanTime)
+        .order('scanned_at', { ascending: false })
+      
+      // Group previous scans by query_id (take most recent)
+      const previousScanMap = new Map<string, typeof previousScans[0]>()
+      for (const scan of previousScans || []) {
+        if (!previousScanMap.has(scan.query_id)) {
+          previousScanMap.set(scan.query_id, scan)
+        }
+      }
+      
+      // Track updates to batch
+      const queryUpdates: Array<{
+        id: string
+        scan_count: number
+        last_scanned_at: string
+        citation_streak: number
+        longest_streak: number
+        current_status: QueryStatus
+        first_cited_at?: string
+        last_cited_at?: string
+        citation_lost_at?: string
+      }> = []
+      
+      // Process each scan result
+      for (const result of scanResults) {
+        const query = queryMap.get(result.queryId)
+        if (!query) continue
+        
+        const previousScan = previousScanMap.get(result.queryId)
+        const wasCited = previousScan?.brand_in_citations === true
+        const isCited = result.brandInCitations === true
+        const previousPosition = previousScan?.brand_position || null
+        
+        // Calculate delta tracking
+        const isFirstCitation = isCited && !query.first_cited_at
+        const isCitationLost = !isCited && wasCited
+        const citationStatusChanged = wasCited !== isCited
+        
+        // Calculate streak
+        let newStreak = query.citation_streak || 0
+        if (isCited) {
+          newStreak = newStreak + 1
+        } else {
+          newStreak = 0
+        }
+        const newLongestStreak = Math.max(query.longest_streak || 0, newStreak)
+        
+        // Determine new status
+        let newStatus: QueryStatus = 'gap'
+        if (isCited) {
+          newStatus = 'cited'
+        } else if (isCitationLost) {
+          newStatus = 'lost_citation'
+        }
+        
+        // Calculate position change
+        const positionChange = previousPosition && result.brandPosition
+          ? previousPosition - result.brandPosition // Positive = improved (lower position number is better)
+          : null
+        
+        // Find new competitors (mentioned now but not in previous scan)
+        const previousCompetitors = new Set(previousScan?.competitors_mentioned || [])
+        const newCompetitors = result.competitorsMentioned.filter(c => !previousCompetitors.has(c))
+        
+        // Find winner (first competitor mentioned if brand not cited)
+        const winner = !isCited && result.competitorsMentioned.length > 0
+          ? result.competitorsMentioned[0]
+          : null
+        
+        // Prepare query update
+        const update: typeof queryUpdates[0] = {
+          id: result.queryId,
+          scan_count: (query.scan_count || 0) + 1,
+          last_scanned_at: scanTime,
+          citation_streak: newStreak,
+          longest_streak: newLongestStreak,
+          current_status: newStatus,
+        }
+        
+        if (isFirstCitation) {
+          update.first_cited_at = scanTime
+        }
+        if (isCited) {
+          update.last_cited_at = scanTime
+        }
+        if (isCitationLost && !query.citation_lost_at) {
+          update.citation_lost_at = scanTime
+        }
+        
+        queryUpdates.push(update)
+        
+        // Emit per-prompt feed event
+        await emitPromptScanned({
+          tenant_id: brand.tenant_id,
+          brand_id: brandId,
+          query_id: result.queryId,
+          query_text: query.query_text,
+          model: result.model,
+          // Scan result
+          cited: isCited,
+          mentioned: result.brandMentioned,
+          position: result.brandPosition,
+          competitors_mentioned: result.competitorsMentioned,
+          // Tracking data
+          scan_number: update.scan_count,
+          streak: newStreak,
+          longest_streak: newLongestStreak,
+          is_first_citation: isFirstCitation,
+          is_citation_lost: isCitationLost,
+          previous_cited: wasCited,
+          position_change: positionChange,
+          new_competitors: newCompetitors,
+          // Context
+          persona: query.persona,
+          source_type: query.source_type || 'auto',
+          winner_name: winner,
+          first_cited_at: isFirstCitation ? scanTime : query.first_cited_at,
+          citation_lost_at: isCitationLost ? scanTime : query.citation_lost_at,
+        })
+        
+        // Update scan_result with delta tracking fields
+        await supabase
+          .from('scan_results')
+          .update({
+            is_first_citation: isFirstCitation,
+            citation_status_changed: citationStatusChanged,
+            previous_cited: wasCited,
+            new_competitors_found: newCompetitors.length > 0 ? newCompetitors : null,
+            position_change: positionChange,
+          })
+          .eq('query_id', result.queryId)
+          .eq('model', result.model)
+          .eq('scanned_at', scanTime)
+      }
+      
+      // Batch update queries
+      for (const update of queryUpdates) {
+        const { id, ...fields } = update
+        await supabase
+          .from('queries')
+          .update(fields)
+          .eq('id', id)
+      }
+      
+      console.log(`Per-prompt tracking: Updated ${queryUpdates.length} queries, emitted ${scanResults.length} feed events`)
+    })
+
     // Step 4: Calculate citation score and identify gaps
     const { citationScore, visibilityScore, gaps } = await step.run('analyze-results', async () => {
       // Citation score: % of scans where brand was cited (primary metric)
@@ -310,8 +478,9 @@ export const scanRun = inngest.createFunction(
       }
     })
 
-    // Step 5: Create alert with results
-    await step.run('create-alert', async () => {
+    // Step 5: Create alert and feed events
+    await step.run('create-alerts-and-feed', async () => {
+      // Legacy alert (for v1 compatibility)
       await supabase.from('alerts').insert({
         brand_id: brandId,
         alert_type: 'scan_complete',
@@ -319,6 +488,40 @@ export const scanRun = inngest.createFunction(
         message: `Citation score: ${citationScore}%. Found ${gaps.length} citation gaps.`,
         data: { citationScore, visibilityScore, gapCount: gaps.length, totalScans: scanResults.length },
       })
+      
+      // V2 Feed event: Scan complete
+      await emitScanComplete({
+        tenant_id: brand.tenant_id,
+        brand_id: brandId,
+        prompts_scanned: queries.length,
+        citation_rate: citationScore,
+        mention_rate: visibilityScore,
+        gaps_found: gaps.length,
+        models_used: enabledModels.map(m => m.displayName),
+      })
+      
+      // V2 Feed events: Gap identified for worst gaps
+      // Get query details for top 5 gaps
+      const { data: gapQueryDetails } = await supabase
+        .from('queries')
+        .select('id, query_text')
+        .in('id', gaps.slice(0, 5))
+      
+      for (const gapQuery of (gapQueryDetails || [])) {
+        // Find who's winning on this query
+        const gapScans = scanResults.filter(r => r.queryId === gapQuery.id && r.brandInCitations !== true)
+        const winner = gapScans.find(s => s.competitorsMentioned.length > 0)?.competitorsMentioned[0]
+        
+        await emitGapIdentified({
+          tenant_id: brand.tenant_id,
+          brand_id: brandId,
+          query_id: gapQuery.id,
+          query_text: gapQuery.query_text,
+          visibility_rate: 0,
+          winner_name: winner,
+          models_checked: enabledModels.map(m => m.displayName),
+        })
+      }
     })
 
     // Step 6: Auto-generate memos if enabled and gaps found
@@ -491,7 +694,151 @@ export const scanRun = inngest.createFunction(
       })
     }
 
-    // Step 7: Trigger prompt enrichment to mine scan results for new prompts/competitors
+    // Step 7: Auto-discover competitors from citations
+    const discoveredCompetitors = await step.run('auto-discover-competitors', async () => {
+      // Collect all unique domains from citations
+      const allCitations = scanResults
+        .filter(r => r.citations && r.citations.length > 0)
+        .flatMap(r => r.citations || [])
+      
+      // Extract domains from citation URLs
+      const domainCounts = new Map<string, number>()
+      const domainToUrl = new Map<string, string>() // Keep one example URL per domain
+      
+      for (const url of allCitations) {
+        try {
+          const urlObj = new URL(url)
+          let domain = urlObj.hostname.replace('www.', '').toLowerCase()
+          
+          // Skip generic/non-competitor domains
+          const skipDomains = [
+            'wikipedia.org', 'wikimedia.org', 'wikidata.org',
+            'youtube.com', 'twitter.com', 'x.com', 'facebook.com', 'linkedin.com', 'instagram.com',
+            'medium.com', 'substack.com', 'reddit.com',
+            'github.com', 'stackoverflow.com', 'stackexchange.com',
+            'google.com', 'bing.com', 'yahoo.com',
+            'amazon.com', 'amazon.co.uk', 'aws.amazon.com',
+            'apple.com', 'microsoft.com',
+            'nytimes.com', 'wsj.com', 'forbes.com', 'businessinsider.com', 'techcrunch.com',
+            'reuters.com', 'bbc.com', 'bbc.co.uk', 'cnn.com',
+            'gov', 'edu', // TLDs to skip
+            brand.domain?.replace('www.', '').toLowerCase() || '', // Skip brand's own domain
+          ]
+          
+          // Check if domain should be skipped
+          const shouldSkip = skipDomains.some(skip => 
+            domain === skip || 
+            domain.endsWith('.' + skip) ||
+            (skip.startsWith('.') && domain.endsWith(skip))
+          )
+          
+          // Also skip if domain matches brand name
+          if (shouldSkip || domain.includes(brandName.replace(/\s+/g, ''))) {
+            continue
+          }
+          
+          // Count occurrences
+          domainCounts.set(domain, (domainCounts.get(domain) || 0) + 1)
+          if (!domainToUrl.has(domain)) {
+            domainToUrl.set(domain, url)
+          }
+        } catch {
+          // Invalid URL, skip
+        }
+      }
+      
+      // Get existing competitors for this brand
+      const { data: existingCompetitors } = await supabase
+        .from('competitors')
+        .select('domain, name')
+        .eq('brand_id', brandId)
+      
+      const existingDomains = new Set(
+        (existingCompetitors || [])
+          .map(c => c.domain?.replace('www.', '').toLowerCase())
+          .filter(Boolean)
+      )
+      const existingNames = new Set(
+        (existingCompetitors || []).map(c => c.name.toLowerCase())
+      )
+      
+      // Find new domains (cited at least once, not already in competitors)
+      const newCompetitors: Array<{ name: string; domain: string; citations: number }> = []
+      
+      for (const [domain, count] of domainCounts) {
+        if (existingDomains.has(domain)) continue
+        
+        // Extract company name from domain
+        // e.g., "sensitech.com" -> "Sensitech", "smart-sense.io" -> "Smart Sense"
+        const domainParts = domain.split('.')
+        const baseName = domainParts[0]
+          .split('-')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ')
+        
+        // Skip if name already exists (case-insensitive)
+        if (existingNames.has(baseName.toLowerCase())) continue
+        
+        newCompetitors.push({
+          name: baseName,
+          domain: domain,
+          citations: count,
+        })
+      }
+      
+      // Sort by citation count (most cited first) and take top 10
+      const topNew = newCompetitors
+        .sort((a, b) => b.citations - a.citations)
+        .slice(0, 10)
+      
+      if (topNew.length === 0) {
+        return { discovered: 0, competitors: [] }
+      }
+      
+      // Insert new competitors with is_active: false (discovered but not tracked)
+      // User can toggle them ON to start tracking
+      const { data: inserted, error } = await supabase
+        .from('competitors')
+        .insert(topNew.map(c => ({
+          brand_id: brandId,
+          name: c.name,
+          domain: c.domain,
+          auto_discovered: true,
+          is_active: false, // Default OFF - user must enable to track
+          description: `Auto-discovered from AI citations (cited ${c.citations}x)`,
+          context: {
+            discovered_from: 'citations',
+            citation_count: c.citations,
+            discovered_at: new Date().toISOString(),
+          },
+        })))
+        .select('id, name, domain')
+      
+      if (error) {
+        console.error('Failed to insert auto-discovered competitors:', error)
+        return { discovered: 0, competitors: [], error: error.message }
+      }
+      
+      // Emit feed events for each discovered competitor
+      for (const competitor of (inserted || [])) {
+        await emitCompetitorDiscovered({
+          tenant_id: brand.tenant_id,
+          brand_id: brandId,
+          competitor_id: competitor.id,
+          competitor_name: competitor.name,
+          competitor_domain: competitor.domain || '',
+          source: 'scan',
+        })
+      }
+      
+      console.log(`Auto-discovered ${inserted?.length || 0} new competitors from citations`)
+      return { 
+        discovered: inserted?.length || 0, 
+        competitors: inserted?.map(c => c.name) || [] 
+      }
+    })
+
+    // Step 8: Trigger prompt enrichment to mine scan results for new prompts/competitors
     await step.sendEvent('trigger-prompt-enrichment', {
       name: 'prompt/enrich',
       data: { brandId },
@@ -504,6 +851,7 @@ export const scanRun = inngest.createFunction(
       visibilityScore,
       gapsFound: gaps.length,
       autoMemosTriggered: autoGenerateMemos,
+      competitorsDiscovered: discoveredCompetitors.discovered,
     }
   }
 )

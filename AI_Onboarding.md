@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 3, 2026  
-> **Version:** 0.13.1  
-> **Status:** MVP Complete + Active Development
+> **Last Updated:** February 4, 2026  
+> **Version:** 0.15.0  
+> **Status:** MVP Complete + V2 Feed UI Built + Prompt-Centric Tracking
 
 ---
 
@@ -388,6 +388,67 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 4, 2026
+
+**Feature: Prompt-Centric Feed System**
+- Transformed feed from scan-level summaries to per-prompt events
+- Each prompt scan now emits its own feed event with full context
+- Added tracking fields to queries table:
+  - `scan_count`, `last_scanned_at`, `citation_streak`, `longest_streak`
+  - `first_cited_at` (BIG WIN tracker), `last_cited_at`, `citation_lost_at` (OH NO tracker)
+  - `current_status` (never_scanned, gap, cited, lost_citation)
+  - `source_type` (original, expanded, competitor_inspired, greenspace, manual, auto)
+  - `excluded_at`, `excluded_reason` for tracking excluded prompts
+- Added delta tracking to scan_results table:
+  - `is_first_citation`, `citation_status_changed`, `previous_cited`
+  - `new_competitors_found`, `position_change`
+- New prompt event types: `prompt_scanned`, `first_citation`, `citation_lost`, `streak_milestone`, `position_improved`, `new_competitor_found`, `prompt_excluded`
+- Enhanced feed-item.tsx with prompt-specific rendering:
+  - Streak badge (fire icon for 3+)
+  - Status change indicators (position improved/declined)
+  - First citation celebration badge
+  - Lost citation warning badge
+  - Quick exclude button
+- Enhanced feed-detail-drawer.tsx with prompt journey view answering 10 key questions:
+  1. Origin (source_type)
+  2. Cited/mentioned status
+  3. Competitors on this prompt
+  4. Scan count
+  5. Streak
+  6. New findings this scan
+  7. First citation celebration
+  8. Lost citation warning
+  9. Related memos
+  10. Persona
+- Enhanced prompts list page with:
+  - Stats summary (cited, gaps, on streaks, lost citations)
+  - Tracking columns (scan count, streak, source type, last scanned)
+  - Quick exclude dropdown with reasons
+  - Collapsed excluded prompts section with re-enable
+- Added API endpoints for prompt management:
+  - POST /api/brands/[brandId]/prompts/[promptId]/exclude
+  - POST /api/brands/[brandId]/prompts/[promptId]/reenable
+- Created backfill script for historical tracking data
+
+**Files created:**
+- `scripts/sql/prompt_tracking.sql` - Database schema migration
+- `app/v2/brands/[brandId]/prompts/prompts-list-client.tsx` - Interactive prompts list
+- `app/api/brands/[brandId]/prompts/[promptId]/exclude/route.ts` - Exclude API
+- `app/api/brands/[brandId]/prompts/[promptId]/reenable/route.ts` - Re-enable API
+- `scripts/backfill-prompt-tracking.ts` - Backfill script
+
+**Files modified:**
+- `lib/supabase/types.ts` - Added tracking field types
+- `lib/feed/types.ts` - Added prompt event types and data structure
+- `lib/feed/emit.ts` - Added emitPromptScanned and emitPromptExcluded
+- `lib/inngest/functions/scan-run.ts` - Per-prompt tracking and feed emission
+- `components/v2/feed/feed-item.tsx` - Prompt-specific rendering
+- `components/v2/feed/feed-detail-drawer.tsx` - Prompt journey view
+- `app/api/v2/feed/route.ts` - exclude_prompt and reenable_prompt actions
+- `app/v2/brands/[brandId]/prompts/page.tsx` - Enhanced with tracking stats
+
+---
+
 ### February 3, 2026
 
 **Remove: Verification Badge from Memos List** (b57c88a)
@@ -576,6 +637,50 @@ Built 5 major differentiation features to set Context Memo apart from competitor
 - Added 7 correct competitors (temperature monitoring/compliance)
 - Deactivated 72 wrong queries
 - Added 33 relevant queries
+
+---
+
+### February 3, 2026
+
+**Build: V2 Feed-Based UI Overhaul**
+- Created entirely new `/v2` routes with feed-based dashboard
+- Implemented real-time feed system with Supabase Realtime subscriptions
+- 5 workflow classifications: Core Discovery, Network Expansion, Competitive Response, Verification, Greenspace
+- New dark sidebar with brand switcher and workflow filtering
+- Usage bar with credits consumption tracking and visual progress
+- Feed items with actions, severity levels, and cost badges
+- Brand-specific settings page for workflow automation controls
+- Historical data backfill from existing alerts/scans/memos
+
+**Database migrations applied:**
+- `feed_events` table with workflow/event type classification, realtime enabled
+- `brand_settings` table for per-brand workflow toggles
+- `usage_events` expanded with workflow and credits_used columns
+
+**Files created/modified:**
+- `app/v2/layout.tsx` - V2 layout with sidebar and usage bar
+- `app/v2/page.tsx` - Unified dashboard with cross-brand feed
+- `app/v2/brands/[brandId]/page.tsx` - Brand-specific feed
+- `app/v2/brands/[brandId]/settings/page.tsx` - Workflow settings
+- `app/api/v2/feed/route.ts` - Feed API with pagination and filtering
+- `app/api/v2/usage/route.ts` - Usage summary API
+- `components/v2/layout/*` - UsageBar, BrandSwitcher, V2Sidebar
+- `components/v2/feed/*` - FeedContainer, FeedItem, FeedFilters, FeedEmpty
+- `components/v2/actions/cost-badge.tsx` - Credit cost indicator
+- `lib/feed/types.ts` - All TypeScript types for feed system
+- `lib/feed/emit.ts` - Helper functions for Inngest to emit feed events
+- Updated Inngest functions: scan-run, memo-generate, citation-verify, competitor-content
+
+**New UI components added:**
+- `components/ui/switch.tsx`
+- `components/ui/select.tsx`
+- `components/ui/command.tsx`
+- `components/ui/popover.tsx`
+
+**Feed data populated:**
+- 167 feed events backfilled from existing data
+- All 4 brands have settings configured
+- Realtime enabled for live feed updates
 
 ---
 

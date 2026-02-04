@@ -6,6 +6,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Query/Prompt tracking types
+export type QueryStatus = 'never_scanned' | 'gap' | 'cited' | 'lost_citation'
+export type QuerySourceType = 'original' | 'expanded' | 'competitor_inspired' | 'greenspace' | 'manual' | 'auto'
+export type QueryExcludedReason = 'irrelevant' | 'duplicate' | 'low_value' | 'other' | 'manual'
+
 // Perplexity search result structure for citations (stored as JSONB)
 export interface PerplexitySearchResultJson {
   url: string
@@ -155,6 +160,22 @@ export interface Database {
           auto_discovered: boolean
           created_at: string
           persona: PromptPersona | null
+          // Tracking fields
+          scan_count: number
+          last_scanned_at: string | null
+          first_cited_at: string | null
+          last_cited_at: string | null
+          citation_lost_at: string | null
+          citation_streak: number
+          longest_streak: number
+          current_status: QueryStatus
+          // Origin tracking
+          source_type: QuerySourceType
+          source_batch_id: string | null
+          inspired_by_competitor_id: string | null
+          // Exclusion tracking
+          excluded_at: string | null
+          excluded_reason: QueryExcludedReason | null
         }
         Insert: {
           id?: string
@@ -167,6 +188,22 @@ export interface Database {
           auto_discovered?: boolean
           created_at?: string
           persona?: PromptPersona | null
+          // Tracking fields
+          scan_count?: number
+          last_scanned_at?: string | null
+          first_cited_at?: string | null
+          last_cited_at?: string | null
+          citation_lost_at?: string | null
+          citation_streak?: number
+          longest_streak?: number
+          current_status?: QueryStatus
+          // Origin tracking
+          source_type?: QuerySourceType
+          source_batch_id?: string | null
+          inspired_by_competitor_id?: string | null
+          // Exclusion tracking
+          excluded_at?: string | null
+          excluded_reason?: QueryExcludedReason | null
         }
         Update: {
           id?: string
@@ -179,6 +216,22 @@ export interface Database {
           auto_discovered?: boolean
           created_at?: string
           persona?: PromptPersona | null
+          // Tracking fields
+          scan_count?: number
+          last_scanned_at?: string | null
+          first_cited_at?: string | null
+          last_cited_at?: string | null
+          citation_lost_at?: string | null
+          citation_streak?: number
+          longest_streak?: number
+          current_status?: QueryStatus
+          // Origin tracking
+          source_type?: QuerySourceType
+          source_batch_id?: string | null
+          inspired_by_competitor_id?: string | null
+          // Exclusion tracking
+          excluded_at?: string | null
+          excluded_reason?: QueryExcludedReason | null
         }
       }
       scan_results: {
@@ -197,6 +250,12 @@ export interface Database {
           search_results: PerplexitySearchResultJson[] | null
           brand_in_citations: boolean | null
           scanned_at: string
+          // Delta tracking fields
+          is_first_citation: boolean
+          citation_status_changed: boolean
+          previous_cited: boolean | null
+          new_competitors_found: string[] | null
+          position_change: number | null
         }
         Insert: {
           id?: string
@@ -213,6 +272,12 @@ export interface Database {
           search_results?: PerplexitySearchResultJson[] | null
           brand_in_citations?: boolean | null
           scanned_at?: string
+          // Delta tracking fields
+          is_first_citation?: boolean
+          citation_status_changed?: boolean
+          previous_cited?: boolean | null
+          new_competitors_found?: string[] | null
+          position_change?: number | null
         }
         Update: {
           id?: string
@@ -229,6 +294,12 @@ export interface Database {
           search_results?: PerplexitySearchResultJson[] | null
           brand_in_citations?: boolean | null
           scanned_at?: string
+          // Delta tracking fields
+          is_first_citation?: boolean
+          citation_status_changed?: boolean
+          previous_cited?: boolean | null
+          new_competitors_found?: string[] | null
+          position_change?: number | null
         }
       }
       memos: {
