@@ -9,6 +9,13 @@ export async function GET() {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
+  // Get tenant
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id, plan_limits')
+    .eq('user_id', user.id)
+    .single()
+
   // Try to get real costs from OpenRouter
   let openRouterCredits = null
   try {
@@ -28,7 +35,49 @@ export async function GET() {
     console.error('Failed to fetch OpenRouter credits:', error)
   }
 
-  // If we have OpenRouter data, use it
+  // Get per-brand costs from usage_events
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  let brandCosts: { brandId: string; brandName: string; costCents: number }[] = []
+  
+  if (tenant) {
+    // Get usage by brand for this tenant
+    const { data: usageByBrand } = await supabase
+      .from('usage_events')
+      .select('brand_id, total_cost_cents')
+      .eq('tenant_id', tenant.id)
+      .gte('created_at', startOfMonth.toISOString())
+
+    // Group by brand
+    const brandTotals = new Map<string, number>()
+    for (const event of usageByBrand || []) {
+      if (event.brand_id) {
+        const current = brandTotals.get(event.brand_id) || 0
+        brandTotals.set(event.brand_id, current + (event.total_cost_cents || 0))
+      }
+    }
+
+    // Get brand names
+    if (brandTotals.size > 0) {
+      const { data: brands } = await supabase
+        .from('brands')
+        .select('id, name')
+        .in('id', Array.from(brandTotals.keys()))
+
+      brandCosts = (brands || []).map(b => ({
+        brandId: b.id,
+        brandName: b.name,
+        costCents: brandTotals.get(b.id) || 0,
+      })).sort((a, b) => b.costCents - a.costCents)
+    }
+  }
+
+  // Calculate total internal cost
+  const totalInternalCostCents = brandCosts.reduce((sum, b) => sum + b.costCents, 0)
+
+  // If we have OpenRouter data, use it for balance
   if (openRouterCredits) {
     const totalCredits = openRouterCredits.total_credits || 0
     const totalUsage = openRouterCredits.total_usage || 0
@@ -40,44 +89,25 @@ export async function GET() {
       totalUsage: totalUsage.toFixed(2),
       remaining: remaining.toFixed(2),
       costDollars: totalUsage.toFixed(2),
+      byBrand: brandCosts.map(b => ({
+        brandId: b.brandId,
+        brandName: b.brandName,
+        costDollars: (b.costCents / 100).toFixed(2),
+      })),
     })
   }
 
   // Fallback to internal tracking
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id, plan_limits')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!tenant) {
-    return NextResponse.json({ 
-      source: 'internal',
-      costDollars: '0.00',
-      totalCredits: '0.00',
-      totalUsage: '0.00',
-      remaining: '0.00',
-    })
-  }
-
-  // Get credits used this month
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
-
-  const { data: usageData } = await supabase
-    .from('usage_events')
-    .select('credits_used, total_cost_cents')
-    .eq('tenant_id', tenant.id)
-    .gte('created_at', startOfMonth.toISOString())
-
-  const costCents = usageData?.reduce((sum, e) => sum + (e.total_cost_cents || 0), 0) || 0
-
   return NextResponse.json({
     source: 'internal',
-    costDollars: (costCents / 100).toFixed(2),
-    totalCredits: '100.00', // Default
-    totalUsage: (costCents / 100).toFixed(2),
-    remaining: (100 - costCents / 100).toFixed(2),
+    costDollars: (totalInternalCostCents / 100).toFixed(2),
+    totalCredits: '100.00',
+    totalUsage: (totalInternalCostCents / 100).toFixed(2),
+    remaining: (100 - totalInternalCostCents / 100).toFixed(2),
+    byBrand: brandCosts.map(b => ({
+      brandId: b.brandId,
+      brandName: b.brandName,
+      costDollars: (b.costCents / 100).toFixed(2),
+    })),
   })
 }
