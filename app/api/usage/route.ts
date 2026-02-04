@@ -9,7 +9,41 @@ export async function GET() {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  // Get tenant
+  // Try to get real costs from OpenRouter
+  let openRouterCredits = null
+  try {
+    const openRouterKey = process.env.OPENROUTER_API_KEY
+    if (openRouterKey) {
+      const res = await fetch('https://openrouter.ai/api/v1/credits', {
+        headers: {
+          'Authorization': `Bearer ${openRouterKey}`,
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        openRouterCredits = data.data
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch OpenRouter credits:', error)
+  }
+
+  // If we have OpenRouter data, use it
+  if (openRouterCredits) {
+    const totalCredits = openRouterCredits.total_credits || 0
+    const totalUsage = openRouterCredits.total_usage || 0
+    const remaining = totalCredits - totalUsage
+
+    return NextResponse.json({
+      source: 'openrouter',
+      totalCredits: totalCredits.toFixed(2),
+      totalUsage: totalUsage.toFixed(2),
+      remaining: remaining.toFixed(2),
+      costDollars: totalUsage.toFixed(2),
+    })
+  }
+
+  // Fallback to internal tracking
   const { data: tenant } = await supabase
     .from('tenants')
     .select('id, plan_limits')
@@ -17,7 +51,13 @@ export async function GET() {
     .single()
 
   if (!tenant) {
-    return NextResponse.json({ error: 'No tenant' }, { status: 404 })
+    return NextResponse.json({ 
+      source: 'internal',
+      costDollars: '0.00',
+      totalCredits: '0.00',
+      totalUsage: '0.00',
+      remaining: '0.00',
+    })
   }
 
   // Get credits used this month
@@ -31,29 +71,13 @@ export async function GET() {
     .eq('tenant_id', tenant.id)
     .gte('created_at', startOfMonth.toISOString())
 
-  const creditsUsed = usageData?.reduce((sum, e) => sum + (e.credits_used || 0), 0) || 0
   const costCents = usageData?.reduce((sum, e) => sum + (e.total_cost_cents || 0), 0) || 0
 
-  // Get limit from plan
-  const planLimits = tenant.plan_limits as Record<string, number> | null
-  const creditsLimit = planLimits?.credits_per_month || 
-                       (planLimits?.memos_per_month || 30) * 10
-
-  // Calculate cost from scan_results if usage_events doesn't have costs yet
-  const { data: scanCosts } = await supabase
-    .from('scan_results')
-    .select('total_cost_cents')
-    .eq('brand_id', (await supabase.from('brands').select('id').eq('tenant_id', tenant.id)).data?.[0]?.id || '')
-    .gte('scanned_at', startOfMonth.toISOString())
-
-  const scanCostCents = scanCosts?.reduce((sum, s) => sum + (s.total_cost_cents || 0), 0) || 0
-  const totalCostCents = Math.max(costCents, scanCostCents)
-
   return NextResponse.json({
-    creditsUsed,
-    creditsLimit,
-    creditsRemaining: Math.max(0, creditsLimit - creditsUsed),
-    costCents: totalCostCents,
-    costDollars: (totalCostCents / 100).toFixed(2),
+    source: 'internal',
+    costDollars: (costCents / 100).toFixed(2),
+    totalCredits: '100.00', // Default
+    totalUsage: (costCents / 100).toFixed(2),
+    remaining: (100 - costCents / 100).toFixed(2),
   })
 }
