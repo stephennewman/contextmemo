@@ -70,6 +70,39 @@ export async function GET(
       .slice(0, 20)
       .map(([entity, count]) => ({ entity, count }))
 
+    // Get prompts with citation stats
+    const { data: promptResults } = await supabase
+      .from('lab_scan_results')
+      .select('prompt_text, brand_cited, brand_mentioned')
+      .eq('brand_id', brandId)
+
+    // Aggregate by prompt
+    const promptStats: Record<string, { total: number; cited: number; mentioned: number }> = {}
+    for (const row of (promptResults || [])) {
+      if (!promptStats[row.prompt_text]) {
+        promptStats[row.prompt_text] = { total: 0, cited: 0, mentioned: 0 }
+      }
+      promptStats[row.prompt_text].total++
+      if (row.brand_cited) promptStats[row.prompt_text].cited++
+      if (row.brand_mentioned) promptStats[row.prompt_text].mentioned++
+    }
+
+    const topPrompts = Object.entries(promptStats)
+      .map(([prompt, stats]) => ({
+        prompt,
+        total: stats.total,
+        cited: stats.cited,
+        mentioned: stats.mentioned,
+        citationRate: stats.total > 0 ? Math.round(100 * stats.cited / stats.total) : 0,
+      }))
+      .sort((a, b) => b.citationRate - a.citationRate || b.cited - a.cited)
+      .slice(0, 50)
+
+    // Summary stats
+    const totalScans = promptResults?.length || 0
+    const totalCited = promptResults?.filter(r => r.brand_cited).length || 0
+    const totalMentioned = promptResults?.filter(r => r.brand_mentioned).length || 0
+
     return NextResponse.json({
       runs: runs || [],
       modelComparison: Object.entries(modelStats).map(([model, stats]) => ({
@@ -81,6 +114,13 @@ export async function GET(
         mentionRate: stats.total > 0 ? Math.round(100 * stats.mentioned / stats.total) : 0,
       })),
       topEntities,
+      topPrompts,
+      summary: {
+        totalScans,
+        totalCited,
+        totalMentioned,
+        citationRate: totalScans > 0 ? Math.round(100 * totalCited / totalScans) : 0,
+      },
     })
   } catch (error) {
     console.error('Lab API error:', error)

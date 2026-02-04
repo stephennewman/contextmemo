@@ -50,6 +50,21 @@ interface EntityCount {
   count: number
 }
 
+interface PromptStat {
+  prompt: string
+  total: number
+  cited: number
+  mentioned: number
+  citationRate: number
+}
+
+interface LabSummary {
+  totalScans: number
+  totalCited: number
+  totalMentioned: number
+  citationRate: number
+}
+
 interface PromptLabProps {
   brandId: string
 }
@@ -72,6 +87,8 @@ export function PromptLab({ brandId }: PromptLabProps) {
   const [runs, setRuns] = useState<LabRun[]>([])
   const [modelComparison, setModelComparison] = useState<ModelComparison[]>([])
   const [topEntities, setTopEntities] = useState<EntityCount[]>([])
+  const [topPrompts, setTopPrompts] = useState<PromptStat[]>([])
+  const [summary, setSummary] = useState<LabSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [stopping, setStopping] = useState(false)
@@ -90,6 +107,8 @@ export function PromptLab({ brandId }: PromptLabProps) {
       setRuns(data.runs || [])
       setModelComparison(data.modelComparison || [])
       setTopEntities(data.topEntities || [])
+      setTopPrompts(data.topPrompts || [])
+      setSummary(data.summary || null)
     } catch (error) {
       console.error('Failed to fetch lab data:', error)
     } finally {
@@ -344,6 +363,35 @@ export function PromptLab({ brandId }: PromptLabProps) {
         </Card>
       )}
 
+      {/* Summary Stats */}
+      {summary && summary.totalScans > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Lab Results Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold">{summary.totalScans}</div>
+                <div className="text-xs text-muted-foreground">Total Scans</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{summary.totalCited}</div>
+                <div className="text-xs text-muted-foreground">Citations</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold">{summary.totalMentioned}</div>
+                <div className="text-xs text-muted-foreground">Mentions</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary">{summary.citationRate}%</div>
+                <div className="text-xs text-muted-foreground">Citation Rate</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Model Comparison */}
       {modelComparison.length > 0 && (
         <Card>
@@ -409,6 +457,48 @@ export function PromptLab({ brandId }: PromptLabProps) {
                   {entity.entity}
                   <span className="ml-1 opacity-70">({entity.count})</span>
                 </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top Prompts */}
+      {topPrompts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">Prompts That Get Citations</CardTitle>
+            </div>
+            <CardDescription>
+              Conversational prompts sorted by citation rate across models
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {topPrompts.slice(0, 20).map((p, i) => (
+                <div key={i} className="border-b pb-3 last:border-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-sm flex-1">{p.prompt}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {p.citationRate === 100 ? (
+                        <Badge className="bg-green-500">100%</Badge>
+                      ) : p.citationRate >= 75 ? (
+                        <Badge className="bg-green-400">{p.citationRate}%</Badge>
+                      ) : p.citationRate >= 50 ? (
+                        <Badge className="bg-yellow-500">{p.citationRate}%</Badge>
+                      ) : p.citationRate > 0 ? (
+                        <Badge variant="secondary">{p.citationRate}%</Badge>
+                      ) : (
+                        <Badge variant="outline">0%</Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {p.cited}/{p.total}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>
