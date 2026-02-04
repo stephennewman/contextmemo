@@ -1120,7 +1120,15 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
         try {
           const { text } = await generateText({
             model: openrouter('openai/gpt-4o-mini'),
-            prompt: `Write a 150-160 character meta description for this article. Be factual and include key concepts:\n\n${memo.content.slice(0, 1000)}`,
+            prompt: `Write a 150-160 character meta description for this article about ${brand.name}.
+
+IMPORTANT:
+- Use "${brand.name}" as the brand name (NOT "Context Memo")
+- Be factual and descriptive
+- Focus on the value proposition
+
+Article excerpt:
+${memo.content.slice(0, 1000)}`,
             temperature: 0.3,
           })
           return text.slice(0, 160)

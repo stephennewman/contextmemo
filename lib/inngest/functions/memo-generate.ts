@@ -237,7 +237,15 @@ export const memoGenerate = inngest.createFunction(
     const metaDescription = await step.run('generate-meta', async () => {
       const { text } = await generateText({
         model: openai('gpt-4o-mini'),
-        prompt: `Write a 150-160 character meta description for this memo. Be factual and include the brand name:\n\n${memoContent.content.slice(0, 1000)}`,
+        prompt: `Write a 150-160 character meta description for this article about ${brand.name}. 
+
+IMPORTANT: 
+- Use "${brand.name}" as the brand name (NOT "Context Memo")
+- Be factual and descriptive
+- Focus on the value proposition
+
+Article excerpt:
+${memoContent.content.slice(0, 1000)}`,
         temperature: 0.3,
       })
       return text.slice(0, 160)
