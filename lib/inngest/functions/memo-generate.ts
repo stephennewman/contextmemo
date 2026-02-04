@@ -173,9 +173,16 @@ export const memoGenerate = inngest.createFunction(
           break
 
         case 'how_to':
-          // Extract topic from query
-          const topic = query?.query_text?.replace(/^how\s+to\s+/i, '') 
-            || 'get started'
+          // Extract topic from query - remove various question prefixes
+          let topic = query?.query_text || 'get started'
+          // Remove common question prefixes to get the core topic
+          topic = topic
+            .replace(/^how\s+(to|can\s+i|do\s+i|should\s+i)\s+/i, '')
+            .replace(/^what\s+(are|is)\s+(the\s+)?(best\s+)?(ways?\s+to\s+)?/i, '')
+            .replace(/^why\s+(should\s+i|do\s+i\s+need\s+to)\s+/i, '')
+            .replace(/\?$/g, '') // Remove trailing question mark
+            .trim()
+          
           const competitorList = competitors.slice(0, 3).map(c => c.name).join(', ')
           prompt = HOW_TO_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
@@ -186,6 +193,7 @@ export const memoGenerate = inngest.createFunction(
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
           slug = `how/${sanitizeSlug(topic)}`
+          // Capitalize first letter properly
           title = `How to ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
           break
 
