@@ -306,7 +306,8 @@ export const scanRun = inngest.createFunction(
         .order('scanned_at', { ascending: false })
       
       // Group previous scans by query_id (take most recent)
-      const previousScanMap = new Map<string, typeof previousScans[0]>()
+      type PreviousScan = { query_id: string; brand_in_citations: boolean | null; brand_position: number | null; competitors_mentioned: string[] | null }
+      const previousScanMap = new Map<string, PreviousScan>()
       for (const scan of previousScans || []) {
         if (!previousScanMap.has(scan.query_id)) {
           previousScanMap.set(scan.query_id, scan)
