@@ -26,11 +26,14 @@ export default function VerifyEmailPage() {
         return
       }
 
+      // Always use production URL for email redirects (never localhost)
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://contextmemo.com'
+      
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
         email: user.email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/brands/new`,
+          emailRedirectTo: `${siteUrl}/auth/callback?next=/brands/new`,
         }
       })
 

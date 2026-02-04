@@ -65,8 +65,9 @@ export default function SignupPage() {
     try {
       const supabase = createClient()
       
-      // Get the current origin for redirect URL
-      const redirectTo = `${window.location.origin}/auth/callback?next=/brands/new`
+      // Always use production URL for email redirects (never localhost)
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://contextmemo.com'
+      const redirectTo = `${siteUrl}/auth/callback?next=/brands/new`
       
       // Sign up with Supabase Auth - requires email confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
