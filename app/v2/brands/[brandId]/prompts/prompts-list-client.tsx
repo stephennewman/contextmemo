@@ -44,7 +44,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { toast } from 'sonner'
-import type { Query } from '@/lib/supabase/types'
+import type { Query, QueryExcludedReason } from '@/lib/supabase/types'
 
 // Competitor data from database
 interface CompetitorData {
@@ -172,7 +172,7 @@ export function PromptsListClient({
     return filtered
   }, [activePrompts, activeFilter, searchQuery])
 
-  const handleExclude = async (promptId: string, reason: string = 'manual') => {
+  const handleExclude = async (promptId: string, reason: QueryExcludedReason = 'manual') => {
     setLoading(promptId)
     try {
       const res = await fetch(`/api/brands/${brandId}/prompts/${promptId}/exclude`, {
@@ -187,7 +187,7 @@ export function PromptsListClient({
       const prompt = activePrompts.find(p => p.id === promptId)
       if (prompt) {
         setActivePrompts(prev => prev.filter(p => p.id !== promptId))
-        setExcludedPrompts(prev => [{ ...prompt, is_active: false, excluded_at: new Date().toISOString(), excluded_reason: reason }, ...prev])
+        setExcludedPrompts(prev => [{ ...prompt, is_active: false, excluded_at: new Date().toISOString(), excluded_reason: reason as QueryExcludedReason }, ...prev])
       }
       
       toast.success('Prompt excluded', {
