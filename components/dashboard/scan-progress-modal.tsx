@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { CheckCircle2, Loader2, Zap, X } from 'lucide-react'
 
 interface ScanProgressModalProps {
@@ -18,13 +19,13 @@ interface ProgressLine {
   type: 'info' | 'success' | 'working' | 'result'
 }
 
+// Currently enabled models (matches scan-run.ts config)
 const AI_MODELS = [
-  { id: 'gpt-4o', name: 'ChatGPT (GPT-4o)' },
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-  { id: 'llama-3.1-70b', name: 'Llama 3.1 70B' },
-  { id: 'perplexity', name: 'Perplexity' },
-  { id: 'deepseek', name: 'DeepSeek' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini (with web search)' },
+  // More models coming soon:
+  // { id: 'perplexity', name: 'Perplexity Sonar' },
+  // { id: 'claude-3-5-haiku', name: 'Claude 3.5 Haiku' },
+  // { id: 'grok', name: 'Grok 4 Fast' },
 ]
 
 export function ScanProgressModal({
@@ -202,6 +203,9 @@ export function ScanProgressModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-2xl p-0 gap-0 border-[3px] border-[#0F172A] rounded-none overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>AI Visibility Scan</DialogTitle>
+        </VisuallyHidden>
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-[#0F172A] text-white">
           <div className="flex items-center gap-3">

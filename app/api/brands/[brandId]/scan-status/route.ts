@@ -12,11 +12,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // Get recent scan count (last 10 minutes)
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
   
-  const { count: recentScans } = await supabase
+  const { data: recentScanData } = await supabase
     .from('scan_results')
-    .select('*', { count: 'exact', head: true })
+    .select('brand_mentioned, brand_in_citations')
     .eq('brand_id', brandId)
     .gte('scanned_at', tenMinutesAgo)
+
+  const recentScans = recentScanData?.length || 0
+  const mentionedCount = recentScanData?.filter(s => s.brand_mentioned === true).length || 0
+  const citedCount = recentScanData?.filter(s => s.brand_in_citations === true).length || 0
 
   // Get total query count to estimate progress
   const { count: totalQueries } = await supabase
@@ -26,12 +30,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     .eq('is_active', true)
 
   // Consider complete if we have recent scans and they match expected count
-  // (30 queries * 3 models = 90 scans expected max)
-  const expectedScans = Math.min((totalQueries || 0), 30) * 3
+  // Only 1 model is enabled currently (GPT-4o-mini)
+  const expectedScans = Math.min((totalQueries || 0), 30) * 1
   const isComplete = (recentScans || 0) >= expectedScans * 0.8 // 80% threshold
 
   return NextResponse.json({
-    recentScans: recentScans || 0,
+    recentScans,
+    mentionedCount,
+    citedCount,
     totalQueries: totalQueries || 0,
     expectedScans,
     isComplete,
