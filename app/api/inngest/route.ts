@@ -108,3 +108,4 @@ export const { GET, POST, PUT } = serve({
     aiOverviewScan,          // Scan Google AI Overviews for brand queries
   ],
 })
+// Sync trigger Wed Feb  4 13:26:53 EST 2026
