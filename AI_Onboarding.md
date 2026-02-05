@@ -401,6 +401,15 @@ _Most recent deploys first_
 
 ---
 
+**Fix: Memo Delete + Table View (v1 + v2)** (f376b4b)
+- Applied table view to v1 dashboard memos tab (the one you're using)
+- Columns: Title (with slug), Type, Status, Created, Actions
+- Moved "Generate Memo" dropdown to card header (cleaner layout)
+- Shows counts in header: total, published, drafts
+- Actions appear on row hover (view live, hubspot sync, edit)
+
+---
+
 **Fix: Memo Delete + Table View** (7ee8501)
 - Fixed memo delete not working - was using client-side Supabase delete (failing due to RLS), now uses server-side API action
 - Fixed redirect after delete - was going to profile page, now correctly goes to `/v2/brands/{brandId}/memos`
