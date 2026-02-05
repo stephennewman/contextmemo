@@ -390,16 +390,21 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
-**Feature: Strategy Playbook Tab**
+**Feature: Strategy Playbook with Interactive Cost Calculator**
 - New STRATEGY tab on brand page with comprehensive AI visibility roadmap
 - 4-phase methodology: Discovery (Weeks 1-4) → Foundation (Weeks 5-8) → Optimization (Months 3-4) → Scale (Month 5+)
-- Real-time metrics showing current progress (prompts, gaps, memos, visibility score, AI traffic)
-- Detailed activities, milestones, and expected outcomes per phase
-- Cost breakdown showing actual investment needed ($19-189/month depending on tier)
-- Weekly schedule visualization for steady-state monitoring
-- Best practices do's and don'ts
+- **Interactive Cost Calculator with sliding scale pricing:**
+  - Prompts tracked (10-200)
+  - AI models (1-4: GPT, Claude, Grok, Perplexity)
+  - Scan frequency (weekly, 2x/week, 3x/week, daily)
+  - Memos per month (0-50)
+  - Competitors monitored (0-50)
+- **Built-in 3x margin** on actual API costs
+- **Tier presets:** Starter (~$15/mo), Growth (~$49/mo), Pro (~$99/mo), Scale (~$299/mo)
+- Real-time cost breakdown by category (scanning, content, competitors, discovery)
+- ROI comparison to traditional content costs
 - Files created:
-  - `components/dashboard/strategy-playbook.tsx` - Full playbook UI component
+  - `components/dashboard/strategy-playbook.tsx` - Full playbook UI with cost calculator
   - `app/api/brands/[brandId]/strategy/route.ts` - Strategy metrics API
 
 **Fix: Year instructions in AI-generated content**

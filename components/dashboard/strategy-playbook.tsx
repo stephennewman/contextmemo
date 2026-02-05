@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Slider } from '@/components/ui/slider'
+import { Label } from '@/components/ui/label'
 import {
   Target,
   Search,
@@ -24,7 +26,50 @@ import {
   ArrowRight,
   Lightbulb,
   AlertCircle,
+  Calculator,
+  Gauge,
 } from 'lucide-react'
+
+// Cost constants (actual API costs in cents)
+const COSTS = {
+  // Per-prompt scan costs by model (in cents)
+  scanPerPrompt: {
+    'gpt-4o-mini': 2.6,      // $0.026
+    'claude-haiku': 2.0,     // $0.020  
+    'grok-fast': 1.4,        // $0.014
+    'perplexity': 0.05,      // $0.0005
+  },
+  // Memo generation (GPT-4o, in cents)
+  memoGeneration: 3,         // $0.03 per memo
+  // Competitor content analysis (in cents)
+  competitorAnalysis: 1,     // $0.01 per article classified
+  // Competitor response generation (in cents)
+  competitorResponse: 5,     // $0.05 per response article
+  // Discovery/enrichment (Perplexity, in cents)
+  discovery: 0.5,            // $0.005 per discovery call
+}
+
+// Margin multiplier (our markup)
+const MARGIN_MULTIPLIER = 3  // 3x markup = 200% margin
+
+// Scan frequency multipliers (scans per month)
+const SCAN_FREQUENCY = {
+  'weekly': 4,
+  '2x-week': 8,
+  '3x-week': 12,
+  'daily': 30,
+}
+
+interface CostCalculation {
+  rawCost: number          // Actual API cost
+  price: number            // What we charge (with margin)
+  breakdown: {
+    scanning: number
+    memos: number
+    competitors: number
+    discovery: number
+  }
+}
 
 interface StrategyPlaybookProps {
   brandId: string
@@ -234,6 +279,51 @@ const PHASES: Phase[] = [
 export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybookProps) {
   const [expandedPhase, setExpandedPhase] = useState<string>('discovery')
   const [showCostBreakdown, setShowCostBreakdown] = useState(false)
+  
+  // Cost calculator state
+  const [calcPrompts, setCalcPrompts] = useState(50)
+  const [calcModels, setCalcModels] = useState(1)
+  const [calcFrequency, setCalcFrequency] = useState<keyof typeof SCAN_FREQUENCY>('weekly')
+  const [calcMemos, setCalcMemos] = useState(10)
+  const [calcCompetitors, setCalcCompetitors] = useState(10)
+
+  // Calculate costs based on inputs
+  const calculateMonthlyCost = (): CostCalculation => {
+    // Scanning costs
+    const scansPerMonth = SCAN_FREQUENCY[calcFrequency]
+    const modelsUsed = ['gpt-4o-mini', 'claude-haiku', 'grok-fast', 'perplexity'].slice(0, calcModels) as (keyof typeof COSTS.scanPerPrompt)[]
+    const scanCostPerPrompt = modelsUsed.reduce((sum, model) => sum + COSTS.scanPerPrompt[model], 0)
+    const totalScanCost = (calcPrompts * scanCostPerPrompt * scansPerMonth) / 100 // Convert cents to dollars
+    
+    // Memo generation costs
+    const memoCost = (calcMemos * COSTS.memoGeneration) / 100
+    
+    // Competitor monitoring costs (assume ~20 articles/month per competitor analyzed, 10% get responses)
+    const articlesPerMonth = calcCompetitors * 20
+    const classificationCost = (articlesPerMonth * COSTS.competitorAnalysis) / 100
+    const responsesPerMonth = Math.ceil(articlesPerMonth * 0.1)
+    const responseCost = (responsesPerMonth * COSTS.competitorResponse) / 100
+    const competitorCost = classificationCost + responseCost
+    
+    // Discovery costs (weekly discovery = 4x/month, ~10 calls each)
+    const discoveryCost = (4 * 10 * COSTS.discovery) / 100
+    
+    const rawCost = totalScanCost + memoCost + competitorCost + discoveryCost
+    const price = rawCost * MARGIN_MULTIPLIER
+    
+    return {
+      rawCost: Math.round(rawCost * 100) / 100,
+      price: Math.round(price * 100) / 100,
+      breakdown: {
+        scanning: Math.round(totalScanCost * MARGIN_MULTIPLIER * 100) / 100,
+        memos: Math.round(memoCost * MARGIN_MULTIPLIER * 100) / 100,
+        competitors: Math.round(competitorCost * MARGIN_MULTIPLIER * 100) / 100,
+        discovery: Math.round(discoveryCost * MARGIN_MULTIPLIER * 100) / 100,
+      }
+    }
+  }
+  
+  const costs = calculateMonthlyCost()
 
   // Determine current phase based on metrics
   const getCurrentPhase = () => {
@@ -245,20 +335,14 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
   }
 
   const currentPhase = getCurrentPhase()
-
-  // Calculate total estimated costs
-  const costBreakdown = {
-    phase1: { min: 15, max: 25, description: 'Discovery (4 weeks)' },
-    phase2: { min: 20, max: 35, description: 'Foundation (4 weeks)' },
-    phase3: { min: 25, max: 40, description: 'Optimization (8 weeks)' },
-    phase4: { min: 10, max: 15, description: 'Maintenance (per month)' },
+  
+  // Get tier name based on usage
+  const getTierName = () => {
+    if (calcPrompts <= 25 && calcModels === 1 && calcMemos <= 5) return 'Starter'
+    if (calcPrompts <= 50 && calcModels <= 2 && calcMemos <= 15) return 'Growth'
+    if (calcPrompts <= 100 && calcModels <= 3 && calcMemos <= 30) return 'Pro'
+    return 'Scale'
   }
-
-  const totalFirstYear = 
-    costBreakdown.phase1.max + 
-    costBreakdown.phase2.max + 
-    costBreakdown.phase3.max + 
-    (costBreakdown.phase4.max * 8) // 8 months of maintenance
 
   return (
     <div className="space-y-6">
@@ -484,67 +568,216 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
         })}
       </div>
 
-      {/* Cost Summary */}
-      <Card>
+      {/* Cost Calculator */}
+      <Card className="border-2">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Investment Summary
+              <Calculator className="h-5 w-5" />
+              Cost Calculator
             </span>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setShowCostBreakdown(!showCostBreakdown)}
-            >
-              {showCostBreakdown ? 'Hide Details' : 'Show Details'}
-            </Button>
+            <Badge variant="outline" className="text-lg px-3 py-1">
+              {getTierName()} Tier
+            </Badge>
           </CardTitle>
+          <CardDescription>
+            Adjust the sliders to see how costs scale with your usage
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <div className="text-2xl font-bold">${costBreakdown.phase1.max}</div>
-              <div className="text-xs text-muted-foreground">Phase 1 (4 weeks)</div>
+        <CardContent className="space-y-6">
+          {/* Sliders */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Prompts */}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">Prompts Tracked</Label>
+                <span className="text-sm font-bold text-primary">{calcPrompts}</span>
+              </div>
+              <Slider
+                value={[calcPrompts]}
+                onValueChange={(v) => setCalcPrompts(v[0])}
+                min={10}
+                max={200}
+                step={10}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>10 (Starter)</span>
+                <span>200 (Scale)</span>
+              </div>
             </div>
-            <div>
-              <div className="text-2xl font-bold">${costBreakdown.phase2.max}</div>
-              <div className="text-xs text-muted-foreground">Phase 2 (4 weeks)</div>
+
+            {/* Models */}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">AI Models</Label>
+                <span className="text-sm font-bold text-primary">{calcModels}</span>
+              </div>
+              <Slider
+                value={[calcModels]}
+                onValueChange={(v) => setCalcModels(v[0])}
+                min={1}
+                max={4}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>1 (GPT only)</span>
+                <span>4 (All models)</span>
+              </div>
             </div>
-            <div>
-              <div className="text-2xl font-bold">${costBreakdown.phase3.max}</div>
-              <div className="text-xs text-muted-foreground">Phase 3 (8 weeks)</div>
+
+            {/* Scan Frequency */}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">Scan Frequency</Label>
+                <span className="text-sm font-bold text-primary capitalize">{calcFrequency.replace('-', '/')}</span>
+              </div>
+              <div className="flex gap-2">
+                {(['weekly', '2x-week', '3x-week', 'daily'] as const).map((freq) => (
+                  <Button
+                    key={freq}
+                    variant={calcFrequency === freq ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCalcFrequency(freq)}
+                    className="flex-1 text-xs"
+                  >
+                    {freq === 'weekly' ? 'Weekly' : freq === '2x-week' ? '2x/wk' : freq === '3x-week' ? '3x/wk' : 'Daily'}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div>
-              <div className="text-2xl font-bold">${costBreakdown.phase4.max}/mo</div>
-              <div className="text-xs text-muted-foreground">Ongoing</div>
+
+            {/* Memos per Month */}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">Memos / Month</Label>
+                <span className="text-sm font-bold text-primary">{calcMemos}</span>
+              </div>
+              <Slider
+                value={[calcMemos]}
+                onValueChange={(v) => setCalcMemos(v[0])}
+                min={0}
+                max={50}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0</span>
+                <span>50</span>
+              </div>
+            </div>
+
+            {/* Competitors Monitored */}
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex justify-between">
+                <Label className="text-sm font-medium">Competitors Monitored</Label>
+                <span className="text-sm font-bold text-primary">{calcCompetitors}</span>
+              </div>
+              <Slider
+                value={[calcCompetitors]}
+                onValueChange={(v) => setCalcCompetitors(v[0])}
+                min={0}
+                max={50}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0 (None)</span>
+                <span>50 (Comprehensive)</span>
+              </div>
             </div>
           </div>
 
-          {showCostBreakdown && (
-            <div className="border-t pt-4 space-y-2">
-              <div className="text-sm text-muted-foreground">
-                <strong>Year 1 Total:</strong> ~${totalFirstYear} 
-                <span className="ml-2">(~${Math.round(totalFirstYear / 12)}/month average)</span>
+          {/* Cost Display */}
+          <div className="border-t pt-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Monthly Price */}
+              <div className="p-6 bg-[#0F172A] text-white rounded-lg">
+                <div className="text-xs font-bold tracking-widest text-slate-400 mb-2">MONTHLY PRICE</div>
+                <div className="text-4xl font-bold text-[#0EA5E9]">${costs.price.toFixed(0)}<span className="text-lg text-slate-400">/mo</span></div>
+                <div className="text-xs text-slate-400 mt-2">
+                  Includes {MARGIN_MULTIPLIER}x margin on ${costs.rawCost.toFixed(2)} API cost
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                These costs are for AI API usage only. They scale with:
-              </div>
-              <ul className="text-sm text-muted-foreground list-disc list-inside">
-                <li>Number of prompts monitored (main driver)</li>
-                <li>Frequency of scans (daily vs weekly)</li>
-                <li>Number of models scanned (1 vs 3)</li>
-                <li>Volume of content generated</li>
-              </ul>
-            </div>
-          )}
 
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+              {/* Breakdown */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold tracking-widest text-muted-foreground mb-3">COST BREAKDOWN</div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm">Prompt Scanning</span>
+                  <span className="font-medium">${costs.breakdown.scanning.toFixed(2)}</span>
+                </div>
+                <Progress value={(costs.breakdown.scanning / costs.price) * 100} className="h-1" />
+                
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm">Content Generation</span>
+                  <span className="font-medium">${costs.breakdown.memos.toFixed(2)}</span>
+                </div>
+                <Progress value={(costs.breakdown.memos / costs.price) * 100} className="h-1" />
+                
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm">Competitor Intel</span>
+                  <span className="font-medium">${costs.breakdown.competitors.toFixed(2)}</span>
+                </div>
+                <Progress value={(costs.breakdown.competitors / costs.price) * 100} className="h-1" />
+                
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm">Discovery</span>
+                  <span className="font-medium">${costs.breakdown.discovery.toFixed(2)}</span>
+                </div>
+                <Progress value={(costs.breakdown.discovery / costs.price) * 100} className="h-1" />
+              </div>
+            </div>
+          </div>
+
+          {/* Tier Suggestions */}
+          <div className="border-t pt-4">
+            <div className="text-xs font-bold tracking-widest text-muted-foreground mb-3">SUGGESTED TIERS</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button
+                onClick={() => { setCalcPrompts(25); setCalcModels(1); setCalcFrequency('weekly'); setCalcMemos(5); setCalcCompetitors(5); }}
+                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
+              >
+                <div className="font-bold text-sm">Starter</div>
+                <div className="text-xs text-muted-foreground">25 prompts, 1 model</div>
+                <div className="text-sm font-bold text-primary mt-1">~$15/mo</div>
+              </button>
+              <button
+                onClick={() => { setCalcPrompts(50); setCalcModels(2); setCalcFrequency('2x-week'); setCalcMemos(15); setCalcCompetitors(10); }}
+                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
+              >
+                <div className="font-bold text-sm">Growth</div>
+                <div className="text-xs text-muted-foreground">50 prompts, 2 models</div>
+                <div className="text-sm font-bold text-primary mt-1">~$49/mo</div>
+              </button>
+              <button
+                onClick={() => { setCalcPrompts(100); setCalcModels(3); setCalcFrequency('3x-week'); setCalcMemos(25); setCalcCompetitors(20); }}
+                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
+              >
+                <div className="font-bold text-sm">Pro</div>
+                <div className="text-xs text-muted-foreground">100 prompts, 3 models</div>
+                <div className="text-sm font-bold text-primary mt-1">~$99/mo</div>
+              </button>
+              <button
+                onClick={() => { setCalcPrompts(200); setCalcModels(4); setCalcFrequency('daily'); setCalcMemos(50); setCalcCompetitors(50); }}
+                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
+              >
+                <div className="font-bold text-sm">Scale</div>
+                <div className="text-xs text-muted-foreground">200 prompts, 4 models</div>
+                <div className="text-sm font-bold text-primary mt-1">~$299/mo</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Value Comparison */}
+          <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
             <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-green-600 mt-0.5" />
+              <Gauge className="h-4 w-4 text-green-600 mt-0.5" />
               <div className="text-sm">
-                <strong>Compare to:</strong> A single B2B content piece typically costs $500-2,000. 
-                AI visibility strategy generates 30-50+ optimized pieces for under $100 in AI costs.
+                <strong>ROI Context:</strong> A single B2B content piece costs $500-2,000 to produce. 
+                At ${costs.price.toFixed(0)}/mo, you get {calcMemos} AI-optimized pieces + monitoring across {calcPrompts} prompts.
+                {costs.price > 0 && ` That's $${(costs.price / Math.max(calcMemos, 1)).toFixed(0)}/piece vs $1,000+ traditional.`}
               </div>
             </div>
           </div>
