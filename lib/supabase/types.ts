@@ -715,6 +715,8 @@ export interface BrandContext {
   offers?: BrandOffers
   // Critical prompt themes - keyword clusters to focus on
   prompt_themes?: PromptTheme[]
+  // Corporate positioning framework - comprehensive strategic messaging
+  corporate_positioning?: CorporatePositioning
 }
 
 // Brand offers/CTAs extracted from website
@@ -723,6 +725,69 @@ export interface BrandOffer {
   label: string           // The CTA text (e.g., "Book a Demo", "Start Free Trial")
   url?: string            // Link to the offer page
   details?: string        // Additional context (e.g., "14-day free trial", "No credit card required")
+}
+
+// =============================================================================
+// Corporate Positioning Framework (32 fields)
+// =============================================================================
+
+// Key differentiator with name and detail
+export interface Differentiator {
+  name: string            // Short name (e.g., "Predictive Operations")
+  detail: string          // Detailed explanation
+}
+
+// Messaging pillar with supporting points
+export interface MessagingPillar {
+  name: string            // Pillar name (e.g., "Predictability")
+  supporting_points: string[]  // 3-5 supporting statements
+}
+
+// Objection with response
+export interface ObjectionResponse {
+  objection: string       // The common objection
+  response: string        // How to respond
+}
+
+// Complete corporate positioning framework
+export interface CorporatePositioning {
+  // Section 1: Mission & Vision (2 fields)
+  mission_statement?: string
+  vision_statement?: string
+  
+  // Section 2: Target Markets (3 fields)
+  primary_verticals?: string[]     // Industries served with descriptions
+  buyer_personas?: string[]        // Decision makers (not same as TargetPersona - these are prose descriptions)
+  user_personas?: string[]         // End users
+  
+  // Section 3: Value Proposition (3 fields)
+  core_value_promise?: string      // One-line value proposition
+  key_benefits?: string[]          // 4-8 benefits
+  proof_points?: string[]          // Trust signals, stats, logos
+  
+  // Section 4: Key Differentiators (6 fields as 3 pairs)
+  differentiators?: Differentiator[]  // Typically 3 differentiators
+  
+  // Section 5: Messaging Pillars (6 fields as 3 pairs)
+  messaging_pillars?: MessagingPillar[]  // Typically 3 pillars
+  
+  // Section 6: Elevator Pitches (3 fields)
+  pitch_10_second?: string
+  pitch_30_second?: string
+  pitch_2_minute?: string
+  
+  // Section 7: Objection Handling (6 fields as 3 pairs)
+  objection_responses?: ObjectionResponse[]  // Typically 3 objections
+  
+  // Section 8: Competitive Stance (3 fields)
+  competitive_positioning?: string    // Overall positioning statement
+  win_themes?: string[]               // How we win deals
+  competitive_landmines?: string[]    // Questions to ask competitors
+  
+  // Metadata
+  version?: number
+  last_updated?: string
+  field_count?: number  // Track completeness (out of 32)
 }
 
 export interface BrandOffers {

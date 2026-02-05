@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
+import { CorporatePositioningSection } from '@/components/dashboard/corporate-positioning'
 import { BrandContext } from '@/lib/supabase/types'
 
 interface Competitor {
@@ -157,26 +158,51 @@ export function ProfileSection({
 
       {/* Show skeleton loaders when refreshing */}
       {isRefreshing ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <SkeletonCard title="Company Information" />
-          <SkeletonCard title="Products & Services" />
-          <SkeletonCard title="Markets & Customers" />
-          <Card className="lg:col-span-2">
+        <div className="space-y-6">
+          {/* Corporate Positioning Skeleton */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-base">Target Personas</CardTitle>
-              <CardDescription>Loading personas...</CardDescription>
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-72 mt-2" />
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 md:grid-cols-3">
-                <Skeleton className="h-24 w-full rounded-lg" />
-                <Skeleton className="h-24 w-full rounded-lg" />
-                <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-2 w-full mb-4" />
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
               </div>
             </CardContent>
           </Card>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SkeletonCard title="Company Information" />
+            <SkeletonCard title="Products & Services" />
+            <SkeletonCard title="Markets & Customers" />
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base">Target Personas</CardTitle>
+                <CardDescription>Loading personas...</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <Skeleton className="h-24 w-full rounded-lg" />
+                  <Skeleton className="h-24 w-full rounded-lg" />
+                  <Skeleton className="h-24 w-full rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       ) : hasContext && context ? (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          {/* Corporate Positioning - Full width, at the top */}
+          <CorporatePositioningSection 
+            positioning={context?.corporate_positioning} 
+            brandName={brandName} 
+          />
+          
+          {/* Existing profile cards */}
+          <div className="grid gap-6 lg:grid-cols-2">
           {/* Company Info */}
           <Card>
             <CardHeader>
@@ -449,6 +475,7 @@ export function ProfileSection({
               </CardContent>
             </Card>
           )}
+          </div>
         </div>
       ) : (
         <Card>

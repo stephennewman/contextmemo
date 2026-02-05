@@ -6,7 +6,7 @@ export async function GET() {
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ jobs: [] })
+    return NextResponse.json({ jobs: [], lastActivity: null })
   }
 
   // Get tenant
@@ -17,7 +17,7 @@ export async function GET() {
     .single()
 
   if (!tenant) {
-    return NextResponse.json({ jobs: [] })
+    return NextResponse.json({ jobs: [], lastActivity: null })
   }
 
   // Get brands for this tenant
@@ -29,7 +29,7 @@ export async function GET() {
   const brandIds = (brands || []).map(b => b.id)
 
   if (brandIds.length === 0) {
-    return NextResponse.json({ jobs: [] })
+    return NextResponse.json({ jobs: [], lastActivity: null })
   }
 
   // Get active jobs (started in last 10 minutes, not stale)
@@ -42,8 +42,22 @@ export async function GET() {
     .gte('started_at', tenMinutesAgo)
     .order('started_at', { ascending: false })
 
+  // Get last activity from activity_log (most recent completed activity)
+  const { data: lastActivity } = await supabase
+    .from('activity_log')
+    .select('created_at, title, activity_type')
+    .in('brand_id', brandIds)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
   return NextResponse.json({
     jobs: activeJobs || [],
     hasActive: (activeJobs?.length || 0) > 0,
+    lastActivity: lastActivity ? {
+      timestamp: lastActivity.created_at,
+      title: lastActivity.title,
+      type: lastActivity.activity_type,
+    } : null,
   })
 }

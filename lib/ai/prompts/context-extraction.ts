@@ -1,4 +1,4 @@
-export const CONTEXT_EXTRACTION_PROMPT = `You are analyzing a company website to extract factual brand context. Extract ONLY information that is explicitly stated on the website. Do not infer or make up any information.
+export const CONTEXT_EXTRACTION_PROMPT = `You are analyzing a company website to extract factual brand context AND comprehensive corporate positioning. Extract ONLY information that is explicitly stated or can be reasonably inferred from the website. Be thorough - this positioning framework will be used for content generation and AI visibility.
 
 Analyze the provided website content and extract the following information in JSON format:
 
@@ -48,7 +48,65 @@ Analyze the provided website content and extract the following information in JS
       "priority": "high|medium|low",
       "category": "product|use_case|industry|feature"
     }
-  ]
+  ],
+  "corporate_positioning": {
+    "mission_statement": "The company's mission - why they exist, what problem they solve (1-2 sentences)",
+    "vision_statement": "Where the company is headed - the future state they're creating (1-2 sentences)",
+    "primary_verticals": [
+      "• Industry 1 - specific sub-segments served",
+      "• Industry 2 - specific sub-segments served"
+    ],
+    "buyer_personas": [
+      "• Persona Title - responsibilities, pain points, what they're looking for",
+      "• Persona Title - responsibilities, pain points, what they're looking for"
+    ],
+    "user_personas": [
+      "• User Type - how they interact with the product, their daily challenges",
+      "• User Type - how they interact with the product, their daily challenges"
+    ],
+    "core_value_promise": "One-sentence value proposition - what the customer gets and why it matters",
+    "key_benefits": [
+      "Benefit statement with specific outcome",
+      "Benefit statement with specific outcome"
+    ],
+    "proof_points": [
+      "Trust signal - customer logos, stats, awards, certifications",
+      "Trust signal - customer logos, stats, awards, certifications"
+    ],
+    "differentiators": [
+      {
+        "name": "Short Differentiator Name (3-5 words)",
+        "detail": "Full explanation of what makes this unique and why it matters to buyers (2-3 sentences)"
+      }
+    ],
+    "messaging_pillars": [
+      {
+        "name": "Pillar Name (1 word like 'Predictability' or 'Simplicity')",
+        "supporting_points": [
+          "Specific proof point or capability that supports this pillar",
+          "Another supporting statement"
+        ]
+      }
+    ],
+    "pitch_10_second": "One sentence that explains what the company does and for whom",
+    "pitch_30_second": "A short paragraph (3-4 sentences) that covers problem, solution, and key differentiator",
+    "pitch_2_minute": "A complete pitch covering: 1) The problem, 2) The solution, 3) Key benefits, 4) How it works, 5) Proof points, 6) Call to action",
+    "objection_responses": [
+      {
+        "objection": "Common objection buyers have (e.g., 'We already have a system')",
+        "response": "How to address this objection with specifics"
+      }
+    ],
+    "competitive_positioning": "One paragraph explaining how the company positions against competitors",
+    "win_themes": [
+      "Key theme that wins deals (e.g., 'Unified platform vs. point solutions')",
+      "Another win theme"
+    ],
+    "competitive_landmines": [
+      "Question to ask competitors that exposes their weakness",
+      "Another landmine question"
+    ]
+  }
 }
 
 TARGET PERSONAS - Reverse-engineer the 2-3 primary buyer personas from website signals.
@@ -141,8 +199,58 @@ Categories:
 - "industry" - Target vertical
 - "feature" - Key capability or functionality
 
-Rules:
-1. Only include information explicitly stated in the content
+---
+
+CORPORATE POSITIONING - Extract a comprehensive strategic messaging framework:
+
+This is critical for generating consistent, high-quality content. Be thorough and extract as much as possible from the website.
+
+**Section 1: Mission & Vision (2 fields)**
+- mission_statement: The company's purpose - why they exist beyond making money. Look for "Our Mission", "About Us", or purpose statements. Example: "To eliminate unnecessary operational waste that costs companies precious time, money, and opportunities."
+- vision_statement: The future state they're working toward. Look for "Our Vision" or aspirational language. Example: "To turn operational waste into predictive operations."
+
+**Section 2: Target Markets (3 fields)**
+- primary_verticals: List each industry/vertical with specific sub-segments. Format as "• Industry - sub-segments". Example: "• Food & Beverage - restaurants, food manufacturing, commercial kitchens"
+- buyer_personas: Decision-makers who evaluate and purchase. Include title, responsibilities, and what they're looking for. Different from the structured personas field - these are prose descriptions for messaging.
+- user_personas: End users who interact with the product daily. Include what they do and their challenges.
+
+**Section 3: Value Proposition (3 fields)**
+- core_value_promise: The single most important value statement. Should answer "What do we do and why does it matter?" in one sentence.
+- key_benefits: 4-8 specific, outcome-oriented benefits. Use action verbs. Example: "Improve margins through operational efficiency"
+- proof_points: Trust signals that back up claims - customer logos, statistics, awards, compliance certifications, case study results.
+
+**Section 4: Key Differentiators (3 differentiators with name + detail)**
+What makes this company UNIQUE vs competitors. Each differentiator needs:
+- name: A memorable 3-5 word label (e.g., "Predictive Operations Platform")
+- detail: 2-3 sentences explaining what this means and why it matters
+
+Good differentiators are specific and defensible, not generic ("great customer service").
+
+**Section 5: Messaging Pillars (3 pillars with name + supporting points)**
+Core themes that should appear consistently across all communications:
+- name: One-word pillar (e.g., "Predictability", "Scalability", "Simplicity")
+- supporting_points: 3-5 specific capabilities or proof points that support this pillar
+
+**Section 6: Elevator Pitches (3 fields)**
+- pitch_10_second: One sentence - who we are, what we do, for whom
+- pitch_30_second: 3-4 sentences covering problem → solution → key differentiator
+- pitch_2_minute: Complete narrative covering problem → solution → how it works → benefits → proof → CTA
+
+**Section 7: Objection Handling (3 objection + response pairs)**
+Common buyer objections and how to address them:
+- "We already have a system" → Explain why this is different/better
+- "It seems expensive" → ROI justification
+- "Our team won't adopt it" → Ease of use, training support
+
+**Section 8: Competitive Stance (3 fields)**
+- competitive_positioning: One paragraph on how we position vs competitors
+- win_themes: 3-5 themes that win deals (e.g., "Unified platform vs. point solutions")
+- competitive_landmines: Questions to ask competitors that expose their weaknesses
+
+---
+
+EXTRACTION RULES:
+1. Only include information explicitly stated or clearly implied in the content
 2. Leave fields empty or as empty arrays if information is not available
 3. Use the exact language from the website when possible
 4. Do not embellish or add marketing language
@@ -150,6 +258,8 @@ Rules:
 6. For target_personas, only include personas with CLEAR evidence from the website content
 7. For offers, extract the EXACT CTA text as the label (e.g., "Start Your Free Trial" not just "trial")
 8. For prompt_themes, extract the most specific keyword clusters - prefer "temperature monitoring" over generic "monitoring"
+9. For corporate_positioning, be THOROUGH - this data powers content generation. Extract even if you need to synthesize from multiple pages.
+10. If certain positioning fields aren't clear, make intelligent inferences based on the overall website messaging - but mark them as inferred.
 
 Respond ONLY with valid JSON, no explanations.`
 

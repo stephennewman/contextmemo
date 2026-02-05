@@ -390,6 +390,27 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Fix: Year instructions in AI-generated content**
+- All AI-generated content (memos, competitor responses) now explicitly receives current year (2026)
+- Fixed issue where AI was generating content referencing outdated years (2023)
+- Updated 4 memo generation prompts: COMPARISON_MEMO_PROMPT, INDUSTRY_MEMO_PROMPT, HOW_TO_MEMO_PROMPT, ALTERNATIVE_MEMO_PROMPT
+- Updated competitor content response generation prompt with current_date and current_year placeholders
+- Files changed:
+  - `lib/ai/prompts/memo-generation.ts` - Added CURRENT DATE instructions to all 4 prompts
+  - `lib/inngest/functions/competitor-content.ts` - Added dynamic date injection to content generation
+
+**Fix: Activity feed filtering & external links** (earlier)
+- Added JUNK_TITLE_PATTERNS and JUNK_URL_PATTERNS to filter irrelevant competitor content
+- External links now open in new tabs
+- Disabled Google AI Overview scans by default
+
+**Add prompt history tracking with mention vs citation trends** (earlier)
+- New API: `/api/brands/[brandId]/prompts/[promptId]/history`
+- Activity detail now shows daily prompt trends, citation vs mention breakdown
+- Interactive date expansion to see per-model results
+
+---
+
 **Usage Tracking & Billing Infrastructure + Activity CTA Fixes** (a7b5a9d)
 - Added usage tracking to `discovery-scan.ts` and `prompt-enrich.ts` functions
 - Created Stripe metered billing integration for per-brand billing

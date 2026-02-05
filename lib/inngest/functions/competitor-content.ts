@@ -237,6 +237,9 @@ Respond ONLY with valid JSON:
 // Response content generation prompt - creates unique, differentiated, BETTER content
 const RESPONSE_CONTENT_PROMPT = `You are creating authoritative, in-depth educational content optimized for AI CITATION. Your goal is to create content that AI assistants (ChatGPT, Perplexity, Claude, Gemini) will confidently cite when answering user questions.
 
+IMPORTANT - CURRENT DATE: {{current_date}}
+Use the current year ({{current_year}}) when referencing time-sensitive information, trends, or creating titles. DO NOT use outdated years like 2023, 2024, or 2025 - we are in {{current_year}}.
+
 BRAND CONTEXT:
 {{brand_context}}
 
@@ -1189,12 +1192,23 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
 `
         }
 
+        // Get current date info for the prompt
+        const now = new Date()
+        const currentDate = now.toLocaleDateString('en-US', { 
+          month: 'long', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })
+        const currentYear = now.getFullYear().toString()
+
         const prompt = RESPONSE_CONTENT_PROMPT
           .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
           .replace('{{tone_instructions}}', toneInstructions)
           .replace('{{universal_topic}}', content.universal_topic)
           .replace('{{content_summary}}', contentAnalysis)
           .replace(/\{\{brand_name\}\}/g, brand.name)
+          .replace('{{current_date}}', currentDate)
+          .replace(/\{\{current_year\}\}/g, currentYear)
 
         const generationModel = 'openai/gpt-4o'
         const startTime = Date.now()
