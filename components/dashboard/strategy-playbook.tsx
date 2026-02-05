@@ -66,7 +66,13 @@ interface CostCalculation {
   breakdown: {
     scanning: number
     memos: number
-    competitors: number
+    entities: number
+    discovery: number
+  }
+  internalBreakdown: {
+    scanning: number
+    memos: number
+    entities: number
     discovery: number
   }
 }
@@ -286,14 +292,15 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
   const [calcModels, setCalcModels] = useState(2)
   const [calcFrequency, setCalcFrequency] = useState<keyof typeof SCAN_FREQUENCY>('2x-week')
   const [calcMemos, setCalcMemos] = useState(15)
-  const [calcCompetitors, setCalcCompetitors] = useState(10)
+  const [calcEntities, setCalcEntities] = useState(10)
+  const [showInternalCosts, setShowInternalCosts] = useState(false)
   
   // Tier configurations
   const TIERS = {
-    starter: { prompts: 25, models: 1, frequency: 'weekly' as const, memos: 5, competitors: 5, price: 29 },
-    growth: { prompts: 50, models: 2, frequency: '2x-week' as const, memos: 15, competitors: 10, price: 79 },
-    pro: { prompts: 100, models: 3, frequency: '3x-week' as const, memos: 30, competitors: 20, price: 149 },
-    scale: { prompts: 200, models: 4, frequency: 'daily' as const, memos: 50, competitors: 50, price: 349 },
+    starter: { prompts: 25, models: 1, frequency: 'weekly' as const, memos: 5, entities: 5, price: 29 },
+    growth: { prompts: 50, models: 2, frequency: '2x-week' as const, memos: 15, entities: 10, price: 79 },
+    pro: { prompts: 100, models: 3, frequency: '3x-week' as const, memos: 30, entities: 20, price: 149 },
+    scale: { prompts: 200, models: 4, frequency: 'daily' as const, memos: 50, entities: 50, price: 349 },
   }
   
   // Apply tier settings
@@ -303,7 +310,7 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
     setCalcModels(config.models)
     setCalcFrequency(config.frequency)
     setCalcMemos(config.memos)
-    setCalcCompetitors(config.competitors)
+    setCalcEntities(config.entities)
     setSelectedTier(tier)
   }
 
@@ -318,17 +325,17 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
     // Memo generation costs
     const memoCost = (calcMemos * COSTS.memoGeneration) / 100
     
-    // Competitor monitoring costs (assume ~20 articles/month per competitor analyzed, 10% get responses)
-    const articlesPerMonth = calcCompetitors * 20
+    // Entity monitoring costs (assume ~20 articles/month per entity analyzed, 10% get responses)
+    const articlesPerMonth = calcEntities * 20
     const classificationCost = (articlesPerMonth * COSTS.competitorAnalysis) / 100
     const responsesPerMonth = Math.ceil(articlesPerMonth * 0.1)
     const responseCost = (responsesPerMonth * COSTS.competitorResponse) / 100
-    const competitorCost = classificationCost + responseCost
+    const entityCost = classificationCost + responseCost
     
     // Discovery costs (weekly discovery = 4x/month, ~10 calls each)
     const discoveryCost = (4 * 10 * COSTS.discovery) / 100
     
-    const rawCost = totalScanCost + memoCost + competitorCost + discoveryCost
+    const rawCost = totalScanCost + memoCost + entityCost + discoveryCost
     const price = rawCost * MARGIN_MULTIPLIER
     
     return {
@@ -337,8 +344,15 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
       breakdown: {
         scanning: Math.round(totalScanCost * MARGIN_MULTIPLIER * 100) / 100,
         memos: Math.round(memoCost * MARGIN_MULTIPLIER * 100) / 100,
-        competitors: Math.round(competitorCost * MARGIN_MULTIPLIER * 100) / 100,
+        entities: Math.round(entityCost * MARGIN_MULTIPLIER * 100) / 100,
         discovery: Math.round(discoveryCost * MARGIN_MULTIPLIER * 100) / 100,
+      },
+      // Internal costs (raw, without margin)
+      internalBreakdown: {
+        scanning: Math.round(totalScanCost * 100) / 100,
+        memos: Math.round(memoCost * 100) / 100,
+        entities: Math.round(entityCost * 100) / 100,
+        discovery: Math.round(discoveryCost * 100) / 100,
       }
     }
   }
@@ -637,7 +651,7 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                 </div>
                 <div className="flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  5 competitors
+                  5 entities
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
@@ -681,7 +695,7 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                 </div>
                 <div className="flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  10 competitors
+                  10 entities
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
@@ -724,7 +738,7 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                 </div>
                 <div className="flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  20 competitors
+                  20 entities
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
@@ -767,7 +781,7 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                 </div>
                 <div className="flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  50 competitors
+                  50 entities
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
@@ -810,7 +824,7 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                 </div>
                 <div className="flex items-center gap-1">
                   <Sparkles className="h-3 w-3 text-[#8B5CF6]" />
-                  {calcCompetitors} competitors
+                  {calcEntities} entities
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
@@ -907,15 +921,15 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                   </div>
                 </div>
 
-                {/* Competitors Monitored */}
+                {/* Entities Monitored */}
                 <div className="space-y-3 md:col-span-2">
                   <div className="flex justify-between">
-                    <Label className="text-sm font-medium">Competitors Monitored</Label>
-                    <span className="text-sm font-bold text-[#8B5CF6]">{calcCompetitors}</span>
+                    <Label className="text-sm font-medium">Entities Monitored</Label>
+                    <span className="text-sm font-bold text-[#8B5CF6]">{calcEntities}</span>
                   </div>
                   <Slider
-                    value={[calcCompetitors]}
-                    onValueChange={(v) => setCalcCompetitors(v[0])}
+                    value={[calcEntities]}
+                    onValueChange={(v) => setCalcEntities(v[0])}
                     min={0}
                     max={100}
                     step={5}
@@ -949,38 +963,71 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                   }
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-700">
-                  <div className="text-xs text-slate-400">
-                    API cost: ${costs.rawCost.toFixed(2)} × {MARGIN_MULTIPLIER}x margin
-                  </div>
+                  <button 
+                    onClick={() => setShowInternalCosts(!showInternalCosts)}
+                    className="text-xs text-slate-400 hover:text-slate-300 underline"
+                  >
+                    {showInternalCosts ? 'Hide' : 'Show'} internal costs
+                  </button>
                 </div>
               </div>
 
               {/* Breakdown */}
               <div className="space-y-2">
-                <div className="text-xs font-bold tracking-widest text-muted-foreground mb-3">COST BREAKDOWN</div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-bold tracking-widest text-muted-foreground">
+                    {showInternalCosts ? 'INTERNAL COST (API)' : 'PRICE BREAKDOWN'}
+                  </div>
+                  {showInternalCosts && (
+                    <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                      Internal Only
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm">Prompt Scanning</span>
-                  <span className="font-medium">${costs.breakdown.scanning.toFixed(2)}</span>
+                  <span className="font-medium">
+                    ${showInternalCosts ? costs.internalBreakdown.scanning.toFixed(2) : costs.breakdown.scanning.toFixed(2)}
+                  </span>
                 </div>
                 <Progress value={(costs.breakdown.scanning / Math.max(costs.price, 1)) * 100} className="h-1" />
                 
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm">Content Generation</span>
-                  <span className="font-medium">${costs.breakdown.memos.toFixed(2)}</span>
+                  <span className="font-medium">
+                    ${showInternalCosts ? costs.internalBreakdown.memos.toFixed(2) : costs.breakdown.memos.toFixed(2)}
+                  </span>
                 </div>
                 <Progress value={(costs.breakdown.memos / Math.max(costs.price, 1)) * 100} className="h-1" />
                 
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-sm">Competitor Intel</span>
-                  <span className="font-medium">${costs.breakdown.competitors.toFixed(2)}</span>
+                  <span className="text-sm">Entity Intel</span>
+                  <span className="font-medium">
+                    ${showInternalCosts ? costs.internalBreakdown.entities.toFixed(2) : costs.breakdown.entities.toFixed(2)}
+                  </span>
                 </div>
-                <Progress value={(costs.breakdown.competitors / Math.max(costs.price, 1)) * 100} className="h-1" />
+                <Progress value={(costs.breakdown.entities / Math.max(costs.price, 1)) * 100} className="h-1" />
                 
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm">Discovery</span>
-                  <span className="font-medium">${costs.breakdown.discovery.toFixed(2)}</span>
+                  <span className="font-medium">
+                    ${showInternalCosts ? costs.internalBreakdown.discovery.toFixed(2) : costs.breakdown.discovery.toFixed(2)}
+                  </span>
                 </div>
                 <Progress value={(costs.breakdown.discovery / Math.max(costs.price, 1)) * 100} className="h-1" />
+                
+                {/* Total row */}
+                <div className="flex justify-between items-center py-2 border-t mt-2 font-bold">
+                  <span className="text-sm">{showInternalCosts ? 'Total API Cost' : 'Total Price'}</span>
+                  <span className={showInternalCosts ? 'text-amber-600' : 'text-primary'}>
+                    ${showInternalCosts ? costs.rawCost.toFixed(2) : costs.price.toFixed(2)}/mo
+                  </span>
+                </div>
+                {showInternalCosts && (
+                  <div className="text-xs text-muted-foreground">
+                    Margin: ${(costs.price - costs.rawCost).toFixed(2)} ({MARGIN_MULTIPLIER}x markup = {Math.round((MARGIN_MULTIPLIER - 1) * 100)}% margin)
+                  </div>
+                )}
               </div>
             </div>
           </div>
