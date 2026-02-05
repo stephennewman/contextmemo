@@ -27,6 +27,8 @@ import { AttributionDashboard } from '@/components/dashboard/attribution-dashboa
 import { PromptIntelligenceFeed } from '@/components/dashboard/prompt-intelligence-feed'
 import { ModelInsightsPanel } from '@/components/dashboard/model-insights-panel'
 import { PromptLab } from '@/components/dashboard/prompt-lab'
+import { QueryFanOut } from '@/components/dashboard/query-fan-out'
+import { EntityMap } from '@/components/dashboard/entity-map'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -460,6 +462,12 @@ export default async function BrandPage({ params }: Props) {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="qfo" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
+            QFO
+          </TabsTrigger>
+          <TabsTrigger value="map" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
+            MAP
+          </TabsTrigger>
           <TabsTrigger value="lab" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
             LAB
           </TabsTrigger>
@@ -749,6 +757,20 @@ export default async function BrandPage({ params }: Props) {
             }>}
             unreadCount={unreadAlerts.length}
           />
+        </TabsContent>
+
+        {/* Query Fan-Out - Sub-query analysis */}
+        <TabsContent value="qfo">
+          <QueryFanOut 
+            brandId={brandId} 
+            brandName={brand.name}
+            existingPrompts={(queries || []).map(q => ({ id: q.id, query_text: q.query_text }))}
+          />
+        </TabsContent>
+
+        {/* Entity Discovery Map - Visual entity relationships */}
+        <TabsContent value="map">
+          <EntityMap brandId={brandId} brandName={brand.name} />
         </TabsContent>
 
         {/* Prompt Lab - High-volume citation research */}
