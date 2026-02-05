@@ -409,69 +409,76 @@ export default async function BrandPage({ params }: Props) {
 
       {/* Main Content - Tabs */}
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto flex-wrap">
-          <TabsTrigger value="profile" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROFILE</TabsTrigger>
-          <TabsTrigger value="activity" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">ACTIVITY</TabsTrigger>
-          <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
-          <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
-          <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
-          <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
-          <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
-            WATCH
-            {/* Show badge if there's new content today */}
-            {competitorContent && competitorContent.filter(c => {
-              const d = new Date(c.published_at || c.first_seen_at)
-              const today = new Date()
-              today.setHours(0, 0, 0, 0)
-              return d >= today
-            }).length > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0EA5E9] text-[10px] font-bold text-white flex items-center justify-center">
-                {competitorContent.filter(c => {
-                  const d = new Date(c.published_at || c.first_seen_at)
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
-                  return d >= today
-                }).length}
-              </span>
-            )}
-          </TabsTrigger>
-          {/* Only show Search tab if Google or Bing is configured */}
-          {(context?.search_console?.google?.enabled || context?.search_console?.bing?.enabled) && (
-            <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
-          )}
-          {/* Only show AI Traffic tab if there's data */}
-          {(aiTraffic?.length || 0) > 0 && (
-            <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC ({aiTraffic?.length})</TabsTrigger>
-          )}
-          {/* Only show Intelligence tab if there's data */}
-          {((promptIntelligence?.length || 0) > 0 || (attributionEvents?.length || 0) > 0 || modelInsights?.models?.length) && (
-            <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
-              INTELLIGENCE
-              {(promptIntelligence?.filter(p => p.status === 'new')?.length || 0) > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
-                  {promptIntelligence?.filter(p => p.status === 'new')?.length}
+        <div className="space-y-0">
+          {/* Primary Tabs Row - Core content */}
+          <TabsList className="bg-transparent border-b border-[#1E293B] rounded-none p-0 h-auto w-full justify-start">
+            <TabsTrigger value="profile" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROFILE</TabsTrigger>
+            <TabsTrigger value="activity" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">ACTIVITY</TabsTrigger>
+            <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
+            <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
+            <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
+            <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
+          </TabsList>
+          
+          {/* Secondary Tabs Row - Advanced features & analytics */}
+          <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto w-full justify-start">
+            <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+              WATCH
+              {/* Show badge if there's new content today */}
+              {competitorContent && competitorContent.filter(c => {
+                const d = new Date(c.published_at || c.first_seen_at)
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                return d >= today
+              }).length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0EA5E9] text-[10px] font-bold text-white flex items-center justify-center">
+                  {competitorContent.filter(c => {
+                    const d = new Date(c.published_at || c.first_seen_at)
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    return d >= today
+                  }).length}
                 </span>
               )}
             </TabsTrigger>
-          )}
-          <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
-            ALERTS{(alerts?.length || 0) > 0 && ` (${alerts?.length})`}
-            {unreadAlerts.length > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
-                {unreadAlerts.length > 9 ? '9+' : unreadAlerts.length}
-              </span>
+            <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+              ALERTS{(alerts?.length || 0) > 0 && ` (${alerts?.length})`}
+              {unreadAlerts.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
+                  {unreadAlerts.length > 9 ? '9+' : unreadAlerts.length}
+                </span>
+              )}
+            </TabsTrigger>
+            {/* Only show Search tab if Google or Bing is configured */}
+            {(context?.search_console?.google?.enabled || context?.search_console?.bing?.enabled) && (
+              <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="qfo" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
-            QFO
-          </TabsTrigger>
-          <TabsTrigger value="map" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
-            MAP
-          </TabsTrigger>
-          <TabsTrigger value="lab" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
-            LAB
-          </TabsTrigger>
-        </TabsList>
+            {/* Only show AI Traffic tab if there's data */}
+            {(aiTraffic?.length || 0) > 0 && (
+              <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC ({aiTraffic?.length})</TabsTrigger>
+            )}
+            {/* Only show Intelligence tab if there's data */}
+            {((promptIntelligence?.length || 0) > 0 || (attributionEvents?.length || 0) > 0 || modelInsights?.models?.length) && (
+              <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+                INTELLIGENCE
+                {(promptIntelligence?.filter(p => p.status === 'new')?.length || 0) > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#F59E0B] text-[10px] font-bold text-white flex items-center justify-center">
+                    {promptIntelligence?.filter(p => p.status === 'new')?.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="qfo" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
+              QFO
+            </TabsTrigger>
+            <TabsTrigger value="map" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
+              MAP
+            </TabsTrigger>
+            <TabsTrigger value="lab" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">
+              LAB
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Brand Profile Tab - All extracted brand information */}
         <TabsContent value="profile" className="space-y-6">
