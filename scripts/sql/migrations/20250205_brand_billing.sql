@@ -75,11 +75,12 @@ CREATE INDEX IF NOT EXISTS idx_usage_credits_tenant ON usage_credits(tenant_id, 
 ALTER TABLE usage_credits ENABLE ROW LEVEL SECURITY;
 
 -- RLS policy: users can view their own credits
+-- Note: tenants.id IS the user_id (same as auth.uid())
 CREATE POLICY "Users can view own credits" ON usage_credits
   FOR SELECT
   USING (
     tenant_id IN (
-      SELECT id FROM tenants WHERE user_id = auth.uid()
+      SELECT id FROM tenants WHERE id = auth.uid()
     )
   );
 

@@ -390,6 +390,23 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Fix: Brand Context Extraction Failures + RLS Policy Error**
+- Fixed issue where context extraction would silently fail and return minimal data even when website content was successfully crawled
+- Root cause: GPT-4o JSON parsing would fail on some websites, triggering fallback that returned only domain name as company_name
+- Added retry logic with simplified prompt if first extraction attempt fails
+- Added content cleanup to remove image markdown and excessive whitespace before sending to GPT-4o
+- Added better logging to track extraction success/failure
+- Fixed RLS policy error flooding logs: `column tenants.user_id does not exist`
+  - Root cause: `usage_credits` table had broken RLS policy referencing `tenants.user_id` instead of `tenants.id`
+  - The tenants table uses `id` as the user ID (same as `auth.uid()`)
+
+**Files changed:**
+- `lib/inngest/functions/context-extract.ts` - Added retry logic, content cleanup, better error handling
+- `scripts/sql/migrations/20250205_brand_billing.sql` - Fixed RLS policy source
+- Applied database migration to fix RLS policy
+
+---
+
 **Fix: Subdomain Memo Pages 404**
 - Fixed critical bug where all memo pages on brand subdomains (e.g., `checkitnet.contextmemo.com/how/...`) returned 404
 - Root cause: Supabase query in `/app/memo/[subdomain]/[[...slug]]/page.tsx` had an invalid relational join `reviewed_by:reviewed_by(email, raw_user_meta_data)` that failed with error: "Could not find a relationship between 'memos' and 'reviewed_by' in the schema cache"
@@ -398,6 +415,15 @@ _Most recent deploys first_
 
 **Files changed:**
 - `app/memo/[subdomain]/[[...slug]]/page.tsx` - Removed invalid join, added brand_id filter to metadata query
+
+---
+
+**Fix: HubSpot Featured Images Not Showing** (8668e6b)
+- HubSpot requires images to be hosted on their platform (`hubfs/`)
+- External Unsplash URLs were being silently ignored
+- Now downloads image from Unsplash → uploads to HubSpot file manager → uses HubSpot URL
+- Images stored in `/contextmemo-featured-images/` folder in HubSpot
+- Falls back gracefully to no featured image if upload fails
 
 ---
 
