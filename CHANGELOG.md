@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.1] - 2026-02-05
+
+### Fixed
+- **Subdomain Memo Pages 404**: Fixed all memo pages returning 404 on brand subdomains (e.g., `checkitnet.contextmemo.com/how/...`)
+  - Root cause: Supabase query had invalid relational join (`reviewed_by:reviewed_by(...)`) that failed silently
+  - Also fixed metadata query missing `brand_id` filter
+  - All memo URLs now resolve correctly via subdomain routing
+
+---
+
 ## [0.19.0] - 2026-02-05
 
 ### Added

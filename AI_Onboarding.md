@@ -1,7 +1,7 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 5, 2026  
-> **Version:** 0.19.0  
+> **Version:** 0.19.1  
 > **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Public Content Routes
 
 ---
@@ -389,6 +389,32 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 5, 2026
+
+**Fix: Subdomain Memo Pages 404**
+- Fixed critical bug where all memo pages on brand subdomains (e.g., `checkitnet.contextmemo.com/how/...`) returned 404
+- Root cause: Supabase query in `/app/memo/[subdomain]/[[...slug]]/page.tsx` had an invalid relational join `reviewed_by:reviewed_by(email, raw_user_meta_data)` that failed with error: "Could not find a relationship between 'memos' and 'reviewed_by' in the schema cache"
+- Also fixed metadata query missing `brand_id` filter, which could return wrong memo metadata
+- Impact: All brand subdomain memo URLs now work correctly
+
+**Files changed:**
+- `app/memo/[subdomain]/[[...slug]]/page.tsx` - Removed invalid join, added brand_id filter to metadata query
+
+---
+
+**Fix: Memo Delete + Table View** (7ee8501)
+- Fixed memo delete not working - was using client-side Supabase delete (failing due to RLS), now uses server-side API action
+- Fixed redirect after delete - was going to profile page, now correctly goes to `/v2/brands/{brandId}/memos`
+- Converted memos list from card view to table view with columns:
+  - Title (with slug preview)
+  - Type (formatted memo type)
+  - Status (Published/Draft badge)
+  - Created date
+  - Updated date
+  - Actions (edit, view live)
+- Added new `components/ui/table.tsx` component
+- Header now shows counts: total, published, drafts
+
+---
 
 **Fix: Competitor Discovery Quality - Blocklist System**
 - Added competitor blocklist to prevent generic/incorrect entries from being discovered

@@ -37,10 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { subdomain, slug } = await params
   const slugPath = slug?.join('/') || ''
   
-  // Get brand
+  // Get brand (include id for memo lookup)
   const { data: brand } = await supabase
     .from('brands')
-    .select('name, domain')
+    .select('id, name, domain')
     .eq('subdomain', subdomain)
     .single()
 
@@ -60,6 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data: memo } = await supabase
     .from('memos')
     .select('title, meta_description, schema_json')
+    .eq('brand_id', brand.id)
     .eq('slug', slugPath)
     .eq('status', 'published')
     .single()
@@ -214,10 +215,10 @@ export default async function MemoPage({ params }: Props) {
     )
   }
 
-  // Get specific memo with review info
+  // Get specific memo
   const { data: memo, error: memoError } = await supabase
     .from('memos')
-    .select('*, reviewed_by:reviewed_by(email, raw_user_meta_data)')
+    .select('*')
     .eq('brand_id', brand.id)
     .eq('slug', slugPath)
     .eq('status', 'published')
