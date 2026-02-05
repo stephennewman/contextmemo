@@ -390,6 +390,24 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Improve: Navigation UX and Loading Performance** (11e9fb1)
+- Renamed main `/dashboard` page from "DASHBOARD" to "BRANDS"
+- Individual brand pages now show "DASHBOARD" as header with brand name as subtitle
+- Added "DASHBOARD" nav link in header when viewing a brand page (links back to that brand)
+- Fixed 404 on "view live" link by using path-based URL (`/memo/subdomain`) instead of subdomain URL
+- Added loading skeletons for instant page load feedback:
+  - `/dashboard` shows skeleton brand cards while data loads
+  - `/brands/[brandId]` shows skeleton stats and tabs while data loads
+
+**Files changed:**
+- `app/(dashboard)/dashboard/page.tsx` - Renamed header to "BRANDS"
+- `app/(dashboard)/dashboard/loading.tsx` - Added skeleton loading UI
+- `app/(dashboard)/brands/[brandId]/page.tsx` - New header layout with "DASHBOARD" title
+- `app/(dashboard)/brands/[brandId]/loading.tsx` - Added skeleton loading UI  
+- `components/dashboard/dashboard-header.tsx` - Added contextual DASHBOARD link
+
+---
+
 **Feature: Strategy Playbook with Interactive Cost Calculator**
 - New STRATEGY tab on brand page with comprehensive AI visibility roadmap
 - 4-phase methodology: Discovery (Weeks 1-4) → Foundation (Weeks 5-8) → Optimization (Months 3-4) → Scale (Month 5+)
