@@ -390,6 +390,18 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Feature: Strategy Playbook Tab**
+- New STRATEGY tab on brand page with comprehensive AI visibility roadmap
+- 4-phase methodology: Discovery (Weeks 1-4) → Foundation (Weeks 5-8) → Optimization (Months 3-4) → Scale (Month 5+)
+- Real-time metrics showing current progress (prompts, gaps, memos, visibility score, AI traffic)
+- Detailed activities, milestones, and expected outcomes per phase
+- Cost breakdown showing actual investment needed ($19-189/month depending on tier)
+- Weekly schedule visualization for steady-state monitoring
+- Best practices do's and don'ts
+- Files created:
+  - `components/dashboard/strategy-playbook.tsx` - Full playbook UI component
+  - `app/api/brands/[brandId]/strategy/route.ts` - Strategy metrics API
+
 **Fix: Year instructions in AI-generated content**
 - All AI-generated content (memos, competitor responses) now explicitly receives current year (2026)
 - Fixed issue where AI was generating content referencing outdated years (2023)

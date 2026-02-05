@@ -29,6 +29,7 @@ import { ModelInsightsPanel } from '@/components/dashboard/model-insights-panel'
 import { PromptLab } from '@/components/dashboard/prompt-lab'
 import { QueryFanOut } from '@/components/dashboard/query-fan-out'
 import { EntityMap } from '@/components/dashboard/entity-map'
+import { StrategyPlaybook } from '@/components/dashboard/strategy-playbook'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -471,6 +472,9 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="lab" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
             LAB
           </TabsTrigger>
+          <TabsTrigger value="strategy" className="rounded-none border-0 data-[state=active]:bg-[#10B981] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
+            STRATEGY
+          </TabsTrigger>
         </TabsList>
 
         {/* Brand Profile Tab - All extracted brand information */}
@@ -776,6 +780,22 @@ export default async function BrandPage({ params }: Props) {
         {/* Prompt Lab - High-volume citation research */}
         <TabsContent value="lab">
           <PromptLab brandId={brandId} brandName={brand.name} />
+        </TabsContent>
+
+        {/* Strategy Playbook - AI Visibility Roadmap */}
+        <TabsContent value="strategy">
+          <StrategyPlaybook 
+            brandId={brandId} 
+            brandName={brand.name}
+            metrics={{
+              totalPrompts: queries?.length || 0,
+              gapsIdentified: lowVisibilityQueries.length,
+              memosGenerated: memos?.length || 0,
+              visibilityScore: visibilityScore,
+              aiTrafficVisits: aiTraffic?.length || 0,
+              daysActive: Math.floor((Date.now() - new Date(brand.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
