@@ -102,15 +102,23 @@ export function PromptLab({ brandId }: PromptLabProps) {
 
   const fetchData = useCallback(async () => {
     try {
+      console.log('[PromptLab] Fetching data for brand:', brandId)
       const res = await fetch(`/api/brands/${brandId}/lab`)
       const data = await res.json()
+      console.log('[PromptLab] API response:', { 
+        runs: data.runs?.length, 
+        models: data.modelComparison?.length,
+        prompts: data.topPrompts?.length,
+        entities: data.topEntities?.length,
+        summary: data.summary
+      })
       setRuns(data.runs || [])
       setModelComparison(data.modelComparison || [])
       setTopEntities(data.topEntities || [])
       setTopPrompts(data.topPrompts || [])
       setSummary(data.summary || null)
     } catch (error) {
-      console.error('Failed to fetch lab data:', error)
+      console.error('[PromptLab] Failed to fetch lab data:', error)
     } finally {
       setLoading(false)
     }
@@ -549,8 +557,19 @@ export function PromptLab({ brandId }: PromptLabProps) {
         </Card>
       )}
 
+      {/* Debug Info - remove after fixing */}
+      {!loading && modelComparison.length === 0 && topPrompts.length === 0 && (
+        <Card className="border-yellow-500">
+          <CardContent className="py-4">
+            <p className="text-sm text-yellow-700">
+              Debug: runs={runs.length}, models={modelComparison.length}, prompts={topPrompts.length}, entities={topEntities.length}, summary={summary?.totalScans || 0}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Empty State */}
-      {runs.length === 0 && !loading && (
+      {runs.length === 0 && modelComparison.length === 0 && !loading && (
         <div className="text-center py-12 text-muted-foreground">
           <FlaskConical className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No lab runs yet. Start one above to discover citation patterns.</p>
