@@ -1,242 +1,121 @@
 /**
  * Image selection for HubSpot posts
  * 
- * Uses Unsplash images that are free to use and match content topics.
- * Multiple images per topic to avoid repetition.
- * Selection is deterministic based on title hash for consistency.
+ * Uses abstract/business Unsplash images that work for any content type.
+ * Large pool of 50+ images with deterministic selection based on title hash.
  */
 
-// Multiple images per topic for variety
-const TOPIC_IMAGE_POOL: Record<string, Array<{ url: string; alt: string }>> = {
-  // Temperature monitoring & cold chain
-  'cold_chain': [
-    { url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&h=630&fit=crop', alt: 'Cold chain logistics and temperature-controlled storage' },
-    { url: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=1200&h=630&fit=crop', alt: 'Warehouse cold storage facility' },
-    { url: 'https://images.unsplash.com/photo-1553413077-190dd305871c?w=1200&h=630&fit=crop', alt: 'Industrial refrigeration and logistics' },
-    { url: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&h=630&fit=crop', alt: 'Supply chain and distribution center' },
-  ],
-  'temperature_monitoring': [
-    { url: 'https://images.unsplash.com/photo-1581093458791-9d42e3c2fd45?w=1200&h=630&fit=crop', alt: 'Digital temperature monitoring technology' },
-    { url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=630&fit=crop', alt: 'IoT sensors and monitoring devices' },
-    { url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=630&fit=crop', alt: 'Data center monitoring systems' },
-    { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop', alt: 'Analytics dashboard and monitoring' },
-  ],
-  // Food & hospitality
-  'food_safety': [
-    { url: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=1200&h=630&fit=crop', alt: 'Food safety in commercial kitchen' },
-    { url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&h=630&fit=crop', alt: 'Professional kitchen food preparation' },
-    { url: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=1200&h=630&fit=crop', alt: 'Food quality inspection and control' },
-    { url: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=1200&h=630&fit=crop', alt: 'Restaurant kitchen hygiene standards' },
-    { url: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?w=1200&h=630&fit=crop', alt: 'Food service quality management' },
-  ],
-  'haccp': [
-    { url: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&h=630&fit=crop', alt: 'HACCP compliance in food service' },
-    { url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&h=630&fit=crop', alt: 'Food safety compliance standards' },
-    { url: 'https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=1200&h=630&fit=crop', alt: 'Commercial kitchen compliance' },
-    { url: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1200&h=630&fit=crop', alt: 'Food safety regulations and standards' },
-  ],
-  'restaurant': [
-    { url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=630&fit=crop', alt: 'Restaurant kitchen operations' },
-    { url: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1200&h=630&fit=crop', alt: 'Modern restaurant interior' },
-    { url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1200&h=630&fit=crop', alt: 'Restaurant dining experience' },
-    { url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1200&h=630&fit=crop', alt: 'Professional restaurant kitchen' },
-    { url: 'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=1200&h=630&fit=crop', alt: 'Restaurant food service' },
-  ],
-  'hospitality': [
-    { url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&h=630&fit=crop', alt: 'Hotel and hospitality management' },
-    { url: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1200&h=630&fit=crop', alt: 'Luxury hotel lobby' },
-    { url: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1200&h=630&fit=crop', alt: 'Hotel service excellence' },
-    { url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&h=630&fit=crop', alt: 'Hospitality industry operations' },
-  ],
-  // Healthcare & pharma
-  'pharmaceutical': [
-    { url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=1200&h=630&fit=crop', alt: 'Pharmaceutical storage and logistics' },
-    { url: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=1200&h=630&fit=crop', alt: 'Medical supply chain management' },
-    { url: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=1200&h=630&fit=crop', alt: 'Pharmaceutical research facility' },
-    { url: 'https://images.unsplash.com/photo-1576671081837-49000212a370?w=1200&h=630&fit=crop', alt: 'Medical laboratory operations' },
-  ],
-  'healthcare': [
-    { url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&h=630&fit=crop', alt: 'Healthcare facility management' },
-    { url: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1200&h=630&fit=crop', alt: 'Modern hospital corridor' },
-    { url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=1200&h=630&fit=crop', alt: 'Healthcare technology solutions' },
-    { url: 'https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=1200&h=630&fit=crop', alt: 'Medical facility compliance' },
-    { url: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=1200&h=630&fit=crop', alt: 'Hospital operations management' },
-  ],
-  // Business & technology - comparison/alternative content
-  'comparison': [
-    { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop', alt: 'Business analytics comparison' },
-    { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop', alt: 'Data-driven decision making' },
-    { url: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=1200&h=630&fit=crop', alt: 'Business strategy comparison' },
-    { url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&h=630&fit=crop', alt: 'Team evaluating business options' },
-    { url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1200&h=630&fit=crop', alt: 'Software comparison analysis' },
-    { url: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1200&h=630&fit=crop', alt: 'Business meeting and evaluation' },
-  ],
-  'alternative': [
-    { url: 'https://images.unsplash.com/photo-1553484771-047a44eee27b?w=1200&h=630&fit=crop', alt: 'Software alternatives and solutions' },
-    { url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&h=630&fit=crop', alt: 'Team exploring options' },
-    { url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=1200&h=630&fit=crop', alt: 'Planning alternative strategies' },
-    { url: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1200&h=630&fit=crop', alt: 'Business alternatives evaluation' },
-    { url: 'https://images.unsplash.com/photo-1552581234-26160f608093?w=1200&h=630&fit=crop', alt: 'Modern workplace solutions' },
-    { url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=1200&h=630&fit=crop', alt: 'Office technology alternatives' },
-  ],
-  'how_to': [
-    { url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=630&fit=crop', alt: 'Team collaboration and learning' },
-    { url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&h=630&fit=crop', alt: 'Step-by-step guidance' },
-    { url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1200&h=630&fit=crop', alt: 'Learning and implementation' },
-    { url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=630&fit=crop', alt: 'Professional training session' },
-    { url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=630&fit=crop', alt: 'Workshop and tutorial' },
-    { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&h=630&fit=crop', alt: 'Team implementation guide' },
-  ],
-  'industry': [
-    { url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1200&h=630&fit=crop', alt: 'Industry solutions and operations' },
-    { url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200&h=630&fit=crop', alt: 'Industrial technology' },
-    { url: 'https://images.unsplash.com/photo-1565793298595-6a879b1d9492?w=1200&h=630&fit=crop', alt: 'Manufacturing operations' },
-    { url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=630&fit=crop', alt: 'Industry automation' },
-  ],
-  'software': [
-    { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop', alt: 'Business software solutions' },
-    { url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=630&fit=crop', alt: 'Software development' },
-    { url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&h=630&fit=crop', alt: 'Technology and coding' },
-    { url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=630&fit=crop', alt: 'Digital technology workspace' },
-  ],
-  // Senior living & education
-  'senior_living': [
-    { url: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=1200&h=630&fit=crop', alt: 'Senior care facility' },
-    { url: 'https://images.unsplash.com/photo-1559234938-b60fff04894d?w=1200&h=630&fit=crop', alt: 'Elderly care services' },
-    { url: 'https://images.unsplash.com/photo-1447005497901-b3e9ee359928?w=1200&h=630&fit=crop', alt: 'Senior living community' },
-  ],
-  'education': [
-    { url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&h=630&fit=crop', alt: 'Higher education campus' },
-    { url: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&h=630&fit=crop', alt: 'University learning environment' },
-    { url: 'https://images.unsplash.com/photo-1562774053-701939374585?w=1200&h=630&fit=crop', alt: 'College campus facilities' },
-  ],
-  'retail': [
-    { url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=630&fit=crop', alt: 'Retail store operations' },
-    { url: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&h=630&fit=crop', alt: 'Shopping and retail' },
-    { url: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1200&h=630&fit=crop', alt: 'Supermarket and grocery' },
-  ],
-  // Default pool for generic content
-  'default': [
-    { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop', alt: 'Business technology solutions' },
-    { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop', alt: 'Digital business analytics' },
-    { url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1200&h=630&fit=crop', alt: 'Modern technology solutions' },
-    { url: 'https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?w=1200&h=630&fit=crop', alt: 'Business innovation' },
-    { url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&h=630&fit=crop', alt: 'Professional team collaboration' },
-    { url: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1200&h=630&fit=crop', alt: 'Business meeting' },
-  ],
-}
+// Large pool of abstract and business images that work for any content
+const ABSTRACT_IMAGE_POOL: Array<{ url: string; alt: string }> = [
+  // Abstract patterns and gradients
+  { url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200&h=630&fit=crop', alt: 'Abstract gradient background' },
+  { url: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200&h=630&fit=crop', alt: 'Purple gradient abstract' },
+  { url: 'https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=1200&h=630&fit=crop', alt: 'Blue gradient abstract' },
+  { url: 'https://images.unsplash.com/photo-1557682260-96773eb01377?w=1200&h=630&fit=crop', alt: 'Pink gradient abstract' },
+  { url: 'https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=1200&h=630&fit=crop', alt: 'Colorful abstract waves' },
+  { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&h=630&fit=crop', alt: 'Gradient mesh abstract' },
+  { url: 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=1200&h=630&fit=crop', alt: 'Abstract blue shapes' },
+  { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=630&fit=crop', alt: 'Abstract geometric art' },
+  { url: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=1200&h=630&fit=crop', alt: 'Abstract 3D shapes' },
+  { url: 'https://images.unsplash.com/photo-1634017839464-5c339bbe3c35?w=1200&h=630&fit=crop', alt: 'Abstract colorful swirl' },
+  
+  // Technology and data
+  { url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=630&fit=crop', alt: 'Technology circuit board' },
+  { url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&h=630&fit=crop', alt: 'Digital data matrix' },
+  { url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=630&fit=crop', alt: 'Server room technology' },
+  { url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&h=630&fit=crop', alt: 'Global network connections' },
+  { url: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=1200&h=630&fit=crop', alt: 'Code on screen' },
+  { url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200&h=630&fit=crop', alt: 'Cybersecurity concept' },
+  { url: 'https://images.unsplash.com/photo-1488229297570-58520851e868?w=1200&h=630&fit=crop', alt: 'Network visualization' },
+  { url: 'https://images.unsplash.com/photo-1639322537228-f710d846310a?w=1200&h=630&fit=crop', alt: 'Blockchain technology' },
+  
+  // Business and analytics
+  { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop', alt: 'Business analytics dashboard' },
+  { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop', alt: 'Business data analysis' },
+  { url: 'https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?w=1200&h=630&fit=crop', alt: 'Business strategy planning' },
+  { url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1200&h=630&fit=crop', alt: 'Professional workspace' },
+  { url: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=1200&h=630&fit=crop', alt: 'Charts and graphs' },
+  { url: 'https://images.unsplash.com/photo-1590650153855-d9e808231d41?w=1200&h=630&fit=crop', alt: 'Financial data' },
+  { url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=630&fit=crop', alt: 'Stock market data' },
+  
+  // Geometric and minimal
+  { url: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=1200&h=630&fit=crop', alt: 'Geometric minimal design' },
+  { url: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?w=1200&h=630&fit=crop', alt: 'Minimal architecture' },
+  { url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=630&fit=crop', alt: 'Modern office design' },
+  { url: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=1200&h=630&fit=crop', alt: 'Clean office space' },
+  { url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&h=630&fit=crop', alt: 'Modern building architecture' },
+  { url: 'https://images.unsplash.com/photo-1545239351-ef35f43d514b?w=1200&h=630&fit=crop', alt: 'Geometric patterns' },
+  { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=630&fit=crop', alt: 'Abstract lines' },
+  
+  // Nature abstract
+  { url: 'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=1200&h=630&fit=crop', alt: 'Mountain landscape abstract' },
+  { url: 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1200&h=630&fit=crop', alt: 'Ocean waves abstract' },
+  { url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=630&fit=crop', alt: 'Beach minimal' },
+  { url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=630&fit=crop', alt: 'Foggy landscape' },
+  { url: 'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=1200&h=630&fit=crop', alt: 'Forest aerial view' },
+  
+  // Light and bokeh
+  { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&h=630&fit=crop', alt: 'Starry night sky' },
+  { url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=630&fit=crop', alt: 'Mountain peaks' },
+  { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=630&fit=crop', alt: 'Sunset mountains' },
+  { url: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=1200&h=630&fit=crop', alt: 'Golden hour landscape' },
+  { url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1200&h=630&fit=crop', alt: 'Northern lights' },
+  
+  // More abstract patterns
+  { url: 'https://images.unsplash.com/photo-1550684376-efcbd6e3f031?w=1200&h=630&fit=crop', alt: 'Neon light abstract' },
+  { url: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=1200&h=630&fit=crop', alt: 'Light trails' },
+  { url: 'https://images.unsplash.com/photo-1516796181074-bf453fbfa3e6?w=1200&h=630&fit=crop', alt: 'Marble texture' },
+  { url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=1200&h=630&fit=crop', alt: 'Ink in water' },
+  { url: 'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43?w=1200&h=630&fit=crop', alt: 'Abstract fluid art' },
+  { url: 'https://images.unsplash.com/photo-1604076913837-52ab5629fba9?w=1200&h=630&fit=crop', alt: 'Abstract paint' },
+  
+  // Modern workspace
+  { url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=1200&h=630&fit=crop', alt: 'Modern office' },
+  { url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=630&fit=crop', alt: 'Developer workspace' },
+  { url: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1200&h=630&fit=crop', alt: 'Laptop minimal' },
+  { url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1200&h=630&fit=crop', alt: 'Tech workspace' },
+  { url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&h=630&fit=crop', alt: 'Team working' },
+  
+  // Additional variety
+  { url: 'https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=1200&h=630&fit=crop', alt: 'City lights blur' },
+  { url: 'https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf?w=1200&h=630&fit=crop', alt: 'Keyboard close-up' },
+  { url: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200&h=630&fit=crop', alt: 'Robot technology' },
+  { url: 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=1200&h=630&fit=crop', alt: 'AI concept' },
+  { url: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop', alt: 'Artificial intelligence' },
+  { url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1200&h=630&fit=crop', alt: 'Neural network' },
+]
 
 /**
- * Simple hash function to convert a string to a number
- * Used to deterministically select an image based on title
+ * Hash function to convert a string to a number
+ * Uses a better distribution algorithm for more unique results
  */
 function hashString(str: string): number {
-  let hash = 0
+  let hash = 5381
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i)
   }
   return Math.abs(hash)
 }
 
 /**
- * Detect topic from content/title for image selection
+ * Select a unique image based on the memo title
+ * Each title will always get the same image, but different titles get different images
  */
-export function detectTopic(title: string, content: string = '', memoType: string = ''): string {
-  const text = `${title} ${content} ${memoType}`.toLowerCase()
-  
-  // Check memo type first
-  if (memoType === 'comparison') return 'comparison'
-  if (memoType === 'alternative') return 'alternative'
-  if (memoType === 'how_to') return 'how_to'
-  if (memoType === 'industry') return 'industry'
-  
-  // Temperature/cold chain
-  if (text.includes('cold chain') || text.includes('cold storage') || text.includes('freezer')) {
-    return 'cold_chain'
-  }
-  if (text.includes('temperature') && (text.includes('monitor') || text.includes('sensor'))) {
-    return 'temperature_monitoring'
-  }
-  
-  // Food safety
-  if (text.includes('haccp') || text.includes('hazard analysis')) {
-    return 'haccp'
-  }
-  if (text.includes('food safety') || text.includes('food service') || text.includes('catering')) {
-    return 'food_safety'
-  }
-  
-  // Healthcare
-  if (text.includes('pharma') || text.includes('vaccine') || text.includes('medical')) {
-    return 'pharmaceutical'
-  }
-  if (text.includes('healthcare') || text.includes('hospital') || text.includes('clinic')) {
-    return 'healthcare'
-  }
-  
-  // Hospitality
-  if (text.includes('hotel') || text.includes('hospitality') || text.includes('lodging')) {
-    return 'hospitality'
-  }
-  if (text.includes('restaurant') || text.includes('kitchen')) {
-    return 'restaurant'
-  }
-  
-  // Senior living and education
-  if (text.includes('senior') || text.includes('elderly') || text.includes('nursing home')) {
-    return 'senior_living'
-  }
-  if (text.includes('university') || text.includes('college') || text.includes('education') || text.includes('higher ed')) {
-    return 'education'
-  }
-  
-  // Retail
-  if (text.includes('retail') || text.includes('supermarket') || text.includes('grocery') || text.includes('store')) {
-    return 'retail'
-  }
-  
-  // Software/tech content based on memo type patterns
-  if (text.includes(' vs ') || text.includes('versus') || text.includes('compared') || text.includes('key differences')) {
-    return 'comparison'
-  }
-  if (text.includes('alternative') || text.includes('alternatives to')) {
-    return 'alternative'
-  }
-  if (text.includes('how to') || text.includes('guide') || text.includes('step by step')) {
-    return 'how_to'
-  }
-  
+export function selectImageForMemo(title: string, _content: string = '', _memoType: string = ''): { url: string; alt: string } {
+  const hash = hashString(title.toLowerCase().trim())
+  const index = hash % ABSTRACT_IMAGE_POOL.length
+  return ABSTRACT_IMAGE_POOL[index]
+}
+
+// Legacy exports for backwards compatibility
+export function detectTopic(_title: string, _content: string = '', _memoType: string = ''): string {
   return 'default'
 }
 
-/**
- * Get image for a topic, using title hash to select from pool
- * This ensures:
- * 1. Same title always gets same image (deterministic)
- * 2. Different titles get different images (variety)
- */
-export function getImageForTopic(topic: string, title: string = ''): { url: string; alt: string } {
-  const pool = TOPIC_IMAGE_POOL[topic] || TOPIC_IMAGE_POOL['default']
-  
-  // Use title hash to pick from pool - deterministic but varied
-  const hash = hashString(title)
-  const index = hash % pool.length
-  
-  return pool[index]
+export function getImageForTopic(_topic: string, title: string = ''): { url: string; alt: string } {
+  return selectImageForMemo(title)
 }
 
-/**
- * Get image based on memo content
- * Uses title to deterministically select a unique image from the topic pool
- */
-export function selectImageForMemo(title: string, content: string = '', memoType: string = ''): { url: string; alt: string } {
-  const topic = detectTopic(title, content, memoType)
-  return getImageForTopic(topic, title)
+export const TOPIC_IMAGES = {
+  default: ABSTRACT_IMAGE_POOL[0]
 }
-
-// Legacy export for backwards compatibility
-export const TOPIC_IMAGES = Object.fromEntries(
-  Object.entries(TOPIC_IMAGE_POOL).map(([key, images]) => [key, images[0]])
-) as Record<string, { url: string; alt: string }>
