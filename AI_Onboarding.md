@@ -390,6 +390,21 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Feature: HubSpot Author Attribution + User Profile Settings**
+- HubSpot integration now properly sets blog post authors using `blogAuthorId` (not just `authorName` text field)
+- Added `getOrCreateHubSpotAuthor()` function that finds existing authors by name/email or creates new ones
+- Added user profile API endpoint (`GET/PATCH /api/user/profile`) for updating display name
+- Added Account settings dialog in header dropdown - users can set their display name
+- Display name is used as HubSpot author when publishing content
+- Fallback: parses email into nice name (e.g., `stephen.newman@checkit.net` → "Stephen Newman")
+
+**Files changed:**
+- `app/api/brands/[brandId]/memos/[memoId]/hubspot/route.ts` - Added author management, use `blogAuthorId`
+- `app/api/user/profile/route.ts` - New API for user profile GET/PATCH
+- `components/dashboard/dashboard-header.tsx` - Added Account menu item and settings dialog
+
+---
+
 **Fix: tenants.user_id Bug in Multiple API Routes**
 - Fixed 404 error on `/api/usage` and other usage endpoints
 - Root cause: Code was querying `tenants.user_id` but the tenants table uses `id` as the user ID (same as `auth.uid()`)
