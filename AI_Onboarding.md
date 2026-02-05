@@ -390,6 +390,32 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Fix: Competitor Discovery Quality - Blocklist System**
+- Added competitor blocklist to prevent generic/incorrect entries from being discovered
+- **Retroactive cleanup**: 55 entries deactivated across all brands
+- Fixed problematic entries: Customer, HubSpot, Salesforce, Seamless, SEO
+- Fixed entity types: Gartner, G2, Capterra now correctly typed as analyst/marketplace
+- Created reusable blocklist config for future filtering
+
+**Blocked categories:**
+- Generic terms: Customer, SEO, Seamless, Analytics, Marketing, Sales, etc.
+- Common tools brands USE but don't compete with: HubSpot, Salesforce, Zendesk, Zapier, etc.
+- Project management tools: Monday.com, Asana, Trello, Notion, etc.
+- Auto-corrects entity types: G2/Capterra → marketplace, Gartner/Forrester → analyst
+
+**Files created:**
+- `lib/config/competitor-blocklist.ts` - Blocklist configuration and validation functions
+
+**Files modified:**
+- `lib/inngest/functions/competitor-discover.ts` - Added blocklist filtering
+- `lib/ai/prompts/context-extraction.ts` - Added explicit blocklist instructions to AI prompt
+
+**Database changes:**
+- Deactivated 55 blocked competitor entries across all brands
+- Fixed entity_type for 18 marketplace/analyst entries
+
+---
+
 **Improve: Navigation UX and Loading Performance** (11e9fb1)
 - Renamed main `/dashboard` page from "DASHBOARD" to "BRANDS"
 - Individual brand pages now show "DASHBOARD" as header with brand name as subtitle
