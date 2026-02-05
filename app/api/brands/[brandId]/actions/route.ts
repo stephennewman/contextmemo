@@ -715,6 +715,153 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'hubspot-resync-all': {
+        // Bulk resync all memos to HubSpot (updates images, content, author)
+        const { getHubSpotToken } = await import('@/lib/hubspot/oauth')
+        const { sanitizeContentForHubspot, formatHtmlForHubspot } = await import('@/lib/hubspot/content-sanitizer')
+        const { selectImageForMemo } = await import('@/lib/hubspot/image-selector')
+        const { marked } = await import('marked')
+        
+        const hubspotConfig = (brand.context as Record<string, unknown>)?.hubspot as Record<string, unknown> | undefined
+        
+        if (!hubspotConfig?.enabled) {
+          return NextResponse.json({ error: 'HubSpot not enabled' }, { status: 400 })
+        }
+        
+        const accessToken = await getHubSpotToken(brandId)
+        if (!accessToken) {
+          return NextResponse.json({ error: 'HubSpot token expired' }, { status: 401 })
+        }
+        
+        // Get user for author
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('name, email')
+          .eq('id', user.id)
+          .single()
+        
+        const userName = tenant?.name || 'Unknown'
+        
+        // Get or create author
+        const authorsResponse = await fetch(
+          'https://api.hubapi.com/cms/v3/blogs/authors?limit=100',
+          { headers: { 'Authorization': `Bearer ${accessToken}` } }
+        )
+        
+        let authorId: string | null = null
+        if (authorsResponse.ok) {
+          const authorsData = await authorsResponse.json()
+          const existing = authorsData.results?.find((a: { name?: string }) => 
+            a.name?.toLowerCase() === userName.toLowerCase()
+          )
+          authorId = existing?.id || null
+        }
+        
+        if (!authorId) {
+          const createResponse = await fetch('https://api.hubapi.com/cms/v3/blogs/authors', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: userName, displayName: userName }),
+          })
+          if (createResponse.ok) {
+            const newAuthor = await createResponse.json()
+            authorId = newAuthor.id
+          }
+        }
+        
+        // Get all memos with HubSpot post IDs
+        const { data: memos } = await supabase
+          .from('memos')
+          .select('id, title, slug, content_markdown, memo_type, meta_description, schema_json')
+          .eq('brand_id', brandId)
+          .not('schema_json->hubspot_post_id', 'is', null)
+        
+        if (!memos?.length) {
+          return NextResponse.json({ message: 'No HubSpot posts to resync', updated: 0 })
+        }
+        
+        let updated = 0
+        let failed = 0
+        
+        for (const memo of memos) {
+          const hubspotPostId = (memo.schema_json as Record<string, unknown>)?.hubspot_post_id
+          if (!hubspotPostId) continue
+          
+          try {
+            // Select unique image based on title
+            const selectedImage = selectImageForMemo(memo.title, memo.content_markdown || '', memo.memo_type || '')
+            
+            // Sanitize and format content
+            const sanitizedMarkdown = sanitizeContentForHubspot(memo.content_markdown || '', { 
+              brandName: brand.name,
+              title: memo.title,
+            })
+            const rawHtml = await marked(sanitizedMarkdown, { gfm: true, breaks: true })
+            const htmlContent = formatHtmlForHubspot(rawHtml)
+            
+            // Create summary
+            const contentParagraphs = sanitizedMarkdown.split('\n\n')
+            const firstParagraph = contentParagraphs.find((p: string) => p.trim() && !p.startsWith('#'))
+            const postSummary = firstParagraph
+              ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300)
+              : memo.meta_description || ''
+            
+            // Update HubSpot post
+            const updateResponse = await fetch(
+              `https://api.hubapi.com/cms/v3/blogs/posts/${hubspotPostId}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  postBody: htmlContent,
+                  postSummary,
+                  featuredImage: selectedImage.url,
+                  featuredImageAltText: selectedImage.alt,
+                  useFeaturedImage: true,
+                  ...(authorId ? { blogAuthorId: authorId } : {}),
+                }),
+              }
+            )
+            
+            if (updateResponse.ok) {
+              updated++
+              // Update memo schema_json
+              await supabase
+                .from('memos')
+                .update({
+                  schema_json: {
+                    ...(memo.schema_json as Record<string, unknown>),
+                    hubspot_author_id: authorId,
+                    hubspot_synced_at: new Date().toISOString(),
+                    hubspot_synced_by: userName,
+                  },
+                })
+                .eq('id', memo.id)
+            } else {
+              failed++
+              console.error(`Failed to resync ${memo.title}:`, await updateResponse.text())
+            }
+          } catch (err) {
+            failed++
+            console.error(`Error resyncing ${memo.title}:`, err)
+          }
+        }
+        
+        return NextResponse.json({
+          success: true,
+          message: `Resynced ${updated} HubSpot posts`,
+          updated,
+          failed,
+          total: memos.length,
+        })
+      }
+
       case 'hubspot-update-authors': {
         // Bulk update HubSpot posts with correct author
         const { BrandContext, HubSpotConfig } = await import('@/lib/supabase/types')
