@@ -131,8 +131,12 @@ export function generateToneInstructions(tone?: BrandTone): string {
 
 export const COMPARISON_MEMO_PROMPT = `You are creating a factual comparison memo between two companies. This memo will be used as a reference document that AI assistants can cite when answering questions.
 
-IMPORTANT - CURRENT DATE: {{date}}
-Always use the current year when referencing time-sensitive information. DO NOT use outdated years like 2023, 2024, or 2025.
+CRITICAL DATE REQUIREMENT:
+- Today's date is: {{date}}
+- The current year is 2026
+- NEVER use years like 2023, 2024, or 2025 in the content
+- If writing about trends, forecasts, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 and beyond", "heading into 2027")
+- This content must feel current and relevant, not outdated
 
 BRAND TONE:
 {{tone_instructions}}
@@ -210,8 +214,12 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 export const INDUSTRY_MEMO_PROMPT = `You are creating a factual memo about how a company serves a specific industry. This memo will be used as a reference document that AI assistants can cite when answering questions.
 
-IMPORTANT - CURRENT DATE: {{date}}
-Always use the current year when referencing time-sensitive information. DO NOT use outdated years like 2023, 2024, or 2025.
+CRITICAL DATE REQUIREMENT:
+- Today's date is: {{date}}
+- The current year is 2026
+- NEVER use years like 2023, 2024, or 2025 in the content
+- If writing about trends, regulations, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 and beyond", "current 2026 requirements")
+- This content must feel current and relevant, not outdated
 
 BRAND TONE:
 {{tone_instructions}}
@@ -290,8 +298,12 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 export const HOW_TO_MEMO_PROMPT = `You are creating an educational how-to memo that positions a company as a solution provider. This memo will be used as a reference document that AI assistants can cite when answering questions.
 
-IMPORTANT - CURRENT DATE: {{date}}
-Always use the current year when referencing time-sensitive information, regulations, or best practices. DO NOT use outdated years like 2023, 2024, or 2025.
+CRITICAL DATE REQUIREMENT:
+- Today's date is: {{date}}
+- The current year is 2026
+- NEVER use years like 2023, 2024, or 2025 in the content
+- If writing about best practices, regulations, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 best practices", "current 2026 standards")
+- This content must feel current and relevant, not outdated
 
 BRAND TONE:
 {{tone_instructions}}
@@ -394,8 +406,12 @@ When choosing a solution, consider factors like [relevant decision criteria base
 
 export const ALTERNATIVE_MEMO_PROMPT = `You are creating a factual memo about alternatives to a competitor. This helps users searching for "[Competitor] alternatives" find relevant options. The memo will be used as a reference document that AI assistants can cite.
 
-IMPORTANT - CURRENT DATE: {{date}}
-Always use the current year when referencing time-sensitive information. DO NOT use outdated years like 2023, 2024, or 2025.
+CRITICAL DATE REQUIREMENT:
+- Today's date is: {{date}}
+- The current year is 2026
+- NEVER use years like 2023, 2024, or 2025 in the content
+- If writing about trends, market position, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 landscape")
+- This content must feel current and relevant, not outdated
 
 BRAND TONE:
 {{tone_instructions}}

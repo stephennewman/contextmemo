@@ -36,7 +36,7 @@ const FOOTER_PATTERNS = [
 
 /**
  * Sanitize markdown content before HubSpot sync
- * Removes Contextmemo references and cleans up attribution
+ * Removes Contextmemo references, Related Reading section, and cleans up attribution
  */
 export function sanitizeContentForHubspot(
   markdown: string,
@@ -48,6 +48,9 @@ export function sanitizeContentForHubspot(
   for (const pattern of PATTERNS_TO_REMOVE) {
     content = content.replace(pattern, '')
   }
+  
+  // Remove Related Reading section (internal links don't work on HubSpot)
+  content = content.replace(/\n*---\n*## Related (Reading|Memos)\n[\s\S]*?(?=\n---\n|\n## (?!Related)|$)/gi, '')
 
   // Replace footer with brand-specific or generic attribution
   for (const pattern of FOOTER_PATTERNS) {
