@@ -390,6 +390,14 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Filter Blocked Terms from Competitor Mentions in UI** (7c86ccb)
+- Fixed issue where generic words like "blog", "customer", "seo", etc. were appearing as competitors in Share of Voice and Competitive Threats views
+- Added filtering using the existing competitor blocklist across all display components
+- Affected components: competitive-intelligence.tsx, scan-results-view.tsx, query-detail.tsx, feed-detail-drawer.tsx
+- The blocklist already existed in `lib/config/competitor-blocklist.ts` - now applied consistently in UI
+
+---
+
 **QA Fixes: Settings UI, Activity Feed Links, 404 Errors** (7cc3af0)
 - Removed Domain/Subdomain display fields from Settings (not editable, cluttered UI)
 - Fixed placeholder text for Founded/Headquarters fields (was showing misleading defaults like "2020", "San Francisco, CA")

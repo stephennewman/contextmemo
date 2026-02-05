@@ -154,6 +154,7 @@ export interface FeedEventData {
   network?: {
     competitor_name: string
     competitor_domain: string
+    entity_type?: string
     prompts_found: number
     new_competitors_found: number
   }
