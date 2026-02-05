@@ -337,22 +337,25 @@ export function PushToHubSpotButton({
   brandId, 
   memoId,
   hubspotEnabled,
+  hubspotAutoPublish = false,
   hubspotSyncedAt
 }: { 
   brandId: string
   memoId: string
   hubspotEnabled: boolean
+  hubspotAutoPublish?: boolean
   hubspotSyncedAt?: string
 }) {
   const [loading, setLoading] = useState(false)
 
-  const pushToHubSpot = async (publish: boolean) => {
+  const pushToHubSpot = async () => {
     setLoading(true)
     try {
+      // Use the brand's auto_publish setting
       const response = await fetch(`/api/brands/${brandId}/memos/${memoId}/hubspot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publish }),
+        body: JSON.stringify({ publish: hubspotAutoPublish }),
       })
 
       const data = await response.json()
@@ -378,9 +381,13 @@ export function PushToHubSpotButton({
       <Button 
         variant="outline" 
         size="sm" 
-        onClick={() => pushToHubSpot(false)}
+        onClick={pushToHubSpot}
         disabled={loading}
-        title={hubspotSyncedAt ? `Last synced: ${new Date(hubspotSyncedAt).toLocaleString()}` : 'Push as draft to HubSpot'}
+        title={hubspotSyncedAt 
+          ? `Last synced: ${new Date(hubspotSyncedAt).toLocaleString()}` 
+          : hubspotAutoPublish 
+            ? 'Sync & Publish to HubSpot' 
+            : 'Sync as draft to HubSpot'}
       >
         {loading ? (
           <Loader2 className="h-3 w-3 animate-spin" />

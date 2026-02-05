@@ -291,6 +291,7 @@ export default async function BrandPage({ params }: Props) {
   const context = brand.context as BrandContext
   const hasContext = context && Object.keys(context).length > 0
   const hubspotEnabled = !!(context?.hubspot?.enabled && context?.hubspot?.access_token && context?.hubspot?.blog_id)
+  const hubspotAutoPublish = !!(context?.hubspot?.auto_publish)
   
   // Determine onboarding state
   const hasCompletedOnboarding = hasContext && !!competitors?.length && !!queries?.length
@@ -634,6 +635,7 @@ export default async function BrandPage({ params }: Props) {
                                 brandId={brandId}
                                 memoId={memo.id}
                                 hubspotEnabled={hubspotEnabled}
+                                hubspotAutoPublish={hubspotAutoPublish}
                                 hubspotSyncedAt={schemaJson?.hubspot_synced_at}
                               />
                               <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">

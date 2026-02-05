@@ -11,6 +11,9 @@ import { selectImageForMemo } from '@/lib/hubspot/image-selector'
 /**
  * Upload an image from URL to HubSpot's file manager
  * HubSpot requires images to be hosted on their platform (hubfs/)
+ * 
+ * Note: Requires 'files' OAuth scope. If images aren't uploading,
+ * user may need to reconnect HubSpot to grant the new permission.
  */
 async function uploadImageToHubSpot(
   imageUrl: string, 
@@ -18,14 +21,22 @@ async function uploadImageToHubSpot(
   accessToken: string
 ): Promise<string | null> {
   try {
+    console.log('Uploading image to HubSpot:', { imageUrl: imageUrl.slice(0, 100), fileName })
+    
     // Fetch the image from Unsplash
     const imageResponse = await fetch(imageUrl)
     if (!imageResponse.ok) {
-      console.error('Failed to fetch image from Unsplash:', imageResponse.status)
+      console.error('Failed to fetch image from Unsplash:', {
+        status: imageResponse.status,
+        statusText: imageResponse.statusText,
+        url: imageUrl.slice(0, 100)
+      })
       return null
     }
     
     const imageBuffer = await imageResponse.arrayBuffer()
+    console.log('Image fetched successfully, size:', imageBuffer.byteLength, 'bytes')
+    
     const blob = new Blob([imageBuffer], { type: 'image/jpeg' })
     
     // Create form data for HubSpot upload
@@ -48,11 +59,21 @@ async function uploadImageToHubSpot(
     
     if (!uploadResponse.ok) {
       const errorData = await uploadResponse.json().catch(() => ({}))
-      console.error('HubSpot file upload error:', errorData)
+      console.error('HubSpot file upload error:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        error: errorData,
+        message: errorData.message,
+        // Check if this is a permission error
+        hint: uploadResponse.status === 403 
+          ? 'Missing files scope - user may need to reconnect HubSpot' 
+          : undefined
+      })
       return null
     }
     
     const uploadResult = await uploadResponse.json()
+    console.log('Image uploaded to HubSpot successfully:', uploadResult.url)
     return uploadResult.url
   } catch (error) {
     console.error('Error uploading image to HubSpot:', error)

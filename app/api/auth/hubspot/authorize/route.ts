@@ -119,7 +119,11 @@ export async function GET(request: NextRequest) {
   // State parameter includes brandId for callback
   const state = Buffer.from(JSON.stringify({ brandId, userId: user.id })).toString('base64')
 
-  const scopes = ['oauth', 'content']
+  // Scopes required:
+  // - oauth: Basic OAuth
+  // - content: CMS blog post creation and management
+  // - files: File upload to HubSpot file manager (for featured images)
+  const scopes = ['oauth', 'content', 'files']
 
   const authUrl = new URL(HUBSPOT_AUTH_URL)
   authUrl.searchParams.set('response_type', 'code')

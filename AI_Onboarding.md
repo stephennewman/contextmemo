@@ -390,6 +390,20 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Feature: HubSpot Auto-Publish Toggle + Image Upload Fix** (411523c)
+- Added auto-publish setting to HubSpot integration - toggle in Settings under Integrations
+- When enabled, synced content publishes immediately; when disabled, creates as drafts
+- Fixed image handling in auto-sync: now uploads images to HubSpot file manager first (HubSpot requires images on their platform)
+- Previously auto-sync was passing Unsplash URLs directly, which HubSpot silently ignored
+- Default `auto_publish: false` on new HubSpot connections for safety
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/settings/page.tsx` - Added auto-publish toggle (shows when auto-sync enabled)
+- `lib/inngest/functions/memo-generate.ts` - Added `uploadImageToHubSpot()` function, updated auto-sync to upload images
+- `app/api/auth/hubspot/callback/route.ts` - Added `auto_publish: false` default
+
+---
+
 **Feature: HubSpot Author Attribution + User Profile Settings**
 - HubSpot integration now properly sets blog post authors using `blogAuthorId` (not just `authorName` text field)
 - Added `getOrCreateHubSpotAuthor()` function that finds existing authors by name/email or creates new ones

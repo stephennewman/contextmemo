@@ -71,6 +71,7 @@ export function BrandTabs({
   const [loading, setLoading] = useState<string | null>(null)
 
   const hubspotEnabled = !!(context?.hubspot?.enabled && context?.hubspot?.access_token && context?.hubspot?.blog_id)
+  const hubspotAutoPublish = !!(context?.hubspot?.auto_publish)
   const activeCompetitors = competitors.filter(c => c.is_active)
 
   // Load tab data when tab is selected
@@ -244,6 +245,7 @@ export function BrandTabs({
                               brandId={brandId}
                               memoId={memo.id}
                               hubspotEnabled={hubspotEnabled}
+                              hubspotAutoPublish={hubspotAutoPublish}
                               hubspotSyncedAt={schemaJson?.hubspot_synced_at}
                             />
                           </div>
