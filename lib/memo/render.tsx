@@ -686,38 +686,6 @@ export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPagePro
         />
       </main>
       
-      {/* Source Attribution */}
-      <div className="max-w-4xl mx-auto px-6 pb-16">
-        <div className="bg-white/5 border-2 border-white/10 p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center shrink-0">
-              <span className="text-white font-black text-lg">
-                {brand.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="font-bold text-white">{brand.name}</p>
-              <p className="text-sm text-slate-400 mt-1">
-                This memo contains factual information about {brand.name}, auto-generated from verified brand sources.
-              </p>
-              {brand.domain && (
-                <a 
-                  href={`https://${brand.domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-[#0EA5E9] hover:underline mt-3 font-semibold"
-                >
-                  Visit {brand.domain}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      
       {/* Footer */}
       <footer className="border-t-2 border-white/10 bg-[#0F172A]">
         <div className="max-w-4xl mx-auto px-6 py-8">
