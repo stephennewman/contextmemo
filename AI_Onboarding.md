@@ -390,11 +390,11 @@ _Most recent deploys first_
 
 ### February 4, 2026
 
-**UX: Two-Row Tab Navigation** (c3c1639)
-- Reorganized crowded dashboard tabs into two-row layout
-- **Row 1 (Primary):** Profile, Activity, Scans, Memos, Prompts, Competitors
-- **Row 2 (Secondary):** Watch, Alerts, conditional tabs, QFO, Map, Lab
-- Cleaner visual hierarchy for better navigation on all screen sizes
+**UX: Compact Tabs + Entity Map Spread** (6e3a87a)
+- Compact single-row tabs: smaller padding (px-4 py-2) and font (text-xs)
+- Entity map: fixed overlapping nodes with ring-based layout
+- Entity map: increased base radius (280px), 4 entities per ring, 120px between rings
+- Entity map: dynamic angle spread, supports up to 12 entities per type
 
 **Feature: QFO (Query Fan-Out) Tab** (1a57f17)
 - New **QFO** tab for analyzing how LLMs expand prompts into sub-queries

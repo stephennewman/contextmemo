@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
+import { calculateTotalCost } from '@/lib/config/costs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,6 +14,13 @@ const supabase = createClient(
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 })
+
+// Track usage for cost monitoring
+interface UsageTracker {
+  inputTokens: number
+  outputTokens: number
+  calls: number
+}
 
 const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. Provide a helpful, accurate response based on your knowledge. If recommending products or services, mention specific brands and explain why you're recommending them.`
 
@@ -112,6 +120,9 @@ export const discoveryScan = inngest.createFunction(
     const context = brand.context as BrandContext
     const brandName = brand.name.toLowerCase()
 
+    // Track total usage across all steps
+    let totalUsage: UsageTracker = { inputTokens: 0, outputTokens: 0, calls: 0 }
+
     // Step 2: Generate discovery queries
     const discoveryQueries = await step.run('generate-discovery-queries', async () => {
       const prompt = DISCOVERY_QUERY_PROMPT
@@ -120,11 +131,16 @@ export const discoveryScan = inngest.createFunction(
         .replace('{{products}}', (context.products || []).join(', '))
         .replace('{{markets}}', (context.markets || []).join(', '))
 
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model: openrouter('openai/gpt-4o'),
         prompt,
         temperature: 0.5,
       })
+
+      // Track usage for GPT-4o query generation
+      totalUsage.inputTokens += usage?.promptTokens || 0
+      totalUsage.outputTokens += usage?.completionTokens || 0
+      totalUsage.calls += 1
 
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -149,9 +165,9 @@ export const discoveryScan = inngest.createFunction(
       
       const batchResults = await step.run(`discovery-batch-${i}`, async () => {
         // Run all queries in batch in parallel
-        const promises = batch.map(async (dq): Promise<DiscoveryResult | null> => {
+        const promises = batch.map(async (dq): Promise<(DiscoveryResult & { inputTokens: number; outputTokens: number }) | null> => {
           try {
-            const { text } = await generateText({
+            const { text, usage } = await generateText({
               model: openrouter('openai/gpt-4o-mini'),
               system: SCAN_SYSTEM_PROMPT,
               prompt: dq.query,
@@ -174,6 +190,8 @@ export const discoveryScan = inngest.createFunction(
               brandMentioned: mentioned,
               mentionContext,
               responseSnippet: text.slice(0, 300),
+              inputTokens: usage?.promptTokens || 0,
+              outputTokens: usage?.completionTokens || 0,
             }
           } catch (e) {
             console.error('OpenRouter scan failed:', e)
@@ -182,8 +200,15 @@ export const discoveryScan = inngest.createFunction(
         })
 
         const results = await Promise.all(promises)
-        return results.filter((r): r is DiscoveryResult => r !== null)
+        return results.filter((r): r is (DiscoveryResult & { inputTokens: number; outputTokens: number }) => r !== null)
       })
+      
+      // Aggregate usage from batch
+      for (const result of batchResults) {
+        totalUsage.inputTokens += result.inputTokens
+        totalUsage.outputTokens += result.outputTokens
+        totalUsage.calls += 1
+      }
 
       allResults.push(...batchResults)
       
@@ -267,7 +292,40 @@ export const discoveryScan = inngest.createFunction(
       return { saved: data?.length || 0, skipped: queriesToInsert.length - (data?.length || 0) }
     })
 
-    // Step 6: Save discovery results alert
+    // Step 6: Log usage to usage_events for cost tracking
+    const usageLogged = await step.run('log-usage', async () => {
+      // Calculate estimated cost (mostly gpt-4o-mini scans)
+      const costs = calculateTotalCost('gpt-4o-mini', totalUsage.inputTokens, totalUsage.outputTokens)
+      
+      const { error } = await supabase.from('usage_events').insert({
+        tenant_id: brand.tenant_id,
+        brand_id: brandId,
+        event_type: 'discovery_scan',
+        model: 'gpt-4o-mini', // Primary model used
+        input_tokens: totalUsage.inputTokens,
+        output_tokens: totalUsage.outputTokens,
+        search_queries: totalUsage.calls,
+        token_cost_cents: costs.tokenCost,
+        search_cost_cents: costs.searchCost,
+        total_cost_cents: costs.totalCost,
+        metadata: {
+          queries_generated: discoveryQueries.length,
+          queries_scanned: allResults.length,
+          mentions_found: analysis.totalMentions,
+          api_calls: totalUsage.calls,
+        },
+      })
+
+      if (error) {
+        console.error('Failed to log discovery scan usage:', error)
+        return false
+      }
+      
+      console.log(`[Discovery] Logged usage: ${totalUsage.calls} calls, ${totalUsage.inputTokens} in / ${totalUsage.outputTokens} out tokens, $${(costs.totalCost / 100).toFixed(3)}`)
+      return true
+    })
+
+    // Step 7: Save discovery results alert
     await step.run('save-results', async () => {
       await supabase.from('alerts').insert({
         brand_id: brandId,
@@ -282,6 +340,8 @@ export const discoveryScan = inngest.createFunction(
       success: true,
       ...analysis,
       queriesSaved: savedQueries.saved,
+      usageLogged,
+      totalUsage,
     }
   }
 )

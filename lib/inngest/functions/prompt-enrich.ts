@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
+import { calculateTotalCost } from '@/lib/config/costs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,6 +13,13 @@ const supabase = createClient(
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 })
+
+// Track usage for cost monitoring
+interface UsageTracker {
+  inputTokens: number
+  outputTokens: number
+  calls: number
+}
 
 // Prompt to generate new queries from gap analysis
 const GAP_ANALYSIS_PROMPT = `You are analyzing AI search results to find opportunities for a brand to improve visibility.
@@ -149,6 +157,9 @@ export const promptEnrich = inngest.createFunction(
     }
 
     const context = brand.context as BrandContext
+    
+    // Track total usage across all steps
+    let totalUsage: UsageTracker = { inputTokens: 0, outputTokens: 0, calls: 0 }
 
     // Step 2: Identify gap patterns - queries where brand lost but competitors won
     const gapPatterns = await step.run('identify-gaps', async () => {
@@ -209,11 +220,16 @@ export const promptEnrich = inngest.createFunction(
           .replace('{{gap_data}}', gapData)
 
         try {
-          const { text } = await generateText({
+          const { text, usage } = await generateText({
             model: openrouter('openai/gpt-4o-mini'),
             prompt,
             temperature: 0.5,
           })
+
+          // Track usage
+          totalUsage.inputTokens += usage?.promptTokens || 0
+          totalUsage.outputTokens += usage?.completionTokens || 0
+          totalUsage.calls += 1
 
           const jsonMatch = text.match(/\[[\s\S]*\]/)
           if (!jsonMatch) return []
@@ -274,11 +290,16 @@ export const promptEnrich = inngest.createFunction(
           .replace('{{known_competitors}}', knownCompetitors.join(', '))
 
         try {
-          const { text } = await generateText({
+          const { text, usage } = await generateText({
             model: openrouter('openai/gpt-4o-mini'),
             prompt,
             temperature: 0.3,
           })
+
+          // Track usage
+          totalUsage.inputTokens += usage?.promptTokens || 0
+          totalUsage.outputTokens += usage?.completionTokens || 0
+          totalUsage.calls += 1
 
           const jsonMatch = text.match(/\[[\s\S]*\]/)
           if (!jsonMatch) return []
@@ -325,7 +346,39 @@ export const promptEnrich = inngest.createFunction(
       }
     }
 
-    // Step 5: Create alert with enrichment results
+    // Step 5: Log usage to usage_events for cost tracking
+    if (totalUsage.calls > 0) {
+      await step.run('log-usage', async () => {
+        const costs = calculateTotalCost('gpt-4o-mini', totalUsage.inputTokens, totalUsage.outputTokens)
+        
+        const { error } = await supabase.from('usage_events').insert({
+          tenant_id: brand.tenant_id,
+          brand_id: brandId,
+          event_type: 'prompt_enrich',
+          model: 'gpt-4o-mini',
+          input_tokens: totalUsage.inputTokens,
+          output_tokens: totalUsage.outputTokens,
+          search_queries: totalUsage.calls,
+          token_cost_cents: costs.tokenCost,
+          search_cost_cents: 0, // No web search in this function
+          total_cost_cents: costs.totalCost,
+          metadata: {
+            gap_patterns_found: gapPatterns.length,
+            queries_generated: newQueriesCount,
+            competitors_found: newCompetitorsCount,
+            api_calls: totalUsage.calls,
+          },
+        })
+
+        if (error) {
+          console.error('Failed to log prompt enrich usage:', error)
+        } else {
+          console.log(`[Enrich] Logged usage: ${totalUsage.calls} calls, ${totalUsage.inputTokens} in / ${totalUsage.outputTokens} out tokens, $${(costs.totalCost / 100).toFixed(3)}`)
+        }
+      })
+    }
+
+    // Step 6: Create alert with enrichment results
     if (newQueriesCount > 0 || newCompetitorsCount > 0) {
       await step.run('create-alert', async () => {
         await supabase.from('alerts').insert({
@@ -347,6 +400,7 @@ export const promptEnrich = inngest.createFunction(
       gapPatternsFound: gapPatterns.length,
       newQueriesGenerated: newQueriesCount,
       newCompetitorsDiscovered: newCompetitorsCount,
+      totalUsage,
     }
   }
 )

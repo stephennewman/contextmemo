@@ -7,6 +7,7 @@ import { calculateTotalCost } from '@/lib/config/costs'
 import { PerplexitySearchResultJson, QueryStatus } from '@/lib/supabase/types'
 import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorDiscovered } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
+import { reportUsageToStripe, calculateCredits } from '@/lib/stripe/usage'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -263,9 +264,11 @@ export const scanRun = inngest.createFunction(
     })
 
     // Step 3.5: Log usage events for cost tracking
-    await step.run('log-usage', async () => {
+    const totalCostCents = await step.run('log-usage', async () => {
+      let totalCost = 0
       const usageEvents = scanResults.map((r, i) => {
         const costs = calculateTotalCost(r.model, r.inputTokens, r.outputTokens)
+        totalCost += costs.totalCost
         return {
           tenant_id: brand.tenant_id,
           brand_id: brandId,
@@ -287,6 +290,67 @@ export const scanRun = inngest.createFunction(
         console.error('Failed to log usage events:', error)
         // Don't throw - usage logging failure shouldn't break the scan
       }
+      
+      return totalCost
+    })
+
+    // Step 3.55: Report usage to Stripe if billing enabled
+    await step.run('report-stripe-usage', async () => {
+      // Check if brand has billing enabled
+      const { data: brandBilling } = await supabase
+        .from('brands')
+        .select('billing_enabled, stripe_subscription_item_id')
+        .eq('id', brandId)
+        .single()
+
+      if (!brandBilling?.billing_enabled || !brandBilling?.stripe_subscription_item_id) {
+        console.log(`[Stripe] Billing not enabled for brand ${brandId}, skipping usage report`)
+        return { reported: false, reason: 'billing_not_enabled' }
+      }
+
+      // Calculate credits from actual cost
+      const credits = calculateCredits(totalCostCents)
+      
+      if (credits === 0) {
+        return { reported: false, reason: 'zero_credits' }
+      }
+
+      // Get tenant's Stripe customer ID
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('stripe_customer_id')
+        .eq('id', brand.tenant_id)
+        .single()
+
+      if (!tenant?.stripe_customer_id) {
+        console.error(`[Stripe] No customer ID for tenant ${brand.tenant_id}`)
+        return { reported: false, reason: 'no_customer_id' }
+      }
+
+      // Report usage to Stripe
+      const result = await reportUsageToStripe({
+        stripeCustomerId: tenant.stripe_customer_id,
+        subscriptionItemId: brandBilling.stripe_subscription_item_id,
+        credits,
+        brandId,
+        description: `Scan: ${scanResults.length} queries across ${[...new Set(scanResults.map(r => r.model))].length} models`,
+      })
+
+      if (result.success) {
+        console.log(`[Stripe] Reported ${credits} credits for brand ${brandId}`)
+        
+        // Update brand credits used
+        await supabase.rpc('increment_brand_credits', {
+          p_brand_id: brandId,
+          p_credits: credits,
+        }).then(() => {}).catch(() => {
+          // RPC might not exist yet, that's ok
+        })
+      } else {
+        console.error(`[Stripe] Failed to report usage: ${result.error}`)
+      }
+
+      return { reported: result.success, credits, error: result.error }
     })
 
     // Step 3.6: Per-prompt tracking and feed event emission

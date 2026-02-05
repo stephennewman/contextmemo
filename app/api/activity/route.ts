@@ -110,6 +110,10 @@ export async function GET(request: NextRequest) {
               activityType = 'memo_published'
               category = 'content'
               break
+            case 'content_generated':
+              activityType = 'memo_generated'
+              category = 'content'
+              break
             case 'discovery_complete':
               activityType = 'discovery_scan_completed'
               category = 'discovery'
@@ -125,6 +129,42 @@ export async function GET(request: NextRequest) {
 
           if (!shouldInclude(activityType, category)) continue
 
+          // Determine contextual link and label based on alert type
+          let linkUrl: string
+          let linkLabel: string
+          
+          if (alert.data?.memoId) {
+            linkUrl = `/brands/${alert.brand_id}/memos/${alert.data.memoId}`
+            linkLabel = 'View Memo'
+          } else {
+            // Contextual CTAs based on alert type
+            switch (alert.alert_type) {
+              case 'content_generated':
+                linkUrl = `/brands/${alert.brand_id}/memos`
+                linkLabel = 'View Resources'
+                break
+              case 'scan_complete':
+                linkUrl = `/brands/${alert.brand_id}/scans`
+                linkLabel = 'View Scan Results'
+                break
+              case 'discovery_complete':
+                linkUrl = `/brands/${alert.brand_id}/queries`
+                linkLabel = 'View Queries'
+                break
+              case 'citation_found':
+                linkUrl = `/brands/${alert.brand_id}/citations`
+                linkLabel = 'View Citations'
+                break
+              case 'ai_traffic_detected':
+                linkUrl = `/brands/${alert.brand_id}/analytics`
+                linkLabel = 'View Analytics'
+                break
+              default:
+                linkUrl = `/brands/${alert.brand_id}`
+                linkLabel = 'View Dashboard'
+            }
+          }
+
           const meta = ACTIVITY_TYPE_META[activityType]
           activities.push({
             id: `alert-${alert.id}`,
@@ -135,8 +175,8 @@ export async function GET(request: NextRequest) {
             title: alert.title,
             description: alert.message,
             icon: meta.icon,
-            link_url: alert.data?.memoId ? `/brands/${alert.brand_id}/memos/${alert.data.memoId}` : `/brands/${alert.brand_id}`,
-            link_label: alert.data?.memoId ? 'View Memo' : 'View Brand',
+            link_url: linkUrl,
+            link_label: linkLabel,
             metadata: alert.data || {},
             created_at: alert.created_at,
           })
@@ -335,8 +375,8 @@ export async function GET(request: NextRequest) {
             title: `AI Scan Complete`,
             description: `${score}% visibility across ${models.length} models (${mentioned}/${total} mentions)`,
             icon: meta.icon,
-            link_url: `/brands/${first.brand_id}`,
-            link_label: 'View Results',
+            link_url: `/brands/${first.brand_id}/scans`,
+            link_label: 'View Scan Results',
             metadata: { visibility: score, models: models.length, mentioned, total },
             created_at: first.scanned_at,
           })
@@ -370,8 +410,8 @@ export async function GET(request: NextRequest) {
               title: `Visit from ${sourceLabel}`,
               description: t.page_url,
               icon: meta.icon,
-              link_url: t.memo_id ? `/brands/${t.brand_id}/memos/${t.memo_id}` : `/brands/${t.brand_id}`,
-              link_label: t.memo_id ? 'View Memo' : 'View Brand',
+              link_url: t.memo_id ? `/brands/${t.brand_id}/memos/${t.memo_id}` : `/brands/${t.brand_id}/analytics`,
+              link_label: t.memo_id ? 'View Memo' : 'View Analytics',
               metadata: { source: t.referrer_source },
               created_at: t.timestamp,
             })

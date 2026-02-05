@@ -230,8 +230,8 @@ export const ActivityLoggers = {
       activityType: 'ai_traffic_detected',
       title: `Visit from ${source.charAt(0).toUpperCase() + source.slice(1)}`,
       description: pageUrl,
-      linkUrl: memoId ? `/brands/${brandId}/memos/${memoId}` : `/brands/${brandId}`,
-      linkLabel: memoId ? 'View Memo' : 'View Brand',
+      linkUrl: memoId ? `/brands/${brandId}/memos/${memoId}` : `/brands/${brandId}/analytics`,
+      linkLabel: memoId ? 'View Memo' : 'View Analytics',
       metadata: { source },
     })
   },
