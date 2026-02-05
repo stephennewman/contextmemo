@@ -19,10 +19,38 @@ import {
   ArrowDownWideNarrow,
   ArrowUpAZ,
   Clock,
+  Swords,
+  BookOpen,
+  Award,
+  Newspaper,
+  TrendingUp,
+  Mic,
+  Store,
+  Handshake,
+  GraduationCap,
+  HelpCircle,
+  Filter,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { EntityType, ENTITY_TYPE_META } from '@/lib/supabase/types'
 
-type SortOption = 'citations' | 'name' | 'recent'
+type SortOption = 'citations' | 'name' | 'recent' | 'type'
+type EntityFilterOption = 'all' | 'competitors' | 'partners' | EntityType
+
+// Icon mapping for entity types
+const ENTITY_ICONS: Record<EntityType, React.ComponentType<{ className?: string }>> = {
+  product_competitor: Swords,
+  publisher: BookOpen,
+  accrediting_body: Award,
+  association: Users,
+  news_outlet: Newspaper,
+  analyst: TrendingUp,
+  influencer: Mic,
+  marketplace: Store,
+  partner: Handshake,
+  research_institution: GraduationCap,
+  other: HelpCircle,
+}
 
 interface Competitor {
   id: string
@@ -33,9 +61,12 @@ interface Competitor {
   auto_discovered: boolean
   feed_url?: string | null
   competition_type?: string | null
+  entity_type?: EntityType | null
+  is_partner_candidate?: boolean
   context?: {
     citation_count?: number
     discovered_from?: string
+    partnership_opportunity?: string
   } | null
 }
 
@@ -62,6 +93,31 @@ export function CompetitorsListClient({
   const [sortBy, setSortBy] = useState<SortOption>('citations')
   const [trackedSortBy, setTrackedSortBy] = useState<SortOption>('citations')
   const [expandedCitations, setExpandedCitations] = useState<Set<string>>(new Set())
+  const [entityFilter, setEntityFilter] = useState<EntityFilterOption>('all')
+
+  // Get unique entity types from all entities
+  const entityTypeCounts = useMemo(() => {
+    const all = [...trackedCompetitors, ...discoveredCompetitors]
+    const counts: Record<string, number> = {}
+    all.forEach(c => {
+      const type = c.entity_type || 'product_competitor'
+      counts[type] = (counts[type] || 0) + 1
+    })
+    return counts
+  }, [trackedCompetitors, discoveredCompetitors])
+
+  // Count competitors vs potential partners
+  const competitorCount = useMemo(() => {
+    return [...trackedCompetitors, ...discoveredCompetitors].filter(
+      c => (c.entity_type || 'product_competitor') === 'product_competitor'
+    ).length
+  }, [trackedCompetitors, discoveredCompetitors])
+
+  const partnerCount = useMemo(() => {
+    return [...trackedCompetitors, ...discoveredCompetitors].filter(
+      c => c.is_partner_candidate || (c.entity_type && c.entity_type !== 'product_competitor')
+    ).length
+  }, [trackedCompetitors, discoveredCompetitors])
 
   const toggleCitations = (competitorId: string) => {
     setExpandedCitations(prev => {
@@ -106,9 +162,21 @@ export function CompetitorsListClient({
     }
   }
 
+  // Filter function based on entity type
+  const matchesEntityFilter = (c: Competitor): boolean => {
+    const type = c.entity_type || 'product_competitor'
+    
+    if (entityFilter === 'all') return true
+    if (entityFilter === 'competitors') return type === 'product_competitor'
+    if (entityFilter === 'partners') {
+      return c.is_partner_candidate || (type !== 'product_competitor')
+    }
+    return type === entityFilter
+  }
+
   // Sort tracked competitors
   const sortedTracked = useMemo(() => {
-    let sorted = [...trackedCompetitors]
+    let sorted = [...trackedCompetitors].filter(matchesEntityFilter)
     
     switch (trackedSortBy) {
       case 'citations':
@@ -121,21 +189,34 @@ export function CompetitorsListClient({
           a.name.localeCompare(b.name)
         )
         break
+      case 'type':
+        sorted = sorted.sort((a, b) => 
+          (a.entity_type || 'product_competitor').localeCompare(b.entity_type || 'product_competitor')
+        )
+        break
       case 'recent':
         // Keep original order (by created_at)
         break
     }
     
     return sorted
-  }, [trackedCompetitors, trackedSortBy, citationCounts])
+  }, [trackedCompetitors, trackedSortBy, citationCounts, entityFilter])
 
   // Filter and sort discovered competitors
   const filteredDiscovered = useMemo(() => {
-    let filtered = discoveredCompetitors.filter(c => 
-      !searchQuery || 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.domain?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    let filtered = discoveredCompetitors.filter(c => {
+      // Entity type filter
+      if (!matchesEntityFilter(c)) return false
+      
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        return c.name.toLowerCase().includes(query) ||
+          c.domain?.toLowerCase().includes(query) ||
+          c.entity_type?.toLowerCase().includes(query)
+      }
+      return true
+    })
     
     // Sort
     switch (sortBy) {
@@ -149,30 +230,102 @@ export function CompetitorsListClient({
           a.name.localeCompare(b.name)
         )
         break
+      case 'type':
+        filtered = [...filtered].sort((a, b) => 
+          (a.entity_type || 'product_competitor').localeCompare(b.entity_type || 'product_competitor')
+        )
+        break
       case 'recent':
         // Already sorted by created_at from server
         break
     }
     
     return filtered
-  }, [discoveredCompetitors, searchQuery, sortBy])
+  }, [discoveredCompetitors, searchQuery, sortBy, entityFilter])
 
   return (
     <div className="flex-1 overflow-auto p-6">
       {trackedCompetitors.length === 0 && discoveredCompetitors.length === 0 ? (
         <div className="text-center py-20">
           <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">No competitors yet</h3>
+          <h3 className="text-lg font-medium mb-2">No entities yet</h3>
           <p className="text-muted-foreground mb-4">
-            Run a scan to discover competitors from AI citations
+            Run a scan to discover competitors and other entities from AI citations
           </p>
           <Button className="bg-[#0EA5E9] hover:bg-[#0284C7]">
             <Plus className="h-4 w-4 mr-2" />
-            Add Competitor
+            Add Entity
           </Button>
         </div>
       ) : (
         <div className="space-y-8">
+          {/* Entity Type Filter Tabs */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <button
+              onClick={() => setEntityFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                entityFilter === 'all'
+                  ? 'bg-[#0F172A] text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              All ({trackedCompetitors.length + discoveredCompetitors.length})
+            </button>
+            <button
+              onClick={() => setEntityFilter('competitors')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                entityFilter === 'competitors'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-red-50 text-red-700 hover:bg-red-100'
+              }`}
+            >
+              <Swords className="h-3.5 w-3.5" />
+              Competitors ({competitorCount})
+            </button>
+            <button
+              onClick={() => setEntityFilter('partners')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                entityFilter === 'partners'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              }`}
+            >
+              <Handshake className="h-3.5 w-3.5" />
+              Partners ({partnerCount})
+            </button>
+            
+            {/* Show specific type filters if there are multiple types */}
+            {Object.entries(entityTypeCounts).length > 2 && (
+              <>
+                <div className="w-px h-6 bg-slate-200 mx-1" />
+                {Object.entries(entityTypeCounts)
+                  .filter(([type]) => type !== 'product_competitor')
+                  .map(([type, count]) => {
+                    const meta = ENTITY_TYPE_META[type as EntityType]
+                    const Icon = ENTITY_ICONS[type as EntityType]
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => setEntityFilter(type as EntityType)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                          entityFilter === type
+                            ? 'text-white'
+                            : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          backgroundColor: entityFilter === type ? meta.color : meta.bgColor,
+                          color: entityFilter === type ? 'white' : meta.color,
+                        }}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        {meta.label} ({count})
+                      </button>
+                    )
+                  })}
+              </>
+            )}
+          </div>
           {/* Tracked Competitors */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -365,14 +518,22 @@ function CompetitorCard({
     }
   }
 
+  const entityType = (competitor.entity_type || 'product_competitor') as EntityType
+  const typeMeta = ENTITY_TYPE_META[entityType]
+  const TypeIcon = ENTITY_ICONS[entityType]
+
   return (
-    <div className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow">
+    <div 
+      className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow"
+      style={{ borderLeftWidth: '3px', borderLeftColor: typeMeta.color }}
+    >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-            <span className="text-orange-600 font-bold">
-              {competitor.name.charAt(0).toUpperCase()}
-            </span>
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: typeMeta.bgColor, color: typeMeta.color }}
+          >
+            <TypeIcon className="h-5 w-5" />
           </div>
           <div>
             <h3 className="font-medium text-[#0F172A]">{competitor.name}</h3>
@@ -405,6 +566,27 @@ function CompetitorCard({
             <ToggleLeft className="h-5 w-5" />
           )}
         </Button>
+      </div>
+
+      {/* Entity Type Badge */}
+      <div className="flex items-center gap-2 mb-3">
+        <Badge 
+          variant="outline" 
+          className="text-xs font-medium"
+          style={{ 
+            color: typeMeta.color, 
+            borderColor: typeMeta.color,
+            backgroundColor: typeMeta.bgColor 
+          }}
+        >
+          {typeMeta.label}
+        </Badge>
+        {competitor.is_partner_candidate && entityType !== 'product_competitor' && (
+          <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-600 bg-emerald-50">
+            <Handshake className="h-3 w-3 mr-1" />
+            Partner Opportunity
+          </Badge>
+        )}
       </div>
       
       <div className="flex items-center gap-4 text-sm">
@@ -458,12 +640,11 @@ function CompetitorCard({
         </div>
       )}
       
-      {competitor.competition_type && (
-        <div className="mt-3">
-          <Badge variant="secondary" className="text-xs">
-            {competitor.competition_type}
-          </Badge>
-        </div>
+      {/* Partnership opportunity note */}
+      {competitor.context?.partnership_opportunity && (
+        <p className="mt-3 text-xs text-slate-600 italic">
+          {competitor.context.partnership_opportunity}
+        </p>
       )}
     </div>
   )
@@ -479,26 +660,44 @@ function DiscoveredCard({
   onToggle: () => void
 }) {
   const citationCount = competitor.context?.citation_count || 0
+  const entityType = (competitor.entity_type || 'product_competitor') as EntityType
+  const typeMeta = ENTITY_TYPE_META[entityType]
+  const TypeIcon = ENTITY_ICONS[entityType]
   
   return (
-    <div className="bg-slate-50 border border-dashed rounded-lg p-3 hover:border-[#0EA5E9] transition-colors">
+    <div 
+      className="bg-slate-50 border border-dashed rounded-lg p-3 hover:border-[#0EA5E9] transition-colors"
+      style={{ borderLeftWidth: '3px', borderLeftColor: typeMeta.color, borderLeftStyle: 'solid' }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-            <span className="text-slate-500 text-sm font-medium">
-              {competitor.name.charAt(0).toUpperCase()}
-            </span>
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: typeMeta.bgColor, color: typeMeta.color }}
+          >
+            <TypeIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <h4 className="font-medium text-sm text-[#0F172A] truncate">{competitor.name}</h4>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge 
+                variant="outline" 
+                className="text-[10px] px-1.5 py-0"
+                style={{ 
+                  color: typeMeta.color, 
+                  borderColor: typeMeta.color,
+                  backgroundColor: typeMeta.bgColor 
+                }}
+              >
+                {typeMeta.label}
+              </Badge>
               {competitor.domain && (
                 <span className="text-xs text-muted-foreground truncate">
                   {competitor.domain}
                 </span>
               )}
               {citationCount > 0 && (
-                <Badge variant="outline" className="text-xs shrink-0">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
                   {citationCount}x cited
                 </Badge>
               )}

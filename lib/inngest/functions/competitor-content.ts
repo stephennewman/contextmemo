@@ -120,7 +120,7 @@ const JUNK_TITLE_PATTERNS = [
   /^\[.*\]$/i, // Bracketed text like [Applications
   /^-\s*.+$/i, // Items starting with dash like "- Partners With"
   /^meet\s+\w+$/i, // "Meet Nathan" - team pages
-  /^\w+\s+\w+$/i && /^[A-Z][a-z]+\s+[A-Z][a-z]+$/, // Two-word proper names (usually team members)
+  /^[A-Z][a-z]+\s+[A-Z][a-z]+$/, // Two-word proper names (usually team members)
 ]
 
 // URL patterns that indicate non-article pages

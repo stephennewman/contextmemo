@@ -834,6 +834,19 @@ Built 5 major differentiation features to set Context Memo apart from competitor
 
 ---
 
+### February 5, 2026
+
+**Fix: Build failure - TypeScript and Next.js 16 migration** (d478d74)
+- Added missing `details` property to `PromptHistoryEntry` interface in activity-detail.tsx
+- Migrated from deprecated `middleware.ts` to `proxy.ts` for Next.js 16 compatibility
+- Renamed export function from `middleware()` to `proxy()`
+
+**Files changed:**
+- `components/dashboard/activity-detail.tsx` - Added details property to interface
+- `middleware.ts` → `proxy.ts` - Renamed file and export function
+
+---
+
 ### February 3, 2026
 
 **Build: V2 Feed-Based UI Overhaul**

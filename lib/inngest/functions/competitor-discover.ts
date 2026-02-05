@@ -10,14 +10,34 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-interface DiscoveredCompetitor {
+// Entity types for classification
+type EntityType = 
+  | 'product_competitor'
+  | 'publisher'
+  | 'accrediting_body'
+  | 'association'
+  | 'news_outlet'
+  | 'analyst'
+  | 'influencer'
+  | 'marketplace'
+  | 'partner'
+  | 'research_institution'
+  | 'other'
+
+interface DiscoveredEntity {
   name: string
   domain: string | null
   description: string
+  entity_type?: EntityType
   confidence?: 'high' | 'medium'
-  competition_type?: 'direct' | 'partial'
+  competition_type?: 'direct' | 'partial' | 'none'
+  is_partner_candidate?: boolean
+  partnership_opportunity?: string
   reasoning?: string
 }
+
+// Legacy interface for backward compatibility
+interface DiscoveredCompetitor extends DiscoveredEntity {}
 
 // Extract competitor mentions from homepage content
 function extractMentionedCompetitors(content: string): string[] {
@@ -137,9 +157,9 @@ export const competitorDiscover = inngest.createFunction(
         if (!jsonMatch) {
           throw new Error('No JSON array found in response')
         }
-        return JSON.parse(jsonMatch[0]) as DiscoveredCompetitor[]
+        return JSON.parse(jsonMatch[0]) as DiscoveredEntity[]
       } catch {
-        console.error('Failed to parse competitors:', text)
+        console.error('Failed to parse entities:', text)
         return []
       }
     })
@@ -173,27 +193,32 @@ export const competitorDiscover = inngest.createFunction(
       })
     })
 
-    // Step 5: Save competitors to database
-    const savedCompetitors = await step.run('save-competitors', async () => {
+    // Step 5: Save entities to database
+    const savedCompetitors = await step.run('save-entities', async () => {
       // Cast to restore type info lost during Inngest serialization
-      const typed = validatedCompetitors as DiscoveredCompetitor[]
+      const typed = validatedCompetitors as DiscoveredEntity[]
       
       if (typed.length === 0) {
         return []
       }
 
-      const competitorsToInsert = typed.map(c => ({
+      const entitiesToInsert = typed.map(c => ({
         brand_id: brandId,
         name: c.name,
         domain: c.domain,
         description: c.description,
         auto_discovered: true,
-        is_active: true,
+        // Only auto-activate product competitors, others start inactive
+        is_active: c.entity_type === 'product_competitor',
+        // New entity classification fields
+        entity_type: c.entity_type || 'product_competitor',
+        is_partner_candidate: c.is_partner_candidate || false,
         // Store additional metadata in context field
         context: {
           confidence: c.confidence || 'medium',
           competition_type: c.competition_type || 'direct',
           reasoning: c.reasoning || null,
+          partnership_opportunity: c.partnership_opportunity || null,
           discovered_at: new Date().toISOString(),
         },
       }))
@@ -201,14 +226,14 @@ export const competitorDiscover = inngest.createFunction(
       // Use upsert to avoid duplicates, but update if exists
       const { data, error } = await supabase
         .from('competitors')
-        .upsert(competitorsToInsert, {
+        .upsert(entitiesToInsert, {
           onConflict: 'brand_id,name',
           ignoreDuplicates: false, // Update existing records
         })
         .select()
 
       if (error) {
-        console.error('Failed to save competitors:', error)
+        console.error('Failed to save entities:', error)
       }
 
       return data || []
@@ -220,13 +245,26 @@ export const competitorDiscover = inngest.createFunction(
       data: { brandId },
     })
 
+    // Count entities by type
+    const typedEntities = savedCompetitors as Array<{ entity_type?: string }>
+    const entityTypeCounts = typedEntities.reduce((acc, e) => {
+      const type = e.entity_type || 'product_competitor'
+      acc[type] = (acc[type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
     return {
       success: true,
+      entitiesFound: competitors.length,
+      entitiesValidated: validatedCompetitors.length,
+      entitiesSaved: savedCompetitors.length,
+      mentionedOnWebsite: mentionedOnWebsite.length,
+      skippedDeleted: competitors.length - validatedCompetitors.length,
+      entityTypeCounts,
+      // Legacy fields for backward compatibility
       competitorsFound: competitors.length,
       competitorsValidated: validatedCompetitors.length,
       competitorsSaved: savedCompetitors.length,
-      mentionedOnWebsite: mentionedOnWebsite.length,
-      skippedDeleted: competitors.length - validatedCompetitors.length,
     }
   }
 )

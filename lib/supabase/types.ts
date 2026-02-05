@@ -122,6 +122,9 @@ export interface Database {
           auto_discovered: boolean
           is_active: boolean
           created_at: string
+          // New entity classification fields
+          entity_type: string | null
+          is_partner_candidate: boolean
         }
         Insert: {
           id?: string
@@ -134,6 +137,8 @@ export interface Database {
           auto_discovered?: boolean
           is_active?: boolean
           created_at?: string
+          entity_type?: string | null
+          is_partner_candidate?: boolean
         }
         Update: {
           id?: string
@@ -146,6 +151,8 @@ export interface Database {
           auto_discovered?: boolean
           is_active?: boolean
           created_at?: string
+          entity_type?: string | null
+          is_partner_candidate?: boolean
         }
       }
       queries: {
@@ -862,10 +869,194 @@ export function hasPermission(role: OrgRole, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role].includes(permission as never)
 }
 
+// =============================================================================
+// Entity Types - Classification system for competitors/monitored entities
+// =============================================================================
+
+// Entity types for classification beyond just "competitor"
+export type EntityType = 
+  | 'product_competitor'    // Direct product competitor - sells similar solution
+  | 'publisher'             // Content publisher (blog, media outlet)
+  | 'accrediting_body'      // Certification/accreditation organization
+  | 'association'           // Industry association or professional organization
+  | 'news_outlet'           // News media, press outlet
+  | 'analyst'               // Industry analyst firm (Gartner, Forrester, etc.)
+  | 'influencer'            // Industry influencer, thought leader
+  | 'marketplace'           // Software marketplace or directory (G2, Capterra)
+  | 'partner'               // Integration partner, channel partner
+  | 'research_institution'  // University, research lab
+  | 'other'                 // Other entity type
+
+// Entity type metadata for UI display
+export const ENTITY_TYPE_META: Record<EntityType, {
+  label: string
+  description: string
+  icon: string
+  color: string
+  bgColor: string
+  isCompetitor: boolean  // True if this is an actual competitive threat
+  isPartnerPotential: boolean  // True if this could be a partnership opportunity
+}> = {
+  product_competitor: {
+    label: 'Competitor',
+    description: 'Direct product competitor selling similar solutions',
+    icon: 'Swords',
+    color: '#EF4444',
+    bgColor: '#FEF2F2',
+    isCompetitor: true,
+    isPartnerPotential: false,
+  },
+  publisher: {
+    label: 'Publisher',
+    description: 'Content publisher, blog, or educational resource',
+    icon: 'BookOpen',
+    color: '#8B5CF6',
+    bgColor: '#F5F3FF',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  accrediting_body: {
+    label: 'Accrediting Body',
+    description: 'Certification or accreditation organization',
+    icon: 'Award',
+    color: '#F59E0B',
+    bgColor: '#FFFBEB',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  association: {
+    label: 'Association',
+    description: 'Industry association or professional organization',
+    icon: 'Users',
+    color: '#10B981',
+    bgColor: '#ECFDF5',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  news_outlet: {
+    label: 'News Outlet',
+    description: 'News media or press outlet',
+    icon: 'Newspaper',
+    color: '#3B82F6',
+    bgColor: '#EFF6FF',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  analyst: {
+    label: 'Analyst Firm',
+    description: 'Industry analyst firm like Gartner, Forrester',
+    icon: 'TrendingUp',
+    color: '#6366F1',
+    bgColor: '#EEF2FF',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  influencer: {
+    label: 'Influencer',
+    description: 'Industry influencer or thought leader',
+    icon: 'Mic',
+    color: '#EC4899',
+    bgColor: '#FDF2F8',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  marketplace: {
+    label: 'Marketplace',
+    description: 'Software marketplace or directory (G2, Capterra)',
+    icon: 'Store',
+    color: '#0EA5E9',
+    bgColor: '#F0F9FF',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  partner: {
+    label: 'Partner',
+    description: 'Integration partner or channel partner',
+    icon: 'Handshake',
+    color: '#14B8A6',
+    bgColor: '#F0FDFA',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  research_institution: {
+    label: 'Research Institution',
+    description: 'University, research lab, or academic institution',
+    icon: 'GraduationCap',
+    color: '#6B7280',
+    bgColor: '#F9FAFB',
+    isCompetitor: false,
+    isPartnerPotential: true,
+  },
+  other: {
+    label: 'Other',
+    description: 'Other entity type',
+    icon: 'HelpCircle',
+    color: '#9CA3AF',
+    bgColor: '#F3F4F6',
+    isCompetitor: false,
+    isPartnerPotential: false,
+  },
+}
+
+// Comparison result for entity profiles
+export type ComparisonResult = 'win' | 'lose' | 'tie' | 'unknown' | 'na'
+
+// Entity profile for competitive comparison matrix
+export interface EntityProfile {
+  id: string
+  brand_id: string
+  competitor_id: string
+  attribute_name: string
+  brand_value: string | null
+  competitor_value: string | null
+  comparison_result: ComparisonResult | null
+  notes: string | null
+  importance: number
+  source: 'manual' | 'ai_extracted' | 'website' | 'customer_feedback' | null
+  created_at: string
+  updated_at: string
+}
+
+// Common comparison attributes template
+export const COMPARISON_ATTRIBUTES = [
+  { name: 'pricing_model', label: 'Pricing Model', category: 'commercial' },
+  { name: 'pricing_transparency', label: 'Pricing Transparency', category: 'commercial' },
+  { name: 'free_tier', label: 'Free Tier / Trial', category: 'commercial' },
+  { name: 'deployment_options', label: 'Deployment Options', category: 'technical' },
+  { name: 'ease_of_use', label: 'Ease of Use', category: 'product' },
+  { name: 'time_to_value', label: 'Time to Value', category: 'product' },
+  { name: 'customer_support', label: 'Customer Support', category: 'service' },
+  { name: 'integrations', label: 'Integrations', category: 'technical' },
+  { name: 'api_access', label: 'API Access', category: 'technical' },
+  { name: 'scalability', label: 'Scalability', category: 'technical' },
+  { name: 'security_compliance', label: 'Security & Compliance', category: 'technical' },
+  { name: 'mobile_experience', label: 'Mobile Experience', category: 'product' },
+  { name: 'customization', label: 'Customization', category: 'product' },
+  { name: 'reporting', label: 'Reporting & Analytics', category: 'product' },
+  { name: 'onboarding', label: 'Onboarding Experience', category: 'service' },
+  { name: 'documentation', label: 'Documentation', category: 'service' },
+  { name: 'community', label: 'Community & Resources', category: 'service' },
+  { name: 'innovation', label: 'Innovation / Roadmap', category: 'strategy' },
+  { name: 'market_presence', label: 'Market Presence', category: 'strategy' },
+  { name: 'brand_reputation', label: 'Brand Reputation', category: 'strategy' },
+] as const
+
+// Comparison summary for a competitor
+export interface ComparisonSummary {
+  total_attributes: number
+  wins: number
+  losses: number
+  ties: number
+  win_rate: number
+}
+
 // Helper types
 export type Tenant = Database['public']['Tables']['tenants']['Row']
 export type Brand = Database['public']['Tables']['brands']['Row']
-export type Competitor = Database['public']['Tables']['competitors']['Row']
+export type Competitor = Database['public']['Tables']['competitors']['Row'] & {
+  entity_type?: EntityType
+  is_partner_candidate?: boolean
+}
 export type Query = Database['public']['Tables']['queries']['Row']
 export type Prompt = Database['public']['Tables']['queries']['Row'] // Alias: prompts are stored in queries table
 export type ScanResult = Database['public']['Tables']['scan_results']['Row']

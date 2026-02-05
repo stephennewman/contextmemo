@@ -7,8 +7,10 @@ import {
   ArrowLeft,
   Plus,
   Users,
+  Scale,
 } from 'lucide-react'
 import { CompetitorsListClient } from './competitors-list-client'
+import { CompetitorsPageClient } from './competitors-page-client'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -98,40 +100,13 @@ export default async function V2CompetitorsPage({ params }: Props) {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-4 bg-white border-b">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Link 
-                href={`/v2/brands/${brandId}`}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-              <h1 className="text-2xl font-bold text-[#0F172A]">Competitors</h1>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {trackedCompetitors.length} tracked • {discoveredCompetitors.length} discovered
-            </p>
-          </div>
-          
-          <Button className="bg-[#0EA5E9] hover:bg-[#0284C7]">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Competitor
-          </Button>
-        </div>
-      </div>
-      
-      {/* Competitors List - Client Component */}
-      <CompetitorsListClient
-        brandId={brandId}
-        trackedCompetitors={trackedCompetitors}
-        discoveredCompetitors={discoveredCompetitors}
-        citationCounts={citationCountsByCompetitor}
-        citationUrls={citationsByCompetitor}
-      />
-    </div>
+    <CompetitorsPageClient
+      brandId={brandId}
+      brandName={brand.name}
+      trackedCompetitors={trackedCompetitors}
+      discoveredCompetitors={discoveredCompetitors}
+      citationCounts={citationCountsByCompetitor}
+      citationUrls={citationsByCompetitor}
+    />
   )
 }
