@@ -49,6 +49,14 @@ import {
   EyeOff,
   Pencil,
   Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Link2,
+  Quote,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -82,6 +90,35 @@ interface ActivityDetailProps {
   activity: ActivityItem | null
   isOpen: boolean
   onClose: () => void
+}
+
+interface PromptHistoryEntry {
+  date: string
+  models_scanned: number
+  mentioned_count: number
+  cited_count: number
+  mention_rate: number
+  citation_rate: number
+  competitors: string[]
+  citations: { url: string; mentioned: boolean; cited: boolean }[]
+}
+
+interface PromptHistory {
+  prompt: { id: string; query_text: string; created_at: string }
+  stats: {
+    total_scans: number
+    total_mentioned: number
+    total_cited: number
+    mention_rate: number
+    citation_rate: number
+    days_tracked: number
+  }
+  trend: {
+    mention_rate_change: number
+    citation_rate_change: number
+    direction: 'up' | 'down' | 'stable'
+  }
+  history: PromptHistoryEntry[]
 }
 
 // Explanations for each activity type
@@ -189,10 +226,18 @@ export function ActivityDetail({ activity, isOpen, onClose }: ActivityDetailProp
   } | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  
+  // Prompt history state
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
+  const [promptHistory, setPromptHistory] = useState<PromptHistory | null>(null)
+  const [promptHistoryLoading, setPromptHistoryLoading] = useState(false)
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!activity || !isOpen) {
       setRelatedData(null)
+      setSelectedPromptId(null)
+      setPromptHistory(null)
       return
     }
 
@@ -220,6 +265,46 @@ export function ActivityDetail({ activity, isOpen, onClose }: ActivityDetailProp
 
     fetchRelatedData()
   }, [activity, isOpen])
+
+  // Fetch prompt history when a prompt is selected
+  const fetchPromptHistory = async (promptId: string) => {
+    if (!activity) return
+    
+    if (selectedPromptId === promptId) {
+      // Toggle off
+      setSelectedPromptId(null)
+      setPromptHistory(null)
+      return
+    }
+
+    setSelectedPromptId(promptId)
+    setPromptHistoryLoading(true)
+    setPromptHistory(null)
+
+    try {
+      const res = await fetch(`/api/brands/${activity.brand_id}/prompts/${promptId}/history?days=30`)
+      if (res.ok) {
+        const data = await res.json()
+        setPromptHistory(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch prompt history:', error)
+    } finally {
+      setPromptHistoryLoading(false)
+    }
+  }
+
+  const toggleDateExpanded = (date: string) => {
+    setExpandedDates(prev => {
+      const next = new Set(prev)
+      if (next.has(date)) {
+        next.delete(date)
+      } else {
+        next.add(date)
+      }
+      return next
+    })
+  }
 
   // Action handlers for gaps
   const handleDisablePrompt = async (promptId: string) => {
@@ -435,87 +520,284 @@ export function ActivityDetail({ activity, isOpen, onClose }: ActivityDetailProp
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mb-3">
-                    These prompts have low visibility. Take action to improve.
+                    Click a prompt to see its history. Take action to improve visibility.
                   </p>
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {relatedData.gaps.map((gap) => (
-                      <div 
-                        key={gap.id}
-                        className="p-3 bg-slate-50 border-l-2 border-amber-400"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-[#0F172A] font-medium">"{gap.query_text}"</p>
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs rounded-none ${gap.mention_rate === 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}
-                              >
-                                {gap.mention_rate}% visibility
-                              </Badge>
-                              <Badge variant="outline" className="text-xs rounded-none">
-                                {gap.query_type.replace(/_/g, ' ')}
-                              </Badge>
-                              {gap.persona && (
-                                <Badge variant="outline" className="text-xs rounded-none bg-purple-50 border-purple-200">
-                                  {gap.persona.replace(/_/g, ' ')}
-                                </Badge>
-                              )}
-                              {gap.has_memo && (
-                                <Badge variant="outline" className="text-xs rounded-none bg-green-50 border-green-200 text-green-700">
-                                  <FileText className="h-3 w-3 mr-1" />
-                                  has memo
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Action dropdown */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0"
-                                disabled={actionLoading === gap.id}
-                              >
-                                {actionLoading === gap.id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                      <div key={gap.id}>
+                        <div 
+                          className={`p-3 bg-slate-50 border-l-2 cursor-pointer transition-colors ${
+                            selectedPromptId === gap.id 
+                              ? 'border-[#0EA5E9] bg-sky-50' 
+                              : 'border-amber-400 hover:bg-slate-100'
+                          }`}
+                          onClick={() => fetchPromptHistory(gap.id)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-[#0F172A] font-medium">"{gap.query_text}"</p>
+                                {selectedPromptId === gap.id ? (
+                                  <ChevronUp className="h-4 w-4 text-[#0EA5E9]" />
                                 ) : (
-                                  <MoreHorizontal className="h-4 w-4" />
+                                  <BarChart3 className="h-3 w-3 text-slate-400" />
                                 )}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 border-2 border-[#0F172A] rounded-none">
-                              {!gap.has_memo && (
+                              </div>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs rounded-none ${gap.mention_rate === 0 ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}
+                                >
+                                  <Quote className="h-3 w-3 mr-1" />
+                                  {gap.mention_rate}% mentioned
+                                </Badge>
+                                <Badge variant="outline" className="text-xs rounded-none">
+                                  {gap.query_type.replace(/_/g, ' ')}
+                                </Badge>
+                                {gap.persona && (
+                                  <Badge variant="outline" className="text-xs rounded-none bg-purple-50 border-purple-200">
+                                    {gap.persona.replace(/_/g, ' ')}
+                                  </Badge>
+                                )}
+                                {gap.has_memo && (
+                                  <Badge variant="outline" className="text-xs rounded-none bg-green-50 border-green-200 text-green-700">
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    has memo
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Action dropdown */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  disabled={actionLoading === gap.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {actionLoading === gap.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 border-2 border-[#0F172A] rounded-none">
+                                {!gap.has_memo && (
+                                  <DropdownMenuItem 
+                                    onClick={() => handleGenerateMemo(gap.id, gap.query_type, activity!.brand_id)}
+                                    className="rounded-none"
+                                  >
+                                    <Sparkles className="h-4 w-4 mr-2 text-purple-500" />
+                                    Generate Memo
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem 
-                                  onClick={() => handleGenerateMemo(gap.id, gap.query_type, activity!.brand_id)}
+                                  onClick={() => {
+                                    // Open prompt in new tab for editing
+                                    window.open(`/brands/${activity!.brand_id}?tab=prompts&edit=${gap.id}`, '_blank')
+                                  }}
                                   className="rounded-none"
                                 >
-                                  <Sparkles className="h-4 w-4 mr-2 text-purple-500" />
-                                  Generate Memo
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit Prompt
                                 </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  // Open prompt in new tab for editing
-                                  window.open(`/brands/${activity!.brand_id}?tab=prompts&edit=${gap.id}`, '_blank')
-                                }}
-                                className="rounded-none"
-                              >
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit Prompt
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDisablePrompt(gap.id)}
-                                className="rounded-none text-red-600"
-                              >
-                                <EyeOff className="h-4 w-4 mr-2" />
-                                Disable Prompt
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDisablePrompt(gap.id)}
+                                  className="rounded-none text-red-600"
+                                >
+                                  <EyeOff className="h-4 w-4 mr-2" />
+                                  Disable Prompt
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
+
+                        {/* Prompt History Panel */}
+                        {selectedPromptId === gap.id && (
+                          <div className="border-l-2 border-[#0EA5E9] ml-0 bg-white p-4 space-y-4">
+                            {promptHistoryLoading ? (
+                              <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Loading history...
+                              </div>
+                            ) : promptHistory ? (
+                              <>
+                                {/* Stats Overview */}
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div className="bg-slate-50 p-3 border-l-2 border-slate-300">
+                                    <div className="text-xs text-slate-500 uppercase tracking-wide">Mention Rate</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xl font-bold">{promptHistory.stats.mention_rate}%</span>
+                                      {promptHistory.trend.mention_rate_change !== 0 && (
+                                        <span className={`flex items-center text-xs ${
+                                          promptHistory.trend.mention_rate_change > 0 ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                          {promptHistory.trend.mention_rate_change > 0 ? (
+                                            <TrendingUp className="h-3 w-3 mr-0.5" />
+                                          ) : (
+                                            <TrendingDown className="h-3 w-3 mr-0.5" />
+                                          )}
+                                          {Math.abs(promptHistory.trend.mention_rate_change)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-50 p-3 border-l-2 border-green-400">
+                                    <div className="text-xs text-slate-500 uppercase tracking-wide">Citation Rate</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xl font-bold">{promptHistory.stats.citation_rate}%</span>
+                                      {promptHistory.trend.citation_rate_change !== 0 && (
+                                        <span className={`flex items-center text-xs ${
+                                          promptHistory.trend.citation_rate_change > 0 ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                          {promptHistory.trend.citation_rate_change > 0 ? (
+                                            <TrendingUp className="h-3 w-3 mr-0.5" />
+                                          ) : (
+                                            <TrendingDown className="h-3 w-3 mr-0.5" />
+                                          )}
+                                          {Math.abs(promptHistory.trend.citation_rate_change)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-50 p-3 border-l-2 border-blue-400">
+                                    <div className="text-xs text-slate-500 uppercase tracking-wide">Days Tracked</div>
+                                    <div className="text-xl font-bold mt-1">{promptHistory.stats.days_tracked}</div>
+                                  </div>
+                                </div>
+
+                                {/* Daily History */}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Calendar className="h-4 w-4 text-slate-500" />
+                                    <span className="text-sm font-semibold">Daily Results</span>
+                                  </div>
+                                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    {promptHistory.history.map((entry) => (
+                                      <div key={entry.date} className="border border-slate-200">
+                                        <div 
+                                          className="flex items-center justify-between p-2 bg-slate-50 cursor-pointer hover:bg-slate-100"
+                                          onClick={() => toggleDateExpanded(entry.date)}
+                                        >
+                                          <div className="flex items-center gap-3">
+                                            <span className="text-sm font-medium">
+                                              {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className={`text-xs rounded-none ${
+                                                entry.mention_rate > 50 ? 'bg-green-50 border-green-200 text-green-700' : 
+                                                entry.mention_rate > 0 ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                                'bg-red-50 border-red-200 text-red-700'
+                                              }`}>
+                                                <Quote className="h-3 w-3 mr-1" />
+                                                {entry.mention_rate}%
+                                              </Badge>
+                                              <Badge variant="outline" className={`text-xs rounded-none ${
+                                                entry.citation_rate > 0 ? 'bg-green-50 border-green-200 text-green-700' :
+                                                'bg-slate-50 border-slate-200 text-slate-500'
+                                              }`}>
+                                                <Link2 className="h-3 w-3 mr-1" />
+                                                {entry.citation_rate}%
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                          {expandedDates.has(entry.date) ? (
+                                            <ChevronUp className="h-4 w-4 text-slate-400" />
+                                          ) : (
+                                            <ChevronDown className="h-4 w-4 text-slate-400" />
+                                          )}
+                                        </div>
+                                        
+                                        {expandedDates.has(entry.date) && (
+                                          <div className="p-3 space-y-3 text-sm">
+                                            {/* Competitors mentioned */}
+                                            {entry.competitors.length > 0 && (
+                                              <div>
+                                                <div className="text-xs text-slate-500 uppercase mb-1">Competitors Mentioned</div>
+                                                <div className="flex flex-wrap gap-1">
+                                                  {entry.competitors.slice(0, 10).map((comp) => (
+                                                    <Badge key={comp} variant="outline" className="text-xs rounded-none bg-orange-50 border-orange-200">
+                                                      {comp}
+                                                    </Badge>
+                                                  ))}
+                                                  {entry.competitors.length > 10 && (
+                                                    <Badge variant="outline" className="text-xs rounded-none">
+                                                      +{entry.competitors.length - 10}
+                                                    </Badge>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+                                            
+                                            {/* Citations */}
+                                            {entry.citations.length > 0 && (
+                                              <div>
+                                                <div className="text-xs text-slate-500 uppercase mb-1">Content Cited</div>
+                                                <div className="space-y-1">
+                                                  {entry.citations.slice(0, 5).map((citation, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                      {citation.cited ? (
+                                                        <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
+                                                      ) : (
+                                                        <Minus className="h-3 w-3 text-slate-300 shrink-0" />
+                                                      )}
+                                                      <a 
+                                                        href={citation.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs text-[#0EA5E9] hover:underline truncate"
+                                                      >
+                                                        {citation.url.replace(/^https?:\/\//, '').slice(0, 60)}
+                                                      </a>
+                                                    </div>
+                                                  ))}
+                                                  {entry.citations.length > 5 && (
+                                                    <div className="text-xs text-slate-500">
+                                                      +{entry.citations.length - 5} more citations
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Model breakdown */}
+                                            <div>
+                                              <div className="text-xs text-slate-500 uppercase mb-1">By Model ({entry.models_scanned})</div>
+                                              <div className="flex flex-wrap gap-1">
+                                                {entry.details?.map((d, idx) => (
+                                                  <Badge 
+                                                    key={idx} 
+                                                    variant="outline" 
+                                                    className={`text-xs rounded-none ${
+                                                      d.brand_in_citations ? 'bg-green-50 border-green-300' :
+                                                      d.brand_mentioned ? 'bg-amber-50 border-amber-300' :
+                                                      'bg-red-50 border-red-200'
+                                                    }`}
+                                                  >
+                                                    {d.model.replace(/-/g, ' ')}
+                                                    {d.brand_in_citations && <Link2 className="h-3 w-3 ml-1" />}
+                                                    {d.brand_mentioned && !d.brand_in_citations && <Quote className="h-3 w-3 ml-1" />}
+                                                  </Badge>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-slate-500">No history available</div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
