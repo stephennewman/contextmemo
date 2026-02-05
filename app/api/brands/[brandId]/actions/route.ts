@@ -289,6 +289,82 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Memo generation started for pending content' 
         })
 
+      case 'generate-response': {
+        // Generate a response for a specific competitor content item
+        const { contentId } = body
+        if (!contentId) {
+          return NextResponse.json({ error: 'contentId required' }, { status: 400 })
+        }
+
+        // Verify content exists and belongs to this brand's competitors
+        const { data: content, error: contentError } = await supabase
+          .from('competitor_content')
+          .select('*, competitor:competitor_id(brand_id)')
+          .eq('id', contentId)
+          .single()
+
+        if (contentError || !content) {
+          return NextResponse.json({ error: 'Content not found' }, { status: 404 })
+        }
+
+        const competitor = content.competitor as { brand_id: string } | null
+        if (!competitor || competitor.brand_id !== brandId) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        }
+
+        // Update status to pending_response so it gets picked up
+        await supabase
+          .from('competitor_content')
+          .update({ status: 'pending_response' })
+          .eq('id', contentId)
+
+        // Trigger response generation
+        await inngest.send({
+          name: 'competitor/content-respond',
+          data: { brandId, limit: 1 },
+        })
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Response generation started for this content' 
+        })
+      }
+
+      case 'skip-content': {
+        // Skip a specific competitor content item
+        const { contentId } = body
+        if (!contentId) {
+          return NextResponse.json({ error: 'contentId required' }, { status: 400 })
+        }
+
+        // Verify content exists and belongs to this brand's competitors
+        const { data: content, error: contentError } = await supabase
+          .from('competitor_content')
+          .select('*, competitor:competitor_id(brand_id)')
+          .eq('id', contentId)
+          .single()
+
+        if (contentError || !content) {
+          return NextResponse.json({ error: 'Content not found' }, { status: 404 })
+        }
+
+        const competitor = content.competitor as { brand_id: string } | null
+        if (!competitor || competitor.brand_id !== brandId) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        }
+
+        // Mark as skipped
+        await supabase
+          .from('competitor_content')
+          .update({ status: 'skipped' })
+          .eq('id', contentId)
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Content skipped' 
+        })
+      }
+
       case 'add-feed': {
         // Manually add an RSS feed for a competitor
         const { competitorId, feedUrl } = body

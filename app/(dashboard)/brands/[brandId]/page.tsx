@@ -18,6 +18,7 @@ import { CompetitiveIntelligence } from '@/components/dashboard/competitive-inte
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { CompetitorList } from '@/components/dashboard/competitor-list'
+import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
 import { AlertsList } from '@/components/dashboard/alerts-list'
@@ -98,15 +99,15 @@ export default async function BrandPage({ params }: Props) {
     .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
     .order('date', { ascending: false })
 
-  // Get competitor content (for content intelligence)
+  // Get competitor content (for content intelligence and watch tab)
   const competitorIds = (competitors || []).map(c => c.id)
   const { data: competitorContent } = competitorIds.length > 0 
     ? await supabase
         .from('competitor_content')
-        .select('*, response_memo:response_memo_id(id, title, slug, status)')
+        .select('*, competitor:competitor_id(id, name, domain), response_memo:response_memo_id(id, title, slug, status)')
         .in('competitor_id', competitorIds)
         .order('first_seen_at', { ascending: false })
-        .limit(50)
+        .limit(100) // Increased for watch tab filtering
     : { data: [] }
 
   // Get competitor RSS feeds
@@ -413,6 +414,25 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
+          <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide relative">
+            WATCH
+            {/* Show badge if there's new content today */}
+            {competitorContent && competitorContent.filter(c => {
+              const d = new Date(c.published_at || c.first_seen_at)
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              return d >= today
+            }).length > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0EA5E9] text-[10px] font-bold text-white flex items-center justify-center">
+                {competitorContent.filter(c => {
+                  const d = new Date(c.published_at || c.first_seen_at)
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  return d >= today
+                }).length}
+              </span>
+            )}
+          </TabsTrigger>
           {/* Only show Search tab if Google or Bing is configured */}
           {(context?.search_console?.google?.enabled || context?.search_console?.bing?.enabled) && (
             <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
@@ -616,6 +636,33 @@ export default async function BrandPage({ params }: Props) {
           <CompetitorList 
             brandId={brandId} 
             competitors={allCompetitors || []} 
+          />
+        </TabsContent>
+
+        {/* WATCH Tab - Monitor competitor content activity */}
+        <TabsContent value="watch">
+          <CompetitorWatch
+            brandId={brandId}
+            content={(competitorContent || []) as Array<{
+              id: string
+              competitor_id: string
+              url: string
+              title: string
+              content_summary: string | null
+              topics: string[] | null
+              content_type: string | null
+              is_competitor_specific: boolean
+              universal_topic: string | null
+              status: string
+              first_seen_at: string
+              published_at?: string | null
+              word_count?: number | null
+              author?: string | null
+              response_memo_id: string | null
+              competitor?: { id: string; name: string; domain: string | null }
+              response_memo?: { id: string; title: string; slug: string; status: string }
+            }>}
+            competitors={competitors || []}
           />
         </TabsContent>
 

@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 4, 2026  
-> **Version:** 0.15.0  
-> **Status:** MVP Complete + V2 Feed UI Built + Prompt-Centric Tracking
+> **Version:** 0.16.0  
+> **Status:** MVP Complete + V2 Feed UI Built + Competitor Watch Tab
 
 ---
 
@@ -389,6 +389,26 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 4, 2026
+
+**Feature: Competitor WATCH Tab - Monitor New Content** 
+- New **WATCH** tab on brand page for monitoring competitor content activity
+- Filter views: Today, Yesterday, Respondable, All Recent
+- Shows content that competitors posted in the last 24-48 hours
+- Highlights "universal topics" that are good candidates for response
+- Manual "Respond" button to generate differentiated content for specific items
+- Manual "Skip" button to dismiss content you don't want to respond to
+- Badge on tab shows count of new content detected today
+- Clean stats cards showing Today/Yesterday/To Respond/Responded counts
+- Increased competitor content query limit from 50 to 100 items
+
+**Files created:**
+- `components/dashboard/competitor-watch.tsx` - New watch tab component
+
+**Files modified:**
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Added WATCH tab and CompetitorWatch component
+- `app/api/brands/[brandId]/actions/route.ts` - Added `generate-response` and `skip-content` actions
+
+---
 
 **Feature: Prompt Lab - Citation Research UI** (bf18f40)
 - Added prompt visibility in Lab UI - now shows all generated prompts with citation stats
