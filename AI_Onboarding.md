@@ -390,6 +390,19 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Add /resources Route with Branded Context Memo Styling** (11c1e8a)
+- Created `/resources/[[...slug]]` route for Context Memo's own memos on main domain
+- Added `BrandedMemoPageContent` component with "Bold Electric" theme (dark navy, electric blue accents, sharp corners)
+- Added `BrandedMemoListCard` for branded index pages
+- Mapped 'resource' memo type to /resources route
+- Memos now accessible at `contextmemo.com/resources/...` instead of subdomain
+
+**Files changed:**
+- `app/(public)/resources/[[...slug]]/page.tsx` - New route for resources
+- `lib/memo/render.tsx` - Added branded components and resource type mapping
+
+---
+
 **Filter Blocked Terms from Competitor Mentions in UI** (7c86ccb)
 - Fixed issue where generic words like "blog", "customer", "seo", etc. were appearing as competitors in Share of Voice and Competitive Threats views
 - Added filtering using the existing competitor blocklist across all display components

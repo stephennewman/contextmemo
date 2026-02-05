@@ -14,7 +14,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const MEMO_TYPE = 'resource'
+const MEMO_TYPE = 'response'
 const ROUTE = '/resources'
 const PAGE_TITLE = 'Resources'
 const PAGE_DESCRIPTION = 'In-depth guides and resources to help you succeed with AI-powered content'

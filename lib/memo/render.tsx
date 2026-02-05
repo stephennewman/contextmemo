@@ -12,6 +12,7 @@ export const MEMO_TYPE_TO_ROUTE: Record<string, string> = {
   gap_fill: '/tools',
   industry: '/for',
   resource: '/resources',
+  response: '/resources',
 }
 
 // Map old slug prefixes to new routes
