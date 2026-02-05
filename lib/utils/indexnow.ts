@@ -104,3 +104,88 @@ export async function submitUrlsToIndexNow(urls: string[]): Promise<IndexNowResp
 export function buildMemoUrl(subdomain: string, slug: string): string {
   return `https://${SITE_HOST}/memo/${subdomain}/${slug}`
 }
+
+/**
+ * Submit URL to IndexNow for an external domain (e.g., HubSpot blog)
+ * Requires the domain to have an IndexNow key file hosted
+ */
+export async function submitExternalUrlToIndexNow(
+  url: string,
+  host: string,
+  key: string,
+  keyLocation: string
+): Promise<IndexNowResponse[]> {
+  const results: IndexNowResponse[] = []
+  
+  for (const endpoint of INDEXNOW_ENDPOINTS) {
+    try {
+      const submitUrl = `${endpoint}?url=${encodeURIComponent(url)}&key=${key}&keyLocation=${encodeURIComponent(keyLocation)}`
+      
+      const response = await fetch(submitUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      results.push({
+        success: response.status === 200 || response.status === 202,
+        endpoint,
+        status: response.status,
+      })
+    } catch (error) {
+      results.push({
+        success: false,
+        endpoint,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+  
+  return results
+}
+
+/**
+ * Submit multiple URLs to IndexNow for an external domain
+ */
+export async function submitExternalUrlsToIndexNow(
+  urls: string[],
+  host: string,
+  key: string,
+  keyLocation: string
+): Promise<IndexNowResponse[]> {
+  const results: IndexNowResponse[] = []
+  
+  const payload = {
+    host,
+    key,
+    keyLocation,
+    urlList: urls,
+  }
+  
+  for (const endpoint of INDEXNOW_ENDPOINTS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+      
+      results.push({
+        success: response.status === 200 || response.status === 202,
+        endpoint,
+        status: response.status,
+      })
+    } catch (error) {
+      results.push({
+        success: false,
+        endpoint,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+  
+  return results
+}

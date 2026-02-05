@@ -823,6 +823,26 @@ ${memoContent.content.slice(0, 1000)}`,
             .eq('id', memo.id)
 
           console.log(`Auto-synced to HubSpot: ${hubspotPost.id}`)
+          
+          // Submit to IndexNow if configured (for faster search engine indexing)
+          if (hubspotConfig.indexnow_key && hubspotConfig.indexnow_key_location && hubspotPost.url) {
+            try {
+              const { submitExternalUrlToIndexNow } = await import('@/lib/utils/indexnow')
+              const hubspotUrl = hubspotPost.url || `https://${brand.domain}/memos/${memoContent.slug.replace(/\//g, '-')}`
+              const host = new URL(hubspotUrl).host
+              await submitExternalUrlToIndexNow(
+                hubspotUrl,
+                host,
+                hubspotConfig.indexnow_key,
+                hubspotConfig.indexnow_key_location
+              )
+              console.log(`IndexNow submitted for HubSpot URL: ${hubspotUrl}`)
+            } catch (indexNowError) {
+              console.error('IndexNow submission failed:', indexNowError)
+              // Don't fail the sync if IndexNow fails
+            }
+          }
+          
           return { success: true, hubspotPostId: hubspotPost.id }
         } catch (error) {
           console.error('HubSpot auto-sync error:', error)

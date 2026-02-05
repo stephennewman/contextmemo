@@ -580,6 +580,9 @@ export interface HubSpotConfig {
   last_refreshed_at?: string
   // Available blogs from HubSpot
   available_blogs?: Array<{ id: string; name: string; slug?: string }>
+  // IndexNow config for the HubSpot blog domain
+  indexnow_key?: string
+  indexnow_key_location?: string
 }
 
 // Search Console integrations (Bing + Google)
