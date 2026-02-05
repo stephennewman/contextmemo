@@ -425,7 +425,7 @@ export async function POST(
     })
 
     // Submit to IndexNow if configured (for faster search engine indexing)
-    const indexNowConfig = brandContext?.hubspot as { indexnow_key?: string; indexnow_key_location?: string } | undefined
+    const indexNowConfig = context?.hubspot as { indexnow_key?: string; indexnow_key_location?: string } | undefined
     if (indexNowConfig?.indexnow_key && indexNowConfig?.indexnow_key_location && hubspotPost.url) {
       try {
         const { submitExternalUrlToIndexNow } = await import('@/lib/utils/indexnow')
