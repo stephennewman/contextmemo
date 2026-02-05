@@ -306,14 +306,33 @@ export async function GET(request: NextRequest) {
         .from('competitor_content')
         .select('id, competitor_id, title, url, content_type, first_seen_at, competitors!inner(brand_id, name)')
         .order('first_seen_at', { ascending: false })
-        .limit(50)
+        .limit(100) // Fetch more to account for filtering
+
+      // Junk title patterns to filter out
+      const junkPatterns = [
+        /^(log\s*in|sign\s*(up|in)|pricing|customers?|about|contact|careers?|jobs?|go\s*back|home|features?|products?|solutions?|services?|integrations?|partners?|support|help|faq|demo|get\s*started|free\s*trial|privacy|terms|cookie|legal|got\s*it|learn\s*more|read\s*more|click\s*here|see\s*more|view\s*all|show\s*more)$/i,
+        /^-\s+/i, // Items starting with dash
+        /^\[.*\]$/i, // Bracketed text
+        /^meet\s+\w+$/i, // Team member pages
+        /^[A-Z][a-z]+\s+[A-Z][a-z]+$/, // Two-word proper names (team members)
+      ]
+      const isJunkTitle = (title: string) => {
+        if (!title || title.length < 10) return true // Too short for real content
+        return junkPatterns.some(p => p.test(title.trim()))
+      }
 
       if (content) {
+        let addedCount = 0
         for (const item of content) {
+          if (addedCount >= 30) break // Limit to 30 items after filtering
+          
           const brandId = (item.competitors as unknown as { brand_id: string }).brand_id
           if (!targetBrandIds.includes(brandId)) continue
           if (!withinDateRange(item.first_seen_at)) continue
           if (!shouldInclude('competitor_content_found', 'discovery')) continue
+          
+          // Skip junk content
+          if (isJunkTitle(item.title)) continue
 
           const competitorName = (item.competitors as unknown as { name: string }).name
           const meta = ACTIVITY_TYPE_META['competitor_content_found']
@@ -331,6 +350,7 @@ export async function GET(request: NextRequest) {
             metadata: { competitor: competitorName, content_type: item.content_type },
             created_at: item.first_seen_at,
           })
+          addedCount++
         }
       }
     }

@@ -214,10 +214,12 @@ export const dailyRun = inngest.createFunction(
       })
     }
 
-    // Step 6c: Trigger Google AI Overview scans (weekly, if SERPAPI_KEY is configured)
-    // Only runs on specific days to conserve API quota (100 free/month)
+    // Step 6c: Trigger Google AI Overview scans (DISABLED)
+    // Set ENABLE_AI_OVERVIEW_SCANS=true to re-enable
+    // Previously: Only runs on specific days to conserve API quota (100 free/month)
     // Runs on Mondays and Thursdays for twice-weekly coverage
-    if (process.env.SERPAPI_KEY && (dayOfWeek === 1 || dayOfWeek === 4)) {
+    const enableAIOverviews = process.env.ENABLE_AI_OVERVIEW_SCANS === 'true'
+    if (enableAIOverviews && process.env.SERPAPI_KEY && (dayOfWeek === 1 || dayOfWeek === 4)) {
       await step.run('trigger-ai-overview-scans', async () => {
         // Only scan top 10 queries per brand to conserve quota
         const events = brands.map(brand => ({

@@ -79,6 +79,116 @@ const BLOG_PATHS = [
   '/posts',
 ]
 
+// Patterns that indicate junk/navigation content (not real articles)
+const JUNK_TITLE_PATTERNS = [
+  /^log\s*in$/i,
+  /^sign\s*(up|in).*$/i,
+  /^pricing$/i,
+  /^customers?$/i,
+  /^about(\s+us)?$/i,
+  /^contact(\s+us)?$/i,
+  /^careers?$/i,
+  /^jobs?$/i,
+  /^go\s*back.*$/i,
+  /^home$/i,
+  /^features?$/i,
+  /^products?$/i,
+  /^solutions?$/i,
+  /^services?$/i,
+  /^integrations?$/i,
+  /^partners?$/i,
+  /^support$/i,
+  /^help$/i,
+  /^faq$/i,
+  /^demo$/i,
+  /^request\s*(a\s*)?demo$/i,
+  /^get\s*started$/i,
+  /^free\s*trial$/i,
+  /^book\s*(a\s*)?(call|meeting|demo)$/i,
+  /^schedule\s*(a\s*)?(call|meeting|demo)$/i,
+  /^privacy(\s*policy)?$/i,
+  /^terms(\s*(of\s*use|of\s*service|&\s*conditions))?$/i,
+  /^cookie.*$/i,
+  /^legal$/i,
+  /^got\s*it!?$/i,
+  /^learn\s*more$/i,
+  /^read\s*more$/i,
+  /^click\s*here$/i,
+  /^see\s*more$/i,
+  /^view\s*all$/i,
+  /^show\s*more$/i,
+  /^\[.*\]$/i, // Bracketed text like [Applications
+  /^-\s*.+$/i, // Items starting with dash like "- Partners With"
+  /^meet\s+\w+$/i, // "Meet Nathan" - team pages
+  /^\w+\s+\w+$/i && /^[A-Z][a-z]+\s+[A-Z][a-z]+$/, // Two-word proper names (usually team members)
+]
+
+// URL patterns that indicate non-article pages
+const JUNK_URL_PATTERNS = [
+  /\/login/i,
+  /\/signin/i,
+  /\/signup/i,
+  /\/register/i,
+  /\/pricing/i,
+  /\/contact/i,
+  /\/about/i,
+  /\/careers/i,
+  /\/jobs/i,
+  /\/demo/i,
+  /\/trial/i,
+  /\/support/i,
+  /\/help/i,
+  /\/faq/i,
+  /\/legal/i,
+  /\/privacy/i,
+  /\/terms/i,
+  /\/cookie/i,
+  /\/team/i,
+  /\/people/i,
+  /\/company/i,
+  /\/partners/i,
+  /\/integrations/i,
+  /\/customers$/i,
+  /\/features$/i,
+  /\/products$/i,
+  /\/solutions$/i,
+  /\/services$/i,
+]
+
+/**
+ * Check if a title looks like junk/navigation content
+ */
+function isJunkTitle(title: string): boolean {
+  if (!title || title.length < 5) return true // Too short
+  if (title.length > 200) return true // Too long (probably not a real title)
+  
+  // Check against junk patterns
+  for (const pattern of JUNK_TITLE_PATTERNS) {
+    if (pattern instanceof RegExp && pattern.test(title.trim())) {
+      return true
+    }
+  }
+  
+  // Check for two-word proper names (team members)
+  if (/^[A-Z][a-z]+\s+[A-Z][a-z]+$/.test(title.trim()) && title.length < 30) {
+    return true
+  }
+  
+  return false
+}
+
+/**
+ * Check if a URL looks like a non-article page
+ */
+function isJunkUrl(url: string): boolean {
+  for (const pattern of JUNK_URL_PATTERNS) {
+    if (pattern.test(url)) {
+      return true
+    }
+  }
+  return false
+}
+
 // Content classification prompt
 const CONTENT_CLASSIFICATION_PROMPT = `Analyze this article content and classify it.
 
@@ -444,6 +554,12 @@ async function discoverContentUrls(
       // Only include URLs from same domain
       if (!url.includes(domain)) continue
       
+      // Skip junk content (navigation, team pages, etc.)
+      if (isJunkTitle(item.title) || isJunkUrl(url)) {
+        console.log(`Skipping junk content: "${item.title}" (${url})`)
+        continue
+      }
+      
       items.push({
         url,
         title: item.title,
@@ -489,7 +605,9 @@ async function discoverContentUrls(
             if (url.includes(domain) && 
                 !url.includes('#') && 
                 !url.match(/\.(jpg|png|gif|pdf|css|js)$/i) &&
-                !items.some(i => i.url === url)) {
+                !items.some(i => i.url === url) &&
+                !isJunkTitle(title) &&
+                !isJunkUrl(url)) {
               items.push({
                 url,
                 title,
@@ -497,6 +615,8 @@ async function discoverContentUrls(
                 author: null,
                 source_feed_id: null,
               })
+            } else if (isJunkTitle(title) || isJunkUrl(url)) {
+              console.log(`Skipping junk HTML link: "${title}" (${url})`)
             }
           }
           break // Found content page
