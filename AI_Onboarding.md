@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 4, 2026  
-> **Version:** 0.17.0  
-> **Status:** MVP Complete + V2 Feed UI + QFO & Entity Map Visualizations
+> **Last Updated:** February 5, 2026  
+> **Version:** 0.17.1  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing Infrastructure
 
 ---
 
@@ -387,6 +387,35 @@ When the AI assistant deploys changes, it should:
 ## Deploy Log
 
 _Most recent deploys first_
+
+### February 5, 2026
+
+**Usage Tracking & Billing Infrastructure + Activity CTA Fixes** (a7b5a9d)
+- Added usage tracking to `discovery-scan.ts` and `prompt-enrich.ts` functions
+- Created Stripe metered billing integration for per-brand billing
+- New usage visibility APIs: `/api/usage/breakdown`, `/api/usage/by-brand`, `/api/usage/summary`, `/api/usage/openrouter`
+- New per-brand billing management: `/api/brands/[brandId]/billing` (GET/POST/DELETE)
+- New per-brand usage API: `/api/brands/[brandId]/usage`
+- Fixed activity feed CTAs to be contextual instead of generic "View Brand":
+  - `content_generated` → "View Resources"
+  - `scan_complete` → "View Scan Results"
+  - `discovery_complete` → "View Queries"
+  - `ai_traffic_detected` → "View Analytics"
+  - Default → "View Dashboard"
+- Database migration for brand billing columns (stripe_subscription_id, billing_enabled, etc.)
+
+**Files changed:**
+- `app/api/activity/route.ts` - Contextual CTA logic
+- `lib/utils/activity-logger.ts` - Updated aiTrafficDetected CTA
+- `lib/inngest/functions/discovery-scan.ts` - Usage tracking
+- `lib/inngest/functions/prompt-enrich.ts` - Usage tracking
+- `lib/inngest/functions/scan-run.ts` - Stripe billing integration
+- `lib/stripe/usage.ts` (new) - Stripe metered billing helpers
+- `app/api/brands/[brandId]/billing/route.ts` (new)
+- `app/api/brands/[brandId]/usage/route.ts` (new)
+- `app/api/usage/*` (new) - Usage visibility APIs
+
+---
 
 ### February 4, 2026
 
