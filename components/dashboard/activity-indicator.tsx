@@ -18,8 +18,15 @@ interface ActiveJob {
   metadata: Record<string, unknown>
 }
 
+interface LastActivity {
+  timestamp: string
+  title: string
+  type: string
+}
+
 export function ActivityIndicator() {
   const [jobs, setJobs] = useState<ActiveJob[]>([])
+  const [lastActivity, setLastActivity] = useState<LastActivity | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -29,6 +36,7 @@ export function ActivityIndicator() {
         if (res.ok) {
           const data = await res.json()
           setJobs(data.jobs || [])
+          setLastActivity(data.lastActivity || null)
         }
       } catch (error) {
         console.error('Failed to fetch jobs:', error)
@@ -95,9 +103,16 @@ export function ActivityIndicator() {
                 </div>
               </>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                No active jobs. System is idle.
-              </p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  No active jobs. System is idle.
+                </p>
+                {lastActivity && (
+                  <p className="text-xs text-muted-foreground">
+                    Last run: <span className="text-slate-300">{formatTimeAgo(lastActivity.timestamp)}</span>
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </TooltipContent>
