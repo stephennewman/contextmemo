@@ -17,6 +17,7 @@ import {
   ExternalLink,
   TrendingUp,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { BrandContext } from '@/lib/supabase/types'
@@ -40,6 +41,7 @@ import { PromptLab } from '@/components/dashboard/prompt-lab'
 import { QueryFanOut } from '@/components/dashboard/query-fan-out'
 import { EntityMap } from '@/components/dashboard/entity-map'
 import { StrategyPlaybook } from '@/components/dashboard/strategy-playbook'
+import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -58,7 +60,7 @@ export default async function BrandPage({ params }: Props) {
   // Get brand with related data
   const { data: brand, error } = await supabase
     .from('brands')
-    .select('*')
+    .select('*, is_paused')
     .eq('id', brandId)
     .single()
 
@@ -309,6 +311,9 @@ export default async function BrandPage({ params }: Props) {
               ) : (
                 <span className="px-1.5 py-0.5 text-[10px] font-bold border border-[#0F172A] text-[#0F172A]">PENDING</span>
               )}
+              {brand.is_paused && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white">PAUSED</span>
+              )}
               <span className="text-zinc-400">·</span>
               <a 
                 href={`/memo/${brand.subdomain}`} 
@@ -321,6 +326,7 @@ export default async function BrandPage({ params }: Props) {
               </a>
             </div>
           </div>
+          <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} />
         </div>
 
         {/* Onboarding Flow - Auto-runs full pipeline */}
@@ -351,6 +357,9 @@ export default async function BrandPage({ params }: Props) {
             ) : (
               <span className="px-1.5 py-0.5 text-[10px] font-bold border border-[#0F172A] text-[#0F172A]">PENDING</span>
             )}
+            {brand.is_paused && (
+              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white">PAUSED</span>
+            )}
             <span className="text-zinc-400">·</span>
             <a 
               href={`/memo/${brand.subdomain}`} 
@@ -363,7 +372,19 @@ export default async function BrandPage({ params }: Props) {
             </a>
           </div>
         </div>
+        <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} />
       </div>
+
+      {/* Paused Warning Banner */}
+      {brand.is_paused && (
+        <div className="p-3 bg-amber-50 border-[3px] border-amber-400 flex items-center gap-3" style={{ borderLeft: '8px solid #F59E0B' }}>
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-800">Brand is paused</p>
+            <p className="text-xs text-amber-600">All automated scans and workflows are stopped. Click &quot;Resume&quot; to restart.</p>
+          </div>
+        </div>
+      )}
 
       {/* Citation Score Hero - only show if we have scans */}
       {hasAnyScans ? (

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { FeedContainer } from '@/components/v2/feed/feed-container'
+import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { Button } from '@/components/ui/button'
 import { 
   TrendingUp, 
@@ -15,6 +16,7 @@ import {
   Play,
   Loader2,
   Building2,
+  AlertTriangle,
 } from 'lucide-react'
 import type { BrandContext } from '@/lib/supabase/types'
 
@@ -41,7 +43,7 @@ export default async function V2BrandPage({ params }: Props) {
   // Get brand
   const { data: brand, error } = await serviceClient
     .from('brands')
-    .select('*')
+    .select('*, is_paused')
     .eq('id', brandId)
     .single()
 
@@ -115,6 +117,7 @@ export default async function V2BrandPage({ params }: Props) {
           </div>
           
           <div className="flex items-center gap-2">
+            <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} />
             <Button variant="outline" size="sm" asChild>
               <Link href={`/v2/brands/${brandId}/profile`}>
                 <Building2 className="h-4 w-4 mr-2" />
@@ -127,12 +130,23 @@ export default async function V2BrandPage({ params }: Props) {
                 Settings
               </Link>
             </Button>
-            <Button size="sm" className="bg-[#0EA5E9] hover:bg-[#0284C7]">
+            <Button size="sm" className="bg-[#0EA5E9] hover:bg-[#0284C7]" disabled={brand.is_paused}>
               <Play className="h-4 w-4 mr-2" />
               Run Scan
             </Button>
           </div>
         </div>
+        
+        {/* Paused Warning Banner */}
+        {brand.is_paused && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800">Brand is paused</p>
+              <p className="text-xs text-amber-600">All automated scans and workflows are stopped. Click &quot;Resume&quot; to restart.</p>
+            </div>
+          </div>
+        )}
         
         {/* Stats Grid */}
         <div className="grid grid-cols-4 gap-4">

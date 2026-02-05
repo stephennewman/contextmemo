@@ -42,7 +42,7 @@ interface ModelConfig {
 
 // Citation-capable models only
 // All OpenRouter models use :online suffix for native web search with citations
-// Multi-model scanning enabled for cross-model citation comparison
+// COST OPTIMIZATION: Only 1 model enabled by default - enable more for cross-model comparison
 const SCAN_MODELS: ModelConfig[] = [
   // Perplexity - direct API for rich citation data (cheapest ~$0.01/prompt)
   { 
@@ -50,18 +50,19 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Perplexity Sonar', 
     provider: 'perplexity-direct', 
     modelId: 'sonar', 
-    enabled: true, // Enabled for multi-model comparison
+    enabled: true, // PRIMARY MODEL - cheapest option
     citationSource: 'perplexity',
   },
   
   // OpenRouter with native search (:online suffix)
   // These providers have built-in web search: OpenAI, Anthropic, xAI
+  // DISABLED to reduce costs - enable for multi-model comparison when needed
   { 
     id: 'gpt-4o-mini', 
     displayName: 'GPT-4o Mini', 
     provider: 'openrouter', 
     modelId: 'openai/gpt-4o-mini:online', 
-    enabled: true, // Primary model
+    enabled: false, // DISABLED - enable for multi-model comparison
     citationSource: 'openrouter-native',
   },
   { 
@@ -69,7 +70,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Claude 3.5 Haiku', 
     provider: 'openrouter', 
     modelId: 'anthropic/claude-3.5-haiku:online', 
-    enabled: true, // Enabled for multi-model comparison
+    enabled: false, // DISABLED - enable for multi-model comparison
     citationSource: 'openrouter-native',
   },
   { 
@@ -77,7 +78,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Grok 4 Fast', 
     provider: 'openrouter', 
     modelId: 'x-ai/grok-4-fast:online', 
-    enabled: true, // Enabled for multi-model comparison
+    enabled: false, // DISABLED - enable for multi-model comparison
     citationSource: 'openrouter-native',
   },
 ]
@@ -126,7 +127,7 @@ export const scanRun = inngest.createFunction(
       const [brandResult, queriesResult, competitorsResult] = await Promise.all([
         supabase
           .from('brands')
-          .select('*')
+          .select('*, is_paused')
           .eq('id', brandId)
           .single(),
         queryIds
@@ -152,12 +153,34 @@ export const scanRun = inngest.createFunction(
         throw new Error('Brand not found')
       }
 
+      // Check if brand is paused
+      if (brandResult.data.is_paused) {
+        console.log(`[Scan] Brand ${brandId} is paused, skipping scan`)
+        return {
+          brand: brandResult.data,
+          queries: [], // Empty queries will skip the scan
+          competitors: [],
+          isPaused: true,
+        }
+      }
+
       return {
         brand: brandResult.data,
         queries: queriesResult.data || [],
         competitors: competitorsResult.data || [],
+        isPaused: false,
       }
     })
+
+    // Early exit if brand is paused
+    if (queries.length === 0 && (brand as { is_paused?: boolean }).is_paused) {
+      return {
+        success: true,
+        skipped: true,
+        reason: 'brand_paused',
+        brandId,
+      }
+    }
 
     const brandName = brand.name.toLowerCase()
     const competitorNames = competitors.map(c => c.name.toLowerCase())

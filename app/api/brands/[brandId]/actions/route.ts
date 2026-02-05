@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // Verify brand ownership
   const { data: brand } = await supabase
     .from('brands')
-    .select('*')
+    .select('*, is_paused')
     .eq('id', brandId)
     .single()
 
@@ -564,6 +564,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'pause': {
+        // Pause a brand - stops all automated workflows
+        const { error: pauseError } = await supabase
+          .from('brands')
+          .update({ is_paused: true, updated_at: new Date().toISOString() })
+          .eq('id', brandId)
+
+        if (pauseError) throw pauseError
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Brand paused - all automated workflows stopped',
+          is_paused: true,
+        })
+      }
+
+      case 'unpause': {
+        // Unpause a brand - resumes automated workflows
+        const { error: unpauseError } = await supabase
+          .from('brands')
+          .update({ is_paused: false, updated_at: new Date().toISOString() })
+          .eq('id', brandId)
+
+        if (unpauseError) throw unpauseError
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Brand unpaused - automated workflows resumed',
+          is_paused: false,
+        })
+      }
+
       case 'check_status': {
         // Check onboarding status - used by terminal to poll for completion
         const context = brand.context as Record<string, unknown> | null
@@ -601,6 +633,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
         
         return NextResponse.json({
+          brandName: brand.name,
+          isPaused: brand.is_paused || false,
           hasContext,
           hasCompetitors: (competitorCount || 0) > 0,
           hasQueries: (queryCount || 0) > 0,

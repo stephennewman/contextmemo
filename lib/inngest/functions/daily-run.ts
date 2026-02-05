@@ -35,11 +35,12 @@ export const dailyRun = inngest.createFunction(
     const today = new Date()
     const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
     
-    // Step 1: Get all active brands
+    // Step 1: Get all active brands (excluding paused ones)
     const brands = await step.run('get-active-brands', async () => {
       const { data, error } = await supabase
         .from('brands')
-        .select('id, name, domain, context_extracted_at, created_at, updated_at')
+        .select('id, name, domain, context_extracted_at, created_at, updated_at, is_paused')
+        .or('is_paused.is.null,is_paused.eq.false') // Only get non-paused brands
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -47,6 +48,7 @@ export const dailyRun = inngest.createFunction(
         return []
       }
 
+      console.log(`[Daily Run] Found ${data?.length || 0} active brands (paused brands excluded)`)
       return data || []
     })
 
