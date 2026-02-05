@@ -96,13 +96,111 @@ interface HubSpotBlogPost {
   metaDescription?: string
   slug?: string
   state: 'DRAFT' | 'PUBLISHED'
-  authorName?: string  // User who pushed content - shows in HubSpot as the author
+  blogAuthorId?: string  // HubSpot author ID - required for author to display on posts
   // Featured image
   featuredImage?: string
   featuredImageAltText?: string
   useFeaturedImage?: boolean
   // Publish date
   publishDate?: string
+}
+
+interface HubSpotAuthor {
+  id: string
+  name: string
+  displayName?: string
+  email?: string
+}
+
+/**
+ * Get or create a HubSpot blog author
+ * Returns the HubSpot author ID for use in blog posts
+ */
+async function getOrCreateHubSpotAuthor(
+  userName: string,
+  userEmail: string | undefined,
+  accessToken: string
+): Promise<string | null> {
+  try {
+    // First, search for existing author by name
+    const searchParams = new URLSearchParams({
+      limit: '100',
+    })
+    
+    const listResponse = await fetch(
+      `https://api.hubapi.com/cms/v3/blogs/authors?${searchParams}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (listResponse.ok) {
+      const data = await listResponse.json()
+      const authors: HubSpotAuthor[] = data.results || []
+      
+      // Try to find existing author by name (case-insensitive) or email
+      const existingAuthor = authors.find((author: HubSpotAuthor) => 
+        author.name?.toLowerCase() === userName.toLowerCase() ||
+        author.displayName?.toLowerCase() === userName.toLowerCase() ||
+        (userEmail && author.email?.toLowerCase() === userEmail.toLowerCase())
+      )
+      
+      if (existingAuthor) {
+        console.log(`Found existing HubSpot author: ${existingAuthor.name} (${existingAuthor.id})`)
+        return existingAuthor.id
+      }
+    }
+
+    // Author doesn't exist, create a new one
+    const createResponse = await fetch('https://api.hubapi.com/cms/v3/blogs/authors', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: userName,
+        displayName: userName,
+        email: userEmail || undefined,
+      }),
+    })
+
+    if (createResponse.ok) {
+      const newAuthor = await createResponse.json()
+      console.log(`Created new HubSpot author: ${newAuthor.name} (${newAuthor.id})`)
+      return newAuthor.id
+    } else {
+      const errorData = await createResponse.json().catch(() => ({}))
+      console.error('Failed to create HubSpot author:', errorData)
+      
+      // If creation fails (e.g., duplicate), try to get authors again and find by name
+      if (createResponse.status === 409 || errorData.message?.includes('duplicate')) {
+        const retryList = await fetch(
+          `https://api.hubapi.com/cms/v3/blogs/authors?limit=100`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        )
+        if (retryList.ok) {
+          const retryData = await retryList.json()
+          const found = retryData.results?.find((a: HubSpotAuthor) => 
+            a.name?.toLowerCase() === userName.toLowerCase()
+          )
+          if (found) return found.id
+        }
+      }
+      
+      return null
+    }
+  } catch (error) {
+    console.error('Error getting/creating HubSpot author:', error)
+    return null
+  }
 }
 
 interface HubSpotResponse {
@@ -138,8 +236,17 @@ export async function POST(
       .eq('id', user.id)
       .single()
     
-    // Use the user's name, or fall back to email prefix
-    const userName = tenant?.name || user.email?.split('@')[0] || 'Unknown User'
+    // Use the user's name, or parse a nice name from email
+    // e.g., stephen.newman@checkit.net -> "Stephen Newman"
+    const parseNameFromEmail = (email: string): string => {
+      const prefix = email.split('@')[0] // stephen.newman
+      return prefix
+        .split(/[._-]/) // Split on dots, underscores, hyphens
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()) // Capitalize each part
+        .join(' ') // "Stephen Newman"
+    }
+    
+    const userName = tenant?.name || parseNameFromEmail(user.email || '') || 'Unknown User'
 
     // Get brand with HubSpot config
     const { data: brand, error: brandError } = await supabaseAdmin
@@ -220,6 +327,17 @@ export async function POST(
       ? firstParagraph.replace(/[*_`#]/g, '').trim().slice(0, 300) + (firstParagraph.length > 300 ? '...' : '')
       : memo.meta_description || ''
 
+    // Get or create the HubSpot author for this user
+    const hubspotAuthorId = await getOrCreateHubSpotAuthor(
+      userName,
+      tenant?.email || user.email,
+      accessToken
+    )
+    
+    if (!hubspotAuthorId) {
+      console.warn(`Could not get/create HubSpot author for ${userName}, proceeding without author`)
+    }
+
     // Prepare HubSpot blog post payload
     const blogPost: HubSpotBlogPost = {
       name: memo.title,
@@ -230,7 +348,8 @@ export async function POST(
       metaDescription: memo.meta_description || undefined,
       slug: memo.slug.replace(/\//g, '-'), // HubSpot doesn't allow slashes in slugs
       state: publish ? 'PUBLISHED' : 'DRAFT',
-      authorName: userName, // User who pushed - appears in HubSpot as author
+      // Use blogAuthorId to properly link to HubSpot author profile
+      ...(hubspotAuthorId ? { blogAuthorId: hubspotAuthorId } : {}),
       // Featured image - must be hosted on HubSpot (uploaded from Unsplash)
       ...(hubspotImageUrl ? {
         featuredImage: hubspotImageUrl,
@@ -333,13 +452,14 @@ export async function POST(
       }
     }
 
-    // Store HubSpot post ID in memo's schema_json for future updates
+    // Store HubSpot post ID and author info in memo's schema_json for future updates
     await supabaseAdmin
       .from('memos')
       .update({
         schema_json: {
           ...memo.schema_json,
           hubspot_post_id: hubspotPost.id,
+          hubspot_author_id: hubspotAuthorId,
           hubspot_synced_at: new Date().toISOString(),
           hubspot_synced_by: userName,
           hubspot_synced_by_user_id: user.id,
@@ -357,6 +477,7 @@ export async function POST(
         memo_id: memoId,
         memo_title: memo.title,
         hubspot_post_id: hubspotPost.id,
+        hubspot_author_id: hubspotAuthorId,
         state: hubspotPost.state,
         synced_by: userName,
       },
@@ -365,6 +486,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       hubspotPostId: hubspotPost.id,
+      hubspotAuthorId: hubspotAuthorId,
       state: hubspotPost.state,
       syncedBy: userName,
       message: existingHubspotId 

@@ -256,29 +256,17 @@ export function GenerateMemoButton({
   )
 }
 
-// Low visibility query type from API
-interface LowVisibilityQuery {
-  id: string
-  query_text: string
-  query_type: string
-  visibility: number
-  competitor_name?: string
-}
-
-// Dropdown showing queries that need memos
+// Dropdown showing memo generation options
 export function GenerateMemoDropdown({ 
-  brandId,
-  lowVisibilityQueries = []
+  brandId
 }: { 
   brandId: string
-  lowVisibilityQueries?: LowVisibilityQuery[]
 }) {
   const [loading, setLoading] = useState<string | null>(null)
   const router = useRouter()
 
-  const generateMemo = async (memoType: string, queryId?: string) => {
-    const key = queryId || memoType
-    setLoading(key)
+  const generateMemo = async (memoType: string) => {
+    setLoading(memoType)
     try {
       const response = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
@@ -286,7 +274,6 @@ export function GenerateMemoDropdown({
         body: JSON.stringify({ 
           action: 'generate_memo',
           memoType,
-          queryId,
         }),
       })
 
@@ -311,52 +298,7 @@ export function GenerateMemoDropdown({
     }
   }
 
-  // Determine memo type from query type
-  const getMemoType = (queryType: string, hasCompetitor: boolean): string => {
-    if (hasCompetitor) return 'alternative'
-    switch (queryType) {
-      case 'alternative': return 'alternative'
-      case 'how_to': return 'how_to'
-      case 'industry': return 'industry'
-      default: return 'industry'
-    }
-  }
-
-  // If we have low visibility queries, show those
-  if (lowVisibilityQueries.length > 0) {
-    return (
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground mb-3">
-          Prompts where you&apos;re not showing up:
-        </p>
-        {lowVisibilityQueries.slice(0, 5).map((query) => (
-          <button
-            key={query.id}
-            onClick={() => generateMemo(
-              getMemoType(query.query_type, !!query.competitor_name), 
-              query.id
-            )}
-            disabled={loading !== null}
-            className="w-full flex items-center justify-between p-3 text-left rounded-lg border hover:bg-muted/50 transition-colors disabled:opacity-50"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="font-medium text-sm truncate">&quot;{query.query_text}&quot;</p>
-              <p className="text-xs text-muted-foreground">
-                {query.visibility}% visibility • {query.query_type}
-              </p>
-            </div>
-            {loading === query.id ? (
-              <Loader2 className="h-4 w-4 animate-spin ml-2" />
-            ) : (
-              <FileText className="h-4 w-4 text-muted-foreground ml-2" />
-            )}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
-  // Fallback to generic memo types if no query data
+  // Show generic memo types
   const memoTypes = [
     { id: 'industry', label: 'Industry Overview', description: 'Your brand for specific industries' },
     { id: 'how_to', label: 'How-To Guide', description: 'Educational content for your solution' },
@@ -366,7 +308,7 @@ export function GenerateMemoDropdown({
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground mb-3">
-        Run a scan first to see which prompts need work
+        Generate a memo to improve AI visibility:
       </p>
       {memoTypes.map((type) => (
         <button

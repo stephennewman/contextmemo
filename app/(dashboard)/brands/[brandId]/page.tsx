@@ -556,10 +556,7 @@ export default async function BrandPage({ params }: Props) {
                     {memos?.length || 0} total &middot; {memos?.filter(m => m.status === 'published').length || 0} published &middot; {memos?.filter(m => m.status === 'draft').length || 0} drafts
                   </CardDescription>
                 </div>
-                <GenerateMemoDropdown 
-                  brandId={brandId} 
-                  lowVisibilityQueries={lowVisibilityQueries}
-                />
+                <GenerateMemoDropdown brandId={brandId} />
               </div>
             </CardHeader>
             <CardContent>

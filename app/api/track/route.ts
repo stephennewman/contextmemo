@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { detectAISource } from '@/lib/supabase/types'
+import { isValidUUID, isValidURL, requireServiceRoleKey } from '@/lib/security/validation'
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  requireServiceRoleKey()
 )
 
 // Rate limiting: track IPs to prevent abuse
@@ -44,8 +45,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { brandId, memoId, pageUrl, referrer } = body
     
+    // Validate required fields
     if (!brandId || !pageUrl) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Validate UUIDs to prevent injection
+    if (!isValidUUID(brandId)) {
+      return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+    }
+
+    if (memoId && !isValidUUID(memoId)) {
+      return NextResponse.json({ error: 'Invalid memoId format' }, { status: 400 })
+    }
+
+    // Validate URL format
+    if (!isValidURL(pageUrl)) {
+      return NextResponse.json({ error: 'Invalid pageUrl format' }, { status: 400 })
+    }
+
+    // Validate referrer if provided
+    if (referrer && typeof referrer !== 'string') {
+      return NextResponse.json({ error: 'Invalid referrer format' }, { status: 400 })
     }
 
     // Get user agent from request
@@ -65,6 +86,7 @@ export async function POST(request: NextRequest) {
                    null
 
     // Insert tracking event
+    const supabase = getSupabase()
     const { error } = await supabase
       .from('ai_traffic')
       .insert({
@@ -102,28 +124,51 @@ export async function GET(request: NextRequest) {
   const memoId = searchParams.get('m')
   const pageUrl = searchParams.get('u')
   
-  if (brandId && pageUrl) {
-    // Fire and forget - don't wait for DB
-    const userAgent = request.headers.get('user-agent')
-    const referrer = request.headers.get('referer')
-    const referrerSource = detectAISource(referrer, userAgent)
-    
-    if (referrerSource !== 'direct_nav') {
-      const country = request.headers.get('x-vercel-ip-country') || 
-                     request.headers.get('cf-ipcountry') ||
-                     null
-                     
-      // Fire and forget - don't block the pixel response
-      void supabase.from('ai_traffic').insert({
-        brand_id: brandId,
-        memo_id: memoId || null,
-        page_url: decodeURIComponent(pageUrl),
-        referrer: referrer || null,
-        referrer_source: referrerSource,
-        user_agent: userAgent,
-        country,
-        timestamp: new Date().toISOString(),
-      })
+  // Validate inputs before processing
+  if (brandId && pageUrl && isValidUUID(brandId)) {
+    // Validate memoId if provided
+    if (memoId && !isValidUUID(memoId)) {
+      // Skip invalid memoId tracking
+    } else {
+      // Fire and forget - don't wait for DB
+      const userAgent = request.headers.get('user-agent')
+      const referrer = request.headers.get('referer')
+      const referrerSource = detectAISource(referrer, userAgent)
+      
+      if (referrerSource !== 'direct_nav') {
+        // Safely decode URL
+        let decodedUrl: string
+        try {
+          decodedUrl = decodeURIComponent(pageUrl)
+          // Validate the decoded URL
+          if (!isValidURL(decodedUrl)) {
+            decodedUrl = pageUrl // Use original if decode results in invalid URL
+          }
+        } catch {
+          decodedUrl = pageUrl // Use original on decode error
+        }
+
+        const country = request.headers.get('x-vercel-ip-country') || 
+                       request.headers.get('cf-ipcountry') ||
+                       null
+                       
+        // Fire and forget - don't block the pixel response
+        try {
+          const supabase = getSupabase()
+          void supabase.from('ai_traffic').insert({
+            brand_id: brandId,
+            memo_id: memoId || null,
+            page_url: decodedUrl,
+            referrer: referrer || null,
+            referrer_source: referrerSource,
+            user_agent: userAgent,
+            country,
+            timestamp: new Date().toISOString(),
+          })
+        } catch {
+          // Silently fail for pixel tracking
+        }
+      }
     }
   }
 

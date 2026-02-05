@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { inngest } from '@/lib/inngest/client'
+import { isValidUUID, validateURL, sanitizeTextInput, validateUUIDArray, validatePositiveInt } from '@/lib/security/validation'
 
 interface RouteParams {
   params: Promise<{ brandId: string }>
@@ -8,6 +9,12 @@ interface RouteParams {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { brandId } = await params
+  
+  // Validate brandId is a proper UUID
+  if (!isValidUUID(brandId)) {
+    return NextResponse.json({ error: 'Invalid brand ID format' }, { status: 400 })
+  }
+
   const supabase = await createClient()
   
   // Verify authentication
@@ -29,6 +36,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   const body = await request.json()
   const { action } = body
+
+  // Validate action is a string
+  if (typeof action !== 'string') {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  }
 
   try {
     switch (action) {
@@ -62,19 +74,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Query generation started' 
         })
 
-      case 'run_scan':
+      case 'run_scan': {
+        // Validate queryIds if provided
+        const validQueryIds = body.queryIds ? validateUUIDArray(body.queryIds) : undefined
         await inngest.send({
           name: 'scan/run',
-          data: { brandId, queryIds: body.queryIds, autoGenerateMemos: true },
+          data: { brandId, queryIds: validQueryIds, autoGenerateMemos: true },
         })
         return NextResponse.json({ 
           success: true, 
           message: 'AI search scan started' 
         })
+      }
 
-      case 'generate_memo':
+      case 'generate_memo': {
         if (!body.memoType) {
           return NextResponse.json({ error: 'memoType required' }, { status: 400 })
+        }
+        // Validate memoType is one of allowed values
+        const allowedMemoTypes = ['comparison', 'industry', 'how_to', 'alternative', 'response'] as const
+        if (!allowedMemoTypes.includes(body.memoType)) {
+          return NextResponse.json({ error: 'Invalid memoType' }, { status: 400 })
+        }
+        // Validate queryId if provided
+        if (body.queryId && !isValidUUID(body.queryId)) {
+          return NextResponse.json({ error: 'Invalid queryId format' }, { status: 400 })
         }
         await inngest.send({
           name: 'memo/generate',
@@ -88,11 +112,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           success: true, 
           message: 'Memo generation started' 
         })
+      }
 
       case 'regenerate_memo': {
         // Regenerate an existing memo that may have failed
         if (!body.memoId) {
           return NextResponse.json({ error: 'memoId required' }, { status: 400 })
+        }
+
+        // Validate memoId is a proper UUID
+        if (!isValidUUID(body.memoId)) {
+          return NextResponse.json({ error: 'Invalid memoId format' }, { status: 400 })
         }
 
         // Get the existing memo to find its details
