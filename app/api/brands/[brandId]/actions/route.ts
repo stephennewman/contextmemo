@@ -715,6 +715,128 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'hubspot-update-authors': {
+        // Bulk update HubSpot posts with correct author
+        const { BrandContext, HubSpotConfig } = await import('@/lib/supabase/types')
+        const { getHubSpotToken } = await import('@/lib/hubspot/oauth')
+        
+        const context = brand.context as typeof BrandContext
+        const hubspotConfig = (context as Record<string, unknown>)?.hubspot as typeof HubSpotConfig
+        
+        if (!hubspotConfig?.enabled) {
+          return NextResponse.json({ error: 'HubSpot not enabled' }, { status: 400 })
+        }
+        
+        const accessToken = await getHubSpotToken(brandId)
+        if (!accessToken) {
+          return NextResponse.json({ error: 'HubSpot token expired' }, { status: 401 })
+        }
+        
+        // Get user name
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('name, email')
+          .eq('id', user.id)
+          .single()
+        
+        const userName = tenant?.name || body.authorName || 'Unknown'
+        
+        // Get or create author in HubSpot
+        const authorsResponse = await fetch(
+          'https://api.hubapi.com/cms/v3/blogs/authors?limit=100',
+          { headers: { 'Authorization': `Bearer ${accessToken}` } }
+        )
+        
+        let authorId: string | null = null
+        if (authorsResponse.ok) {
+          const authorsData = await authorsResponse.json()
+          const existing = authorsData.results?.find((a: { name?: string; displayName?: string }) => 
+            a.name?.toLowerCase() === userName.toLowerCase() ||
+            a.displayName?.toLowerCase() === userName.toLowerCase()
+          )
+          if (existing) {
+            authorId = existing.id
+          }
+        }
+        
+        // Create author if not found
+        if (!authorId) {
+          const createResponse = await fetch('https://api.hubapi.com/cms/v3/blogs/authors', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: userName, displayName: userName }),
+          })
+          if (createResponse.ok) {
+            const newAuthor = await createResponse.json()
+            authorId = newAuthor.id
+          }
+        }
+        
+        if (!authorId) {
+          return NextResponse.json({ error: 'Could not get/create HubSpot author' }, { status: 500 })
+        }
+        
+        // Get all memos with HubSpot post IDs
+        const { data: memos } = await supabase
+          .from('memos')
+          .select('id, title, schema_json')
+          .eq('brand_id', brandId)
+          .not('schema_json->hubspot_post_id', 'is', null)
+        
+        if (!memos?.length) {
+          return NextResponse.json({ message: 'No HubSpot posts to update', updated: 0 })
+        }
+        
+        // Update each HubSpot post with the author
+        let updated = 0
+        let failed = 0
+        for (const memo of memos) {
+          const hubspotPostId = (memo.schema_json as Record<string, unknown>)?.hubspot_post_id
+          if (!hubspotPostId) continue
+          
+          const updateResponse = await fetch(
+            `https://api.hubapi.com/cms/v3/blogs/posts/${hubspotPostId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ blogAuthorId: authorId }),
+            }
+          )
+          
+          if (updateResponse.ok) {
+            updated++
+            // Update memo schema_json with author ID
+            await supabase
+              .from('memos')
+              .update({
+                schema_json: {
+                  ...(memo.schema_json as Record<string, unknown>),
+                  hubspot_author_id: authorId,
+                },
+              })
+              .eq('id', memo.id)
+          } else {
+            failed++
+            console.error(`Failed to update HubSpot post ${hubspotPostId}:`, await updateResponse.text())
+          }
+        }
+        
+        return NextResponse.json({
+          success: true,
+          message: `Updated ${updated} HubSpot posts with author "${userName}"`,
+          authorId,
+          updated,
+          failed,
+          total: memos.length,
+        })
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

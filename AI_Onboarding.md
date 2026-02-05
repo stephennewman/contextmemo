@@ -390,6 +390,14 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Fix: HubSpot Images - Use Unsplash URLs Directly** (b1a6977)
+- Reverted `files` OAuth scope (requires HubSpot developer portal config change)
+- Now using Unsplash URLs directly for featured images - HubSpot accepts external URLs
+- Removed `uploadImageToHubSpot` function from both API route and memo-generate
+- This should work without any reconnection required
+
+---
+
 **Fix: HubSpot Sync - Auto-Publish, Images, and Author** (09d58ca)
 - HubSpot button now respects brand's `auto_publish` setting from Settings
 - Added `files` OAuth scope for image uploads (user needs to reconnect HubSpot)
