@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.18.0] - 2026-02-05
+
+### Added
+- **Corporate Positioning Framework**: Comprehensive 32-field strategic messaging framework
+  - 8 sections: Mission & Vision, Target Markets, Value Proposition, Key Differentiators, Messaging Pillars, Elevator Pitches, Objection Handling, Competitive Stance
+  - Inline edit capability for each section with save/cancel
+  - Progress tracking showing completion percentage
+  - Collapsible sections for easy navigation
+
+- **Corporate Positioning API**: New endpoint `/api/brands/[brandId]/corporate-positioning`
+  - PATCH for section-level updates
+  - PUT for full positioning replacement
+  - GET for retrieving positioning data
+
+- **Retroactive Data Population**: All existing brands now have corporate positioning data
+  - AI-generated positioning based on website content and web research
+  - Includes mission statements, buyer personas, differentiators, pitches, and competitive intelligence
+
+---
+
 ## [0.17.0] - 2026-02-04
 
 ### Added
