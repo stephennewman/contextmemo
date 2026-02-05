@@ -130,6 +130,7 @@ export default function BrandSettingsPage() {
   const [hubspotConnected, setHubspotConnected] = useState(false)
   const [hubspotHealthy, setHubspotHealthy] = useState(false)
   const [hubspotDisconnecting, setHubspotDisconnecting] = useState(false)
+  const [hubspotResyncing, setHubspotResyncing] = useState(false)
   
   // Search Console integration state
   const [searchConsoleConfig, setSearchConsoleConfig] = useState<SearchConsoleConfig>(defaultSearchConsoleConfig)
@@ -380,6 +381,31 @@ export default function BrandSettingsPage() {
       toast.error('Failed to disconnect HubSpot')
     } finally {
       setHubspotDisconnecting(false)
+    }
+  }
+
+  const handleHubSpotResync = async () => {
+    if (!window.confirm('This will resync all memos to HubSpot with updated images and author. Continue?')) return
+
+    setHubspotResyncing(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'hubspot-resync-all' }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success(data.message || `Resynced ${data.updated} posts to HubSpot`)
+      } else {
+        toast.error(data.error || 'Resync failed')
+      }
+    } catch {
+      toast.error('Failed to resync to HubSpot')
+    } finally {
+      setHubspotResyncing(false)
     }
   }
 
@@ -1172,6 +1198,14 @@ export default function BrandSettingsPage() {
                         </label>
                       </div>
                     )}
+                    <Separator className="my-4" />
+                    <div className="flex items-center justify-between">
+                      <div><p className="font-medium">Resync All Content</p><p className="text-sm text-muted-foreground">Update all HubSpot posts with latest content, images, and author</p></div>
+                      <Button variant="outline" size="sm" onClick={handleHubSpotResync} disabled={hubspotResyncing}>
+                        {hubspotResyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        {hubspotResyncing ? 'Resyncing...' : 'Resync All'}
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   <>
