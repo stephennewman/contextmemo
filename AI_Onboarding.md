@@ -390,6 +390,12 @@ _Most recent deploys first_
 
 ### February 4, 2026
 
+**UX: Two-Row Tab Navigation** (c3c1639)
+- Reorganized crowded dashboard tabs into two-row layout
+- **Row 1 (Primary):** Profile, Activity, Scans, Memos, Prompts, Competitors
+- **Row 2 (Secondary):** Watch, Alerts, conditional tabs, QFO, Map, Lab
+- Cleaner visual hierarchy for better navigation on all screen sizes
+
 **Feature: QFO (Query Fan-Out) Tab** (1a57f17)
 - New **QFO** tab for analyzing how LLMs expand prompts into sub-queries
 - Based on the "Query Fan Out" SEO strategy article for AI visibility

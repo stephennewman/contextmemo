@@ -223,65 +223,76 @@ export function EntityMap({ brandId, brandName }: EntityMapProps) {
     })
 
     // Position entities in a radial layout by type
+    // Each type gets a sector of the circle
     const typeAngles: Record<EntityType, number> = {
       brand: 0,
-      competitor: -60,  // top-left area
-      resource: 60,     // top-right area
-      aggregator: 180,  // bottom
-      publisher: 120,   // bottom-right
-      partner: -120,    // bottom-left
+      competitor: -45,   // top-left area
+      resource: 45,      // top-right area
+      aggregator: 135,   // bottom-right
+      publisher: 180,    // bottom
+      partner: -135,     // bottom-left
     }
 
-    const baseRadius = 200
-    let nodeIndex = 0
+    const baseRadius = 280
+    const radiusStep = 120 // Distance between rings
 
     Object.entries(entityGroups).forEach(([type, typeEntities]) => {
       if (type === 'brand' || typeEntities.length === 0) return
 
-      const baseAngle = (typeAngles[type as EntityType] * Math.PI) / 180
-      const angleSpread = Math.PI / 3 // 60 degrees spread per type
+      const sortedEntities = typeEntities
+        .sort((a, b) => b.mentionCount - a.mentionCount)
+        .slice(0, 12) // Allow up to 12 per type
       
-      typeEntities
-        .sort((a, b) => b.mentionCount - a.mentionCount) // Most mentioned first
-        .slice(0, 8) // Limit to 8 per type
-        .forEach((entity, idx) => {
-          const angleOffset = (idx - (typeEntities.length - 1) / 2) * (angleSpread / Math.max(typeEntities.length, 1))
-          const angle = baseAngle + angleOffset
-          const radius = baseRadius + (idx % 2) * 60 // Stagger radii
-          
-          const x = 400 + Math.cos(angle) * radius
-          const y = 300 + Math.sin(angle) * radius
+      const entityCount = sortedEntities.length
+      const baseAngle = (typeAngles[type as EntityType] * Math.PI) / 180
+      
+      // Dynamic angle spread based on entity count - more entities = wider spread
+      const angleSpread = Math.min(Math.PI * 0.8, (Math.PI / 4) + (entityCount * 0.08))
+      
+      sortedEntities.forEach((entity, idx) => {
+        // Distribute into rings: first 4 in inner ring, next 4 in middle, rest in outer
+        const ring = Math.floor(idx / 4)
+        const positionInRing = idx % 4
+        const entitiesInThisRing = Math.min(4, entityCount - ring * 4)
+        
+        // Calculate angle within the ring
+        const angleOffset = entitiesInThisRing > 1 
+          ? (positionInRing - (entitiesInThisRing - 1) / 2) * (angleSpread / Math.max(entitiesInThisRing - 1, 1))
+          : 0
+        const angle = baseAngle + angleOffset
+        const radius = baseRadius + ring * radiusStep
+        
+        const x = 400 + Math.cos(angle) * radius
+        const y = 300 + Math.sin(angle) * radius
 
-          const node: Node = {
-            id: entity.id,
-            type: 'entity',
-            position: { x, y },
-            data: { ...entity, isCenter: false },
-          }
-          newNodes.push(node)
+        const node: Node = {
+          id: entity.id,
+          type: 'entity',
+          position: { x, y },
+          data: { ...entity, isCenter: false },
+        }
+        newNodes.push(node)
 
-          // Edge from center to entity
-          const edgeColor = entity.winCount > 0 ? '#EF4444' : '#94A3B8'
-          const edge: Edge = {
-            id: `edge-${entity.id}`,
-            source: 'brand-center',
-            target: entity.id,
-            type: 'default',
-            animated: entity.winCount > 0,
-            style: { 
-              stroke: edgeColor, 
-              strokeWidth: Math.min(3, 1 + entity.mentionCount / 10),
-              opacity: 0.6,
-            },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              color: edgeColor,
-            },
-          }
-          newEdges.push(edge)
-          
-          nodeIndex++
-        })
+        // Edge from center to entity
+        const edgeColor = entity.winCount > 0 ? '#EF4444' : '#94A3B8'
+        const edge: Edge = {
+          id: `edge-${entity.id}`,
+          source: 'brand-center',
+          target: entity.id,
+          type: 'default',
+          animated: entity.winCount > 0,
+          style: { 
+            stroke: edgeColor, 
+            strokeWidth: Math.min(3, 1 + entity.mentionCount / 10),
+            opacity: 0.6,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: edgeColor,
+          },
+        }
+        newEdges.push(edge)
+      })
     })
 
     setNodes(newNodes)
