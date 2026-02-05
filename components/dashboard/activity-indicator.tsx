@@ -74,7 +74,9 @@ export function ActivityIndicator() {
               <Activity className="h-4 w-4" />
             )}
             <span className="text-xs font-medium hidden sm:inline">
-              {hasActiveJobs ? 'WORKING' : 'IDLE'}
+              {hasActiveJobs ? 'WORKING' : (
+                lastActivity ? `Last Activity ${formatTimeAgo(lastActivity.timestamp)}` : 'No Activity'
+              )}
             </span>
           </div>
         </TooltipTrigger>
