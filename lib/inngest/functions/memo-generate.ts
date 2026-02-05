@@ -10,10 +10,62 @@ import {
   generateToneInstructions,
   formatVoiceInsightsForPrompt
 } from '@/lib/ai/prompts/memo-generation'
-import { BrandContext, VoiceInsight } from '@/lib/supabase/types'
+import { BrandContext, VoiceInsight, ExistingPage } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
 import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
 import { selectImageForMemo } from '@/lib/hubspot/image-selector'
+
+/**
+ * Upload an image from URL to HubSpot's file manager
+ * HubSpot requires images to be hosted on their platform (hubfs/)
+ */
+async function uploadImageToHubSpot(
+  imageUrl: string, 
+  fileName: string, 
+  accessToken: string
+): Promise<string | null> {
+  try {
+    // Fetch the image from Unsplash
+    const imageResponse = await fetch(imageUrl)
+    if (!imageResponse.ok) {
+      console.error('Failed to fetch image from Unsplash:', imageResponse.status)
+      return null
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer()
+    const blob = new Blob([imageBuffer], { type: 'image/jpeg' })
+    
+    // Create form data for HubSpot upload
+    const formData = new FormData()
+    formData.append('file', blob, `${fileName}.jpg`)
+    formData.append('options', JSON.stringify({
+      access: 'PUBLIC_INDEXABLE',
+      overwrite: false
+    }))
+    formData.append('folderPath', '/contextmemo-featured-images')
+    
+    // Upload to HubSpot
+    const uploadResponse = await fetch('https://api.hubapi.com/files/v3/files', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: formData,
+    })
+    
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json().catch(() => ({}))
+      console.error('HubSpot file upload error:', errorData)
+      return null
+    }
+    
+    const uploadResult = await uploadResponse.json()
+    return uploadResult.url
+  } catch (error) {
+    console.error('Error uploading image to HubSpot:', error)
+    return null
+  }
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,6 +82,129 @@ function sanitizeSlug(text: string): string {
     .replace(/-+/g, '-') // Collapse multiple hyphens
     .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
     .slice(0, 50) // Limit length
+}
+
+// Helper to check if a memo topic overlaps with existing site content
+function checkTopicOverlap(
+  memoType: string,
+  memoTopics: string[],
+  competitorName: string | null,
+  existingPages: ExistingPage[]
+): { hasOverlap: boolean; matchingPage?: ExistingPage; overlapScore: number } {
+  if (!existingPages || existingPages.length === 0) {
+    return { hasOverlap: false, overlapScore: 0 }
+  }
+
+  // Normalize topics for comparison
+  const normalizeText = (text: string) => text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+  const normalizedMemoTopics = memoTopics.map(normalizeText)
+  const normalizedCompetitor = competitorName ? normalizeText(competitorName) : null
+
+  let bestMatch: { page: ExistingPage; score: number } | null = null
+
+  for (const page of existingPages) {
+    const pageTopics = page.topics.map(normalizeText)
+    const pageTitle = normalizeText(page.title)
+    const pageUrl = normalizeText(page.url)
+
+    let matchScore = 0
+
+    // Check for comparison/alternative memos - look for competitor name in existing pages
+    if ((memoType === 'comparison' || memoType === 'alternative') && normalizedCompetitor) {
+      // Check if page mentions the competitor
+      if (pageTopics.some(t => t.includes(normalizedCompetitor) || normalizedCompetitor.includes(t))) {
+        matchScore += 50
+      }
+      if (pageTitle.includes(normalizedCompetitor)) {
+        matchScore += 30
+      }
+      if (pageUrl.includes(normalizedCompetitor.replace(/\s+/g, '-'))) {
+        matchScore += 20
+      }
+      // Check for "vs" or "alternative" in URL/title
+      if (pageUrl.includes('vs') || pageUrl.includes('alternative') || pageUrl.includes('compare')) {
+        matchScore += 10
+      }
+      if (pageTitle.includes('vs') || pageTitle.includes('alternative') || pageTitle.includes('compare')) {
+        matchScore += 10
+      }
+    }
+
+    // Check for industry memos - look for industry keywords
+    if (memoType === 'industry') {
+      const industryKeywords = normalizedMemoTopics.filter(t => 
+        t.includes('industry') || t.includes('sector') || t.includes('market') ||
+        // Common industry terms
+        ['restaurant', 'healthcare', 'hospitality', 'retail', 'food', 'pharma', 'manufacturing'].some(ind => t.includes(ind))
+      )
+      for (const keyword of industryKeywords) {
+        if (pageTopics.some(t => t.includes(keyword) || keyword.includes(t))) {
+          matchScore += 30
+        }
+        if (pageTitle.includes(keyword)) {
+          matchScore += 20
+        }
+        if (pageUrl.includes(keyword.replace(/\s+/g, '-'))) {
+          matchScore += 15
+        }
+      }
+      // Check for "for" or "industries" in URL/title
+      if (page.content_type === 'industry') {
+        matchScore += 20
+      }
+    }
+
+    // Check for how-to memos - look for topic keywords
+    if (memoType === 'how_to') {
+      for (const topic of normalizedMemoTopics) {
+        if (pageTopics.some(t => t.includes(topic) || topic.includes(t))) {
+          matchScore += 25
+        }
+        if (pageTitle.includes(topic)) {
+          matchScore += 15
+        }
+      }
+      // Check for how-to content types
+      if (page.content_type === 'resource' || page.content_type === 'blog') {
+        // Check if title suggests guide/how-to content
+        if (pageTitle.includes('how') || pageTitle.includes('guide') || pageTitle.includes('tutorial')) {
+          matchScore += 10
+        }
+      }
+    }
+
+    // General topic overlap check for any memo type
+    for (const memoTopic of normalizedMemoTopics) {
+      for (const pageTopic of pageTopics) {
+        // Exact match
+        if (memoTopic === pageTopic) {
+          matchScore += 20
+        }
+        // Partial match (one contains the other)
+        else if (memoTopic.includes(pageTopic) || pageTopic.includes(memoTopic)) {
+          matchScore += 10
+        }
+      }
+    }
+
+    if (matchScore > 0 && (!bestMatch || matchScore > bestMatch.score)) {
+      bestMatch = { page, score: matchScore }
+    }
+  }
+
+  // Threshold for considering content as redundant
+  // Score of 50+ means significant overlap
+  const OVERLAP_THRESHOLD = 50
+
+  if (bestMatch && bestMatch.score >= OVERLAP_THRESHOLD) {
+    return {
+      hasOverlap: true,
+      matchingPage: bestMatch.page,
+      overlapScore: bestMatch.score,
+    }
+  }
+
+  return { hasOverlap: false, overlapScore: bestMatch?.score || 0 }
 }
 
 export const memoGenerate = inngest.createFunction(
@@ -113,7 +288,111 @@ export const memoGenerate = inngest.createFunction(
     // Format voice insights for inclusion in prompts
     const verifiedInsights = formatVoiceInsightsForPrompt(voiceInsights)
 
-    // Step 2: Generate memo based on type
+    // Step 2: Check for redundancy with existing site content
+    const redundancyCheck = await step.run('check-redundancy', async () => {
+      const existingPages = brandContext.existing_pages || []
+      
+      if (existingPages.length === 0) {
+        console.log('No existing pages indexed, skipping redundancy check')
+        return { shouldSkip: false, reason: null as string | null, matchingPage: undefined as ExistingPage | undefined, overlapScore: 0 }
+      }
+
+      // Build topics based on memo type
+      let memoTopics: string[] = []
+      let competitorName: string | null = competitor?.name || null
+
+      switch (memoType) {
+        case 'comparison':
+        case 'alternative':
+          if (competitor) {
+            memoTopics = [
+              competitor.name,
+              `${brand.name} vs ${competitor.name}`,
+              'comparison',
+              'alternative',
+              ...(competitor.context?.products || []),
+            ].filter(Boolean)
+          }
+          break
+
+        case 'industry':
+          const industry = query?.query_text?.match(/for\s+(.+)$/i)?.[1] 
+            || brandContext.markets?.[0] 
+            || 'business'
+          memoTopics = [
+            industry,
+            `${brand.name} for ${industry}`,
+            ...(brandContext.markets || []),
+          ].filter(Boolean)
+          break
+
+        case 'how_to':
+          let topic = query?.query_text || 'get started'
+          topic = topic
+            .replace(/^how\s+(to|can\s+i|do\s+i|should\s+i)\s+/i, '')
+            .replace(/^what\s+(are|is)\s+(the\s+)?(best\s+)?(ways?\s+to\s+)?/i, '')
+            .replace(/\?$/g, '')
+            .trim()
+          memoTopics = [
+            topic,
+            `how to ${topic}`,
+            ...(brandContext.products || []),
+            ...(brandContext.features || []),
+          ].filter(Boolean)
+          break
+
+        default:
+          memoTopics = [
+            ...(brandContext.products || []),
+            ...(brandContext.markets || []),
+          ].filter(Boolean)
+      }
+
+      const overlap = checkTopicOverlap(memoType, memoTopics, competitorName, existingPages)
+
+      if (overlap.hasOverlap && overlap.matchingPage) {
+        console.log(`Redundancy detected: memo type "${memoType}" overlaps with existing page "${overlap.matchingPage.url}" (score: ${overlap.overlapScore})`)
+        return {
+          shouldSkip: true,
+          reason: `Content already exists at ${overlap.matchingPage.url}`,
+          matchingPage: overlap.matchingPage,
+          overlapScore: overlap.overlapScore,
+        }
+      }
+
+      console.log(`No redundancy detected for memo type "${memoType}" (best overlap score: ${overlap.overlapScore})`)
+      return { shouldSkip: false, reason: null as string | null, matchingPage: undefined as ExistingPage | undefined, overlapScore: overlap.overlapScore }
+    })
+
+    // If content already exists, skip memo generation and return early
+    if (redundancyCheck.shouldSkip) {
+      console.log(`Skipping memo generation: ${redundancyCheck.reason}`)
+      
+      // Create an informational alert instead of generating duplicate content
+      await step.run('create-skip-alert', async () => {
+        await supabase.from('alerts').insert({
+          brand_id: brandId,
+          alert_type: 'memo_skipped',
+          title: 'Memo Generation Skipped',
+          message: `Skipped creating ${memoType} memo: ${redundancyCheck.reason}. The brand already has content covering this topic.`,
+          data: { 
+            memoType,
+            competitorName: competitor?.name,
+            matchingPage: redundancyCheck.matchingPage,
+            queryId,
+          },
+        })
+      })
+
+      return {
+        success: false,
+        skipped: true,
+        reason: redundancyCheck.reason,
+        matchingPage: redundancyCheck.matchingPage,
+      }
+    }
+
+    // Step 3: Generate memo based on type
     const memoContent = await step.run('generate-memo', async () => {
       let prompt: string
       let slug: string
@@ -261,7 +540,7 @@ export const memoGenerate = inngest.createFunction(
       return { content: text, slug, title }
     })
 
-    // Step 3: Create meta description
+    // Step 4: Create meta description
     const metaDescription = await step.run('generate-meta', async () => {
       const { text } = await generateText({
         model: openai('gpt-4o-mini'),
@@ -279,7 +558,7 @@ ${memoContent.content.slice(0, 1000)}`,
       return text.slice(0, 160)
     })
 
-    // Step 4: Generate Schema.org structured data with sameAs links
+    // Step 5: Generate Schema.org structured data with sameAs links
     // Build sameAs array for authoritative external references
     const brandSameAs: string[] = []
     
@@ -395,7 +674,7 @@ ${memoContent.content.slice(0, 1000)}`,
       ...(speakableSpec && { speakable: speakableSpec }),
     }
 
-    // Step 5: Save memo to database
+    // Step 6: Save memo to database
     const memo = await step.run('save-memo', async () => {
       const { data, error } = await supabase
         .from('memos')
@@ -429,7 +708,7 @@ ${memoContent.content.slice(0, 1000)}`,
       return data
     })
 
-    // Step 6: Save version history
+    // Step 7: Save version history
     await step.run('save-version', async () => {
       await supabase.from('memo_versions').insert({
         memo_id: memo.id,
@@ -439,7 +718,7 @@ ${memoContent.content.slice(0, 1000)}`,
       })
     })
 
-    // Step 7: Create alert and feed event
+    // Step 8: Create alert and feed event
     await step.run('create-alert-and-feed', async () => {
       // Legacy alert (v1 compatibility)
       await supabase.from('alerts').insert({
@@ -473,7 +752,7 @@ ${memoContent.content.slice(0, 1000)}`,
       })
     })
 
-    // Step 8: Trigger backlinking for this memo AND batch update all brand memos
+    // Step 9: Trigger backlinking for this memo AND batch update all brand memos
     // This ensures new memos get linked, and existing memos link to the new one
     await step.sendEvent('trigger-backlinks', [
       {
@@ -486,7 +765,7 @@ ${memoContent.content.slice(0, 1000)}`,
       },
     ])
 
-    // Step 9: Submit to IndexNow for instant search engine indexing
+    // Step 10: Submit to IndexNow for instant search engine indexing
     // This helps AI models with web search find our content faster
     if (memo.status === 'published' && brand.subdomain) {
       await step.run('submit-indexnow', async () => {
@@ -504,7 +783,7 @@ ${memoContent.content.slice(0, 1000)}`,
       })
     }
 
-    // Step 10: Auto-sync to HubSpot if enabled
+    // Step 11: Auto-sync to HubSpot if enabled
     // This pushes the memo directly to the brand's HubSpot blog
     const hubspotConfig = brandContext?.hubspot
     if (hubspotConfig?.enabled && hubspotConfig?.auto_sync && hubspotConfig?.access_token && hubspotConfig?.blog_id) {
@@ -524,6 +803,14 @@ ${memoContent.content.slice(0, 1000)}`,
           // Select a featured image based on the memo content
           const featuredImage = selectImageForMemo(memoContent.title, memoContent.content, memoType)
           
+          // Upload image to HubSpot's file manager (required - HubSpot doesn't accept external URLs)
+          const slugForImage = memoContent.slug.replace(/\//g, '-').slice(0, 50)
+          const hubspotImageUrl = await uploadImageToHubSpot(
+            featuredImage.url,
+            `featured-${slugForImage}-${Date.now()}`,
+            hubspotConfig.access_token!
+          )
+          
           // Create a summary from the first paragraph
           const contentParagraphs = sanitizedContent.split('\n\n')
           const firstParagraph = contentParagraphs.find((p: string) => p.trim() && !p.startsWith('#') && !p.startsWith('*Last'))
@@ -539,12 +826,16 @@ ${memoContent.content.slice(0, 1000)}`,
             postSummary: postSummary,
             metaDescription: metaDescription || undefined,
             slug: memoContent.slug.replace(/\//g, '-'),
-            state: memo.status === 'published' ? 'PUBLISHED' : 'DRAFT',
+            state: hubspotConfig.auto_publish ? 'PUBLISHED' : 'DRAFT',
             authorName: brand.name, // Auto-generated content uses brand name as author
-            // Featured image from Unsplash
-            featuredImage: featuredImage.url,
-            featuredImageAltText: featuredImage.alt,
-            useFeaturedImage: true,
+            // Featured image - must be hosted on HubSpot (uploaded from Unsplash)
+            ...(hubspotImageUrl ? {
+              featuredImage: hubspotImageUrl,
+              featuredImageAltText: featuredImage.alt,
+              useFeaturedImage: true,
+            } : {
+              useFeaturedImage: false, // Fallback if image upload failed
+            }),
             // Publish date
             publishDate: new Date().toISOString(),
           }
@@ -566,8 +857,8 @@ ${memoContent.content.slice(0, 1000)}`,
 
           const hubspotPost = await response.json()
 
-          // If published, push live
-          if (memo.status === 'published' && hubspotPost.state !== 'PUBLISHED') {
+          // If auto-publish enabled, push live
+          if (hubspotConfig.auto_publish && hubspotPost.state !== 'PUBLISHED') {
             await fetch(
               `https://api.hubapi.com/cms/v3/blogs/posts/${hubspotPost.id}/draft/push-live`,
               {

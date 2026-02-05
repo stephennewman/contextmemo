@@ -20,7 +20,7 @@ import { AlertsList } from './alerts-list'
 import { AttributionDashboard } from './attribution-dashboard'
 import { PromptIntelligenceFeed } from './prompt-intelligence-feed'
 import { ModelInsightsPanel } from './model-insights-panel'
-import { GenerateMemoDropdown, PushToHubSpotButton } from './brand-actions'
+import { PushToHubSpotButton } from './brand-actions'
 
 interface BrandTabsProps {
   brandId: string
@@ -148,18 +148,8 @@ export function BrandTabs({
       {/* Memos Tab */}
       <TabsContent value="memos">
         {loading === 'memos' ? <TabLoader /> : (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Generate New Memo</CardTitle>
-                <CardDescription>Create AI-optimized content</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <GenerateMemoDropdown brandId={brandId} />
-              </CardContent>
-            </Card>
-            
-            <Card className="md:col-span-2">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Published Memos</CardTitle>
                 <CardDescription>Factual reference documents for AI to cite</CardDescription>
@@ -172,8 +162,10 @@ export function BrandTabs({
                   status: string
                   published_at: string | null
                   schema_json: Record<string, unknown> | null
+                  content_markdown: string
+                  meta_description: string | null
                 }> || []).length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {(tabData.memos as Array<{
                       id: string
                       title: string
@@ -181,6 +173,8 @@ export function BrandTabs({
                       status: string
                       published_at: string | null
                       schema_json: Record<string, unknown> | null
+                      content_markdown: string
+                      meta_description: string | null
                     }>).map((memo) => {
                       const schemaJson = memo.schema_json as { 
                         hubspot_synced_at?: string
@@ -194,48 +188,64 @@ export function BrandTabs({
                         }
                       } | null
                       const liveUrl = `https://${brandSubdomain}.contextmemo.com/${memo.slug}`
+                      // Get content preview - use meta_description or truncate content_markdown
+                      const contentPreview = memo.meta_description || 
+                        memo.content_markdown
+                          .replace(/^#.*$/gm, '') // Remove headers
+                          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
+                          .replace(/[*_`]/g, '') // Remove markdown formatting
+                          .trim()
+                          .slice(0, 400)
                       return (
-                        <div key={memo.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="min-w-0 flex-1">
-                            {memo.status === 'published' ? (
-                              <a 
-                                href={liveUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="font-medium truncate hover:text-primary hover:underline flex items-center gap-1 group"
-                              >
-                                {memo.title}
-                                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </a>
-                            ) : (
-                              <p className="font-medium truncate">{memo.title}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground truncate">
-                              {brandSubdomain}.contextmemo.com/{memo.slug}
-                            </p>
+                        <div key={memo.id} className="p-4 border rounded-lg space-y-3">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              {memo.status === 'published' ? (
+                                <a 
+                                  href={liveUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="font-medium hover:text-primary hover:underline flex items-center gap-1 group"
+                                >
+                                  {memo.title}
+                                  <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                </a>
+                              ) : (
+                                <p className="font-medium">{memo.title}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {brandSubdomain}.contextmemo.com/{memo.slug}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant={memo.status === 'published' ? 'default' : 'secondary'} className="text-xs">
+                                {memo.status}
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 ml-2">
-                            <Badge variant={memo.status === 'published' ? 'default' : 'secondary'} className="text-xs">
-                              {memo.status}
-                            </Badge>
+                          <p className="text-sm text-muted-foreground line-clamp-4">
+                            {contentPreview}{contentPreview.length >= 400 ? '...' : ''}
+                          </p>
+                          <div className="flex items-center gap-2 pt-2 border-t">
                             {memo.status === 'published' && (
-                              <Button variant="ghost" size="sm" asChild>
+                              <Button variant="outline" size="sm" asChild>
                                 <a href={liveUrl} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-4 w-4" />
+                                  <ExternalLink className="h-4 w-4 mr-1" />
+                                  View Live
                                 </a>
                               </Button>
                             )}
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/brands/${brandId}/memos/${memo.id}`}>
+                                Edit
+                              </Link>
+                            </Button>
                             <PushToHubSpotButton 
                               brandId={brandId}
                               memoId={memo.id}
                               hubspotEnabled={hubspotEnabled}
                               hubspotSyncedAt={schemaJson?.hubspot_synced_at}
                             />
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/brands/${brandId}/memos/${memo.id}`}>
-                                Edit
-                              </Link>
-                            </Button>
                           </div>
                         </div>
                       )

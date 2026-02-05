@@ -686,6 +686,15 @@ export interface PromptTheme {
   auto_detected?: boolean // Was this auto-detected vs manually added
 }
 
+// Existing page on brand's website - used to prevent memo redundancy
+export interface ExistingPage {
+  url: string             // Relative URL path (e.g., "/blog/haccp-guide")
+  title: string           // Page title
+  topics: string[]        // Extracted topics/keywords from the page
+  content_type?: 'blog' | 'landing' | 'resource' | 'product' | 'industry' | 'comparison' | 'other'
+  crawled_at?: string     // When this page was last crawled
+}
+
 // Brand context structure
 export interface BrandContext {
   company_name?: string
@@ -724,6 +733,9 @@ export interface BrandContext {
   prompt_themes?: PromptTheme[]
   // Corporate positioning framework - comprehensive strategic messaging
   corporate_positioning?: CorporatePositioning
+  // Existing pages on brand's website - used to prevent memo redundancy
+  // Populated during context extraction to track what content already exists
+  existing_pages?: ExistingPage[]
 }
 
 // Brand offers/CTAs extracted from website

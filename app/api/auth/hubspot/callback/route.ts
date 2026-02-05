@@ -145,6 +145,7 @@ export async function GET(request: NextRequest) {
     const hubspotConfig = {
       enabled: true,
       auto_sync: false, // User can enable this later
+      auto_publish: false, // User can enable this later - publishes immediately vs drafts
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       expires_at: expiresAt,

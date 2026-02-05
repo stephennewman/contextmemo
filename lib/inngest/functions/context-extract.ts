@@ -2,9 +2,9 @@ import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
-import { fetchUrlAsMarkdown, crawlWebsite, searchWebsite } from '@/lib/utils/jina-reader'
+import { fetchUrlAsMarkdown, crawlWebsite, searchWebsite, JinaReaderResponse } from '@/lib/utils/jina-reader'
 import { CONTEXT_EXTRACTION_PROMPT } from '@/lib/ai/prompts/context-extraction'
-import { BrandContext } from '@/lib/supabase/types'
+import { BrandContext, ExistingPage } from '@/lib/supabase/types'
 
 // Create Supabase admin client for server-side operations
 const supabase = createClient(
@@ -63,12 +63,14 @@ export const contextExtract = inngest.createFunction(
     const websiteContent = await step.run('crawl-website', async () => {
       let crawledContent = ''
       let source = 'minimal'
+      let crawledPages: JinaReaderResponse[] = []
       
       try {
         // Try crawling up to 10 pages from the website
         const pages = await crawlWebsite(`https://${domain}`, 10)
         
         if (pages.length > 0) {
+          crawledPages = pages
           // Combine content from all pages
           crawledContent = pages
             .map(p => `## ${p.title}\n\n${p.content}`)
@@ -83,6 +85,7 @@ export const contextExtract = inngest.createFunction(
           const singlePage = await fetchUrlAsMarkdown(`https://${domain}`)
           if (singlePage.content && singlePage.content.length > 200) {
             crawledContent = singlePage.content
+            crawledPages = [singlePage]
             source = 'single-page'
           }
         } catch (fetchError) {
@@ -114,11 +117,12 @@ export const contextExtract = inngest.createFunction(
       if (crawledContent.length < 200) {
         return { 
           content: `Company domain: ${domain}. Unable to gather detailed information.`, 
-          source: 'minimal' 
+          source: 'minimal',
+          pages: []
         }
       }
       
-      return { content: crawledContent.slice(0, 50000), source }
+      return { content: crawledContent.slice(0, 50000), source, pages: crawledPages }
     })
 
     // Step 2: Extract context using AI (with retry logic)
@@ -214,12 +218,103 @@ Be thorough but respond ONLY with JSON.`,
       return result
     })
 
-    // Step 3: Save context to database (including raw homepage content for intent-based queries)
+    // Step 3: Extract topics from crawled pages to build site index
+    const existingPages = await step.run('extract-page-topics', async () => {
+      const pages = websiteContent.pages || []
+      if (pages.length === 0) {
+        console.log('No crawled pages to index')
+        return [] as ExistingPage[]
+      }
+
+      const baseUrl = `https://${domain}`
+      const now = new Date().toISOString()
+      
+      // Build a batch request to extract topics from all pages at once (more efficient)
+      const pagesForExtraction = pages.slice(0, 15).map(p => ({
+        url: p.url.replace(baseUrl, '') || '/',
+        title: p.title,
+        contentSnippet: p.content.slice(0, 1500) // First 1500 chars for topic extraction
+      }))
+
+      const { text } = await generateText({
+        model: openai('gpt-4o-mini'), // Use mini for efficiency
+        prompt: `Extract the main topics/keywords from these website pages. For each page, identify 2-5 key topics that describe what the page is about.
+
+Pages to analyze:
+${pagesForExtraction.map((p, i) => `
+--- PAGE ${i + 1} ---
+URL: ${p.url}
+Title: ${p.title}
+Content: ${p.contentSnippet}
+`).join('\n')}
+
+Return a JSON array with this structure:
+[
+  {
+    "url": "/page-path",
+    "topics": ["topic1", "topic2", "topic3"],
+    "content_type": "blog" | "landing" | "resource" | "product" | "industry" | "comparison" | "other"
+  }
+]
+
+Topics should be 1-3 word phrases that describe the page content (e.g., "temperature monitoring", "food safety", "HACCP compliance", "restaurant solutions").
+Content type should match the page purpose:
+- "blog" = blog post, article, news
+- "landing" = marketing/sales landing page
+- "resource" = guide, whitepaper, documentation
+- "product" = product page, features, pricing
+- "industry" = industry/vertical specific page
+- "comparison" = vs competitor, alternatives
+- "other" = anything else
+
+Respond ONLY with valid JSON array, no explanations.`,
+        temperature: 0.2,
+      })
+
+      try {
+        const jsonMatch = text.match(/\[[\s\S]*\]/)
+        if (!jsonMatch) {
+          console.error('No JSON array found in topic extraction response')
+          return [] as ExistingPage[]
+        }
+        
+        const parsed = JSON.parse(jsonMatch[0]) as Array<{
+          url: string
+          topics: string[]
+          content_type: string
+        }>
+
+        // Map to ExistingPage format
+        const existingPages: ExistingPage[] = parsed.map((p, i) => ({
+          url: p.url,
+          title: pagesForExtraction[i]?.title || p.url,
+          topics: p.topics || [],
+          content_type: p.content_type as ExistingPage['content_type'] || 'other',
+          crawled_at: now,
+        }))
+
+        console.log(`Extracted topics for ${existingPages.length} pages`)
+        return existingPages
+      } catch (e) {
+        console.error('Failed to parse topic extraction response:', e)
+        // Fallback: create basic entries without AI-extracted topics
+        return pages.slice(0, 15).map(p => ({
+          url: p.url.replace(baseUrl, '') || '/',
+          title: p.title,
+          topics: [], // No topics extracted
+          content_type: 'other' as const,
+          crawled_at: now,
+        }))
+      }
+    })
+
+    // Step 4: Save context to database (including raw homepage content and existing pages index)
     await step.run('save-context', async () => {
-      // Store homepage content (truncated) for later query generation
+      // Store homepage content (truncated) and existing pages for memo deduplication
       const contextWithContent = {
         ...extractedContext,
         homepage_content: websiteContent.content.slice(0, 15000), // Keep first 15k chars for intent extraction
+        existing_pages: existingPages, // Site index for preventing memo redundancy
       }
       
       const { error } = await supabase
@@ -237,7 +332,7 @@ Be thorough but respond ONLY with JSON.`,
       }
     })
 
-    // Step 4: Trigger competitor discovery
+    // Step 5: Trigger competitor discovery
     await step.sendEvent('trigger-competitor-discovery', {
       name: 'competitor/discover',
       data: { brandId },
@@ -247,7 +342,8 @@ Be thorough but respond ONLY with JSON.`,
       success: true, 
       context: extractedContext,
       source: websiteContent.source,
-      contentLength: websiteContent.content.length
+      contentLength: websiteContent.content.length,
+      pagesIndexed: existingPages.length,
     }
   }
 )
