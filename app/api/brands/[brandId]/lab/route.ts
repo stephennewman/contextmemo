@@ -51,24 +51,44 @@ export async function GET(
       if (row.brand_mentioned) modelStats[row.model].mentioned++
     }
 
-    // Get top entities
+    // Get top entities with prompt associations
     const { data: results } = await supabase
       .from('lab_scan_results')
-      .select('entities_mentioned')
+      .select('entities_mentioned, prompt_text, brand_cited')
       .eq('brand_id', brandId)
       .not('entities_mentioned', 'is', null)
-      .limit(1000)
+      .limit(2000)
 
-    const entityCounts: Record<string, number> = {}
+    // Build entity stats with associated prompts
+    const entityData: Record<string, { 
+      count: number
+      prompts: Set<string>
+      promptsWhereBrandNotCited: Set<string>
+    }> = {}
+    
     for (const row of (results || [])) {
       for (const entity of (row.entities_mentioned || [])) {
-        entityCounts[entity] = (entityCounts[entity] || 0) + 1
+        if (!entityData[entity]) {
+          entityData[entity] = { count: 0, prompts: new Set(), promptsWhereBrandNotCited: new Set() }
+        }
+        entityData[entity].count++
+        entityData[entity].prompts.add(row.prompt_text)
+        if (!row.brand_cited) {
+          entityData[entity].promptsWhereBrandNotCited.add(row.prompt_text)
+        }
       }
     }
-    const topEntities = Object.entries(entityCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20)
-      .map(([entity, count]) => ({ entity, count }))
+    
+    const topEntities = Object.entries(entityData)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 30)
+      .map(([entity, data]) => ({ 
+        entity, 
+        count: data.count,
+        promptCount: data.prompts.size,
+        prompts: Array.from(data.prompts).slice(0, 10), // Top 10 prompts for this entity
+        gapPrompts: Array.from(data.promptsWhereBrandNotCited).slice(0, 5), // Prompts where entity won but brand didn't
+      }))
 
     // Get prompts with citation stats
     const { data: promptResults } = await supabase
@@ -103,6 +123,98 @@ export async function GET(
     const totalCited = promptResults?.filter(r => r.brand_cited).length || 0
     const totalMentioned = promptResults?.filter(r => r.brand_mentioned).length || 0
 
+    // Generate memo recommendations based on gaps
+    const recommendations: Array<{
+      type: 'comparison' | 'alternative' | 'how-to' | 'industry'
+      title: string
+      reason: string
+      targetPrompts: string[]
+      competingEntities: string[]
+      priority: 'high' | 'medium' | 'low'
+    }> = []
+
+    // Find prompts where brand is NOT cited but competitors are winning
+    const gapPrompts = topPrompts.filter(p => p.citationRate < 50 && p.total >= 2)
+    
+    // Get top competing entities (those mentioned most when brand isn't cited)
+    const competitorWins = Object.entries(entityData)
+      .filter(([entity]) => !entity.toLowerCase().includes('blog') && entity.length > 3)
+      .sort((a, b) => b[1].promptsWhereBrandNotCited.size - a[1].promptsWhereBrandNotCited.size)
+      .slice(0, 5)
+
+    // Recommendation 1: Comparison memo against top competitor
+    if (competitorWins.length > 0) {
+      const topCompetitor = competitorWins[0]
+      recommendations.push({
+        type: 'comparison',
+        title: `${topCompetitor[0].charAt(0).toUpperCase() + topCompetitor[0].slice(1)} vs [Your Brand] Comparison`,
+        reason: `${topCompetitor[0]} appears in ${topCompetitor[1].count} responses where your brand isn't cited. A direct comparison memo could capture these queries.`,
+        targetPrompts: Array.from(topCompetitor[1].promptsWhereBrandNotCited).slice(0, 3),
+        competingEntities: [topCompetitor[0]],
+        priority: 'high',
+      })
+    }
+
+    // Recommendation 2: Alternative-to memo for second competitor
+    if (competitorWins.length > 1) {
+      const competitor = competitorWins[1]
+      recommendations.push({
+        type: 'alternative',
+        title: `Best ${competitor[0].charAt(0).toUpperCase() + competitor[0].slice(1)} Alternatives`,
+        reason: `${competitor[0]} wins ${competitor[1].promptsWhereBrandNotCited.size} prompts where you're not cited. Position as a strong alternative.`,
+        targetPrompts: Array.from(competitor[1].promptsWhereBrandNotCited).slice(0, 3),
+        competingEntities: [competitor[0]],
+        priority: 'high',
+      })
+    }
+
+    // Recommendation 3: How-to based on gap prompts
+    const howToPrompts = gapPrompts.filter(p => 
+      p.prompt.toLowerCase().includes('how') || 
+      p.prompt.toLowerCase().includes('what should') ||
+      p.prompt.toLowerCase().includes('best way')
+    ).slice(0, 3)
+    
+    if (howToPrompts.length > 0) {
+      recommendations.push({
+        type: 'how-to',
+        title: 'Practical Implementation Guide',
+        reason: `${howToPrompts.length} "how-to" style prompts have low citation rates. A practical guide could capture these searches.`,
+        targetPrompts: howToPrompts.map(p => p.prompt),
+        competingEntities: competitorWins.slice(0, 3).map(c => c[0]),
+        priority: 'medium',
+      })
+    }
+
+    // Recommendation 4: Industry-specific memo based on verticals in prompts
+    const industryKeywords = ['healthcare', 'pharmaceutical', 'biotech', 'food', 'senior living', 'retail', 'hospitality']
+    const industryMentions: Record<string, string[]> = {}
+    
+    for (const p of gapPrompts) {
+      for (const keyword of industryKeywords) {
+        if (p.prompt.toLowerCase().includes(keyword)) {
+          if (!industryMentions[keyword]) industryMentions[keyword] = []
+          if (industryMentions[keyword].length < 3) {
+            industryMentions[keyword].push(p.prompt)
+          }
+        }
+      }
+    }
+
+    const topIndustry = Object.entries(industryMentions)
+      .sort((a, b) => b[1].length - a[1].length)[0]
+    
+    if (topIndustry && topIndustry[1].length >= 2) {
+      recommendations.push({
+        type: 'industry',
+        title: `${topIndustry[0].charAt(0).toUpperCase() + topIndustry[0].slice(1)} Industry Guide`,
+        reason: `${topIndustry[1].length} ${topIndustry[0]} prompts have gaps. Industry-specific content could improve visibility.`,
+        targetPrompts: topIndustry[1],
+        competingEntities: competitorWins.slice(0, 2).map(c => c[0]),
+        priority: 'medium',
+      })
+    }
+
     return NextResponse.json({
       runs: runs || [],
       modelComparison: Object.entries(modelStats).map(([model, stats]) => ({
@@ -115,6 +227,7 @@ export async function GET(
       })),
       topEntities,
       topPrompts,
+      recommendations,
       summary: {
         totalScans,
         totalCited,

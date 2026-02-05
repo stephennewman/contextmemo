@@ -48,6 +48,18 @@ interface ModelComparison {
 interface EntityCount {
   entity: string
   count: number
+  promptCount?: number
+  prompts?: string[]
+  gapPrompts?: string[]
+}
+
+interface Recommendation {
+  type: 'comparison' | 'alternative' | 'how-to' | 'industry'
+  title: string
+  reason: string
+  targetPrompts: string[]
+  competingEntities: string[]
+  priority: 'high' | 'medium' | 'low'
 }
 
 interface PromptStat {
@@ -88,10 +100,12 @@ export function PromptLab({ brandId }: PromptLabProps) {
   const [modelComparison, setModelComparison] = useState<ModelComparison[]>([])
   const [topEntities, setTopEntities] = useState<EntityCount[]>([])
   const [topPrompts, setTopPrompts] = useState<PromptStat[]>([])
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [summary, setSummary] = useState<LabSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [stopping, setStopping] = useState(false)
+  const [selectedEntity, setSelectedEntity] = useState<string | null>(null)
   
   // Configuration
   const [durationMinutes, setDurationMinutes] = useState(60)
@@ -102,23 +116,16 @@ export function PromptLab({ brandId }: PromptLabProps) {
 
   const fetchData = useCallback(async () => {
     try {
-      console.log('[PromptLab] Fetching data for brand:', brandId)
       const res = await fetch(`/api/brands/${brandId}/lab`)
       const data = await res.json()
-      console.log('[PromptLab] API response:', { 
-        runs: data.runs?.length, 
-        models: data.modelComparison?.length,
-        prompts: data.topPrompts?.length,
-        entities: data.topEntities?.length,
-        summary: data.summary
-      })
       setRuns(data.runs || [])
       setModelComparison(data.modelComparison || [])
       setTopEntities(data.topEntities || [])
       setTopPrompts(data.topPrompts || [])
+      setRecommendations(data.recommendations || [])
       setSummary(data.summary || null)
     } catch (error) {
-      console.error('[PromptLab] Failed to fetch lab data:', error)
+      console.error('Failed to fetch lab data:', error)
     } finally {
       setLoading(false)
     }
@@ -442,29 +449,139 @@ export function PromptLab({ brandId }: PromptLabProps) {
         </Card>
       )}
 
-      {/* Top Entities */}
+      {/* Top Entities - Clickable to see prompts */}
       {topEntities.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">Top Entities Cited</CardTitle>
+              <CardTitle className="text-lg">Competing Entities</CardTitle>
             </div>
             <CardDescription>
-              Who's getting mentioned across all prompts
+              Click an entity to see which prompts mention them (and where you're losing)
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {topEntities.slice(0, 20).map((entity, i) => (
                 <Badge 
                   key={entity.entity} 
-                  variant={i < 3 ? 'default' : 'secondary'}
-                  className="text-sm"
+                  variant={selectedEntity === entity.entity ? 'default' : i < 3 ? 'outline' : 'secondary'}
+                  className={`text-sm cursor-pointer transition-all ${selectedEntity === entity.entity ? 'ring-2 ring-primary' : 'hover:bg-primary/10'}`}
+                  onClick={() => setSelectedEntity(selectedEntity === entity.entity ? null : entity.entity)}
                 >
                   {entity.entity}
                   <span className="ml-1 opacity-70">({entity.count})</span>
                 </Badge>
+              ))}
+            </div>
+            
+            {/* Selected entity details */}
+            {selectedEntity && (
+              <div className="border-t pt-4 mt-4">
+                {(() => {
+                  const entity = topEntities.find(e => e.entity === selectedEntity)
+                  if (!entity) return null
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-lg">{entity.entity}</h4>
+                        <Badge variant="outline">{entity.promptCount || 0} unique prompts</Badge>
+                      </div>
+                      
+                      {entity.gapPrompts && entity.gapPrompts.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-red-600">
+                            Prompts where {entity.entity} wins but you don't:
+                          </p>
+                          <div className="space-y-2">
+                            {entity.gapPrompts.map((prompt, idx) => (
+                              <div key={idx} className="text-sm p-2 bg-red-50 rounded border border-red-100">
+                                "{prompt}"
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {entity.prompts && entity.prompts.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-muted-foreground">
+                            All prompts mentioning {entity.entity}:
+                          </p>
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {entity.prompts.map((prompt, idx) => (
+                              <div key={idx} className="text-sm p-2 bg-muted/50 rounded">
+                                "{prompt}"
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <Card className="border-primary/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Recommended Memos</CardTitle>
+            </div>
+            <CardDescription>
+              Based on gaps where competitors are winning
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recommendations.map((rec, idx) => (
+                <div key={idx} className={`p-4 rounded-lg border-2 ${
+                  rec.priority === 'high' ? 'border-red-200 bg-red-50' : 
+                  rec.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' : 
+                  'border-gray-200 bg-gray-50'
+                }`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={rec.priority === 'high' ? 'destructive' : 'secondary'} className="text-xs">
+                          {rec.priority.toUpperCase()}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {rec.type}
+                        </Badge>
+                      </div>
+                      <h4 className="font-semibold">{rec.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{rec.reason}</p>
+                      
+                      {rec.competingEntities.length > 0 && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground">Competing with:</span>
+                          {rec.competingEntities.map(e => (
+                            <Badge key={e} variant="outline" className="text-xs">{e}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {rec.targetPrompts.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground">Target prompts:</p>
+                          {rec.targetPrompts.slice(0, 2).map((p, i) => (
+                            <p key={i} className="text-xs italic text-muted-foreground truncate">
+                              "{p}"
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>
@@ -553,17 +670,6 @@ export function PromptLab({ brandId }: PromptLabProps) {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Debug Info - remove after fixing */}
-      {!loading && modelComparison.length === 0 && topPrompts.length === 0 && (
-        <Card className="border-yellow-500">
-          <CardContent className="py-4">
-            <p className="text-sm text-yellow-700">
-              Debug: runs={runs.length}, models={modelComparison.length}, prompts={topPrompts.length}, entities={topEntities.length}, summary={summary?.totalScans || 0}
-            </p>
           </CardContent>
         </Card>
       )}
