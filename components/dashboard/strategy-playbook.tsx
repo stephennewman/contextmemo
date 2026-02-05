@@ -281,11 +281,31 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
   const [showCostBreakdown, setShowCostBreakdown] = useState(false)
   
   // Cost calculator state
+  const [selectedTier, setSelectedTier] = useState<'starter' | 'growth' | 'pro' | 'scale' | 'custom'>('growth')
   const [calcPrompts, setCalcPrompts] = useState(50)
-  const [calcModels, setCalcModels] = useState(1)
-  const [calcFrequency, setCalcFrequency] = useState<keyof typeof SCAN_FREQUENCY>('weekly')
-  const [calcMemos, setCalcMemos] = useState(10)
+  const [calcModels, setCalcModels] = useState(2)
+  const [calcFrequency, setCalcFrequency] = useState<keyof typeof SCAN_FREQUENCY>('2x-week')
+  const [calcMemos, setCalcMemos] = useState(15)
   const [calcCompetitors, setCalcCompetitors] = useState(10)
+  
+  // Tier configurations
+  const TIERS = {
+    starter: { prompts: 25, models: 1, frequency: 'weekly' as const, memos: 5, competitors: 5, price: 29 },
+    growth: { prompts: 50, models: 2, frequency: '2x-week' as const, memos: 15, competitors: 10, price: 79 },
+    pro: { prompts: 100, models: 3, frequency: '3x-week' as const, memos: 30, competitors: 20, price: 149 },
+    scale: { prompts: 200, models: 4, frequency: 'daily' as const, memos: 50, competitors: 50, price: 349 },
+  }
+  
+  // Apply tier settings
+  const applyTier = (tier: keyof typeof TIERS) => {
+    const config = TIERS[tier]
+    setCalcPrompts(config.prompts)
+    setCalcModels(config.models)
+    setCalcFrequency(config.frequency)
+    setCalcMemos(config.memos)
+    setCalcCompetitors(config.competitors)
+    setSelectedTier(tier)
+  }
 
   // Calculate costs based on inputs
   const calculateMonthlyCost = (): CostCalculation => {
@@ -568,136 +588,370 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
         })}
       </div>
 
-      {/* Cost Calculator */}
+      {/* Pricing Tiers Grid */}
       <Card className="border-2">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              Cost Calculator
-            </span>
-            <Badge variant="outline" className="text-lg px-3 py-1">
-              {getTierName()} Tier
-            </Badge>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Pricing Plans
           </CardTitle>
           <CardDescription>
-            Adjust the sliders to see how costs scale with your usage
+            Choose a plan or customize your own. All plans include AI visibility monitoring, content generation, and competitor intelligence.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Sliders */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Prompts */}
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-sm font-medium">Prompts Tracked</Label>
-                <span className="text-sm font-bold text-primary">{calcPrompts}</span>
+          {/* 5-Tier Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {/* Starter */}
+            <button
+              onClick={() => applyTier('starter')}
+              className={`p-4 border-2 rounded-xl transition-all text-left relative ${
+                selectedTier === 'starter' 
+                  ? 'border-[#0EA5E9] bg-[#0EA5E9]/5 ring-2 ring-[#0EA5E9]/20' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {selectedTier === 'starter' && (
+                <div className="absolute -top-2 -right-2 bg-[#0EA5E9] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  SELECTED
+                </div>
+              )}
+              <div className="text-lg font-bold">Starter</div>
+              <div className="text-3xl font-bold text-[#0EA5E9] mt-2">$29<span className="text-sm text-muted-foreground font-normal">/mo</span></div>
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  25 prompts
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  1 AI model
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  Weekly scans
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  5 memos/mo
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  5 competitors
+                </div>
               </div>
-              <Slider
-                value={[calcPrompts]}
-                onValueChange={(v) => setCalcPrompts(v[0])}
-                min={10}
-                max={200}
-                step={10}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>10 (Starter)</span>
-                <span>200 (Scale)</span>
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Best for: Testing AI visibility
               </div>
-            </div>
+            </button>
 
-            {/* Models */}
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-sm font-medium">AI Models</Label>
-                <span className="text-sm font-bold text-primary">{calcModels}</span>
+            {/* Growth */}
+            <button
+              onClick={() => applyTier('growth')}
+              className={`p-4 border-2 rounded-xl transition-all text-left relative ${
+                selectedTier === 'growth' 
+                  ? 'border-[#0EA5E9] bg-[#0EA5E9]/5 ring-2 ring-[#0EA5E9]/20' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {selectedTier === 'growth' && (
+                <div className="absolute -top-2 -right-2 bg-[#0EA5E9] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  SELECTED
+                </div>
+              )}
+              <Badge className="absolute -top-2 left-3 bg-green-500 text-[10px]">POPULAR</Badge>
+              <div className="text-lg font-bold mt-2">Growth</div>
+              <div className="text-3xl font-bold text-[#0EA5E9] mt-2">$79<span className="text-sm text-muted-foreground font-normal">/mo</span></div>
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  50 prompts
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  2 AI models
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  2x/week scans
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  15 memos/mo
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  10 competitors
+                </div>
               </div>
-              <Slider
-                value={[calcModels]}
-                onValueChange={(v) => setCalcModels(v[0])}
-                min={1}
-                max={4}
-                step={1}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>1 (GPT only)</span>
-                <span>4 (All models)</span>
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Best for: Growing brands
               </div>
-            </div>
+            </button>
 
-            {/* Scan Frequency */}
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-sm font-medium">Scan Frequency</Label>
-                <span className="text-sm font-bold text-primary capitalize">{calcFrequency.replace('-', '/')}</span>
+            {/* Pro */}
+            <button
+              onClick={() => applyTier('pro')}
+              className={`p-4 border-2 rounded-xl transition-all text-left relative ${
+                selectedTier === 'pro' 
+                  ? 'border-[#0EA5E9] bg-[#0EA5E9]/5 ring-2 ring-[#0EA5E9]/20' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {selectedTier === 'pro' && (
+                <div className="absolute -top-2 -right-2 bg-[#0EA5E9] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  SELECTED
+                </div>
+              )}
+              <div className="text-lg font-bold">Pro</div>
+              <div className="text-3xl font-bold text-[#0EA5E9] mt-2">$149<span className="text-sm text-muted-foreground font-normal">/mo</span></div>
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  100 prompts
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  3 AI models
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  3x/week scans
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  30 memos/mo
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  20 competitors
+                </div>
               </div>
-              <div className="flex gap-2">
-                {(['weekly', '2x-week', '3x-week', 'daily'] as const).map((freq) => (
-                  <Button
-                    key={freq}
-                    variant={calcFrequency === freq ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCalcFrequency(freq)}
-                    className="flex-1 text-xs"
-                  >
-                    {freq === 'weekly' ? 'Weekly' : freq === '2x-week' ? '2x/wk' : freq === '3x-week' ? '3x/wk' : 'Daily'}
-                  </Button>
-                ))}
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Best for: Market leaders
               </div>
-            </div>
+            </button>
 
-            {/* Memos per Month */}
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Label className="text-sm font-medium">Memos / Month</Label>
-                <span className="text-sm font-bold text-primary">{calcMemos}</span>
+            {/* Scale */}
+            <button
+              onClick={() => applyTier('scale')}
+              className={`p-4 border-2 rounded-xl transition-all text-left relative ${
+                selectedTier === 'scale' 
+                  ? 'border-[#0EA5E9] bg-[#0EA5E9]/5 ring-2 ring-[#0EA5E9]/20' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {selectedTier === 'scale' && (
+                <div className="absolute -top-2 -right-2 bg-[#0EA5E9] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  SELECTED
+                </div>
+              )}
+              <div className="text-lg font-bold">Scale</div>
+              <div className="text-3xl font-bold text-[#0EA5E9] mt-2">$349<span className="text-sm text-muted-foreground font-normal">/mo</span></div>
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  200 prompts
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  4 AI models
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  Daily scans
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  50 memos/mo
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  50 competitors
+                </div>
               </div>
-              <Slider
-                value={[calcMemos]}
-                onValueChange={(v) => setCalcMemos(v[0])}
-                min={0}
-                max={50}
-                step={5}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0</span>
-                <span>50</span>
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Best for: Enterprises
               </div>
-            </div>
+            </button>
 
-            {/* Competitors Monitored */}
-            <div className="space-y-3 md:col-span-2">
-              <div className="flex justify-between">
-                <Label className="text-sm font-medium">Competitors Monitored</Label>
-                <span className="text-sm font-bold text-primary">{calcCompetitors}</span>
+            {/* Custom */}
+            <button
+              onClick={() => setSelectedTier('custom')}
+              className={`p-4 border-2 rounded-xl transition-all text-left relative ${
+                selectedTier === 'custom' 
+                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/5 ring-2 ring-[#8B5CF6]/20' 
+                  : 'border-dashed border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              {selectedTier === 'custom' && (
+                <div className="absolute -top-2 -right-2 bg-[#8B5CF6] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  SELECTED
+                </div>
+              )}
+              <div className="text-lg font-bold">Custom</div>
+              <div className="text-3xl font-bold text-[#8B5CF6] mt-2">${costs.price.toFixed(0)}<span className="text-sm text-muted-foreground font-normal">/mo</span></div>
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-[#8B5CF6]" />
+                  {calcPrompts} prompts
+                </div>
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-[#8B5CF6]" />
+                  {calcModels} AI model{calcModels > 1 ? 's' : ''}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-[#8B5CF6]" />
+                  {calcFrequency.replace('-', '/')} scans
+                </div>
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-[#8B5CF6]" />
+                  {calcMemos} memos/mo
+                </div>
+                <div className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-[#8B5CF6]" />
+                  {calcCompetitors} competitors
+                </div>
               </div>
-              <Slider
-                value={[calcCompetitors]}
-                onValueChange={(v) => setCalcCompetitors(v[0])}
-                min={0}
-                max={50}
-                step={5}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0 (None)</span>
-                <span>50 (Comprehensive)</span>
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Build your own plan
               </div>
-            </div>
+            </button>
           </div>
 
-          {/* Cost Display */}
+          {/* Custom Plan Sliders - Only show when Custom is selected */}
+          {selectedTier === 'custom' && (
+            <div className="border-2 border-[#8B5CF6]/30 rounded-xl p-6 bg-[#8B5CF6]/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="h-5 w-5 text-[#8B5CF6]" />
+                <span className="font-bold">Customize Your Plan</span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Prompts */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Label className="text-sm font-medium">Prompts Tracked</Label>
+                    <span className="text-sm font-bold text-[#8B5CF6]">{calcPrompts}</span>
+                  </div>
+                  <Slider
+                    value={[calcPrompts]}
+                    onValueChange={(v) => setCalcPrompts(v[0])}
+                    min={10}
+                    max={300}
+                    step={10}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>10</span>
+                    <span>300</span>
+                  </div>
+                </div>
+
+                {/* Models */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Label className="text-sm font-medium">AI Models</Label>
+                    <span className="text-sm font-bold text-[#8B5CF6]">{calcModels}</span>
+                  </div>
+                  <Slider
+                    value={[calcModels]}
+                    onValueChange={(v) => setCalcModels(v[0])}
+                    min={1}
+                    max={4}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>1 (GPT)</span>
+                    <span>4 (All)</span>
+                  </div>
+                </div>
+
+                {/* Scan Frequency */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Label className="text-sm font-medium">Scan Frequency</Label>
+                  </div>
+                  <div className="flex gap-2">
+                    {(['weekly', '2x-week', '3x-week', 'daily'] as const).map((freq) => (
+                      <Button
+                        key={freq}
+                        variant={calcFrequency === freq ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCalcFrequency(freq)}
+                        className={`flex-1 text-xs ${calcFrequency === freq ? 'bg-[#8B5CF6] hover:bg-[#8B5CF6]/90' : ''}`}
+                      >
+                        {freq === 'weekly' ? 'Weekly' : freq === '2x-week' ? '2x/wk' : freq === '3x-week' ? '3x/wk' : 'Daily'}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Memos per Month */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Label className="text-sm font-medium">Memos / Month</Label>
+                    <span className="text-sm font-bold text-[#8B5CF6]">{calcMemos}</span>
+                  </div>
+                  <Slider
+                    value={[calcMemos]}
+                    onValueChange={(v) => setCalcMemos(v[0])}
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0</span>
+                    <span>100</span>
+                  </div>
+                </div>
+
+                {/* Competitors Monitored */}
+                <div className="space-y-3 md:col-span-2">
+                  <div className="flex justify-between">
+                    <Label className="text-sm font-medium">Competitors Monitored</Label>
+                    <span className="text-sm font-bold text-[#8B5CF6]">{calcCompetitors}</span>
+                  </div>
+                  <Slider
+                    value={[calcCompetitors]}
+                    onValueChange={(v) => setCalcCompetitors(v[0])}
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>0</span>
+                    <span>100</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Cost Breakdown */}
           <div className="border-t pt-6">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Monthly Price */}
+              {/* Monthly Price Summary */}
               <div className="p-6 bg-[#0F172A] text-white rounded-lg">
-                <div className="text-xs font-bold tracking-widest text-slate-400 mb-2">MONTHLY PRICE</div>
-                <div className="text-4xl font-bold text-[#0EA5E9]">${costs.price.toFixed(0)}<span className="text-lg text-slate-400">/mo</span></div>
+                <div className="text-xs font-bold tracking-widest text-slate-400 mb-2">
+                  {selectedTier === 'custom' ? 'CUSTOM PLAN' : `${selectedTier.toUpperCase()} PLAN`}
+                </div>
+                <div className="text-4xl font-bold text-[#0EA5E9]">
+                  ${selectedTier === 'custom' ? costs.price.toFixed(0) : TIERS[selectedTier as keyof typeof TIERS].price}
+                  <span className="text-lg text-slate-400">/mo</span>
+                </div>
                 <div className="text-xs text-slate-400 mt-2">
-                  Includes {MARGIN_MULTIPLIER}x margin on ${costs.rawCost.toFixed(2)} API cost
+                  {selectedTier === 'custom' 
+                    ? `Based on ${calcPrompts} prompts × ${calcModels} models × ${SCAN_FREQUENCY[calcFrequency]} scans/mo`
+                    : `Includes ${TIERS[selectedTier as keyof typeof TIERS].prompts} prompts, ${TIERS[selectedTier as keyof typeof TIERS].models} model${TIERS[selectedTier as keyof typeof TIERS].models > 1 ? 's' : ''}`
+                  }
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-700">
+                  <div className="text-xs text-slate-400">
+                    API cost: ${costs.rawCost.toFixed(2)} × {MARGIN_MULTIPLIER}x margin
+                  </div>
                 </div>
               </div>
 
@@ -708,65 +962,26 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
                   <span className="text-sm">Prompt Scanning</span>
                   <span className="font-medium">${costs.breakdown.scanning.toFixed(2)}</span>
                 </div>
-                <Progress value={(costs.breakdown.scanning / costs.price) * 100} className="h-1" />
+                <Progress value={(costs.breakdown.scanning / Math.max(costs.price, 1)) * 100} className="h-1" />
                 
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm">Content Generation</span>
                   <span className="font-medium">${costs.breakdown.memos.toFixed(2)}</span>
                 </div>
-                <Progress value={(costs.breakdown.memos / costs.price) * 100} className="h-1" />
+                <Progress value={(costs.breakdown.memos / Math.max(costs.price, 1)) * 100} className="h-1" />
                 
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm">Competitor Intel</span>
                   <span className="font-medium">${costs.breakdown.competitors.toFixed(2)}</span>
                 </div>
-                <Progress value={(costs.breakdown.competitors / costs.price) * 100} className="h-1" />
+                <Progress value={(costs.breakdown.competitors / Math.max(costs.price, 1)) * 100} className="h-1" />
                 
                 <div className="flex justify-between items-center py-1">
                   <span className="text-sm">Discovery</span>
                   <span className="font-medium">${costs.breakdown.discovery.toFixed(2)}</span>
                 </div>
-                <Progress value={(costs.breakdown.discovery / costs.price) * 100} className="h-1" />
+                <Progress value={(costs.breakdown.discovery / Math.max(costs.price, 1)) * 100} className="h-1" />
               </div>
-            </div>
-          </div>
-
-          {/* Tier Suggestions */}
-          <div className="border-t pt-4">
-            <div className="text-xs font-bold tracking-widest text-muted-foreground mb-3">SUGGESTED TIERS</div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <button
-                onClick={() => { setCalcPrompts(25); setCalcModels(1); setCalcFrequency('weekly'); setCalcMemos(5); setCalcCompetitors(5); }}
-                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
-              >
-                <div className="font-bold text-sm">Starter</div>
-                <div className="text-xs text-muted-foreground">25 prompts, 1 model</div>
-                <div className="text-sm font-bold text-primary mt-1">~$15/mo</div>
-              </button>
-              <button
-                onClick={() => { setCalcPrompts(50); setCalcModels(2); setCalcFrequency('2x-week'); setCalcMemos(15); setCalcCompetitors(10); }}
-                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
-              >
-                <div className="font-bold text-sm">Growth</div>
-                <div className="text-xs text-muted-foreground">50 prompts, 2 models</div>
-                <div className="text-sm font-bold text-primary mt-1">~$49/mo</div>
-              </button>
-              <button
-                onClick={() => { setCalcPrompts(100); setCalcModels(3); setCalcFrequency('3x-week'); setCalcMemos(25); setCalcCompetitors(20); }}
-                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
-              >
-                <div className="font-bold text-sm">Pro</div>
-                <div className="text-xs text-muted-foreground">100 prompts, 3 models</div>
-                <div className="text-sm font-bold text-primary mt-1">~$99/mo</div>
-              </button>
-              <button
-                onClick={() => { setCalcPrompts(200); setCalcModels(4); setCalcFrequency('daily'); setCalcMemos(50); setCalcCompetitors(50); }}
-                className="p-3 border rounded-lg hover:border-primary transition-colors text-left"
-              >
-                <div className="font-bold text-sm">Scale</div>
-                <div className="text-xs text-muted-foreground">200 prompts, 4 models</div>
-                <div className="text-sm font-bold text-primary mt-1">~$299/mo</div>
-              </button>
             </div>
           </div>
 
@@ -776,8 +991,8 @@ export function StrategyPlaybook({ brandId, brandName, metrics }: StrategyPlaybo
               <Gauge className="h-4 w-4 text-green-600 mt-0.5" />
               <div className="text-sm">
                 <strong>ROI Context:</strong> A single B2B content piece costs $500-2,000 to produce. 
-                At ${costs.price.toFixed(0)}/mo, you get {calcMemos} AI-optimized pieces + monitoring across {calcPrompts} prompts.
-                {costs.price > 0 && ` That's $${(costs.price / Math.max(calcMemos, 1)).toFixed(0)}/piece vs $1,000+ traditional.`}
+                At ${selectedTier === 'custom' ? costs.price.toFixed(0) : TIERS[selectedTier as keyof typeof TIERS].price}/mo, you get {calcMemos} AI-optimized pieces + monitoring across {calcPrompts} prompts.
+                {calcMemos > 0 && ` That's $${((selectedTier === 'custom' ? costs.price : TIERS[selectedTier as keyof typeof TIERS].price) / calcMemos).toFixed(0)}/piece vs $1,000+ traditional.`}
               </div>
             </div>
           </div>
