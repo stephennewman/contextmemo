@@ -390,6 +390,26 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**QA Fixes: Settings UI, Activity Feed Links, 404 Errors** (7cc3af0)
+- Removed Domain/Subdomain display fields from Settings (not editable, cluttered UI)
+- Fixed placeholder text for Founded/Headquarters fields (was showing misleading defaults like "2020", "San Francisco, CA")
+- Changed "Competitor Auto-Discovered" to "Entity Auto-Discovered" for non-competitor entities (G2, publishers, etc.)
+- Made activity feed links open in new tab (prevents navigation state issues)
+- Fixed personas race condition - now updates local state immediately after API response (no more lag)
+- Added sticky save bar at bottom of Settings page (appears only when unsaved changes exist)
+- Fixed 404 errors on scan/analytics/citations links (routes didn't exist, now point to valid pages)
+- Removed Prompt Themes section from Settings (unused feature)
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/settings/page.tsx` - UI cleanup, sticky save bar, remove themes
+- `app/api/activity/route.ts` - Fix broken link URLs
+- `components/dashboard/activity-feed.tsx` - Links open in new tab
+- `components/v2/feed/feed-item.tsx` - Links open in new tab
+- `lib/feed/emit.ts` - Entity type support in feed events
+- `lib/utils/activity-logger.ts` - Entity type support, fix link URLs
+
+---
+
 **Fix: HubSpot Images - Use Unsplash URLs Directly** (b1a6977)
 - Reverted `files` OAuth scope (requires HubSpot developer portal config change)
 - Now using Unsplash URLs directly for featured images - HubSpot accepts external URLs
