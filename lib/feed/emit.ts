@@ -243,7 +243,7 @@ export async function emitScanComplete(params: {
 }
 
 /**
- * Emit a competitor discovered event (W2)
+ * Emit a competitor/entity discovered event (W2)
  */
 export async function emitCompetitorDiscovered(params: {
   tenant_id: string
@@ -252,13 +252,17 @@ export async function emitCompetitorDiscovered(params: {
   competitor_name: string
   competitor_domain: string
   source: 'scan' | 'network_expansion' | 'manual'
+  entity_type?: string
 }): Promise<string | null> {
+  const isCompetitor = !params.entity_type || params.entity_type === 'product_competitor'
+  const typeLabel = isCompetitor ? 'competitor' : 'entity'
+  
   return emitFeedEvent({
     tenant_id: params.tenant_id,
     brand_id: params.brand_id,
     workflow: 'network_expansion',
     event_type: 'competitor_discovered',
-    title: `New competitor: ${params.competitor_name}`,
+    title: `New ${typeLabel}: ${params.competitor_name}`,
     description: `Discovered via ${params.source.replace('_', ' ')}`,
     severity: 'info',
     action_available: ['expand_network', 'view_competitor', 'dismiss'],
@@ -268,6 +272,7 @@ export async function emitCompetitorDiscovered(params: {
       network: {
         competitor_name: params.competitor_name,
         competitor_domain: params.competitor_domain,
+        entity_type: params.entity_type || 'product_competitor',
         prompts_found: 0,
         new_competitors_found: 0,
       },

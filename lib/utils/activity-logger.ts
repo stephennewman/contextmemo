@@ -168,17 +168,18 @@ export const ActivityLoggers = {
   async competitorDiscovered(
     brandId: string,
     tenantId: string,
-    competitor: { name: string; domain?: string; auto: boolean }
+    competitor: { name: string; domain?: string; auto: boolean; entityType?: string }
   ) {
+    const typeLabel = competitor.entityType === 'product_competitor' ? 'Competitor' : 'Entity'
     return logActivity({
       brandId,
       tenantId,
       activityType: 'competitor_discovered',
-      title: competitor.auto ? 'Competitor Auto-Discovered' : 'Competitor Added',
+      title: competitor.auto ? `${typeLabel} Auto-Discovered` : `${typeLabel} Added`,
       description: competitor.name,
       linkUrl: `/brands/${brandId}?tab=competitors`,
-      linkLabel: 'View Competitors',
-      metadata: { domain: competitor.domain, auto: competitor.auto },
+      linkLabel: 'View Entities',
+      metadata: { domain: competitor.domain, auto: competitor.auto, entityType: competitor.entityType },
     })
   },
 
@@ -230,7 +231,7 @@ export const ActivityLoggers = {
       activityType: 'ai_traffic_detected',
       title: `Visit from ${source.charAt(0).toUpperCase() + source.slice(1)}`,
       description: pageUrl,
-      linkUrl: memoId ? `/brands/${brandId}/memos/${memoId}` : `/brands/${brandId}/analytics`,
+      linkUrl: memoId ? `/brands/${brandId}/memos/${memoId}` : `/v2/brands/${brandId}`,
       linkLabel: memoId ? 'View Memo' : 'View Analytics',
       metadata: { source },
     })

@@ -591,14 +591,16 @@ export function ActivityFeed({ isOpen, onOpenChange, brands = [] }: ActivityFeed
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             ) : (
-                              <Link
+                              <a
                                 href={activity.link_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
-                                onClick={() => onOpenChange(false)}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 {activity.link_label || 'View'}
-                                <ChevronRight className="h-3 w-3" />
-                              </Link>
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
                             )
                           )}
                         </div>
@@ -887,27 +889,16 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
                       {/* Footer */}
                       {activity.link_url && (
                         <div className="flex items-center gap-2 mt-2">
-                          {activity.link_url.startsWith('http') ? (
-                            <a
-                              href={activity.link_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {activity.link_label || 'View'}
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : (
-                            <Link
-                              href={activity.link_url}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {activity.link_label || 'View'}
-                              <ChevronRight className="h-3 w-3" />
-                            </Link>
-                          )}
+                          <a
+                            href={activity.link_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {activity.link_label || 'View'}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
                         </div>
                       )}
                     </div>

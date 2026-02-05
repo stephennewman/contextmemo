@@ -52,7 +52,6 @@ const NAV_SECTIONS = [
   { id: 'brand-voice', label: 'Brand Voice', icon: MessageSquare },
   { id: 'content', label: 'Content Settings', icon: FileText },
   { id: 'personas', label: 'Target Personas', icon: Users },
-  { id: 'themes', label: 'Prompt Themes', icon: Target },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
 ]
@@ -602,8 +601,14 @@ export default function BrandSettingsPage() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
+      
+      // Update local state immediately with returned personas
+      if (data.personas) {
+        setPersonas(data.personas)
+        setDisabledPersonas([])
+      }
+      
       toast.success(data.message)
-      router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to regenerate')
     } finally {
@@ -633,10 +638,15 @@ export default function BrandSettingsPage() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
+      
+      // Update local state immediately with new persona
+      if (data.persona) {
+        setPersonas(prev => [...prev, data.persona])
+      }
+      
       toast.success(data.message)
       setAddPersonaOpen(false)
       setNewPersona({ title: '', seniority: 'manager', function: '', description: '', phrasing_style: '', priorities: '' })
-      router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to add persona')
     } finally {
@@ -918,18 +928,6 @@ export default function BrandSettingsPage() {
                 <Label htmlFor="name">Brand Name</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Domain</Label>
-                  <Input value={brand.domain} disabled />
-                  <p className="text-xs text-muted-foreground">Cannot be changed</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Subdomain</Label>
-                  <Input value={`${brand.subdomain}.contextmemo.com`} disabled />
-                  <p className="text-xs text-muted-foreground">Cannot be changed</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </section>
@@ -952,12 +950,12 @@ export default function BrandSettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="founded">Founded</Label>
-                  <Input id="founded" value={founded} onChange={(e) => setFounded(e.target.value)} placeholder="2020" />
+                  <Input id="founded" value={founded} onChange={(e) => setFounded(e.target.value)} placeholder="" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="headquarters">Headquarters</Label>
-                <Input id="headquarters" value={headquarters} onChange={(e) => setHeadquarters(e.target.value)} placeholder="San Francisco, CA" />
+                <Input id="headquarters" value={headquarters} onChange={(e) => setHeadquarters(e.target.value)} placeholder="" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -1604,70 +1602,6 @@ export default function BrandSettingsPage() {
           </Card>
         </section>
 
-        {/* Prompt Themes Section */}
-        <section id="themes" ref={(el) => { sectionRefs.current['themes'] = el }} className="scroll-mt-24">
-          <Card className="border-2 border-[#0EA5E9]/30" style={{ borderLeft: '4px solid #0EA5E9' }}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-[#0EA5E9]" />
-                  <CardTitle>Critical Prompt Themes</CardTitle>
-                </div>
-                {!isAddingTheme && (
-                  <Button variant="outline" size="sm" onClick={() => setIsAddingTheme(true)} className="gap-1">
-                    <Plus className="h-3 w-3" />Add Theme
-                  </Button>
-                )}
-              </div>
-              <CardDescription>1-3 keyword clusters that define what prompts should target. Click priority to change.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isAddingTheme && (
-                <div className="flex gap-2 mb-4">
-                  <Input placeholder="e.g., temperature monitoring, food safety..." value={newTheme} onChange={(e) => setNewTheme(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTheme()} className="flex-1" autoFocus />
-                  <Button size="sm" onClick={addTheme}>Add</Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setIsAddingTheme(false); setNewTheme('') }}>Cancel</Button>
-                </div>
-              )}
-
-              {themes.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {themes
-                    .sort((a, b) => {
-                      const order = { high: 0, medium: 1, low: 2 }
-                      return order[a.priority] - order[b.priority]
-                    })
-                    .map((theme, i) => (
-                      <div key={i} className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${
-                        theme.priority === 'high' ? 'bg-[#0EA5E9]/10 border-[#0EA5E9] text-[#0EA5E9]' :
-                        theme.priority === 'medium' ? 'bg-[#F59E0B]/10 border-[#F59E0B] text-[#F59E0B]' :
-                        'bg-zinc-100 border-zinc-300 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-400'
-                      }`}>
-                        <button onClick={() => toggleThemePriority(theme.theme)} className="font-medium text-sm hover:underline" title={`Priority: ${theme.priority} (click to change)`}>
-                          {theme.theme}
-                        </button>
-                        {theme.auto_detected && <Sparkles className="h-3 w-3 opacity-60" />}
-                        <button onClick={() => removeTheme(theme.theme)} className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground py-4 text-center">No prompt themes defined yet.</div>
-              )}
-
-              {themes.length > 0 && (
-                <div className="flex items-center gap-4 mt-4 pt-3 border-t text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#0EA5E9]"></span>High priority</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#F59E0B]"></span>Medium</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-zinc-400"></span>Low</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
         {/* Integrations Section */}
         <section id="integrations" ref={(el) => { sectionRefs.current['integrations'] = el }} className="scroll-mt-24">
           <div className="space-y-6">
@@ -1845,6 +1779,32 @@ export default function BrandSettingsPage() {
           </Card>
         </section>
       </div>
+      
+      {/* Sticky Save Bar - appears when there are unsaved changes */}
+      {isDirty && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 px-6 py-3">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              You have unsaved changes
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Discard
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="bg-[#0EA5E9] hover:bg-[#0284C7]"
+              >
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

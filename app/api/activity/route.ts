@@ -144,19 +144,19 @@ export async function GET(request: NextRequest) {
                 linkLabel = 'View Resources'
                 break
               case 'scan_complete':
-                linkUrl = `/brands/${alert.brand_id}/scans`
-                linkLabel = 'View Scan Results'
+                linkUrl = `/v2/brands/${alert.brand_id}/prompts`
+                linkLabel = 'View Prompts'
                 break
               case 'discovery_complete':
-                linkUrl = `/brands/${alert.brand_id}/queries`
-                linkLabel = 'View Queries'
+                linkUrl = `/v2/brands/${alert.brand_id}/prompts`
+                linkLabel = 'View Prompts'
                 break
               case 'citation_found':
-                linkUrl = `/brands/${alert.brand_id}/citations`
-                linkLabel = 'View Citations'
+                linkUrl = `/v2/brands/${alert.brand_id}/prompts`
+                linkLabel = 'View Prompts'
                 break
               case 'ai_traffic_detected':
-                linkUrl = `/brands/${alert.brand_id}/analytics`
+                linkUrl = `/v2/brands/${alert.brand_id}`
                 linkLabel = 'View Analytics'
                 break
               default:
@@ -395,7 +395,7 @@ export async function GET(request: NextRequest) {
             title: `AI Scan Complete`,
             description: `${score}% visibility across ${models.length} models (${mentioned}/${total} mentions)`,
             icon: meta.icon,
-            link_url: `/brands/${first.brand_id}/scans`,
+            link_url: `/v2/brands/${first.brand_id}/prompts`,
             link_label: 'View Scan Results',
             metadata: { visibility: score, models: models.length, mentioned, total },
             created_at: first.scanned_at,
@@ -430,8 +430,8 @@ export async function GET(request: NextRequest) {
               title: `Visit from ${sourceLabel}`,
               description: t.page_url,
               icon: meta.icon,
-              link_url: t.memo_id ? `/brands/${t.brand_id}/memos/${t.memo_id}` : `/brands/${t.brand_id}/analytics`,
-              link_label: t.memo_id ? 'View Memo' : 'View Analytics',
+              link_url: t.memo_id ? `/brands/${t.brand_id}/memos/${t.memo_id}` : `/v2/brands/${t.brand_id}`,
+              link_label: t.memo_id ? 'View Memo' : 'View Dashboard',
               metadata: { source: t.referrer_source },
               created_at: t.timestamp,
             })

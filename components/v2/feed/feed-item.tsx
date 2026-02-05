@@ -284,14 +284,16 @@ export function FeedItem({ event, onMarkRead, onDismiss, onAction, onViewDetails
                   </Badge>
                 )}
                 {event.related_memo_id && (
-                  <Link 
+                  <a 
                     href={`/brands/${event.brand_id}/memos/${event.related_memo_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-xs text-[#0EA5E9] hover:underline flex items-center gap-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     View memo
                     <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  </a>
                 )}
               </div>
             )}
@@ -305,14 +307,16 @@ export function FeedItem({ event, onMarkRead, onDismiss, onAction, onViewDetails
                   </span>
                 )}
                 {event.related_memo_id && (
-                  <Link 
+                  <a 
                     href={`/brands/${event.brand_id}/memos/${event.related_memo_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-xs text-[#0EA5E9] hover:underline flex items-center gap-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     View memo
                     <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  </a>
                 )}
               </div>
             )}
