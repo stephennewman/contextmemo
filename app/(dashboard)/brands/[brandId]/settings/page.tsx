@@ -18,7 +18,7 @@ import {
   Crown, User, Mic
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { BrandContext, BrandTone, HubSpotConfig, SearchConsoleConfig, TargetPersona, PersonaSeniority, PromptTheme } from '@/lib/supabase/types'
+import { BrandContext, BrandTone, HubSpotConfig, SearchConsoleConfig, TargetPersona, PersonaSeniority, PromptTheme, MarketFocus, BrandOffer, BrandOffers } from '@/lib/supabase/types'
 import { VoiceInsightsSection } from '@/components/voice-insights-section'
 import {
   Dialog,

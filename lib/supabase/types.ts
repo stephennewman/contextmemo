@@ -698,6 +698,12 @@ export interface ExistingPage {
   crawled_at?: string     // When this page was last crawled
 }
 
+// Market focus configuration - tracks focus percentage per market
+export interface MarketFocus {
+  name: string           // Market name (e.g., "Food & Beverage")
+  focus: number          // Focus percentage 0-100 (used for content generation weighting)
+}
+
 // Brand context structure
 export interface BrandContext {
   company_name?: string
@@ -706,6 +712,7 @@ export interface BrandContext {
   description?: string
   products?: string[]
   markets?: string[]
+  market_focus?: MarketFocus[]  // Market focus percentages for content generation
   features?: string[]
   certifications?: string[]
   customers?: string[]
