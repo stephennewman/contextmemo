@@ -301,10 +301,7 @@ export default async function BrandPage({ params }: Props) {
               )}
               <span className="text-zinc-400">·</span>
               <a 
-                href={process.env.NODE_ENV === 'development' 
-                  ? `http://localhost:3000/memo/${brand.subdomain}` 
-                  : `https://${brand.subdomain}.contextmemo.com`
-                } 
+                href={`/memo/${brand.subdomain}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
@@ -346,10 +343,7 @@ export default async function BrandPage({ params }: Props) {
             )}
             <span className="text-zinc-400">·</span>
             <a 
-              href={process.env.NODE_ENV === 'development' 
-                ? `http://localhost:3000/memo/${brand.subdomain}` 
-                : `https://${brand.subdomain}.contextmemo.com`
-              } 
+              href={`/memo/${brand.subdomain}`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"

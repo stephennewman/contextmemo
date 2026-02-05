@@ -1,69 +1,71 @@
-import { Skeleton } from '@/components/ui/skeleton'
-
-export default function BrandPageLoading() {
+export default function BrandLoading() {
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Skeleton */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Skeleton className="h-8 w-48 bg-slate-200" />
-            <Skeleton className="h-6 w-20 bg-slate-100" />
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
+            <div className="h-5 w-16 bg-slate-200 rounded animate-pulse" />
+            <span className="text-zinc-400">·</span>
+            <div className="h-4 w-40 bg-slate-100 rounded animate-pulse" />
           </div>
-          <Skeleton className="h-4 w-56 bg-slate-100" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-9 bg-slate-200" />
-          <Skeleton className="h-9 w-32 bg-slate-200" />
-          <Skeleton className="h-9 w-24 bg-slate-200" />
         </div>
       </div>
 
-      {/* Visibility Score Hero - 4 cards */}
+      {/* Stats Hero Skeleton */}
       <div className="grid gap-4 md:grid-cols-4">
-        {/* Main visibility card */}
-        <div className="p-6 bg-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
+        {/* Citation Score */}
+        <div className="p-6 bg-[#0F172A] text-white animate-pulse" style={{ borderLeft: '8px solid #0EA5E9' }}>
           <div className="flex items-center gap-2 mb-2">
-            <Skeleton className="h-5 w-5 bg-slate-600" />
-            <Skeleton className="h-3 w-24 bg-slate-600" />
+            <div className="h-5 w-5 bg-slate-600 rounded" />
+            <div className="h-3 w-24 bg-slate-600 rounded" />
           </div>
-          <Skeleton className="h-12 w-20 bg-slate-500 mt-2" />
-          <Skeleton className="h-2 w-full bg-slate-700 mt-3" />
+          <div className="h-12 w-20 bg-slate-700 rounded mt-2" />
+          <div className="w-full h-2 bg-slate-700 mt-3 rounded" />
         </div>
         
-        {/* Other stat cards */}
-        {[
-          { color: '#8B5CF6', label: 'MEMOS' },
-          { color: '#10B981', label: 'PROMPTS' },
-          { color: '#F59E0B', label: 'SCANS' },
-        ].map((stat, i) => (
-          <div key={i} className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: `8px solid ${stat.color}` }}>
-            <Skeleton className="h-3 w-16 bg-slate-100" />
-            <Skeleton className="h-10 w-12 bg-slate-200 mt-2" />
-            <Skeleton className="h-3 w-20 bg-slate-100 mt-1" />
-          </div>
-        ))}
+        {/* Memos */}
+        <div className="p-6 border-[3px] border-[#0F172A] animate-pulse" style={{ borderLeft: '8px solid #8B5CF6' }}>
+          <div className="h-3 w-12 bg-slate-200 rounded mb-2" />
+          <div className="h-10 w-16 bg-slate-200 rounded" />
+          <div className="h-3 w-16 bg-slate-100 rounded mt-2" />
+        </div>
+        
+        {/* Prompts */}
+        <div className="p-6 border-[3px] border-[#0F172A] animate-pulse" style={{ borderLeft: '8px solid #10B981' }}>
+          <div className="h-3 w-14 bg-slate-200 rounded mb-2" />
+          <div className="h-10 w-12 bg-slate-200 rounded" />
+          <div className="h-3 w-14 bg-slate-100 rounded mt-2" />
+        </div>
+        
+        {/* Scans */}
+        <div className="p-6 border-[3px] border-[#0F172A] animate-pulse" style={{ borderLeft: '8px solid #F59E0B' }}>
+          <div className="h-3 w-12 bg-slate-200 rounded mb-2" />
+          <div className="h-10 w-16 bg-slate-200 rounded" />
+          <div className="h-3 w-20 bg-slate-100 rounded mt-2" />
+        </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs Skeleton */}
       <div className="space-y-4">
-        {/* Tab headers */}
-        <div className="flex border-b-[3px] border-[#0F172A]">
-          {['OVERVIEW', 'SCANS', 'MEMOS', 'PROMPTS', 'COMPETITORS', 'SEARCH'].map((tab, i) => (
-            <Skeleton 
+        {/* Tab List */}
+        <div className="flex gap-1 border-b-[3px] border-[#0F172A] pb-0">
+          {['PROFILE', 'ACTIVITY', 'SCANS', 'MEMOS', 'PROMPTS', 'COMPETITORS'].map((tab, i) => (
+            <div
               key={tab}
-              className={`h-11 w-24 ${i === 0 ? 'bg-[#0EA5E9]/30' : 'bg-slate-100'}`}
-            />
+              className={`px-4 py-2 text-xs font-bold ${i === 0 ? 'bg-[#0EA5E9] text-white' : 'text-slate-400'}`}
+            >
+              {tab}
+            </div>
           ))}
         </div>
-
-        {/* Tab content - Chart area */}
-        <div className="border-[3px] border-[#0F172A] p-6">
-          <div className="flex items-center justify-between mb-4">
-            <Skeleton className="h-6 w-40 bg-slate-200" />
-            <Skeleton className="h-8 w-32 bg-slate-100" />
-          </div>
-          <Skeleton className="h-64 w-full bg-slate-100" />
+        
+        {/* Tab Content Skeleton */}
+        <div className="space-y-4 animate-pulse">
+          <div className="h-40 bg-slate-100 rounded border-[3px] border-slate-200" />
+          <div className="h-32 bg-slate-50 rounded border-[3px] border-slate-200" />
         </div>
       </div>
     </div>
