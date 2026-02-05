@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.0] - 2026-02-05
+
+### Added
+- **Public Content Routes for Context Memo Brand**: SEO-optimized URL structure for publishing memos on contextmemo.com
+  - `/compare/[slug]` - Comparison memos (vs competitors)
+  - `/alternatives/[slug]` - Alternative memos (alternatives to X)
+  - `/guides/[slug]` - How-to guides and tutorials
+  - `/tools/[slug]` - Tools, resources, and best-of lists
+  - `/for/[slug]` - Industry-specific content
+  - Index pages for each content type with memo listings
+  - Backwards compatible with existing slug formats
+
+- **Shared Memo Rendering Utility**: `lib/memo/render.tsx`
+  - Reusable memo page component
+  - Markdown processing and HTML rendering
+  - AI-optimized Schema.org structured data
+  - Review status badges and provenance tracking
+
+---
+
 ## [0.18.0] - 2026-02-05
 
 ### Added
