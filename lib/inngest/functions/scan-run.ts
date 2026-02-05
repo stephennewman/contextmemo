@@ -340,12 +340,14 @@ export const scanRun = inngest.createFunction(
         console.log(`[Stripe] Reported ${credits} credits for brand ${brandId}`)
         
         // Update brand credits used
-        await supabase.rpc('increment_brand_credits', {
-          p_brand_id: brandId,
-          p_credits: credits,
-        }).then(() => {}).catch(() => {
+        try {
+          await supabase.rpc('increment_brand_credits', {
+            p_brand_id: brandId,
+            p_credits: credits,
+          })
+        } catch {
           // RPC might not exist yet, that's ok
-        })
+        }
       } else {
         console.error(`[Stripe] Failed to report usage: ${result.error}`)
       }

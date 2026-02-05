@@ -138,8 +138,8 @@ export const discoveryScan = inngest.createFunction(
       })
 
       // Track usage for GPT-4o query generation
-      totalUsage.inputTokens += usage?.promptTokens || 0
-      totalUsage.outputTokens += usage?.completionTokens || 0
+      totalUsage.inputTokens += usage?.inputTokens || 0
+      totalUsage.outputTokens += usage?.outputTokens || 0
       totalUsage.calls += 1
 
       try {
@@ -190,8 +190,8 @@ export const discoveryScan = inngest.createFunction(
               brandMentioned: mentioned,
               mentionContext,
               responseSnippet: text.slice(0, 300),
-              inputTokens: usage?.promptTokens || 0,
-              outputTokens: usage?.completionTokens || 0,
+              inputTokens: usage?.inputTokens || 0,
+              outputTokens: usage?.outputTokens || 0,
             }
           } catch (e) {
             console.error('OpenRouter scan failed:', e)

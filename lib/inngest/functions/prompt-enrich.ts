@@ -227,8 +227,8 @@ export const promptEnrich = inngest.createFunction(
           })
 
           // Track usage
-          totalUsage.inputTokens += usage?.promptTokens || 0
-          totalUsage.outputTokens += usage?.completionTokens || 0
+          totalUsage.inputTokens += usage?.inputTokens || 0
+          totalUsage.outputTokens += usage?.outputTokens || 0
           totalUsage.calls += 1
 
           const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -297,8 +297,8 @@ export const promptEnrich = inngest.createFunction(
           })
 
           // Track usage
-          totalUsage.inputTokens += usage?.promptTokens || 0
-          totalUsage.outputTokens += usage?.completionTokens || 0
+          totalUsage.inputTokens += usage?.inputTokens || 0
+          totalUsage.outputTokens += usage?.outputTokens || 0
           totalUsage.calls += 1
 
           const jsonMatch = text.match(/\[[\s\S]*\]/)
