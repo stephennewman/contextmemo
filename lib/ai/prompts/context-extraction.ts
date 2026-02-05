@@ -343,6 +343,19 @@ For NON-competitors, assess partnership potential:
 - Entities you're not confident actually exist
 - Entities without a clear domain
 
+### BLOCKLIST - NEVER suggest these (they are too generic or common tools):
+- Single generic words: "Customer", "SEO", "Seamless", "Marketing", "Sales", "Analytics", "Data", "Cloud", "AI"
+- Common CRM/marketing tools that brands USE (not compete with): HubSpot, Salesforce, Marketo, Pardot, Mailchimp, Klaviyo, Intercom, Zendesk, Drift, Segment
+- Integration tools: Zapier, Make, Workato, Tray.io
+- Project management tools (unless actually competing): Monday.com, Asana, Trello, Notion, ClickUp, Jira, Wrike, Hive, Basecamp
+- Communication tools: Slack, Microsoft Teams, Zoom
+- Cloud providers: AWS, Azure, Google Cloud
+
+### IMPORTANT TYPE ASSIGNMENTS:
+- Gartner, Forrester, IDC → "analyst" (NOT product_competitor)
+- G2, Capterra, GetApp, TrustRadius, SourceForge → "marketplace" (NOT product_competitor)
+- TechCrunch, VentureBeat, Forbes, Wired → "publisher" (NOT product_competitor)
+
 ## OUTPUT FORMAT
 Respond with a JSON array:
 [

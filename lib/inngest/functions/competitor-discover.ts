@@ -4,6 +4,11 @@ import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { COMPETITOR_DISCOVERY_PROMPT } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext } from '@/lib/supabase/types'
+import { 
+  isBlockedCompetitorName, 
+  validateCompetitor,
+  getEntityTypeForDomain 
+} from '@/lib/config/competitor-blocklist'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -164,11 +169,35 @@ export const competitorDiscover = inngest.createFunction(
       }
     })
 
-    // Step 4: Validate and filter competitors
+    // Step 4: Validate and filter competitors using blocklist
     const validatedCompetitors = await step.run('validate-competitors', async () => {
       return competitors.filter(c => {
         // Must have a name
         if (!c.name || c.name.length < 2) return false
+        
+        // Check against blocklist first
+        if (isBlockedCompetitorName(c.name)) {
+          console.log(`Blocked by blocklist: ${c.name}`)
+          return false
+        }
+        
+        // Validate and potentially correct entity type
+        const validation = validateCompetitor({
+          name: c.name,
+          domain: c.domain,
+          entity_type: c.entity_type,
+        })
+        
+        if (!validation.isValid) {
+          console.log(`Validation failed for ${c.name}: ${validation.reason}`)
+          return false
+        }
+        
+        // Apply corrected entity type if needed
+        if (validation.correctedType) {
+          console.log(`Correcting entity type for ${c.name}: ${c.entity_type} -> ${validation.correctedType}`)
+          c.entity_type = validation.correctedType as EntityType
+        }
         
         // If domain is provided, validate it
         if (c.domain && !isValidDomain(c.domain)) {
