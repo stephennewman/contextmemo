@@ -90,21 +90,47 @@ export async function GET(
         gapPrompts: Array.from(data.promptsWhereBrandNotCited).slice(0, 5), // Prompts where entity won but brand didn't
       }))
 
-    // Get prompts with citation stats
+    // Get prompts with citation stats and full response data
     const { data: promptResults } = await supabase
       .from('lab_scan_results')
-      .select('prompt_text, brand_cited, brand_mentioned')
+      .select('prompt_text, brand_cited, brand_mentioned, model, response_text, citations, entities_mentioned')
       .eq('brand_id', brandId)
+      .order('created_at', { ascending: false })
 
-    // Aggregate by prompt
-    const promptStats: Record<string, { total: number; cited: number; mentioned: number }> = {}
+    // Aggregate by prompt with response details
+    const promptStats: Record<string, { 
+      total: number
+      cited: number
+      mentioned: number
+      responses: Array<{
+        model: string
+        response: string
+        citations: string[]
+        brandCited: boolean
+        brandMentioned: boolean
+        entities: string[]
+      }>
+    }> = {}
+    
     for (const row of (promptResults || [])) {
       if (!promptStats[row.prompt_text]) {
-        promptStats[row.prompt_text] = { total: 0, cited: 0, mentioned: 0 }
+        promptStats[row.prompt_text] = { total: 0, cited: 0, mentioned: 0, responses: [] }
       }
       promptStats[row.prompt_text].total++
       if (row.brand_cited) promptStats[row.prompt_text].cited++
       if (row.brand_mentioned) promptStats[row.prompt_text].mentioned++
+      
+      // Add response details (limit to avoid huge payloads)
+      if (promptStats[row.prompt_text].responses.length < 4) {
+        promptStats[row.prompt_text].responses.push({
+          model: row.model,
+          response: row.response_text?.substring(0, 1500) || '', // Truncate long responses
+          citations: row.citations || [],
+          brandCited: row.brand_cited,
+          brandMentioned: row.brand_mentioned,
+          entities: row.entities_mentioned || [],
+        })
+      }
     }
 
     const topPrompts = Object.entries(promptStats)
@@ -114,6 +140,7 @@ export async function GET(
         cited: stats.cited,
         mentioned: stats.mentioned,
         citationRate: stats.total > 0 ? Math.round(100 * stats.cited / stats.total) : 0,
+        responses: stats.responses,
       }))
       .sort((a, b) => b.citationRate - a.citationRate || b.cited - a.cited)
       .slice(0, 50)

@@ -16,6 +16,11 @@ import {
   TrendingUp,
   Loader2,
   RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react'
 
 interface LabRun {
@@ -62,12 +67,22 @@ interface Recommendation {
   priority: 'high' | 'medium' | 'low'
 }
 
+interface PromptResponse {
+  model: string
+  response: string
+  citations: string[]
+  brandCited: boolean
+  brandMentioned: boolean
+  entities: string[]
+}
+
 interface PromptStat {
   prompt: string
   total: number
   cited: number
   mentioned: number
   citationRate: number
+  responses?: PromptResponse[]
 }
 
 interface LabSummary {
@@ -106,6 +121,7 @@ export function PromptLab({ brandId }: PromptLabProps) {
   const [starting, setStarting] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null)
+  const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null)
   
   // Configuration
   const [durationMinutes, setDurationMinutes] = useState(60)
@@ -588,24 +604,35 @@ export function PromptLab({ brandId }: PromptLabProps) {
         </Card>
       )}
 
-      {/* Top Prompts */}
+      {/* Top Prompts - Expandable with responses */}
       {topPrompts.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">Prompts That Get Citations</CardTitle>
+              <CardTitle className="text-lg">Prompts & Responses</CardTitle>
             </div>
             <CardDescription>
-              Conversational prompts sorted by citation rate across models
+              Click a prompt to see AI responses and citations
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {topPrompts.slice(0, 20).map((p, i) => (
-                <div key={i} className="border-b pb-3 last:border-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="text-sm flex-1">{p.prompt}</p>
+            <div className="space-y-2">
+              {topPrompts.slice(0, 30).map((p, i) => (
+                <div key={i} className="border rounded-lg overflow-hidden">
+                  {/* Prompt header - clickable */}
+                  <div 
+                    className="flex items-start justify-between gap-4 p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setExpandedPrompt(expandedPrompt === p.prompt ? null : p.prompt)}
+                  >
+                    <div className="flex items-start gap-2 flex-1">
+                      {expandedPrompt === p.prompt ? (
+                        <ChevronUp className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      )}
+                      <p className="text-sm flex-1">{p.prompt}</p>
+                    </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {p.citationRate === 100 ? (
                         <Badge className="bg-green-500">100%</Badge>
@@ -623,6 +650,72 @@ export function PromptLab({ brandId }: PromptLabProps) {
                       </span>
                     </div>
                   </div>
+                  
+                  {/* Expanded responses */}
+                  {expandedPrompt === p.prompt && p.responses && p.responses.length > 0 && (
+                    <div className="border-t bg-muted/30 p-3 space-y-4">
+                      {p.responses.map((r, idx) => (
+                        <div key={idx} className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {MODEL_DISPLAY_NAMES[r.model] || r.model}
+                            </Badge>
+                            {r.brandCited ? (
+                              <span className="flex items-center gap-1 text-xs text-green-600">
+                                <CheckCircle className="h-3 w-3" /> Cited
+                              </span>
+                            ) : r.brandMentioned ? (
+                              <span className="flex items-center gap-1 text-xs text-yellow-600">
+                                <CheckCircle className="h-3 w-3" /> Mentioned
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-xs text-red-500">
+                                <XCircle className="h-3 w-3" /> Not cited
+                              </span>
+                            )}
+                            {r.entities.length > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                Entities: {r.entities.slice(0, 3).join(', ')}
+                                {r.entities.length > 3 && ` +${r.entities.length - 3}`}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Response text */}
+                          <div className="text-sm bg-white p-3 rounded border max-h-48 overflow-y-auto">
+                            <p className="whitespace-pre-wrap">{r.response || 'No response recorded'}</p>
+                          </div>
+                          
+                          {/* Citations */}
+                          {r.citations && r.citations.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground">Citations:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {r.citations.map((url, cidx) => (
+                                  <a 
+                                    key={cidx}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    {(() => {
+                                      try {
+                                        return new URL(url).hostname.replace('www.', '')
+                                      } catch {
+                                        return url.substring(0, 30)
+                                      }
+                                    })()}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
