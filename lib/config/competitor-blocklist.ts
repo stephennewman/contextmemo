@@ -41,6 +41,13 @@ export const BLOCKED_COMPETITOR_NAMES = new Set([
   'cloud',
   'enterprise',
   'business',
+  'blog',
+  'blogs',
+  'article',
+  'articles',
+  'content',
+  'website',
+  'websites',
   
   // Common CRM/Marketing tools that brands USE but aren't competitors
   // (unless they're actually in the same market)
