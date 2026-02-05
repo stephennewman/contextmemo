@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { requireServiceRoleKey, isValidUUID } from '@/lib/security/validation'
 
-const serviceClient = createServiceClient(
+const getServiceClient = () => createServiceClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  requireServiceRoleKey()
 )
 
 interface RouteParams {
@@ -15,6 +16,12 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { token } = await params
 
+  // Validate token is a proper UUID
+  if (!isValidUUID(token)) {
+    return NextResponse.json({ error: 'Invalid invitation' }, { status: 404 })
+  }
+
+  const serviceClient = getServiceClient()
   const { data: invite, error } = await serviceClient
     .from('organization_invites')
     .select(`
@@ -64,6 +71,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST - Accept invite (requires auth)
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { token } = await params
+
+  // Validate token is a proper UUID
+  if (!isValidUUID(token)) {
+    return NextResponse.json({ error: 'Invalid invitation' }, { status: 404 })
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -72,6 +85,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   // Get invite
+  const serviceClient = getServiceClient()
   const { data: invite, error } = await serviceClient
     .from('organization_invites')
     .select('*')
@@ -92,7 +106,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Invitation already accepted' }, { status: 400 })
   }
 
-  // Get user's tenant record
+  // Get user's tenant record (reuse same serviceClient)
   const { data: tenant } = await serviceClient
     .from('tenants')
     .select('id, email')

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { FeedWorkflow, FeedSeverity, FeedEvent, FeedResponse } from '@/lib/feed/types'
+import { isValidUUID, validateUUIDArray, validateEnum, validatePositiveInt, requireServiceRoleKey } from '@/lib/security/validation'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -12,20 +13,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Parse query params
+  // Parse and validate query params
   const searchParams = request.nextUrl.searchParams
-  const brandId = searchParams.get('brandId')
+  const brandIdParam = searchParams.get('brandId')
   const cursor = searchParams.get('cursor')
-  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
-  const workflow = searchParams.get('workflow') as FeedWorkflow | 'all' | null
-  const severity = searchParams.get('severity') as FeedSeverity | 'all' | null
+  const limitParam = validatePositiveInt(searchParams.get('limit'), 1, 50) ?? 20
+  const workflowParam = searchParams.get('workflow')
+  const severityParam = searchParams.get('severity')
   const unreadOnly = searchParams.get('unreadOnly') === 'true'
   const includeDismissed = searchParams.get('includeDismissed') === 'true'
+
+  // Validate brandId if provided
+  const brandId = brandIdParam && isValidUUID(brandIdParam) ? brandIdParam : null
+  if (brandIdParam && !brandId) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
+
+  // Validate workflow and severity enums
+  const allowedWorkflows = ['core_discovery', 'network_expansion', 'competitive_response', 'verification', 'greenspace', 'all'] as const
+  const allowedSeverities = ['critical', 'warning', 'info', 'success', 'all'] as const
+  const workflow = validateEnum(workflowParam, allowedWorkflows) as FeedWorkflow | 'all' | null
+  const severity = validateEnum(severityParam, allowedSeverities) as FeedSeverity | 'all' | null
+  const limit = limitParam
 
   // Use service client for queries
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    requireServiceRoleKey()
   )
 
   // Build query
@@ -119,19 +133,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'event_ids required' }, { status: 400 })
   }
 
+  // Validate all event_ids are proper UUIDs
+  const validEventIds = validateUUIDArray(event_ids)
+  if (validEventIds.length !== event_ids.length) {
+    return NextResponse.json({ error: 'Invalid event_id format' }, { status: 400 })
+  }
+
+  // Validate action
+  const allowedActions = ['mark_read', 'mark_unread', 'dismiss', 'pin', 'unpin'] as const
+  if (!validateEnum(action, allowedActions)) {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  }
+
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    requireServiceRoleKey()
   )
 
-  // Verify events belong to user
+  // Verify events belong to user (use validated IDs)
   const { data: events } = await serviceClient
     .from('feed_events')
     .select('id')
     .eq('tenant_id', user.id)
-    .in('id', event_ids)
+    .in('id', validEventIds)
 
-  if (!events || events.length !== event_ids.length) {
+  if (!events || events.length !== validEventIds.length) {
     return NextResponse.json({ error: 'Invalid event_ids' }, { status: 400 })
   }
 
@@ -153,21 +179,19 @@ export async function PATCH(request: NextRequest) {
     case 'unpin':
       updateData = { pinned: false }
       break
-    default:
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
   const { error } = await serviceClient
     .from('feed_events')
     .update(updateData)
-    .in('id', event_ids)
+    .in('id', validEventIds)
 
   if (error) {
     console.error('Feed update error:', error)
     return NextResponse.json({ error: 'Failed to update events' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, updated: event_ids.length })
+  return NextResponse.json({ success: true, updated: validEventIds.length })
 }
 
 // Take action on a feed event
@@ -187,9 +211,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'event_id and action required' }, { status: 400 })
   }
 
+  // Validate event_id is a proper UUID
+  if (!isValidUUID(event_id)) {
+    return NextResponse.json({ error: 'Invalid event_id format' }, { status: 400 })
+  }
+
+  // Validate action is a string
+  if (typeof action !== 'string') {
+    return NextResponse.json({ error: 'Invalid action format' }, { status: 400 })
+  }
+
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    requireServiceRoleKey()
   )
 
   // Get the event

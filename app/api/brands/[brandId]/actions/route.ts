@@ -203,16 +203,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Full refresh triggered (context → competitors → queries → scan)' 
         })
 
-      case 'scan_and_generate':
+      case 'scan_and_generate': {
         // Run scan with auto memo generation enabled
+        const validScanQueryIds = body.queryIds ? validateUUIDArray(body.queryIds) : undefined
         await inngest.send({
           name: 'scan/run',
-          data: { brandId, queryIds: body.queryIds, autoGenerateMemos: true },
+          data: { brandId, queryIds: validScanQueryIds, autoGenerateMemos: true },
         })
         return NextResponse.json({ 
           success: true, 
           message: 'Scan started with auto memo generation' 
         })
+      }
 
       case 'discovery_scan':
         // Discovery scan - find where brand IS being mentioned
@@ -326,6 +328,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: 'contentId required' }, { status: 400 })
         }
 
+        // Validate contentId is a proper UUID
+        if (!isValidUUID(contentId)) {
+          return NextResponse.json({ error: 'Invalid contentId format' }, { status: 400 })
+        }
+
         // Verify content exists and belongs to this brand's competitors
         const { data: content, error: contentError } = await supabase
           .from('competitor_content')
@@ -367,6 +374,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: 'contentId required' }, { status: 400 })
         }
 
+        // Validate contentId is a proper UUID
+        if (!isValidUUID(contentId)) {
+          return NextResponse.json({ error: 'Invalid contentId format' }, { status: 400 })
+        }
+
         // Verify content exists and belongs to this brand's competitors
         const { data: content, error: contentError } = await supabase
           .from('competitor_content')
@@ -402,6 +414,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: 'competitorId and feedUrl required' }, { status: 400 })
         }
 
+        // Validate competitorId is a proper UUID
+        if (!isValidUUID(competitorId)) {
+          return NextResponse.json({ error: 'Invalid competitorId format' }, { status: 400 })
+        }
+
+        // Validate feedUrl is a proper URL
+        const validatedFeedUrl = validateURL(feedUrl)
+        if (!validatedFeedUrl) {
+          return NextResponse.json({ error: 'Invalid feed URL format' }, { status: 400 })
+        }
+
         // Verify competitor belongs to this brand
         const { data: competitor } = await supabase
           .from('competitors')
@@ -414,13 +437,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: 'Competitor not found' }, { status: 404 })
         }
 
-        // Insert the feed
+        // Insert the feed (use validated URL)
         const { error: feedError } = await supabase
           .from('competitor_feeds')
           .insert({
             competitor_id: competitorId,
-            feed_url: feedUrl,
-            feed_type: feedUrl.includes('atom') ? 'atom' : 'rss',
+            feed_url: validatedFeedUrl,
+            feed_type: validatedFeedUrl.includes('atom') ? 'atom' : 'rss',
             is_active: true,
             is_manually_added: true,
           })
@@ -443,6 +466,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const { feedId } = body
         if (!feedId) {
           return NextResponse.json({ error: 'feedId required' }, { status: 400 })
+        }
+
+        // Validate feedId is a proper UUID
+        if (!isValidUUID(feedId)) {
+          return NextResponse.json({ error: 'Invalid feedId format' }, { status: 400 })
         }
 
         // Only allow removing manually-added feeds, verify it belongs to a competitor of this brand
@@ -483,16 +511,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
-      case 'ai_overview_scan':
+      case 'ai_overview_scan': {
         // Scan Google AI Overviews (requires SERPAPI_KEY)
+        // Validate maxQueries if provided (must be 1-100)
+        const maxQueries = validatePositiveInt(body.maxQueries, 1, 100) ?? 10
         await inngest.send({
           name: 'ai-overview/scan',
-          data: { brandId, maxQueries: body.maxQueries || 10 },
+          data: { brandId, maxQueries },
         })
         return NextResponse.json({ 
           success: true, 
           message: 'Google AI Overview scan started (checking top queries)' 
         })
+      }
 
       case 'update_themes': {
         // Update prompt themes in brand context
@@ -523,28 +554,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       case 'add_prompt': {
         // Add a custom prompt/query
         const { query_text } = body
-        if (!query_text || typeof query_text !== 'string') {
-          return NextResponse.json({ error: 'query_text required' }, { status: 400 })
+        
+        // Validate and sanitize the query text
+        const sanitizedQueryText = sanitizeTextInput(query_text, 500)
+        if (!sanitizedQueryText) {
+          return NextResponse.json({ error: 'query_text must be between 1 and 500 characters' }, { status: 400 })
         }
 
-        // Check for duplicates
+        // Check for duplicates (use sanitized text)
         const { data: existingQuery } = await supabase
           .from('queries')
           .select('id')
           .eq('brand_id', brandId)
-          .ilike('query_text', query_text.trim())
+          .ilike('query_text', sanitizedQueryText)
           .single()
 
         if (existingQuery) {
           return NextResponse.json({ error: 'This prompt already exists' }, { status: 400 })
         }
 
-        // Insert the new query
+        // Insert the new query (use sanitized text)
         const { error: insertError } = await supabase
           .from('queries')
           .insert({
             brand_id: brandId,
-            query_text: query_text.trim(),
+            query_text: sanitizedQueryText,
             query_type: 'custom',
             priority: 5,
             is_active: true,
@@ -565,6 +599,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const { memoId } = body
         if (!memoId) {
           return NextResponse.json({ error: 'memoId required' }, { status: 400 })
+        }
+
+        // Validate memoId is a proper UUID
+        if (!isValidUUID(memoId)) {
+          return NextResponse.json({ error: 'Invalid memoId format' }, { status: 400 })
         }
 
         // Verify memo belongs to this brand

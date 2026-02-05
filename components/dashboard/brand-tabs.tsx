@@ -155,11 +155,7 @@ export function BrandTabs({
                 <CardDescription>Create AI-optimized content</CardDescription>
               </CardHeader>
               <CardContent>
-                <GenerateMemoDropdown 
-                  brandId={brandId} 
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  lowVisibilityQueries={(tabData.lowVisibilityQueries || []) as any}
-                />
+                <GenerateMemoDropdown brandId={brandId} />
               </CardContent>
             </Card>
             
