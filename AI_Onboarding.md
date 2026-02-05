@@ -390,6 +390,22 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Fix: tenants.user_id Bug in Multiple API Routes**
+- Fixed 404 error on `/api/usage` and other usage endpoints
+- Root cause: Code was querying `tenants.user_id` but the tenants table uses `id` as the user ID (same as `auth.uid()`)
+- Fixed same bug in 5 API routes: `/api/usage`, `/api/usage/by-brand`, `/api/usage/breakdown`, `/api/usage/summary`, `/api/jobs`
+- Also fixed brand deletion failing due to foreign key constraints (usage_events, active_jobs now CASCADE on delete)
+
+**Files changed:**
+- `app/api/usage/route.ts` - Changed `.eq('user_id', ...)` to `.eq('id', ...)`
+- `app/api/usage/by-brand/route.ts` - Same fix
+- `app/api/usage/breakdown/route.ts` - Same fix
+- `app/api/usage/summary/route.ts` - Same fix
+- `app/api/jobs/route.ts` - Same fix
+- Applied database migration to fix foreign key constraints
+
+---
+
 **Fix: Brand Context Extraction Failures + RLS Policy Error**
 - Fixed issue where context extraction would silently fail and return minimal data even when website content was successfully crawled
 - Root cause: GPT-4o JSON parsing would fail on some websites, triggering fallback that returned only domain name as company_name
