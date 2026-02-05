@@ -101,6 +101,7 @@ interface PromptHistoryEntry {
   citation_rate: number
   competitors: string[]
   citations: { url: string; mentioned: boolean; cited: boolean }[]
+  details?: { model: string; brand_mentioned: boolean; brand_in_citations: boolean }[]
 }
 
 interface PromptHistory {
