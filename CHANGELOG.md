@@ -7,16 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Email notifications for visibility changes
+- Additional memo templates (best-of, what-is)
+
+---
+
+## [0.17.0] - 2026-02-04
+
+### Added
+- **QFO (Query Fan-Out) Tab**: New tab to analyze how LLMs expand prompts
+  - Generate 6-8 fan-out sub-queries from any prompt using AI
+  - Scan each sub-query with Perplexity to check brand coverage
+  - Visual coverage summary (cited/mentioned/gaps/competitor wins)
+  - One-click content cluster generation for gap queries
+  - Based on the QFO SEO strategy for AI visibility
+  
+- **MAP (Entity Discovery) Tab**: Interactive ReactFlow visualization
+  - Radial graph with your brand at center
+  - Entities discovered from AI scan results (competitors_mentioned, citations)
+  - Color-coded by type: Competitor (red), Resource (green), Aggregator (amber), Publisher (purple)
+  - Node size reflects mention frequency
+  - Animated edges highlight competitor wins (they're cited, you're not)
+  - Click entities for detailed stats and analysis actions
+  - Mini-map for navigation
+  - Stats summary row
+
+- **New API Endpoints**:
+  - `/api/brands/[brandId]/qfo` - Generate fan-out queries, scan coverage, generate clusters
+  - `/api/brands/[brandId]/entities` - Extract and classify entities from scan results
+
+### Dependencies
+- Added `@xyflow/react` (ReactFlow v12) for interactive graph visualization
+
+---
+
+## [0.16.0] - 2026-02-04
+
 ### Added
 - **HubSpot Landing Page**: New `/hubspot` page for marketing to HubSpot users
   - Focused value proposition: "Fill the gaps in your content strategy"
   - 4-step workflow visualization with product screenshots
   - Consumption-based pricing calculator with interactive sliders
   - Beta signup with 50% discount offer
-
-### Planned
-- Email notifications for visibility changes
-- Additional memo templates (best-of, what-is)
 
 ---
 

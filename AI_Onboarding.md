@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 4, 2026  
-> **Version:** 0.16.0  
-> **Status:** MVP Complete + V2 Feed UI Built + Competitor Watch Tab
+> **Version:** 0.17.0  
+> **Status:** MVP Complete + V2 Feed UI + QFO & Entity Map Visualizations
 
 ---
 
@@ -389,6 +389,38 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 4, 2026
+
+**Feature: QFO (Query Fan-Out) Tab** (1a57f17)
+- New **QFO** tab for analyzing how LLMs expand prompts into sub-queries
+- Based on the "Query Fan Out" SEO strategy article for AI visibility
+- Enter any prompt → AI generates 6-8 fan-out sub-queries
+- Scan each sub-query with Perplexity to check brand coverage
+- Visual coverage summary: cited, mentioned, gaps, competitor wins
+- One-click "Generate Cluster" to create memos for all gap queries
+- Explains the concept with collapsible info card
+
+**Feature: MAP (Entity Discovery) Tab** (1a57f17)
+- New **MAP** tab with ReactFlow interactive visualization
+- Radial graph layout with your brand at center
+- Entities auto-discovered from scan_results (competitors_mentioned + citations)
+- Color-coded by type: Competitor (red), Resource (green), Aggregator (amber), Publisher (purple)
+- Node size reflects mention frequency
+- Animated red edges show "competitor wins" (they're cited, you're not)
+- Click any entity for detail panel with stats and actions
+- Mini-map for navigation, zoom controls
+- Stats row: Total entities, Competitors, Resources, Aggregators, Total wins
+- "Top Threat" card highlights biggest competitor threat
+
+**Files created:**
+- `components/dashboard/query-fan-out.tsx` - QFO UI component
+- `components/dashboard/entity-map.tsx` - ReactFlow visualization
+- `app/api/brands/[brandId]/qfo/route.ts` - Fan-out generation & scanning
+- `app/api/brands/[brandId]/entities/route.ts` - Entity extraction from scans
+
+**Dependencies added:**
+- `@xyflow/react` - ReactFlow v12 for graph visualization
+
+---
 
 **Feature: Competitor WATCH Tab - Monitor New Content** 
 - New **WATCH** tab on brand page for monitoring competitor content activity
