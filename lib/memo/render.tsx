@@ -523,9 +523,6 @@ export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPagePro
     day: 'numeric'
   })
 
-  const memoTypeLabel = memo.memo_type.replace('_', ' ')
-  const route = MEMO_TYPE_TO_ROUTE[memo.memo_type] || '/resources'
-
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
       {/* Schema.org JSON-LD */}
@@ -539,24 +536,15 @@ export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPagePro
       {/* Header */}
       <header className="border-b-2 border-white/10 bg-[#0F172A]/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <nav className="flex items-center gap-3 text-sm font-semibold tracking-wide">
-            <a 
-              href="/" 
-              className="flex items-center gap-2 text-white hover:text-[#0EA5E9] transition-colors"
-            >
-              <svg className="w-6 h-6 text-[#0EA5E9]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              CONTEXT MEMO
-            </a>
-            <span className="text-white/30">/</span>
-            <a 
-              href={route}
-              className="text-slate-400 hover:text-white uppercase transition-colors"
-            >
-              {memoTypeLabel}
-            </a>
-          </nav>
+          <a 
+            href="/" 
+            className="flex items-center gap-2 text-white hover:text-[#0EA5E9] transition-colors"
+          >
+            <svg className="w-6 h-6 text-[#0EA5E9]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span className="font-black text-lg tracking-tight">CONTEXT MEMO</span>
+          </a>
           <a 
             href="/signup" 
             className="hidden sm:block bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-sm px-4 py-2 transition-colors"
