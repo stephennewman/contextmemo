@@ -94,6 +94,7 @@ interface LabSummary {
 
 interface PromptLabProps {
   brandId: string
+  brandName?: string
 }
 
 const MODEL_DISPLAY_NAMES: Record<string, string> = {
@@ -110,7 +111,9 @@ const MODEL_COST_PER_PROMPT: Record<string, number> = {
   'grok-4-fast': 1.0,
 }
 
-export function PromptLab({ brandId }: PromptLabProps) {
+export function PromptLab({ brandId, brandName }: PromptLabProps) {
+  // Filter out brand from competing entities
+  const brandNameLower = brandName?.toLowerCase() || ''
   const [runs, setRuns] = useState<LabRun[]>([])
   const [modelComparison, setModelComparison] = useState<ModelComparison[]>([])
   const [topEntities, setTopEntities] = useState<EntityCount[]>([])
@@ -479,10 +482,13 @@ export function PromptLab({ brandId }: PromptLabProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {topEntities.slice(0, 20).map((entity, i) => (
+              {topEntities
+                .filter(e => !e.entity.toLowerCase().includes(brandNameLower) && brandNameLower && e.entity.toLowerCase() !== brandNameLower)
+                .slice(0, 20)
+                .map((entity, i) => (
                 <Badge 
                   key={entity.entity} 
-                  variant={selectedEntity === entity.entity ? 'default' : i < 3 ? 'outline' : 'secondary'}
+                  variant={selectedEntity === entity.entity ? 'default' : 'secondary'}
                   className={`text-sm cursor-pointer transition-all ${selectedEntity === entity.entity ? 'ring-2 ring-primary' : 'hover:bg-primary/10'}`}
                   onClick={() => setSelectedEntity(selectedEntity === entity.entity ? null : entity.entity)}
                 >

@@ -706,7 +706,7 @@ export default async function BrandPage({ params }: Props) {
 
         {/* Prompt Lab - High-volume citation research */}
         <TabsContent value="lab">
-          <PromptLab brandId={brandId} />
+          <PromptLab brandId={brandId} brandName={brand.name} />
         </TabsContent>
       </Tabs>
     </div>
