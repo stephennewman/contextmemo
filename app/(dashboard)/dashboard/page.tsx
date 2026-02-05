@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-[#0F172A]">BRANDS</h1>
           <p className="text-zinc-500 font-medium">
             Monitor your AI search citations across all brands
           </p>

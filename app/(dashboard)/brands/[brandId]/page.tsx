@@ -291,26 +291,28 @@ export default async function BrandPage({ params }: Props) {
         {/* Minimal Header for Onboarding */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-zinc-500 font-medium">{brand.name}</span>
               {brand.verified ? (
-                <span className="px-2 py-1 text-xs font-bold bg-[#10B981] text-white">VERIFIED</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#10B981] text-white">VERIFIED</span>
               ) : (
-                <span className="px-2 py-1 text-xs font-bold border-2 border-[#0F172A] text-[#0F172A]">PENDING</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold border border-[#0F172A] text-[#0F172A]">PENDING</span>
               )}
+              <span className="text-zinc-400">·</span>
+              <a 
+                href={process.env.NODE_ENV === 'development' 
+                  ? `http://localhost:3000/memo/${brand.subdomain}` 
+                  : `https://${brand.subdomain}.contextmemo.com`
+                } 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
+              >
+                {brand.subdomain}.contextmemo.com
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
-            <a 
-              href={process.env.NODE_ENV === 'development' 
-                ? `http://localhost:3000/memo/${brand.subdomain}` 
-                : `https://${brand.subdomain}.contextmemo.com`
-              } 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
-            >
-              {brand.subdomain}.contextmemo.com
-              <ExternalLink className="h-3 w-3" />
-            </a>
           </div>
         </div>
 
@@ -334,26 +336,28 @@ export default async function BrandPage({ params }: Props) {
       {/* Bold Electric Header */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm text-zinc-500 font-medium">{brand.name}</span>
             {brand.verified ? (
-              <span className="px-2 py-1 text-xs font-bold bg-[#10B981] text-white">VERIFIED</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#10B981] text-white">VERIFIED</span>
             ) : (
-              <span className="px-2 py-1 text-xs font-bold border-2 border-[#0F172A] text-[#0F172A]">PENDING</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-bold border border-[#0F172A] text-[#0F172A]">PENDING</span>
             )}
+            <span className="text-zinc-400">·</span>
+            <a 
+              href={process.env.NODE_ENV === 'development' 
+                ? `http://localhost:3000/memo/${brand.subdomain}` 
+                : `https://${brand.subdomain}.contextmemo.com`
+              } 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
+            >
+              {brand.subdomain}.contextmemo.com
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
-          <a 
-            href={process.env.NODE_ENV === 'development' 
-              ? `http://localhost:3000/memo/${brand.subdomain}` 
-              : `https://${brand.subdomain}.contextmemo.com`
-            } 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
-          >
-            {brand.subdomain}.contextmemo.com
-            <ExternalLink className="h-3 w-3" />
-          </a>
         </div>
       </div>
 

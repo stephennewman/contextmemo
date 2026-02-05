@@ -93,23 +93,25 @@ export default async function V2BrandPage({ params }: Props) {
       <div className="px-6 py-4 bg-white border-b">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-[#0F172A]">{brand.name}</h1>
+            <h1 className="text-2xl font-bold text-[#0F172A]">Dashboard</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-muted-foreground">{brand.name}</span>
               {brand.verified ? (
-                <span className="px-2 py-0.5 text-xs font-bold bg-[#10B981] text-white rounded">VERIFIED</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#10B981] text-white rounded">VERIFIED</span>
               ) : (
-                <span className="px-2 py-0.5 text-xs font-bold border border-[#0F172A] text-[#0F172A] rounded">PENDING</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold border border-[#0F172A] text-[#0F172A] rounded">PENDING</span>
               )}
+              <span className="text-muted-foreground">·</span>
+              <a 
+                href={`https://${brand.subdomain}.contextmemo.com`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted-foreground hover:text-[#0EA5E9] flex items-center gap-1"
+              >
+                {brand.subdomain}.contextmemo.com
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
-            <a 
-              href={`https://${brand.subdomain}.contextmemo.com`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-muted-foreground hover:text-[#0EA5E9] flex items-center gap-1"
-            >
-              {brand.subdomain}.contextmemo.com
-              <ExternalLink className="h-3 w-3" />
-            </a>
           </div>
           
           <div className="flex items-center gap-2">

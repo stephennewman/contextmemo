@@ -198,7 +198,8 @@ export function ProfileSection({
           {/* Corporate Positioning - Full width, at the top */}
           <CorporatePositioningSection 
             positioning={context?.corporate_positioning} 
-            brandName={brandName} 
+            brandName={brandName}
+            brandId={brandId} 
           />
           
           {/* Existing profile cards */}

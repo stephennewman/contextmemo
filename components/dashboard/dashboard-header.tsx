@@ -61,7 +61,7 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
                 href="/dashboard" 
                 className={`px-4 py-2 text-sm font-semibold tracking-wide bg-[#0EA5E9] text-white transition-colors`}
               >
-                DASHBOARD
+                BRANDS
               </Link>
             </nav>
           </div>

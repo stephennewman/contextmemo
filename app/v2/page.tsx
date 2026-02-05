@@ -82,7 +82,7 @@ export default async function V2DashboardPage() {
       <div className="px-6 py-4 bg-white border-b">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#0F172A]">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-[#0F172A]">Brands</h1>
             <p className="text-sm text-muted-foreground">
               Activity across all {brands?.length || 0} brand{(brands?.length || 0) !== 1 ? 's' : ''}
             </p>

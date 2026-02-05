@@ -102,7 +102,7 @@ export function V2Sidebar({
   // Main navigation items
   const mainNavItems = [
     {
-      label: 'Feed',
+      label: currentBrandId ? 'Dashboard' : 'Brands',
       href: basePath,
       icon: LayoutDashboard,
       active: (pathname === basePath || pathname === `${basePath}/`) && !currentWorkflow,
