@@ -16,11 +16,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  // Get tenant
+  // Get tenant (tenant.id IS the user.id)
   const { data: tenant } = await supabase
     .from('tenants')
     .select('id')
-    .eq('user_id', user.id)
+    .eq('id', user.id)
     .single()
 
   if (!tenant) {

@@ -18,11 +18,11 @@ export async function GET(request: Request) {
   const cutoffDate = new Date()
   cutoffDate.setDate(cutoffDate.getDate() - days)
 
-  // Get tenant
+  // Get tenant (tenant.id IS the user.id)
   const { data: tenant } = await supabase
     .from('tenants')
     .select('id')
-    .eq('user_id', user.id)
+    .eq('id', user.id)
     .single()
 
   if (!tenant) {
