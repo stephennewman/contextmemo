@@ -16,6 +16,7 @@ import {
 import { CompetitorDetail } from './competitor-detail'
 import { QueryDetail } from './query-detail'
 import { QueriesListDrawer } from './queries-list-drawer'
+import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 interface Competitor {
   id: string
@@ -384,7 +385,10 @@ function calculateCompetitorStats(
   // Process each scan
   scanResults.forEach(scan => {
     const brandMentioned = scan.brand_mentioned
-    const competitorsMentioned = (scan.competitors_mentioned || []).map(c => c.toLowerCase())
+    // Filter out blocked/generic terms from competitor mentions
+    const competitorsMentioned = (scan.competitors_mentioned || [])
+      .map(c => c.toLowerCase())
+      .filter(c => !isBlockedCompetitorName(c))
     
     competitorsMentioned.forEach(compName => {
       // Get or create stats entry
@@ -484,7 +488,10 @@ function analyzeQueryBattles(
     const brandMentionedAny = scans.some(s => s.brand_mentioned)
     const allCompetitorsMentioned = new Set<string>()
     scans.forEach(s => {
-      (s.competitors_mentioned || []).forEach(c => allCompetitorsMentioned.add(c))
+      // Filter out blocked/generic terms
+      (s.competitors_mentioned || [])
+        .filter(c => !isBlockedCompetitorName(c))
+        .forEach(c => allCompetitorsMentioned.add(c))
     })
     const competitorMentionedAny = allCompetitorsMentioned.size > 0
     

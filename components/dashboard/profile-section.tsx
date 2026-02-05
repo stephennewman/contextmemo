@@ -6,11 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2, RefreshCw, Sparkles, ToggleLeft, ToggleRight, Globe, Plus, X, Settings, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
 import { CorporatePositioningSection } from '@/components/dashboard/corporate-positioning'
-import { BrandContext } from '@/lib/supabase/types'
+import { BrandContext, MarketFocus, BrandOffer, BrandOffers } from '@/lib/supabase/types'
+import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 interface Competitor {
   id: string
@@ -20,6 +24,29 @@ interface Competitor {
   auto_discovered: boolean
   is_active: boolean
 }
+
+// Offer type options
+const OFFER_TYPES = [
+  { value: 'demo', label: 'Demo' },
+  { value: 'trial', label: 'Free Trial' },
+  { value: 'freemium', label: 'Freemium' },
+  { value: 'contact_sales', label: 'Contact Sales' },
+  { value: 'signup', label: 'Sign Up' },
+  { value: 'download', label: 'Download' },
+  { value: 'quote', label: 'Get Quote' },
+  { value: 'consultation', label: 'Consultation' },
+  { value: 'other', label: 'Other' },
+] as const
+
+// Pricing model options
+const PRICING_MODELS = [
+  { value: 'free', label: 'Free' },
+  { value: 'freemium', label: 'Freemium' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'enterprise', label: 'Enterprise' },
+  { value: 'contact_sales', label: 'Contact Sales' },
+  { value: 'custom', label: 'Custom' },
+] as const
 
 interface ProfileSectionProps {
   brandId: string
@@ -38,12 +65,54 @@ export function ProfileSection({
   context,
   contextExtractedAt,
   hasContext,
-  competitors = [],
+  competitors: initialCompetitors = [],
 }: ProfileSectionProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const initialTimestampRef = useRef<string | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
+
+  // Competitors state
+  const [competitors, setCompetitors] = useState<Competitor[]>(initialCompetitors)
+  const [togglingCompetitorId, setTogglingCompetitorId] = useState<string | null>(null)
+
+  // Market focus state
+  const [marketFocus, setMarketFocus] = useState<MarketFocus[]>(() => {
+    if (context?.market_focus && context.market_focus.length > 0) {
+      return context.market_focus
+    } else if (context?.markets && context.markets.length > 0) {
+      return context.markets.map(m => ({ name: m, focus: 50 }))
+    }
+    return []
+  })
+  const [newMarket, setNewMarket] = useState('')
+  const [isAddingMarket, setIsAddingMarket] = useState(false)
+  const [savingMarkets, setSavingMarkets] = useState(false)
+
+  // Offers state
+  const [offers, setOffers] = useState<BrandOffers>(context?.offers || {})
+  const [editingOffers, setEditingOffers] = useState(false)
+  const [savingOffers, setSavingOffers] = useState(false)
+  const defaultOffer: BrandOffer = { type: 'demo', label: '' }
+
+  // Sync competitors when props change
+  useEffect(() => {
+    setCompetitors(initialCompetitors)
+  }, [initialCompetitors])
+
+  // Sync market focus when context changes
+  useEffect(() => {
+    if (context?.market_focus && context.market_focus.length > 0) {
+      setMarketFocus(context.market_focus)
+    } else if (context?.markets && context.markets.length > 0) {
+      setMarketFocus(context.markets.map(m => ({ name: m, focus: 50 })))
+    }
+  }, [context?.market_focus, context?.markets])
+
+  // Sync offers when context changes
+  useEffect(() => {
+    setOffers(context?.offers || {})
+  }, [context?.offers])
 
   const refreshContext = async () => {
     // Store the current timestamp to detect when it changes
@@ -84,6 +153,113 @@ export function ProfileSection({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Context extraction failed')
       setIsRefreshing(false)
+    }
+  }
+
+  // Competitor toggle handler
+  const handleToggleCompetitor = async (competitorId: string, currentlyActive: boolean) => {
+    setTogglingCompetitorId(competitorId)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('competitors')
+        .update({ is_active: !currentlyActive })
+        .eq('id', competitorId)
+
+      if (error) throw error
+
+      setCompetitors(prev => 
+        prev.map(c => 
+          c.id === competitorId 
+            ? { ...c, is_active: !currentlyActive }
+            : c
+        )
+      )
+      toast.success(!currentlyActive ? 'Competitor included' : 'Competitor excluded')
+    } catch (error) {
+      toast.error('Failed to update competitor')
+      console.error(error)
+    } finally {
+      setTogglingCompetitorId(null)
+    }
+  }
+
+  // Market focus handlers
+  const addMarket = () => {
+    if (!newMarket.trim()) return
+    if (marketFocus.some(m => m.name.toLowerCase() === newMarket.toLowerCase().trim())) {
+      toast.error('This market already exists')
+      return
+    }
+    setMarketFocus([...marketFocus, { name: newMarket.trim(), focus: 50 }])
+    setNewMarket('')
+    setIsAddingMarket(false)
+  }
+
+  const removeMarket = (marketName: string) => {
+    setMarketFocus(marketFocus.filter(m => m.name !== marketName))
+  }
+
+  const updateMarketFocus = (marketName: string, focus: number) => {
+    setMarketFocus(marketFocus.map(m => 
+      m.name === marketName ? { ...m, focus } : m
+    ))
+  }
+
+  const saveMarketFocus = async () => {
+    setSavingMarkets(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('brands')
+        .update({
+          context: {
+            ...context,
+            markets: marketFocus.map(m => m.name),
+            market_focus: marketFocus,
+          },
+          context_edited_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', brandId)
+
+      if (error) throw error
+      toast.success('Markets saved')
+      router.refresh()
+    } catch (error) {
+      toast.error('Failed to save markets')
+      console.error(error)
+    } finally {
+      setSavingMarkets(false)
+    }
+  }
+
+  // Offers save handler
+  const saveOffers = async () => {
+    setSavingOffers(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('brands')
+        .update({
+          context: {
+            ...context,
+            offers: (offers.primary || offers.secondary || offers.pricing_model) ? offers : undefined,
+          },
+          context_edited_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', brandId)
+
+      if (error) throw error
+      toast.success('Offers saved')
+      setEditingOffers(false)
+      router.refresh()
+    } catch (error) {
+      toast.error('Failed to save offers')
+      console.error(error)
+    } finally {
+      setSavingOffers(false)
     }
   }
 
@@ -276,29 +452,78 @@ export function ProfileSection({
           {/* Competitors */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Competitors</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Competitors</CardTitle>
+                  <CardDescription>
+                    {competitors.filter(c => c.is_active).length} included • {competitors.filter(c => !c.is_active).length} excluded
+                  </CardDescription>
+                </div>
+                <Link href={`/brands/${brandId}/settings#competitors`}>
+                  <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                    <Settings className="h-3 w-3" />
+                    Manage
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {competitors.filter(c => c.is_active).length > 0 ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
                   {competitors.filter(c => c.is_active).map((competitor) => (
-                    <Badge key={competitor.id} variant="secondary" className="flex items-center gap-1">
-                      {competitor.name}
-                      {competitor.auto_discovered && (
-                        <Sparkles className="h-3 w-3 opacity-60" />
-                      )}
-                    </Badge>
+                    <div key={competitor.id} className="flex items-center justify-between p-2 border rounded-lg">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="font-medium text-sm truncate">{competitor.name}</span>
+                        {competitor.auto_discovered && <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
+                        {competitor.domain && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                            <Globe className="h-3 w-3" />
+                            {competitor.domain}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleCompetitor(competitor.id, true)}
+                        disabled={togglingCompetitorId === competitor.id}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                        title="Exclude from tracking"
+                      >
+                        {togglingCompetitorId === competitor.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ToggleRight className="h-4 w-4 text-green-500" />
+                        )}
+                      </Button>
+                    </div>
                   ))}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No competitors detected</p>
               )}
               {competitors.filter(c => !c.is_active).length > 0 && (
-                <div>
+                <div className="pt-3 border-t">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Excluded</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-2">
                     {competitors.filter(c => !c.is_active).map((competitor) => (
-                      <Badge key={competitor.id} variant="outline" className="text-xs opacity-60">{competitor.name}</Badge>
+                      <div key={competitor.id} className="flex items-center justify-between p-2 border rounded-lg bg-muted/30 opacity-60">
+                        <span className="text-sm truncate">{competitor.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleCompetitor(competitor.id, false)}
+                          disabled={togglingCompetitorId === competitor.id}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600 shrink-0"
+                          title="Re-include in tracking"
+                        >
+                          {togglingCompetitorId === competitor.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -309,21 +534,88 @@ export function ProfileSection({
           {/* Markets & Customers */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Markets & Customers</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Markets & Customers</CardTitle>
+                  <CardDescription>Adjust focus to weight content generation</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isAddingMarket && (
+                    <Button variant="outline" size="sm" onClick={() => setIsAddingMarket(true)} className="gap-1">
+                      <Plus className="h-3 w-3" />Add
+                    </Button>
+                  )}
+                  {marketFocus.length > 0 && (
+                    <Button variant="default" size="sm" onClick={saveMarketFocus} disabled={savingMarkets} className="gap-1">
+                      {savingMarkets && <Loader2 className="h-3 w-3 animate-spin" />}
+                      Save
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {context?.markets && context.markets.length > 0 && (
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Target Markets</label>
-                  <div className="flex flex-wrap gap-2">
-                    {context.markets.map((market: string, i: number) => (
-                      <Badge key={i} variant="secondary">{market}</Badge>
-                    ))}
-                  </div>
+              {isAddingMarket && (
+                <div className="flex gap-2 mb-3">
+                  <Input 
+                    placeholder="e.g., Food & Beverage, Healthcare..." 
+                    value={newMarket} 
+                    onChange={(e) => setNewMarket(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && addMarket()} 
+                    className="flex-1 h-9" 
+                    autoFocus 
+                  />
+                  <Button size="sm" onClick={addMarket}>Add</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setIsAddingMarket(false); setNewMarket('') }}>Cancel</Button>
                 </div>
               )}
+
+              {/* Target Markets with Focus Sliders */}
+              {marketFocus.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">Target Markets</label>
+                  {marketFocus.map((market) => (
+                    <div key={market.name} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm">{market.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                            market.focus >= 70 ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' :
+                            market.focus >= 40 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400' :
+                            'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                          }`}>
+                            {market.focus}%
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeMarket(market.name)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground w-6">0%</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={market.focus}
+                          onChange={(e) => updateMarketFocus(market.name, parseInt(e.target.value))}
+                          className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                        <span className="text-[10px] text-muted-foreground w-8">100%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Notable Customers (read-only) */}
               {context?.customers && context.customers.length > 0 && (
-                <div>
+                <div className="pt-3 border-t">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Notable Customers</label>
                   <div className="flex flex-wrap gap-2">
                     {context.customers.map((customer: string, i: number) => (
@@ -332,7 +624,8 @@ export function ProfileSection({
                   </div>
                 </div>
               )}
-              {(!context?.markets || context.markets.length === 0) && (!context?.customers || context.customers.length === 0) && (
+
+              {marketFocus.length === 0 && (!context?.customers || context.customers.length === 0) && (
                 <p className="text-sm text-muted-foreground">No markets or customers detected</p>
               )}
             </CardContent>
@@ -354,77 +647,230 @@ export function ProfileSection({
             </CardContent>
           </Card>
 
-          {/* Offers/CTAs - only show if we have at least one offer or pricing info */}
-          {context?.offers && (context.offers.primary || context.offers.secondary || context.offers.pricing_model) && (
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-base">Offers & Pricing</CardTitle>
-                <CardDescription>Calls-to-action detected from the website</CardDescription>
-              </CardHeader>
-              <CardContent>
+          {/* Offers/CTAs - always show with edit capability */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Offers & Pricing</CardTitle>
+                  <CardDescription>Calls-to-action used in generated content</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {editingOffers ? (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingOffers(false); setOffers(context?.offers || {}) }}>
+                        Cancel
+                      </Button>
+                      <Button variant="default" size="sm" onClick={saveOffers} disabled={savingOffers} className="gap-1">
+                        {savingOffers && <Loader2 className="h-3 w-3 animate-spin" />}
+                        Save
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => setEditingOffers(true)} className="gap-1">
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {editingOffers ? (
+                <div className="space-y-4">
+                  {/* Primary Offer - Editable */}
+                  <div className="p-4 border rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge className="bg-emerald-600 text-xs">Primary Offer</Badge>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Offer Type</Label>
+                        <select
+                          value={offers.primary?.type || 'demo'}
+                          onChange={(e) => setOffers({ ...offers, primary: { ...(offers.primary || defaultOffer), type: e.target.value as BrandOffer['type'] } })}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        >
+                          {OFFER_TYPES.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">CTA Label</Label>
+                        <Input 
+                          placeholder="e.g., Book a Demo" 
+                          value={offers.primary?.label || ''} 
+                          onChange={(e) => setOffers({ ...offers, primary: { ...(offers.primary || defaultOffer), label: e.target.value } })}
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">URL</Label>
+                        <Input 
+                          placeholder="e.g., /demo" 
+                          value={offers.primary?.url || ''} 
+                          onChange={(e) => setOffers({ ...offers, primary: { ...(offers.primary || defaultOffer), url: e.target.value } })}
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Details</Label>
+                        <Input 
+                          placeholder="e.g., 30-min call" 
+                          value={offers.primary?.details || ''} 
+                          onChange={(e) => setOffers({ ...offers, primary: { ...(offers.primary || defaultOffer), details: e.target.value } })}
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Secondary Offer - Editable */}
+                  <div className="p-4 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="secondary" className="text-xs">Secondary Offer</Badge>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Offer Type</Label>
+                        <select
+                          value={offers.secondary?.type || 'trial'}
+                          onChange={(e) => setOffers({ ...offers, secondary: { ...(offers.secondary || { ...defaultOffer, type: 'trial' }), type: e.target.value as BrandOffer['type'] } })}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        >
+                          {OFFER_TYPES.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">CTA Label</Label>
+                        <Input 
+                          placeholder="e.g., Start Free Trial" 
+                          value={offers.secondary?.label || ''} 
+                          onChange={(e) => setOffers({ ...offers, secondary: { ...(offers.secondary || { ...defaultOffer, type: 'trial' }), label: e.target.value } })}
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">URL</Label>
+                        <Input 
+                          placeholder="e.g., /trial" 
+                          value={offers.secondary?.url || ''} 
+                          onChange={(e) => setOffers({ ...offers, secondary: { ...(offers.secondary || { ...defaultOffer, type: 'trial' }), url: e.target.value } })}
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Details</Label>
+                        <Input 
+                          placeholder="e.g., 14-day free" 
+                          value={offers.secondary?.details || ''} 
+                          onChange={(e) => setOffers({ ...offers, secondary: { ...(offers.secondary || { ...defaultOffer, type: 'trial' }), details: e.target.value } })}
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pricing Model - Editable */}
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="outline" className="text-xs">Pricing Model</Badge>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Model</Label>
+                        <select
+                          value={offers.pricing_model || ''}
+                          onChange={(e) => setOffers({ ...offers, pricing_model: e.target.value as BrandOffers['pricing_model'] || undefined })}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        >
+                          <option value="">Select...</option>
+                          {PRICING_MODELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Pricing Page URL</Label>
+                        <Input 
+                          placeholder="e.g., /pricing" 
+                          value={offers.pricing_url || ''} 
+                          onChange={(e) => setOffers({ ...offers, pricing_url: e.target.value || undefined })}
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div className="grid gap-4 md:grid-cols-3">
-                  {/* Primary Offer - only show if detected */}
-                  {context.offers.primary && (
+                  {/* Primary Offer - Display */}
+                  {offers.primary?.label ? (
                     <div className="p-4 border rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-emerald-600 text-xs">Primary Offer</Badge>
                       </div>
                       <Badge variant="outline" className="text-xs capitalize mb-2">
-                        {context.offers.primary.type.replace('_', ' ')}
+                        {offers.primary.type.replace('_', ' ')}
                       </Badge>
-                      <div className="font-semibold text-lg">{context.offers.primary.label}</div>
-                      {context.offers.primary.details && (
-                        <p className="text-sm text-muted-foreground mt-1">{context.offers.primary.details}</p>
+                      <div className="font-semibold text-lg">{offers.primary.label}</div>
+                      {offers.primary.details && (
+                        <p className="text-sm text-muted-foreground mt-1">{offers.primary.details}</p>
                       )}
-                      {context.offers.primary.url && (
+                      {offers.primary.url && (
                         <a 
-                          href={context.offers.primary.url.startsWith('http') ? context.offers.primary.url : `https://${brandDomain}${context.offers.primary.url}`}
+                          href={offers.primary.url.startsWith('http') ? offers.primary.url : `https://${brandDomain}${offers.primary.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-emerald-600 hover:underline mt-2 block truncate"
                         >
-                          {context.offers.primary.url} →
+                          {offers.primary.url} →
                         </a>
                       )}
                     </div>
+                  ) : (
+                    <div className="p-4 border rounded-lg border-dashed flex items-center justify-center text-muted-foreground text-sm">
+                      No primary offer set
+                    </div>
                   )}
 
-                  {/* Secondary Offer - only show if detected */}
-                  {context.offers.secondary && (
+                  {/* Secondary Offer - Display */}
+                  {offers.secondary?.label ? (
                     <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="secondary" className="text-xs">Secondary Offer</Badge>
                       </div>
                       <Badge variant="outline" className="text-xs capitalize mb-2">
-                        {context.offers.secondary.type.replace('_', ' ')}
+                        {offers.secondary.type.replace('_', ' ')}
                       </Badge>
-                      <div className="font-semibold text-lg">{context.offers.secondary.label}</div>
-                      {context.offers.secondary.details && (
-                        <p className="text-sm text-muted-foreground mt-1">{context.offers.secondary.details}</p>
+                      <div className="font-semibold text-lg">{offers.secondary.label}</div>
+                      {offers.secondary.details && (
+                        <p className="text-sm text-muted-foreground mt-1">{offers.secondary.details}</p>
                       )}
-                      {context.offers.secondary.url && (
+                      {offers.secondary.url && (
                         <a 
-                          href={context.offers.secondary.url.startsWith('http') ? context.offers.secondary.url : `https://${brandDomain}${context.offers.secondary.url}`}
+                          href={offers.secondary.url.startsWith('http') ? offers.secondary.url : `https://${brandDomain}${offers.secondary.url}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-blue-600 hover:underline mt-2 block truncate"
                         >
-                          {context.offers.secondary.url} →
+                          {offers.secondary.url} →
                         </a>
                       )}
                     </div>
+                  ) : (
+                    <div className="p-4 border rounded-lg border-dashed flex items-center justify-center text-muted-foreground text-sm">
+                      No secondary offer set
+                    </div>
                   )}
 
-                  {/* Pricing - only show if detected */}
-                  {context.offers.pricing_model && (
+                  {/* Pricing - Display */}
+                  {offers.pricing_model ? (
                     <div className="p-4 border rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs">Pricing Model</Badge>
                       </div>
-                      <div className="font-semibold text-lg capitalize">{context.offers.pricing_model.replace('_', ' ')}</div>
-                      {context.offers.pricing_url && (
+                      <div className="font-semibold text-lg capitalize">{offers.pricing_model.replace('_', ' ')}</div>
+                      {offers.pricing_url && (
                         <a 
-                          href={context.offers.pricing_url.startsWith('http') ? context.offers.pricing_url : `https://${brandDomain}${context.offers.pricing_url}`}
+                          href={offers.pricing_url.startsWith('http') ? offers.pricing_url : `https://${brandDomain}${offers.pricing_url}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-blue-600 hover:underline mt-2 inline-block"
@@ -433,11 +879,15 @@ export function ProfileSection({
                         </a>
                       )}
                     </div>
+                  ) : (
+                    <div className="p-4 border rounded-lg border-dashed flex items-center justify-center text-muted-foreground text-sm">
+                      No pricing model set
+                    </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
 
           {/* Social Links */}
           {context?.social_links && Object.keys(context.social_links).length > 0 && (

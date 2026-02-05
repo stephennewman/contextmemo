@@ -28,6 +28,7 @@ import {
 import { toast } from 'sonner'
 import type { ScanResult, Query, PromptPersona, PromptTheme } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
+import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 // Prompt Themes Section - Critical keyword clusters for prompt targeting
 interface PromptThemesSectionProps {
@@ -394,11 +395,11 @@ function ModelResult({ scan, brandDomain, compact = false }: { scan: ScanResultW
             )
           )}
         </div>
-        {/* Show competitor names mentioned in response */}
-        {scan.competitors_mentioned && scan.competitors_mentioned.length > 0 && (
+        {/* Show competitor names mentioned in response (filtered) */}
+        {scan.competitors_mentioned && scan.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).length > 0 && (
           <div className="flex items-center gap-1 text-sm">
             <Users className="h-3 w-3 text-orange-500" />
-            <span className="text-orange-600 dark:text-orange-400 text-xs">{scan.competitors_mentioned.join(', ')}</span>
+            <span className="text-orange-600 dark:text-orange-400 text-xs">{scan.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).join(', ')}</span>
           </div>
         )}
       </div>

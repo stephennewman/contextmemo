@@ -19,6 +19,7 @@ import {
   Users,
   AlertTriangle,
 } from 'lucide-react'
+import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 interface ScanResult {
   id: string
@@ -106,12 +107,14 @@ export function QueryDetail({
     const cited = queryScans.filter(s => s.brand_in_citations === true).length
     const scansWithCitations = queryScans.filter(s => s.citations && s.citations.length > 0).length
     
-    // Get all competitors mentioned
+    // Get all competitors mentioned (filtered)
     const competitorCounts = new Map<string, number>()
     queryScans.forEach(scan => {
-      (scan.competitors_mentioned || []).forEach(comp => {
-        competitorCounts.set(comp, (competitorCounts.get(comp) || 0) + 1)
-      })
+      (scan.competitors_mentioned || [])
+        .filter(comp => !isBlockedCompetitorName(comp))
+        .forEach(comp => {
+          competitorCounts.set(comp, (competitorCounts.get(comp) || 0) + 1)
+        })
     })
     const topCompetitors = Array.from(competitorCounts.entries())
       .sort((a, b) => b[1] - a[1])
@@ -307,11 +310,11 @@ export function QueryDetail({
                           </div>
                         )}
 
-                        {/* Competitors in this scan */}
-                        {scan.competitors_mentioned && scan.competitors_mentioned.length > 0 && (
+                        {/* Competitors in this scan (filtered) */}
+                        {scan.competitors_mentioned && scan.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).length > 0 && (
                           <p className="text-sm text-muted-foreground pt-1">
-                            Also mentioned: {scan.competitors_mentioned.slice(0, 3).join(', ')}
-                            {scan.competitors_mentioned.length > 3 && ` +${scan.competitors_mentioned.length - 3}`}
+                            Also mentioned: {scan.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).slice(0, 3).join(', ')}
+                            {scan.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).length > 3 && ` +${scan.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).length - 3}`}
                           </p>
                         )}
 

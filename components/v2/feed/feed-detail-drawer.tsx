@@ -32,6 +32,7 @@ import {
   Ban,
 } from 'lucide-react'
 import type { FeedEvent, FeedAction } from '@/lib/feed/types'
+import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 interface FeedDetailDrawerProps {
   event: FeedEvent | null
@@ -176,9 +177,9 @@ export function FeedDetailDrawer({ event, open, onClose, onAction }: FeedDetailD
                   </div>
                   <div className="flex-1">
                     <p className="text-muted-foreground">Competitors mentioned</p>
-                    {data.prompt.competitors_mentioned?.length > 0 ? (
+                    {data.prompt.competitors_mentioned?.filter(c => !isBlockedCompetitorName(c)).length > 0 ? (
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {data.prompt.competitors_mentioned.map((c, i) => (
+                        {data.prompt.competitors_mentioned.filter(c => !isBlockedCompetitorName(c)).map((c, i) => (
                           <Badge key={i} variant="outline" className="text-xs">
                             {c}
                           </Badge>
