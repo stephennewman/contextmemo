@@ -864,11 +864,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       case 'hubspot-update-authors': {
         // Bulk update HubSpot posts with correct author
-        const { BrandContext, HubSpotConfig } = await import('@/lib/supabase/types')
         const { getHubSpotToken } = await import('@/lib/hubspot/oauth')
         
-        const context = brand.context as typeof BrandContext
-        const hubspotConfig = (context as Record<string, unknown>)?.hubspot as typeof HubSpotConfig
+        const hubspotConfig = (brand.context as Record<string, unknown>)?.hubspot as Record<string, unknown> | undefined
         
         if (!hubspotConfig?.enabled) {
           return NextResponse.json({ error: 'HubSpot not enabled' }, { status: 400 })
