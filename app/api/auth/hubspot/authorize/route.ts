@@ -122,8 +122,8 @@ export async function GET(request: NextRequest) {
   // Scopes required:
   // - oauth: Basic OAuth
   // - content: CMS blog post creation and management
-  // - files: File upload to HubSpot file manager (for featured images)
-  const scopes = ['oauth', 'content', 'files']
+  // Note: 'files' scope would enable image uploads but requires HubSpot app config update
+  const scopes = ['oauth', 'content']
 
   const authUrl = new URL(HUBSPOT_AUTH_URL)
   authUrl.searchParams.set('response_type', 'code')

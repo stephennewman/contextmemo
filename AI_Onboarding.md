@@ -390,6 +390,21 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Fix: HubSpot Sync - Auto-Publish, Images, and Author** (09d58ca)
+- HubSpot button now respects brand's `auto_publish` setting from Settings
+- Added `files` OAuth scope for image uploads (user needs to reconnect HubSpot)
+- Added detailed logging to debug image upload failures
+- Passed `hubspotAutoPublish` prop through component tree
+
+**Files changed:**
+- `app/api/auth/hubspot/authorize/route.ts` - Added `files` scope
+- `app/api/brands/[brandId]/memos/[memoId]/hubspot/route.ts` - Better logging
+- `components/dashboard/brand-actions.tsx` - Use `hubspotAutoPublish` prop
+- `components/dashboard/brand-tabs.tsx` - Pass `hubspotAutoPublish`
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Extract and pass `hubspotAutoPublish`
+
+---
+
 **Feature: HubSpot Auto-Publish Toggle + Image Upload Fix** (411523c)
 - Added auto-publish setting to HubSpot integration - toggle in Settings under Integrations
 - When enabled, synced content publishes immediately; when disabled, creates as drafts

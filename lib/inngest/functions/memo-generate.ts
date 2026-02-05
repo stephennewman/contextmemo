@@ -15,58 +15,6 @@ import { emitFeedEvent } from '@/lib/feed/emit'
 import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
 import { selectImageForMemo } from '@/lib/hubspot/image-selector'
 
-/**
- * Upload an image from URL to HubSpot's file manager
- * HubSpot requires images to be hosted on their platform (hubfs/)
- */
-async function uploadImageToHubSpot(
-  imageUrl: string, 
-  fileName: string, 
-  accessToken: string
-): Promise<string | null> {
-  try {
-    // Fetch the image from Unsplash
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) {
-      console.error('Failed to fetch image from Unsplash:', imageResponse.status)
-      return null
-    }
-    
-    const imageBuffer = await imageResponse.arrayBuffer()
-    const blob = new Blob([imageBuffer], { type: 'image/jpeg' })
-    
-    // Create form data for HubSpot upload
-    const formData = new FormData()
-    formData.append('file', blob, `${fileName}.jpg`)
-    formData.append('options', JSON.stringify({
-      access: 'PUBLIC_INDEXABLE',
-      overwrite: false
-    }))
-    formData.append('folderPath', '/contextmemo-featured-images')
-    
-    // Upload to HubSpot
-    const uploadResponse = await fetch('https://api.hubapi.com/files/v3/files', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: formData,
-    })
-    
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.json().catch(() => ({}))
-      console.error('HubSpot file upload error:', errorData)
-      return null
-    }
-    
-    const uploadResult = await uploadResponse.json()
-    return uploadResult.url
-  } catch (error) {
-    console.error('Error uploading image to HubSpot:', error)
-    return null
-  }
-}
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -801,15 +749,8 @@ ${memoContent.content.slice(0, 1000)}`,
           const htmlContent = formatHtmlForHubspot(rawHtml)
           
           // Select a featured image based on the memo content
+          // Using Unsplash URLs directly - HubSpot accepts external URLs for featuredImage
           const featuredImage = selectImageForMemo(memoContent.title, memoContent.content, memoType)
-          
-          // Upload image to HubSpot's file manager (required - HubSpot doesn't accept external URLs)
-          const slugForImage = memoContent.slug.replace(/\//g, '-').slice(0, 50)
-          const hubspotImageUrl = await uploadImageToHubSpot(
-            featuredImage.url,
-            `featured-${slugForImage}-${Date.now()}`,
-            hubspotConfig.access_token!
-          )
           
           // Create a summary from the first paragraph
           const contentParagraphs = sanitizedContent.split('\n\n')
@@ -828,14 +769,10 @@ ${memoContent.content.slice(0, 1000)}`,
             slug: memoContent.slug.replace(/\//g, '-'),
             state: hubspotConfig.auto_publish ? 'PUBLISHED' : 'DRAFT',
             authorName: brand.name, // Auto-generated content uses brand name as author
-            // Featured image - must be hosted on HubSpot (uploaded from Unsplash)
-            ...(hubspotImageUrl ? {
-              featuredImage: hubspotImageUrl,
-              featuredImageAltText: featuredImage.alt,
-              useFeaturedImage: true,
-            } : {
-              useFeaturedImage: false, // Fallback if image upload failed
-            }),
+            // Featured image - using Unsplash URL directly
+            featuredImage: featuredImage.url,
+            featuredImageAltText: featuredImage.alt,
+            useFeaturedImage: true,
             // Publish date
             publishDate: new Date().toISOString(),
           }

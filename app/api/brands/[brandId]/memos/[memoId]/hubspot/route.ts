@@ -8,78 +8,8 @@ import { getHubSpotToken } from '@/lib/hubspot/oauth'
 import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
 import { selectImageForMemo } from '@/lib/hubspot/image-selector'
 
-/**
- * Upload an image from URL to HubSpot's file manager
- * HubSpot requires images to be hosted on their platform (hubfs/)
- * 
- * Note: Requires 'files' OAuth scope. If images aren't uploading,
- * user may need to reconnect HubSpot to grant the new permission.
- */
-async function uploadImageToHubSpot(
-  imageUrl: string, 
-  fileName: string, 
-  accessToken: string
-): Promise<string | null> {
-  try {
-    console.log('Uploading image to HubSpot:', { imageUrl: imageUrl.slice(0, 100), fileName })
-    
-    // Fetch the image from Unsplash
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) {
-      console.error('Failed to fetch image from Unsplash:', {
-        status: imageResponse.status,
-        statusText: imageResponse.statusText,
-        url: imageUrl.slice(0, 100)
-      })
-      return null
-    }
-    
-    const imageBuffer = await imageResponse.arrayBuffer()
-    console.log('Image fetched successfully, size:', imageBuffer.byteLength, 'bytes')
-    
-    const blob = new Blob([imageBuffer], { type: 'image/jpeg' })
-    
-    // Create form data for HubSpot upload
-    const formData = new FormData()
-    formData.append('file', blob, `${fileName}.jpg`)
-    formData.append('options', JSON.stringify({
-      access: 'PUBLIC_INDEXABLE',
-      overwrite: false
-    }))
-    formData.append('folderPath', '/contextmemo-featured-images')
-    
-    // Upload to HubSpot
-    const uploadResponse = await fetch('https://api.hubapi.com/files/v3/files', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: formData,
-    })
-    
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.json().catch(() => ({}))
-      console.error('HubSpot file upload error:', {
-        status: uploadResponse.status,
-        statusText: uploadResponse.statusText,
-        error: errorData,
-        message: errorData.message,
-        // Check if this is a permission error
-        hint: uploadResponse.status === 403 
-          ? 'Missing files scope - user may need to reconnect HubSpot' 
-          : undefined
-      })
-      return null
-    }
-    
-    const uploadResult = await uploadResponse.json()
-    console.log('Image uploaded to HubSpot successfully:', uploadResult.url)
-    return uploadResult.url
-  } catch (error) {
-    console.error('Error uploading image to HubSpot:', error)
-    return null
-  }
-}
+// Note: HubSpot file uploads require 'files' OAuth scope which isn't currently enabled.
+// We use direct Unsplash URLs instead - HubSpot accepts external URLs for featuredImage.
 
 // Service role client for database operations
 const supabaseAdmin = createClient(
@@ -331,15 +261,9 @@ export async function POST(
     const htmlContent = formatHtmlForHubspot(rawHtml)
 
     // Select a featured image based on the memo content
+    // Using Unsplash URLs directly - HubSpot accepts external URLs for featuredImage
     const selectedImage = selectImageForMemo(memo.title, memo.content_markdown, memo.memo_type)
-    
-    // Upload image to HubSpot's file manager (required - HubSpot doesn't accept external URLs)
-    const slugForImage = memo.slug.replace(/\//g, '-').slice(0, 50)
-    const hubspotImageUrl = await uploadImageToHubSpot(
-      selectedImage.url,
-      `featured-${slugForImage}-${Date.now()}`,
-      accessToken
-    )
+    console.log('Selected featured image:', selectedImage.url.slice(0, 80))
     
     // Create a summary from the first paragraph for HubSpot blog listing
     const contentParagraphs = sanitizedMarkdown.split('\n\n')
@@ -371,14 +295,10 @@ export async function POST(
       state: publish ? 'PUBLISHED' : 'DRAFT',
       // Use blogAuthorId to properly link to HubSpot author profile
       ...(hubspotAuthorId ? { blogAuthorId: hubspotAuthorId } : {}),
-      // Featured image - must be hosted on HubSpot (uploaded from Unsplash)
-      ...(hubspotImageUrl ? {
-        featuredImage: hubspotImageUrl,
-        featuredImageAltText: selectedImage.alt,
-        useFeaturedImage: true,
-      } : {
-        useFeaturedImage: false, // Fallback if image upload failed
-      }),
+      // Featured image - using Unsplash URL directly
+      featuredImage: selectedImage.url,
+      featuredImageAltText: selectedImage.alt,
+      useFeaturedImage: true,
       // Publish date
       publishDate: new Date().toISOString(),
     }
