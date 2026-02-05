@@ -177,19 +177,24 @@ export default function MemoEditPage() {
 
     setDeleting(true)
     try {
-      const supabase = createClient()
-      
-      const { error } = await supabase
-        .from('memos')
-        .delete()
-        .eq('id', memoId)
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete_memo',
+          memoId,
+        }),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete memo')
+      }
 
       toast.success('Memo deleted')
-      router.push(`/brands/${brandId}`)
+      router.push(`/v2/brands/${brandId}/memos`)
     } catch (error) {
-      toast.error('Failed to delete memo')
+      toast.error(error instanceof Error ? error.message : 'Failed to delete memo')
       console.error(error)
     } finally {
       setDeleting(false)

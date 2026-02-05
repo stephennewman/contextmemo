@@ -530,6 +530,40 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'delete_memo': {
+        // Delete a memo
+        const { memoId } = body
+        if (!memoId) {
+          return NextResponse.json({ error: 'memoId required' }, { status: 400 })
+        }
+
+        // Verify memo belongs to this brand
+        const { data: memoToDelete, error: memoFetchError } = await supabase
+          .from('memos')
+          .select('id')
+          .eq('id', memoId)
+          .eq('brand_id', brandId)
+          .single()
+
+        if (memoFetchError || !memoToDelete) {
+          return NextResponse.json({ error: 'Memo not found' }, { status: 404 })
+        }
+
+        const { error: deleteError } = await supabase
+          .from('memos')
+          .delete()
+          .eq('id', memoId)
+
+        if (deleteError) {
+          throw deleteError
+        }
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Memo deleted' 
+        })
+      }
+
       case 'check_status': {
         // Check onboarding status - used by terminal to poll for completion
         const context = brand.context as Record<string, unknown> | null

@@ -5,18 +5,32 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table'
+import { 
   ArrowLeft,
   Plus,
   FileText,
-  CheckCircle,
-  Clock,
   Eye,
   Pencil,
+  ExternalLink,
 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 
 interface Props {
   params: Promise<{ brandId: string }>
+}
+
+// Format memo type for display
+function formatMemoType(type: string): string {
+  return type
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase())
 }
 
 export default async function V2MemosPage({ params }: Props) {
@@ -45,12 +59,16 @@ export default async function V2MemosPage({ params }: Props) {
     notFound()
   }
 
-  // Get memos for this brand
+  // Get memos for this brand with analytics
   const { data: memos } = await serviceClient
     .from('memos')
     .select('*')
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
+
+  // Count by status
+  const publishedCount = memos?.filter(m => m.status === 'published').length || 0
+  const draftCount = memos?.filter(m => m.status === 'draft').length || 0
 
   return (
     <div className="h-full flex flex-col">
@@ -68,7 +86,7 @@ export default async function V2MemosPage({ params }: Props) {
               <h1 className="text-2xl font-bold text-[#0F172A]">Memos</h1>
             </div>
             <p className="text-sm text-muted-foreground">
-              {memos?.length || 0} memos for {brand.name}
+              {memos?.length || 0} total &middot; {publishedCount} published &middot; {draftCount} drafts
             </p>
           </div>
           
@@ -79,7 +97,7 @@ export default async function V2MemosPage({ params }: Props) {
         </div>
       </div>
       
-      {/* Memos List */}
+      {/* Memos Table */}
       <div className="flex-1 overflow-auto p-6">
         {!memos || memos.length === 0 ? (
           <div className="text-center py-20">
@@ -94,81 +112,87 @@ export default async function V2MemosPage({ params }: Props) {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {memos.map(memo => {
-              const verification = (memo.schema_json as { verification?: { verified?: boolean } })?.verification
-              const isVerified = verification?.verified
-              
-              return (
-                <div 
-                  key={memo.id}
-                  className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-[#0F172A] truncate">
-                          {memo.title}
-                        </h3>
+          <div className="bg-white border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="w-[40%]">Title</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {memos.map(memo => {
+                  const contentLength = memo.content_markdown?.length || 0
+                  
+                  return (
+                    <TableRow key={memo.id} className="group">
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <Link 
+                            href={`/brands/${brandId}/memos/${memo.id}`}
+                            className="font-medium text-[#0F172A] hover:text-[#0EA5E9] truncate max-w-md"
+                          >
+                            {memo.title}
+                          </Link>
+                          <span className="text-xs text-muted-foreground truncate max-w-md">
+                            /{memo.slug}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs font-normal">
+                          {formatMemoType(memo.memo_type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {memo.status === 'published' ? (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 font-normal">
                             Published
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">Draft</Badge>
+                          <Badge variant="secondary" className="font-normal">Draft</Badge>
                         )}
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        {memo.meta_description}
-                      </p>
-                      
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        <span title={format(new Date(memo.created_at), 'PPpp')}>
                           {formatDistanceToNow(new Date(memo.created_at), { addSuffix: true })}
                         </span>
-                        
-                        {memo.memo_type && (
-                          <Badge variant="outline" className="text-xs">
-                            {memo.memo_type}
-                          </Badge>
-                        )}
-                        
-                        {isVerified && (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="h-3 w-3" />
-                            Verified
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      {memo.status === 'published' && brand.subdomain && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a 
-                            href={`https://${brand.subdomain}.contextmemo.com/${memo.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </a>
-                        </Button>
-                      )}
-                      
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/brands/${brandId}/memos/${memo.id}`}>
-                          <Pencil className="h-4 w-4 mr-1" />
-                          Edit
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        <span title={format(new Date(memo.updated_at), 'PPpp')}>
+                          {formatDistanceToNow(new Date(memo.updated_at), { addSuffix: true })}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {memo.status === 'published' && brand.subdomain && (
+                            <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
+                              <a 
+                                href={`https://${brand.subdomain}.contextmemo.com/${memo.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="View live memo"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
+                            <Link href={`/brands/${brandId}/memos/${memo.id}`} title="Edit memo">
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
