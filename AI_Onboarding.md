@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 6, 2026  
-> **Version:** 0.19.3  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding
+> **Version:** 0.19.4  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email
 
 ---
 
@@ -389,6 +389,26 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 6, 2026
+
+**Feature: Daily Digest Email via Resend**
+- New Inngest cron function `daily-digest` runs at 9 AM ET daily (2 PM UTC)
+- Sends per-tenant email summarizing last 24 hours of AI visibility activity
+- Per-brand stats: visibility score with delta, scan count, mention/citation rate
+- Notable events: new citations won, citations lost, memos generated/published, competitor content detected
+- Streak milestones for queries hitting 5+ day citation streaks
+- Prompt coverage progress bar
+- Top competitors by mention frequency
+- Skips tenants with zero activity (no spam)
+- Uses Resend API (raw fetch, no extra dependency)
+- Responsive HTML email with dark header, stat cards, progress bars
+
+**Files created:**
+- `lib/inngest/functions/daily-digest.ts` - Inngest cron function + email template
+
+**Files modified:**
+- `app/api/inngest/route.ts` - Registered dailyDigest function
+
+---
 
 **Rebrand 'Content' to 'Memos' Across Product UI** (486850d)
 

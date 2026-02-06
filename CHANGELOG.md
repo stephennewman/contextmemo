@@ -8,8 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Email notifications for visibility changes
 - Additional memo templates (best-of, what-is)
+
+---
+
+## [0.19.4] - 2026-02-06
+
+### Added
+- **Daily Digest Email**: Automated daily visibility summary sent via Resend at 9 AM ET
+  - Per-brand visibility score with delta vs yesterday
+  - Scan count, mention rate, citation rate
+  - New citations won and citations lost
+  - Memos generated/published count
+  - Competitor content detected
+  - Top competitors by mention frequency
+  - Prompt coverage bar (X of Y prompts citing your brand)
+  - Streak milestones (queries with 5+ day citation streaks)
+  - Skips tenants with no activity (no spam on quiet days)
+  - Clean, responsive HTML email template
 
 ---
 

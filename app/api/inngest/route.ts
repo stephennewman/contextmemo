@@ -117,6 +117,9 @@ export const { GET, POST, PUT } = serve({
     // Prompt Lab - high-volume citation research
     promptLabRun,            // Run prompts continuously for X minutes
     promptLabStop,           // Stop a running lab
+    
+    // Daily digest email - 9 AM ET
+    dailyDigest,             // Send daily visibility summary via Resend
   ],
 })
 // Sync trigger Wed Feb  4 13:26:53 EST 2026
