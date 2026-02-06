@@ -18,6 +18,9 @@ import {
   TrendingUp,
   Pencil,
   AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  FileText,
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { BrandContext } from '@/lib/supabase/types'
@@ -530,10 +533,13 @@ export default async function BrandPage({ params }: Props) {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50">
-                      <TableHead className="w-[35%]">Title</TableHead>
+                      <TableHead className="w-[30%]">Title</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Words</TableHead>
+                      <TableHead className="text-right">Sources</TableHead>
+                      <TableHead className="text-center">Verified</TableHead>
+                      <TableHead>Updated</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -542,13 +548,11 @@ export default async function BrandPage({ params }: Props) {
                       const schemaJson = memo.schema_json as { 
                         hubspot_synced_at?: string
                       } | null
-                      // Context Memo's own memos use /memos routes on main domain
                       const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
                       const isContextMemoBrand = brandId === CONTEXT_MEMO_BRAND_ID
                       
                       let liveUrl: string
                       if (isContextMemoBrand) {
-                        // Use the new /memos routes based on memo type
                         const typeToRoute: Record<string, string> = {
                           guide: '/memos/guides',
                           industry: '/memos/guides',
@@ -567,6 +571,13 @@ export default async function BrandPage({ params }: Props) {
                         .replace(/_/g, ' ')
                         .replace(/\b\w/g, (l: string) => l.toUpperCase())
                       
+                      // Stats
+                      const wordCount = memo.content_markdown
+                        ? memo.content_markdown.split(/\s+/).filter(Boolean).length
+                        : 0
+                      const sourcesArray = Array.isArray(memo.sources) ? memo.sources : []
+                      const sourcesCount = sourcesArray.length
+                      
                       return (
                         <TableRow key={memo.id} className="group">
                           <TableCell>
@@ -576,17 +587,14 @@ export default async function BrandPage({ params }: Props) {
                                   href={liveUrl} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="font-medium hover:text-primary hover:underline flex items-center gap-1 group/link"
+                                  className="font-medium hover:text-primary hover:underline flex items-center gap-1 group/link text-sm"
                                 >
-                                  <span className="truncate max-w-[280px]">{memo.title}</span>
+                                  <span className="truncate max-w-[260px]">{memo.title}</span>
                                   <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0" />
                                 </a>
                               ) : (
-                                <span className="font-medium truncate max-w-[280px]">{memo.title}</span>
+                                <span className="font-medium truncate max-w-[260px] text-sm">{memo.title}</span>
                               )}
-                              <span className="text-xs text-muted-foreground truncate max-w-[280px]">
-                                /{memo.slug}
-                              </span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -602,9 +610,22 @@ export default async function BrandPage({ params }: Props) {
                               {memo.status === 'published' ? 'Published' : 'Draft'}
                             </Badge>
                           </TableCell>
+                          <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
+                            {wordCount > 0 ? wordCount.toLocaleString() : '—'}
+                          </TableCell>
+                          <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
+                            {sourcesCount > 0 ? sourcesCount : '—'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {memo.verified_accurate ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-slate-300 mx-auto" />
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            <span title={format(new Date(memo.created_at), 'PPpp')}>
-                              {formatDistanceToNow(new Date(memo.created_at), { addSuffix: true })}
+                            <span title={format(new Date(memo.updated_at), 'PPpp')}>
+                              {formatDistanceToNow(new Date(memo.updated_at), { addSuffix: true })}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -636,9 +657,11 @@ export default async function BrandPage({ params }: Props) {
                   </TableBody>
                 </Table>
               ) : (
-                <p className="text-muted-foreground text-sm py-8 text-center">
-                  No memos yet. Generate your first memo to improve AI visibility.
-                </p>
+                <div className="text-center py-12">
+                  <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">No memos yet</p>
+                  <p className="text-muted-foreground text-xs mt-1">Use the Generate Memo button above to create your first memo.</p>
+                </div>
               )}
             </CardContent>
           </Card>

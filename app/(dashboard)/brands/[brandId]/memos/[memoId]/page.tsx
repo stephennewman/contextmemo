@@ -203,13 +203,67 @@ export default function MemoEditPage() {
 
   const handlePublish = async () => {
     setStatus('published')
-    // Will be saved when user clicks Save
-    toast.info('Status changed to published. Click Save to apply.')
+    // Auto-save with published status
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('memos')
+        .update({
+          title,
+          slug,
+          content_markdown: content,
+          meta_description: metaDescription,
+          status: 'published',
+          published_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          reviewer_notes: reviewerNotes || null,
+          review_status: reviewStatus,
+          reviewed_at: reviewStatus !== 'ai_generated' ? new Date().toISOString() : memo?.reviewed_at,
+          human_edits_count: content !== memo?.content_markdown ? (memo?.human_edits_count || 0) + 1 : memo?.human_edits_count || 0,
+        })
+        .eq('id', memoId)
+      if (error) throw error
+      toast.success('Memo published')
+      router.refresh()
+    } catch (error) {
+      toast.error('Failed to publish')
+      console.error(error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleUnpublish = async () => {
     setStatus('draft')
-    toast.info('Status changed to draft. Click Save to apply.')
+    // Auto-save with draft status
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('memos')
+        .update({
+          title,
+          slug,
+          content_markdown: content,
+          meta_description: metaDescription,
+          status: 'draft',
+          updated_at: new Date().toISOString(),
+          reviewer_notes: reviewerNotes || null,
+          review_status: reviewStatus,
+          reviewed_at: reviewStatus !== 'ai_generated' ? new Date().toISOString() : memo?.reviewed_at,
+          human_edits_count: content !== memo?.content_markdown ? (memo?.human_edits_count || 0) + 1 : memo?.human_edits_count || 0,
+        })
+        .eq('id', memoId)
+      if (error) throw error
+      toast.success('Memo unpublished')
+      router.refresh()
+    } catch (error) {
+      toast.error('Failed to unpublish')
+      console.error(error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleRegenerate = async () => {

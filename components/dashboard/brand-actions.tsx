@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2, Globe } from 'lucide-react'
+import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2, Globe, Plus, ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
 interface BrandActionsProps {
@@ -298,37 +304,38 @@ export function GenerateMemoDropdown({
     }
   }
 
-  // Show generic memo types
   const memoTypes = [
-    { id: 'industry', label: 'Industry Overview', description: 'Your brand for specific industries' },
-    { id: 'how_to', label: 'How-To Guide', description: 'Step-by-step memo for your solution' },
-    { id: 'alternative', label: 'Alternative To', description: 'Position as alternative to competitor' },
+    { id: 'industry', label: 'Industry Overview' },
+    { id: 'how_to', label: 'How-To Guide' },
+    { id: 'alternative', label: 'Alternative To' },
   ]
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground mb-3">
-        Generate a memo to improve AI visibility:
-      </p>
-      {memoTypes.map((type) => (
-        <button
-          key={type.id}
-          onClick={() => generateMemo(type.id)}
-          disabled={loading !== null}
-          className="w-full flex items-center justify-between p-3 text-left rounded-lg border hover:bg-muted/50 transition-colors disabled:opacity-50"
-        >
-          <div>
-            <p className="font-medium text-sm">{type.label}</p>
-            <p className="text-xs text-muted-foreground">{type.description}</p>
-          </div>
-          {loading === type.id ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" disabled={loading !== null}>
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
           ) : (
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <Plus className="h-4 w-4 mr-1.5" />
           )}
-        </button>
-      ))}
-    </div>
+          Generate Memo
+          <ChevronDown className="h-3 w-3 ml-1" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {memoTypes.map((type) => (
+          <DropdownMenuItem
+            key={type.id}
+            onClick={() => generateMemo(type.id)}
+            disabled={loading !== null}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            {type.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

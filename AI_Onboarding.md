@@ -388,6 +388,16 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 6, 2026 (v2)
+
+**Fix: Watch Tab Classifier — Recognize Industry Topics on Competitor Product Pages**
+- **Problem:** The Watch tab classifier was marking competitor product pages (e.g., "Food Safety Temperature Monitoring", "HACCP Temperature", "Remote Temperature Monitoring") as `is_competitor_specific: true` + `content_type: promotional`, causing them to be auto-skipped with no Respond button. For Checkit, 135/144 items were skipped — most covering topics Checkit itself offers.
+- **Root cause:** The classification prompt had no awareness of the brand's own capabilities. It treated all competitor product pages as competitor-specific, even when the underlying topic (temperature monitoring, food safety, HACCP compliance) is a universal industry capability.
+- **Fix — Smarter classification prompt** (`lib/inngest/functions/competitor-content.ts`): Now includes brand capabilities (features, products, markets) as context. Distinguishes between truly competitor-specific content (funding, hires, internal product updates) and industry topic pages where the capability is universal and the brand could write authoritatively about the same topic.
+- **Fix — Topic-driven respond logic**: Updated `shouldRespond` (backend) and `canRespond` (Watch UI) to be topic-driven: any content with a `universal_topic` that isn't competitor-specific is now respondable, regardless of `content_type`. Previously gated to only educational/industry/thought_leadership.
+- **Data fix**: Reset 107 previously-skipped Checkit items back to `new` for reclassification with the updated prompt.
+- Files changed: `lib/inngest/functions/competitor-content.ts`, `components/dashboard/competitor-watch.tsx`
+
 ### February 6, 2026
 
 **Feature: Content Coverage Audit — Map Your Content Gaps**
