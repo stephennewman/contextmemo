@@ -57,6 +57,7 @@ export default function Home() {
             <span className="font-black text-xl tracking-tight">CONTEXT MEMO</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wide">
+            <Link href="/memos" className="text-slate-400 hover:text-white transition-colors">MEMOS</Link>
             <Link href="#features" className="text-slate-400 hover:text-white transition-colors">FEATURES</Link>
             <Link href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">HOW IT WORKS</Link>
             <Link href="#pricing" className="text-slate-400 hover:text-white transition-colors">PRICING</Link>
@@ -539,6 +540,7 @@ export default function Home() {
               <span className="font-black tracking-tight">CONTEXT MEMO</span>
             </div>
             <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
+              <Link href="/memos" className="hover:text-white transition-colors">MEMOS</Link>
               <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
               <Link href="/signup" className="hover:text-white transition-colors">SIGN UP</Link>
               <Link href="/changelog" className="hover:text-white transition-colors">CHANGELOG</Link>
