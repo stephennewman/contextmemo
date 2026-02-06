@@ -390,6 +390,34 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Sunset Unused Features + Enhance Entities with Mention Tracking** (16ce1c3)
+
+Phase 1 cleanup - removed 7 unused tabs from UI:
+- SEARCH (0 rows in search_console_stats)
+- AI TRAFFIC (0 rows in ai_traffic)
+- INTELLIGENCE (0 rows in attribution_events, prompt_intelligence)
+- QFO (experimental, low usage)
+- MAP (experimental, ReactFlow overhead)
+- LAB (only 2 runs ever)
+- STRATEGY (marketing fluff, cost calculator)
+
+Kept core tabs: Profile, Activity, Scans, Memos, Prompts, Entities, Watch, Alerts
+
+Entities tab improvements:
+- Moved EntityList to top of tab (primary view)
+- Added mention tracking: count unique prompts where each entity is mentioned
+- New sort options: Mentions (default), Citations, A-Z
+- Show "X prompts" badge with amber styling for high-mention entities
+- Competitors_mentioned data now aggregated from scan_results
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Removed unused tabs, added mention aggregation
+- `components/dashboard/entity-list.tsx` - Added mention counts, new sort options
+
+**Net reduction:** 128 lines added, 276 lines removed (148 lines net reduction)
+
+---
+
 **Rename COMPETITORS to ENTITIES Tab with V2 Features** 
 - Renamed "COMPETITORS" tab to "ENTITIES" to better reflect that it tracks competitors, publishers, analysts, marketplaces, and other entity types
 - Created new `EntityList` component adapted from v2 with:
