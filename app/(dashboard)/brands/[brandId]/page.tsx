@@ -28,7 +28,7 @@ import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/sc
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
-import { CompetitorList } from '@/components/dashboard/competitor-list'
+import { EntityList } from '@/components/dashboard/entity-list'
 import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
@@ -98,6 +98,42 @@ export default async function BrandPage({ params }: Props) {
 
   // Get recent scans for the summary
   const recentScans = allScans?.slice(-100) || []
+
+  // Build citation counts per entity (competitor) from scan results
+  const entityDomains = (allCompetitors || [])
+    .filter(c => c.domain)
+    .map(c => ({ id: c.id, domain: c.domain!.toLowerCase() }))
+  
+  // Collect citations per entity (with full URLs)
+  const citationsByEntity: Record<string, string[]> = {}
+  for (const scan of (allScans || [])) {
+    if (!scan.citations) continue
+    for (const citation of scan.citations as string[]) {
+      try {
+        const url = new URL(citation)
+        const domain = url.hostname.replace('www.', '').toLowerCase()
+        // Find matching entity
+        const entity = entityDomains.find(e => domain.includes(e.domain) || e.domain.includes(domain))
+        if (entity) {
+          if (!citationsByEntity[entity.id]) {
+            citationsByEntity[entity.id] = []
+          }
+          // Add unique URLs only
+          if (!citationsByEntity[entity.id].includes(citation)) {
+            citationsByEntity[entity.id].push(citation)
+          }
+        }
+      } catch {
+        // Invalid URL, skip
+      }
+    }
+  }
+  
+  // Count citations per entity
+  const citationCountsByEntity: Record<string, number> = {}
+  for (const [id, urls] of Object.entries(citationsByEntity)) {
+    citationCountsByEntity[id] = urls.length
+  }
 
   // Get memos
   const { data: memos } = await supabase
@@ -446,7 +482,7 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
-          <TabsTrigger value="competitors" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">COMPETITORS{(competitors?.length || 0) > 0 && ` (${competitors?.length})`}</TabsTrigger>
+          <TabsTrigger value="entities" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ENTITIES{(allCompetitors?.length || 0) > 0 && ` (${allCompetitors?.length})`}</TabsTrigger>
           <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
             WATCH
             {/* Show badge if there's new content today */}
@@ -669,7 +705,7 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
-        <TabsContent value="competitors" className="space-y-4">
+        <TabsContent value="entities" className="space-y-4">
           {/* Competitive Intelligence Dashboard */}
           <CompetitiveIntelligence
             brandName={brand.name}
@@ -686,10 +722,12 @@ export default async function BrandPage({ params }: Props) {
             feeds={competitorFeeds || []}
           />
           
-          {/* Competitor List */}
-          <CompetitorList 
+          {/* Entity List */}
+          <EntityList 
             brandId={brandId} 
-            competitors={allCompetitors || []} 
+            entities={allCompetitors || []}
+            citationCounts={citationCountsByEntity}
+            citationUrls={citationsByEntity}
           />
         </TabsContent>
 

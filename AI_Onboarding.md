@@ -390,6 +390,24 @@ _Most recent deploys first_
 
 ### February 5, 2026
 
+**Rename COMPETITORS to ENTITIES Tab with V2 Features** 
+- Renamed "COMPETITORS" tab to "ENTITIES" to better reflect that it tracks competitors, publishers, analysts, marketplaces, and other entity types
+- Created new `EntityList` component adapted from v2 with:
+  - Filter pills for entity types (All, Competitors, Partners, Publisher, Analyst, Marketplace, etc.)
+  - Color-coded entity type badges with icons
+  - Citations count per entity with expandable URL list
+  - Sorting options (Most Cited, A-Z)
+  - Tracked vs Discovered sections (discovered is collapsible)
+  - Search for discovered entities when >10 items
+- Added citation data aggregation from scan_results to show which entities get cited most
+- Kept existing CompetitiveIntelligence and CompetitorContentFeed components in the tab
+
+**Files changed:**
+- `app/(dashboard)/brands/[brandId]/page.tsx` - Renamed tab, added citation data fetching, use EntityList
+- `components/dashboard/entity-list.tsx` - New component with filtering, entity types, citations
+
+---
+
 **Add /resources Route with Branded Context Memo Styling** (11c1e8a)
 - Created `/resources/[[...slug]]` route for Context Memo's own memos on main domain
 - Added `BrandedMemoPageContent` component with "Bold Electric" theme (dark navy, electric blue accents, sharp corners)
