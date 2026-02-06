@@ -950,6 +950,23 @@ export const scanRun = inngest.createFunction(
         }
       }
       
+      // Trigger deep enrichment for newly discovered competitors with domains
+      for (const competitor of (inserted || [])) {
+        if (competitor.domain) {
+          try {
+            await inngest.send({
+              name: 'competitor/enrich',
+              data: {
+                competitorId: competitor.id,
+                brandId,
+              },
+            })
+          } catch (e) {
+            console.log('Competitor enrich emit failed (non-critical):', (e as Error).message)
+          }
+        }
+      }
+      
       console.log(`Auto-discovered ${inserted?.length || 0} new competitors from citations`)
       return { 
         discovered: inserted?.length || 0, 

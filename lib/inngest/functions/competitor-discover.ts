@@ -268,7 +268,19 @@ export const competitorDiscover = inngest.createFunction(
       return data || []
     })
 
-    // Step 6: Trigger query generation
+    // Step 6: Trigger enrichment for newly discovered competitors with domains
+    const enrichEvents = (savedCompetitors as Array<{ id: string; domain?: string }>)
+      .filter(c => c.domain)
+      .map(c => ({
+        name: 'competitor/enrich' as const,
+        data: { competitorId: c.id, brandId },
+      }))
+    
+    if (enrichEvents.length > 0) {
+      await step.sendEvent('enrich-competitors', enrichEvents)
+    }
+
+    // Step 7: Trigger query generation
     await step.sendEvent('trigger-query-generation', {
       name: 'query/generate',
       data: { brandId },

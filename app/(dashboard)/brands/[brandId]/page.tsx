@@ -725,6 +725,7 @@ export default async function BrandPage({ params }: Props) {
           <CoverageAudit
             brandId={brandId}
             brandName={brand.name}
+            brandDomain={brand.domain || ''}
             initialTopics={topicTopics}
             initialScore={coverageScore}
             hasTopics={hasTopicUniverse}

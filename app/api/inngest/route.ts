@@ -48,6 +48,7 @@ import {
 } from '@/lib/inngest/functions/prompt-lab'
 import { dailyDigest } from '@/lib/inngest/functions/daily-digest'
 import { topicUniverseGenerate, topicUniverseRefresh } from '@/lib/inngest/functions/topic-universe'
+import { competitorEnrich, competitorEnrichBatch } from '@/lib/inngest/functions/competitor-enrich'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -121,6 +122,10 @@ export const { GET, POST, PUT } = serve({
     
     // Daily digest email - 9 AM ET
     dailyDigest,             // Send daily visibility summary via Resend
+    
+    // Competitor enrichment - deep website crawl + AI extraction
+    competitorEnrich,        // Enrich a single competitor with full profile
+    competitorEnrichBatch,   // Batch enrich all competitors for a brand
     
     // Topic Universe - Content Coverage Audit
     topicUniverseGenerate,   // Generate full topic universe for a brand

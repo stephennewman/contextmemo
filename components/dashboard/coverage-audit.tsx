@@ -25,6 +25,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
+import { CoverageProgressModal } from './coverage-progress-modal'
+import { MemoBatchProgressModal } from './memo-batch-progress-modal'
 
 // ============================================================================
 // Types
@@ -33,6 +35,7 @@ import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/type
 interface CoverageAuditProps {
   brandId: string
   brandName: string
+  brandDomain: string
   initialTopics: TopicUniverse[]
   initialScore: CoverageScore | null
   hasTopics: boolean
@@ -67,6 +70,7 @@ const STATUS_CONFIG = {
 export function CoverageAudit({
   brandId,
   brandName,
+  brandDomain,
   initialTopics,
   initialScore,
   hasTopics,
@@ -74,12 +78,12 @@ export function CoverageAudit({
   const router = useRouter()
   const [topics, setTopics] = useState<TopicUniverse[]>(initialTopics)
   const [score, setScore] = useState<CoverageScore | null>(initialScore)
-  const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState<Set<string>>(new Set())
-  const [batchGenerating, setBatchGenerating] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [sortBy, setSortBy] = useState<SortBy>('priority')
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [showBatchModal, setShowBatchModal] = useState(false)
 
   // ============================================================================
   // Derived data
@@ -121,31 +125,6 @@ export function CoverageAudit({
   // Actions
   // ============================================================================
 
-  const generateTopicUniverse = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_topic_universe' }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast.success(data.message || 'Coverage audit started')
-        // Poll for results
-        setTimeout(() => router.refresh(), 30000)
-        setTimeout(() => router.refresh(), 60000)
-        setTimeout(() => router.refresh(), 90000)
-      } else {
-        toast.error(data.error || 'Failed to start')
-      }
-    } catch {
-      toast.error('Failed to start coverage audit')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const generateMemoForTopic = async (topicId: string) => {
     setGenerating(prev => new Set(prev).add(topicId))
     try {
@@ -179,34 +158,14 @@ export function CoverageAudit({
     }
   }
 
-  const batchGenerateTopGaps = async () => {
-    if (topGaps.length === 0) return
-    setBatchGenerating(true)
-    try {
-      const res = await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'batch_generate_memos',
-          topicIds: topGaps.map(t => t.id),
-          limit: 10,
-        }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast.success(`Generating ${data.count} memos from top gaps`)
-        // Update local state
-        const gapIds = new Set(topGaps.map(t => t.id))
-        setTopics(prev => prev.map(t => 
-          gapIds.has(t.id) ? { ...t, status: 'partial' as const } : t
-        ))
-      } else {
-        toast.error(data.error || 'Failed to generate')
-      }
-    } catch {
-      toast.error('Failed to batch generate')
-    } finally {
-      setBatchGenerating(false)
+  const handleBatchModalClose = (completedCount: number) => {
+    setShowBatchModal(false)
+    if (completedCount > 0) {
+      // Mark topics as partial in local state
+      const gapIds = new Set(topGaps.map(t => t.id))
+      setTopics(prev => prev.map(t =>
+        gapIds.has(t.id) ? { ...t, status: 'partial' as const } : t
+      ))
     }
   }
 
@@ -229,21 +188,23 @@ export function CoverageAudit({
             </p>
             <div className="flex flex-col items-center gap-3">
               <Button
-                onClick={generateTopicUniverse}
-                disabled={loading}
+                onClick={() => setShowModal(true)}
                 className="gap-2 bg-[#0EA5E9] hover:bg-[#0284C7] text-white rounded-none px-6 py-3"
               >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
+                <Sparkles className="h-4 w-4" />
                 Run Coverage Audit
               </Button>
-              <p className="text-xs text-gray-500">Takes 1-2 minutes. Crawls your sitemap + generates topic map.</p>
+              <p className="text-xs text-gray-500">Crawls your sitemap, maps topics, and scores your coverage.</p>
             </div>
           </CardContent>
         </Card>
+        <CoverageProgressModal
+          brandId={brandId}
+          brandName={brandName}
+          brandDomain={brandDomain}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+        />
       </div>
     )
   }
@@ -309,13 +270,12 @@ export function CoverageAudit({
                 Coverage by Category
               </CardTitle>
               <Button
-                onClick={generateTopicUniverse}
-                disabled={loading}
+                onClick={() => setShowModal(true)}
                 size="sm"
                 variant="outline"
                 className="gap-1 text-xs border-[#1E293B] text-gray-400 hover:text-white rounded-none"
               >
-                {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                <RefreshCw className="h-3 w-3" />
                 Refresh
               </Button>
             </div>
@@ -371,16 +331,12 @@ export function CoverageAudit({
                 </Badge>
               </CardTitle>
               <Button
-                onClick={batchGenerateTopGaps}
-                disabled={batchGenerating || topGaps.length === 0}
+                onClick={() => setShowBatchModal(true)}
+                disabled={topGaps.length === 0}
                 size="sm"
                 className="gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-black rounded-none"
               >
-                {batchGenerating ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3 w-3" />
-                )}
+                <Sparkles className="h-3 w-3" />
                 Generate Top {Math.min(topGaps.length, 10)}
               </Button>
             </div>
@@ -568,6 +524,24 @@ export function CoverageAudit({
           </div>
         </CardContent>
       </Card>
+
+      <CoverageProgressModal
+        brandId={brandId}
+        brandName={brandName}
+        brandDomain={brandDomain}
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+      />
+
+      {showBatchModal && (
+        <MemoBatchProgressModal
+          brandId={brandId}
+          brandName={brandName}
+          topics={topGaps}
+          isOpen={showBatchModal}
+          onClose={handleBatchModalClose}
+        />
+      )}
     </div>
   )
 }

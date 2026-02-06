@@ -72,6 +72,8 @@ export type InngestEvents = {
       queryId?: string
       memoType: string
       competitorId?: string
+      topicTitle?: string
+      topicDescription?: string
     }
   }
   'memo/generated': {
@@ -150,6 +152,18 @@ export type InngestEvents = {
     data: {
       brandId: string
       competitorId?: string
+    }
+  }
+  // Competitor enrichment - deep profile extraction
+  'competitor/enrich': {
+    data: {
+      competitorId: string
+      brandId: string
+    }
+  }
+  'competitor/enrich-batch': {
+    data: {
+      brandId: string
     }
   }
   // Topic Universe - Content Coverage Audit

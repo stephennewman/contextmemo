@@ -190,7 +190,7 @@ function isJunkUrl(url: string): boolean {
 }
 
 // Content classification prompt
-const CONTENT_CLASSIFICATION_PROMPT = `Analyze this article content and classify it.
+const CONTENT_CLASSIFICATION_PROMPT = `Analyze this article/page content and classify it.
 
 ARTICLE TITLE: {{title}}
 ARTICLE CONTENT:
@@ -198,32 +198,50 @@ ARTICLE CONTENT:
 
 COMPETITOR NAME: {{competitor_name}}
 
+YOUR BRAND'S CAPABILITIES (for context on what topics are relevant):
+{{brand_capabilities}}
+
 Classify this content:
 
 1. content_type: One of:
    - "educational" (how-to guides, tutorials, best practices)
-   - "industry" (market analysis, trends, research)
+   - "industry" (market analysis, trends, research, OR product/service pages about an industry capability that multiple companies offer)
    - "thought_leadership" (opinion pieces, predictions, insights)
    - "press_release" (company announcements, news)
-   - "feature_announcement" (new product features, updates)
+   - "feature_announcement" (new product features, updates specific to this company's unique product)
    - "company_news" (funding, hires, partnerships, events)
    - "case_study" (customer stories specific to this company)
-   - "promotional" (marketing, webinars, events, sales content)
+   - "promotional" (generic marketing, webinars, events, sales content with no educational substance)
 
 2. is_competitor_specific: true/false
-   - Is this content ONLY meaningful in context of {{competitor_name}}?
-   - Would writing a response inherently be "about them"?
-   - Examples that ARE competitor-specific: "We raised $50M", "Our new dashboard", "Customer X uses our product"
-   - Examples that are NOT competitor-specific: "How to improve email deliverability", "State of B2B Sales"
+   CRITICAL DISTINCTION:
+   - "competitor-specific" means the content is ONLY about {{competitor_name}} internally — their funding, their specific product UI, their specific customers, their company news.
+   - If the page is about an INDUSTRY CAPABILITY or TOPIC that other companies also offer (e.g., "temperature monitoring", "food safety compliance", "remote monitoring"), it is NOT competitor-specific even if it's on the competitor's product page. The underlying topic is universal.
+   - Ask: "Could our brand write authoritatively about this same topic from our own perspective?" If YES → is_competitor_specific: false.
+   
+   Examples that ARE competitor-specific:
+   - "We raised $50M" → only about them
+   - "Meet our new CTO" → only about them
+   - "Customer X uses [competitor product]" → their case study
+   - "[Competitor] Dashboard v3.0 Release Notes" → their specific product update
+   
+   Examples that are NOT competitor-specific (even if on a product page):
+   - "Food Safety Temperature Monitoring" → industry capability, our brand does this too
+   - "HACCP Compliance Solutions" → industry need, not unique to them
+   - "Remote Temperature Monitoring for Healthcare" → industry topic
+   - "How to improve email deliverability" → educational topic
+   - "IoT sensors for cold chain management" → industry capability
 
 3. universal_topic: string or null
-   - If NOT competitor-specific, what is the underlying topic that ANY company could write about?
-   - e.g., "email deliverability best practices" or "B2B sales trends 2026"
-   - null if the content is competitor-specific
+   - Extract the underlying industry topic that ANY company in this space could write about.
+   - ALWAYS extract a universal_topic when is_competitor_specific is false, even for product pages.
+   - Frame it as the capability or need, not the competitor's product name.
+   - e.g., "food safety temperature monitoring", "HACCP compliance automation", "remote cold chain monitoring"
+   - null ONLY if the content is truly competitor-specific (their internal news/updates).
 
 4. topics: array of 3-5 topic keywords for this content
 
-5. summary: 2-3 sentence summary of the key points
+5. summary: 2-3 sentence summary of the key points. Focus on the industry topic, not the competitor's branding.
 
 Respond ONLY with valid JSON:
 {
@@ -1007,10 +1025,20 @@ export const competitorContentClassify = inngest.createFunction(
 
         const competitorName = (content.competitor as { name: string })?.name || 'Unknown'
 
+        // Build brand capabilities summary for the classifier
+        const brandContext = brand.context as BrandContext
+        const brandCapabilities = [
+          brandContext?.description || '',
+          brandContext?.features?.length ? `Features: ${brandContext.features.join(', ')}` : '',
+          brandContext?.products?.length ? `Products: ${brandContext.products.join(', ')}` : '',
+          brandContext?.markets?.length ? `Markets: ${brandContext.markets.join(', ')}` : '',
+        ].filter(Boolean).join('\n')
+
         const prompt = CONTENT_CLASSIFICATION_PROMPT
           .replace('{{title}}', content.title)
           .replace('{{content}}', fullContent.slice(0, 12000)) // Use more content for better classification
           .replace(/\{\{competitor_name\}\}/g, competitorName)
+          .replace('{{brand_capabilities}}', brandCapabilities || 'Not available')
 
         try {
           const { text } = await generateText({
@@ -1041,8 +1069,9 @@ export const competitorContentClassify = inngest.createFunction(
       }
 
       // Step 3: Update content with classification
+      // Respond if: not competitor-specific AND has a universal topic we can write about
+      // This catches educational articles, industry topics, AND product pages covering capabilities we also offer
       const shouldRespond = !classification.is_competitor_specific && 
-        ['educational', 'industry', 'thought_leadership'].includes(classification.content_type) &&
         classification.universal_topic
 
       await step.run(`update-${content.id}`, async () => {

@@ -982,6 +982,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'enrich_competitors':
+        await inngest.send({
+          name: 'competitor/enrich-batch',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Competitor enrichment started. Crawling competitor websites...' 
+        })
+
       case 'generate_topic_universe':
         await inngest.send({
           name: 'topic/universe-generate',

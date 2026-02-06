@@ -165,7 +165,7 @@ export const memoGenerate = inngest.createFunction(
   },
   { event: 'memo/generate' },
   async ({ event, step }) => {
-    const { brandId, queryId, memoType, competitorId } = event.data
+    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription } = event.data
 
     // Step 1: Get brand, query, related data, and voice insights
     const { brand, query, competitor, competitors, voiceInsights } = await step.run('get-data', async () => {
@@ -263,19 +263,21 @@ export const memoGenerate = inngest.createFunction(
           }
           break
 
-        case 'industry':
-          const industry = query?.query_text?.match(/for\s+(.+)$/i)?.[1] 
+        case 'industry': {
+          const redIndustry = topicTitle
+            || query?.query_text?.match(/for\s+(.+)$/i)?.[1] 
             || brandContext.markets?.[0] 
             || 'business'
           memoTopics = [
-            industry,
-            `${brand.name} for ${industry}`,
+            redIndustry,
+            `${brand.name} for ${redIndustry}`,
             ...(brandContext.markets || []),
           ].filter(Boolean)
           break
+        }
 
-        case 'how_to':
-          let topic = query?.query_text || 'get started'
+        case 'how_to': {
+          let topic = topicTitle || query?.query_text || 'get started'
           topic = topic
             .replace(/^how\s+(to|can\s+i|do\s+i|should\s+i)\s+/i, '')
             .replace(/^what\s+(are|is)\s+(the\s+)?(best\s+)?(ways?\s+to\s+)?/i, '')
@@ -288,6 +290,7 @@ export const memoGenerate = inngest.createFunction(
             ...(brandContext.features || []),
           ].filter(Boolean)
           break
+        }
 
         default:
           memoTopics = [
@@ -389,9 +392,10 @@ export const memoGenerate = inngest.createFunction(
           title = `${competitor.name} Alternatives`
           break
 
-        case 'industry':
-          // Extract industry from query or use first market
-          const industry = query?.query_text?.match(/for\s+(.+)$/i)?.[1] 
+        case 'industry': {
+          // Extract industry from topic title, query, or first market
+          const industry = topicTitle
+            || query?.query_text?.match(/for\s+(.+)$/i)?.[1] 
             || brandContext.markets?.[0] 
             || 'business'
           prompt = INDUSTRY_MEMO_PROMPT
@@ -405,10 +409,11 @@ export const memoGenerate = inngest.createFunction(
           slug = `for/${sanitizeSlug(industry)}`
           title = `${brand.name} for ${industry}`
           break
+        }
 
-        case 'how_to':
-          // Extract topic from query - convert to action verb form
-          let topic = query?.query_text || 'get started'
+        case 'how_to': {
+          // Use topic title from coverage audit, or extract from query
+          let topic = topicTitle || query?.query_text || 'get started'
           
           // Remove question prefixes and convert to imperative form
           topic = topic
@@ -457,6 +462,7 @@ export const memoGenerate = inngest.createFunction(
           // Capitalize first letter of action word after "How to"
           title = `How to ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
           break
+        }
 
         default:
           throw new Error(`Unknown memo type: ${memoType}`)

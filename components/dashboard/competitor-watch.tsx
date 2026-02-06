@@ -129,7 +129,7 @@ export function CompetitorWatch({
         return itemDate >= yesterdayStart && itemDate < todayStart
       case 'respondable':
         return !item.is_competitor_specific && 
-               ['educational', 'industry', 'thought_leadership'].includes(item.content_type || '') &&
+               !!item.universal_topic &&
                item.status !== 'responded'
       case 'all':
       default:
@@ -145,7 +145,7 @@ export function CompetitorWatch({
   })
   const respondableContent = content.filter(item => 
     !item.is_competitor_specific && 
-    ['educational', 'industry', 'thought_leadership'].includes(item.content_type || '') &&
+    !!item.universal_topic &&
     item.status !== 'responded'
   )
   const recentlyResponded = content.filter(item => 
@@ -325,7 +325,7 @@ export function CompetitorWatch({
               {filteredContent.slice(0, 30).map((item) => {
                 const competitor = competitorLookup.get(item.competitor_id) || item.competitor
                 const canRespond = !item.is_competitor_specific && 
-                  ['educational', 'industry', 'thought_leadership'].includes(item.content_type || '') &&
+                  !!item.universal_topic &&
                   !['responded', 'pending_response'].includes(item.status)
                 const isGenerating = generatingId === item.id || item.status === 'pending_response'
                 const isResponded = item.status === 'responded'
