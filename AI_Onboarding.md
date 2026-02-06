@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 5, 2026  
-> **Version:** 0.19.1  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Public Content Routes
+> **Last Updated:** February 6, 2026  
+> **Version:** 0.19.2  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Public Content Routes + Homepage Featured Content
 
 ---
 
@@ -387,6 +387,30 @@ When the AI assistant deploys changes, it should:
 ## Deploy Log
 
 _Most recent deploys first_
+
+### February 6, 2026
+
+**Add Popular Content Section to Homepage** (3e00a73)
+- New "Popular Content" section on homepage showcasing curated memos
+- Database: Added `featured` boolean and `sort_order` integer columns to memos table
+- Displays up to 6 featured memos with:
+  - Memo type badge (guide, how_to, comparison)
+  - Title and meta description
+  - "Read more" hover effect
+  - Links to public memo pages
+- "View All Content" button links to /memos index
+- 5 GEO/AI visibility memos marked as featured for launch:
+  - What is GEO (Generative Engine Optimization)? The Complete Guide
+  - How to Get Your Brand Mentioned by ChatGPT
+  - Best AI Visibility Tools 2026
+  - GEO vs SEO: What Marketers Need to Know
+  - How to Optimize Content for Perplexity AI
+
+**Files changed:**
+- `app/page.tsx` - Added popular content section with featured memos query
+- `lib/supabase/types.ts` - Added `featured` and `sort_order` to memos types
+
+---
 
 ### February 5, 2026
 

@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.2] - 2026-02-06
+
+### Added
+- **Popular Content Section on Homepage**: New section showcasing featured memos to drive traffic to top content
+  - Displays up to 6 featured memos with type badges, titles, and descriptions
+  - "View All Content" button links to `/memos` index
+  - Curated via `featured` boolean column on memos table
+  - `sort_order` column controls display order
+
+### Changed
+- Database: Added `featured` (boolean) and `sort_order` (integer) columns to memos table
+
+---
+
 ## [0.19.1] - 2026-02-05
 
 ### Fixed
