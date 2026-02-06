@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -32,6 +33,7 @@ export default function RootLayout({
         style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}
       >
         {children}
+        <Analytics />
         <Toaster />
       </body>
     </html>
