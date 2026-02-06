@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.5] - 2026-02-06
+
+### Fixed
+- **Memo Sources**: Sources section now shows real clickable URLs instead of AI-hallucinated descriptions
+  - Was showing vague text like "Perplexity AI documentation and behavior analysis"
+  - Now generates proper markdown links: `[Brand Name](https://brand.com) (accessed date)`
+  - Fixed `{{brand_domain}}` placeholder that was never being replaced in generation code
+  - Fixed ALTERNATIVE prompt `{{competitor_name}}` only replacing first occurrence
+  - Database sources array now includes competitor domain for comparison/alternative memos
+
+---
+
 ## [0.19.4] - 2026-02-06
 
 ### Added

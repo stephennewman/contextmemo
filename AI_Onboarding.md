@@ -1,7 +1,7 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 6, 2026  
-> **Version:** 0.19.4  
+> **Version:** 0.19.5  
 > **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email
 
 ---
@@ -389,6 +389,20 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 6, 2026
+
+**Fix: Memo Sources — Real Clickable URLs Instead of AI-Generated Filler** (0427164)
+- Sources section was showing hallucinated descriptions ("Perplexity AI documentation and behavior analysis") instead of actual links
+- Root causes: `{{brand_domain}}` placeholder was never replaced in generation code, prompt templates used vague text instead of markdown links, HOW_TO included filler "Industry best practices and general knowledge"
+- All 4 memo types (comparison, industry, how_to, alternative) now generate proper linked sources: `[Brand Name](https://brand.com) (accessed date)`
+- Added `{{brand_domain}}` and `{{competitor_domain}}` replacements to all memo generation cases
+- Fixed ALTERNATIVE prompt only replacing `{{competitor_name}}` once (now global)
+- Database `sources` array now includes competitor domain for comparison/alternative memos
+
+**Files changed:**
+- `lib/ai/prompts/memo-generation.ts` - Updated Sources sections in all 4 prompt templates
+- `lib/inngest/functions/memo-generate.ts` - Added domain replacements + competitor in sources array
+
+---
 
 **Feature: Daily Digest Email via Resend**
 - New Inngest cron function `daily-digest` runs at 9 AM ET daily (2 PM UTC)
