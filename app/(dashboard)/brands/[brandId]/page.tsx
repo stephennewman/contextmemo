@@ -507,7 +507,27 @@ export default async function BrandPage({ params }: Props) {
                       const schemaJson = memo.schema_json as { 
                         hubspot_synced_at?: string
                       } | null
-                      const liveUrl = `https://${brand.subdomain}.contextmemo.com/${memo.slug}`
+                      // Context Memo's own memos use /memos routes on main domain
+                      const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
+                      const isContextMemoBrand = brandId === CONTEXT_MEMO_BRAND_ID
+                      
+                      let liveUrl: string
+                      if (isContextMemoBrand) {
+                        // Use the new /memos routes based on memo type
+                        const typeToRoute: Record<string, string> = {
+                          guide: '/memos/guides',
+                          industry: '/memos/guides',
+                          comparison: '/memos/compare',
+                          alternative: '/memos/compare',
+                          how_to: '/memos/how-to',
+                          response: '/memos/how-to',
+                        }
+                        const route = typeToRoute[memo.memo_type] || '/memos/how-to'
+                        const cleanSlug = memo.slug.replace(/^(guides|compare|how-to|resources)\//, '')
+                        liveUrl = `https://contextmemo.com${route}/${cleanSlug}`
+                      } else {
+                        liveUrl = `https://${brand.subdomain}.contextmemo.com/${memo.slug}`
+                      }
                       const memoTypeFormatted = memo.memo_type
                         .replace(/_/g, ' ')
                         .replace(/\b\w/g, (l: string) => l.toUpperCase())

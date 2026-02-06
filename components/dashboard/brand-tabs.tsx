@@ -188,7 +188,29 @@ export function BrandTabs({
                           models_citing?: string[]
                         }
                       } | null
-                      const liveUrl = `https://${brandSubdomain}.contextmemo.com/${memo.slug}`
+                      // Context Memo's own memos use /memos routes on main domain
+                      const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
+                      const isContextMemoBrand = brandId === CONTEXT_MEMO_BRAND_ID
+                      
+                      let liveUrl: string
+                      let displayUrl: string
+                      if (isContextMemoBrand) {
+                        const typeToRoute: Record<string, string> = {
+                          guide: '/memos/guides',
+                          industry: '/memos/guides',
+                          comparison: '/memos/compare',
+                          alternative: '/memos/compare',
+                          how_to: '/memos/how-to',
+                          response: '/memos/how-to',
+                        }
+                        const route = typeToRoute[memo.memo_type] || '/memos/how-to'
+                        const cleanSlug = memo.slug.replace(/^(guides|compare|how-to|resources)\//, '')
+                        liveUrl = `https://contextmemo.com${route}/${cleanSlug}`
+                        displayUrl = `contextmemo.com${route}/${cleanSlug}`
+                      } else {
+                        liveUrl = `https://${brandSubdomain}.contextmemo.com/${memo.slug}`
+                        displayUrl = `${brandSubdomain}.contextmemo.com/${memo.slug}`
+                      }
                       // Get content preview - use meta_description or truncate content_markdown
                       const contentPreview = memo.meta_description || 
                         memo.content_markdown
@@ -215,7 +237,7 @@ export function BrandTabs({
                                 <p className="font-medium">{memo.title}</p>
                               )}
                               <p className="text-xs text-muted-foreground">
-                                {brandSubdomain}.contextmemo.com/{memo.slug}
+                                {displayUrl}
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
