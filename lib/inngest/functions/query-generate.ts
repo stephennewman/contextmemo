@@ -9,6 +9,7 @@ import {
   PERSONA_PROMPT_GENERATION,
 } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext, UserIntent, TargetPersona, PromptPersona } from '@/lib/supabase/types'
+import { isJunkQuery } from '@/lib/utils/query-validation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -230,13 +231,21 @@ export const queryGenerate = inngest.createFunction(
       ...categoryQueries.map(q => ({ ...q, persona: null as PromptPersona | null })), // Legacy queries have no persona
     ]
 
+    // Filter out junk queries (e.g., "BrandName for X" labels)
+    const brandNameLower = brand.name.toLowerCase()
+    const validQueries = allQueries.filter(q => !isJunkQuery(q.query_text, brandNameLower))
+    
+    if (validQueries.length < allQueries.length) {
+      console.log(`Filtered ${allQueries.length - validQueries.length} junk queries (e.g., branded labels)`)
+    }
+
     // Cap total queries at 100 to keep scans manageable (sorted by priority, highest first)
     const MAX_QUERIES = 100
-    const queries = allQueries
+    const queries = validQueries
       .sort((a, b) => b.priority - a.priority)
       .slice(0, MAX_QUERIES)
     
-    console.log(`Total queries generated: ${allQueries.length}, capped to: ${queries.length}`)
+    console.log(`Total queries generated: ${allQueries.length}, valid: ${validQueries.length}, capped to: ${queries.length}`)
 
     // Step 5: Map competitor names to IDs
     const competitorIdMap = new Map(

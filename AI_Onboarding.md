@@ -390,6 +390,26 @@ _Most recent deploys first_
 
 ### February 6, 2026
 
+**Add Sentiment Analysis & Brand Position Tracking** (fd781cc)
+- New lightweight sentiment classifier (`lib/utils/sentiment.ts`) — classifies brand mentions as positive/negative/neutral using pattern matching, zero extra API cost
+- Added `brand_sentiment` and `sentiment_reason` columns to `scan_results` table via migration
+- Integrated classification into scan-run for both Perplexity and OpenRouter paths — all future scans auto-classified
+- Backfilled sentiment for all 86 existing brand mentions (45% positive, 54% neutral, 1% negative)
+- Sources tab: new Sentiment score card, Avg Position card, sentiment breakdown bar, and per-funnel-stage sentiment/position data
+- Query detail drawer: sentiment badge with reasoning per scan result
+- One-time backfill API route at `/api/backfill-sentiment`
+
+**Files changed:**
+- `lib/utils/sentiment.ts` — New: pattern-based sentiment classifier
+- `lib/inngest/functions/scan-run.ts` — Added sentiment classification to both scan providers
+- `lib/supabase/types.ts` — Added `brand_sentiment`, `sentiment_reason` to scan_results types
+- `components/dashboard/citation-insights.tsx` — Sentiment score card, breakdown bar, per-funnel sentiment/position
+- `components/dashboard/query-detail.tsx` — Sentiment badge per scan in detail drawer
+- `app/(dashboard)/brands/[brandId]/page.tsx` — Added `funnel_stage` to allQueries fetch
+- `app/api/backfill-sentiment/route.ts` — New: one-time backfill endpoint
+
+---
+
 **Add Vercel Analytics** (4ea8dc4)
 - Installed `@vercel/analytics` package
 - Added `<Analytics />` component to root `app/layout.tsx`

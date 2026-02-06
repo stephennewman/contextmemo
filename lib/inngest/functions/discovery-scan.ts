@@ -4,6 +4,7 @@ import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
 import { calculateTotalCost } from '@/lib/config/costs'
+import { isJunkQuery } from '@/lib/utils/query-validation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -264,8 +265,18 @@ export const discoveryScan = inngest.createFunction(
         return { saved: 0, skipped: 0 }
       }
 
+      // Filter out junk queries (e.g., "BrandName for X" labels)
+      const validWinners = analysis.winningQueries.filter(wq => !isJunkQuery(wq.query, brand.name))
+      if (validWinners.length < analysis.winningQueries.length) {
+        console.log(`[Discovery] Filtered ${analysis.winningQueries.length - validWinners.length} junk winning queries`)
+      }
+
+      if (validWinners.length === 0) {
+        return { saved: 0, skipped: 0 }
+      }
+
       // Prepare queries for insertion - these are queries where the brand WAS mentioned
-      const queriesToInsert = analysis.winningQueries.map(wq => ({
+      const queriesToInsert = validWinners.map(wq => ({
         brand_id: brandId,
         query_text: wq.query,
         query_type: `discovery_${wq.category}`,

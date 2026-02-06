@@ -4,6 +4,7 @@ import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
 import { calculateTotalCost } from '@/lib/config/costs'
+import { isJunkQuery } from '@/lib/utils/query-validation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -240,10 +241,15 @@ export const promptEnrich = inngest.createFunction(
         }
       })
 
-      // Save new queries
-      if (generatedQueries.length > 0) {
+      // Save new queries (filter out junk branded labels)
+      const validQueries = generatedQueries.filter(q => !isJunkQuery(q.query, brand.name))
+      if (validQueries.length < generatedQueries.length) {
+        console.log(`Filtered ${generatedQueries.length - validQueries.length} junk gap queries`)
+      }
+      
+      if (validQueries.length > 0) {
         newQueriesCount = await step.run('save-gap-queries', async () => {
-          const queriesToInsert = generatedQueries.map(q => ({
+          const queriesToInsert = validQueries.map(q => ({
             brand_id: brandId,
             query_text: q.query,
             query_type: q.query_type,

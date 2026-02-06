@@ -932,19 +932,30 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                           <div className="divide-y">
                             {source.prompts.length > 0 ? (
                               source.prompts.slice(0, 15).map((prompt) => (
-                                <div key={prompt.id} className="px-3 py-2 flex items-start gap-2">
+                                <div key={prompt.id} className="px-3 py-2.5 flex items-start gap-2">
                                   <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-sm truncate">{prompt.query_text}</p>
-                                    <div className="flex items-center gap-2 mt-0.5">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm">&ldquo;{prompt.query_text}&rdquo;</p>
+                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                       {prompt.query_type && (
-                                        <span className="text-[10px] text-muted-foreground">
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
                                           {prompt.query_type.replace(/_/g, ' ')}
                                         </span>
                                       )}
+                                      {prompt.funnel_stage && FUNNEL_STAGE_META[prompt.funnel_stage] && (
+                                        <span 
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                                          style={{ 
+                                            backgroundColor: FUNNEL_STAGE_META[prompt.funnel_stage].bgColor, 
+                                            color: FUNNEL_STAGE_META[prompt.funnel_stage].color 
+                                          }}
+                                        >
+                                          {FUNNEL_STAGE_META[prompt.funnel_stage].shortLabel}
+                                        </span>
+                                      )}
                                       {prompt.persona && (
-                                        <span className="text-[10px] text-muted-foreground">
-                                          · {prompt.persona.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600">
+                                          {prompt.persona.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                         </span>
                                       )}
                                     </div>
@@ -1087,8 +1098,29 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                               </div>
                               <div className="divide-y">
                                 {source.prompts.slice(0, 10).map((prompt) => (
-                                  <div key={prompt.id} className="px-3 py-2">
-                                    <p className="text-sm truncate">{prompt.query_text}</p>
+                                  <div key={prompt.id} className="px-3 py-2.5 flex items-start gap-2">
+                                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm">&ldquo;{prompt.query_text}&rdquo;</p>
+                                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                        {prompt.query_type && (
+                                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                                            {prompt.query_type.replace(/_/g, ' ')}
+                                          </span>
+                                        )}
+                                        {prompt.funnel_stage && FUNNEL_STAGE_META[prompt.funnel_stage] && (
+                                          <span 
+                                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                                            style={{ 
+                                              backgroundColor: FUNNEL_STAGE_META[prompt.funnel_stage].bgColor, 
+                                              color: FUNNEL_STAGE_META[prompt.funnel_stage].color 
+                                            }}
+                                          >
+                                            {FUNNEL_STAGE_META[prompt.funnel_stage].shortLabel}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                                 {source.prompts.length > 10 && (
