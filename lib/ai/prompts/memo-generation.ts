@@ -148,7 +148,7 @@ RULES:
 2. Use neutral, factual language - no marketing speak
 3. If information is not available for one company, say "Not publicly available" rather than guessing
 4. Include a comparison table
-5. Cite sources at the end (only cite the actual company websites, not made-up research)
+5. Cite sources at the end using the EXACT format shown below - only link to actual company websites, never invent research sources or vague descriptions
 6. Aim for 600-900 words - be thorough and conversational, not terse
 7. Write in a flowing, readable style that explains concepts clearly
 8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
@@ -207,8 +207,8 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ## Sources
 
-- Company information from [brand domain] (accessed {{date}})
-- Company information from [competitor domain] (accessed {{date}})
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
+- [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})
 
 ---
 
@@ -294,7 +294,7 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 ## Sources
 
-- Product information from {{brand_name}} (accessed {{date}})
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
 
 ---
 
@@ -403,8 +403,7 @@ When choosing a solution, consider factors like [relevant decision criteria base
 
 ## Sources
 
-- {{brand_name}} product information ({{brand_domain}})
-- Industry best practices and general knowledge
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
 
 ---
 
@@ -497,7 +496,8 @@ Choosing between {{competitor_name}} and its alternatives depends on several fac
 
 ## Sources
 
-- Company information from respective websites (accessed {{date}})
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
+- [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})
 
 ---
 

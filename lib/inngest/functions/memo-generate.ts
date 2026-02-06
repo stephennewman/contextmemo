@@ -357,7 +357,9 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
             .replace(/\{\{brand_name\}\}/g, brand.name)
+            .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
             .replace(/\{\{competitor_name\}\}/g, competitor.name)
+            .replace(/\{\{competitor_domain\}\}/g, competitor.domain || competitor.name.toLowerCase().replace(/\s+/g, '') + '.com')
             .replace(/\{\{date\}\}/g, today)
           slug = `vs/${sanitizeSlug(competitor.name)}`
           title = `${brand.name} vs ${competitor.name}: Key Differences`
@@ -376,10 +378,12 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
-            .replace('{{competitor_name}}', competitor.name)
+            .replace(/\{\{competitor_name\}\}/g, competitor.name)
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
             .replace('{{other_alternatives}}', otherCompetitors)
             .replace(/\{\{brand_name\}\}/g, brand.name)
+            .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
+            .replace(/\{\{competitor_domain\}\}/g, competitor.domain || competitor.name.toLowerCase().replace(/\s+/g, '') + '.com')
             .replace(/\{\{date\}\}/g, today)
           slug = `alternatives-to/${sanitizeSlug(competitor.name)}`
           title = `${competitor.name} Alternatives`
@@ -396,6 +400,7 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
             .replace('{{industry}}', industry)
             .replace(/\{\{brand_name\}\}/g, brand.name)
+            .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
             .replace(/\{\{date\}\}/g, today)
           slug = `for/${sanitizeSlug(industry)}`
           title = `${brand.name} for ${industry}`
@@ -446,6 +451,7 @@ export const memoGenerate = inngest.createFunction(
             .replace('{{competitors}}', competitorList)
             .replace('{{topic}}', topic)
             .replace(/\{\{brand_name\}\}/g, brand.name)
+            .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
             .replace(/\{\{date\}\}/g, today)
           slug = `how/${sanitizeSlug(topic)}`
           // Capitalize first letter of action word after "How to"
@@ -637,6 +643,7 @@ ${memoContent.content.slice(0, 1000)}`,
           schema_json: schemaJson,
           sources: [
             { url: `https://${brand.domain}`, title: brand.name, accessed_at: today },
+            ...(competitor?.domain ? [{ url: `https://${competitor.domain}`, title: competitor.name, accessed_at: today }] : []),
           ],
           status: brand.auto_publish ? 'published' : 'draft',
           published_at: brand.auto_publish ? new Date().toISOString() : null,
