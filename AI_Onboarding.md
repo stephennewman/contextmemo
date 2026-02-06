@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 6, 2026  
-> **Version:** 0.19.2  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Public Content Routes + Homepage Featured Content
+> **Version:** 0.19.3  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding
 
 ---
 
@@ -389,6 +389,44 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 6, 2026
+
+**Rebrand 'Content' to 'Memos' Across Product UI** (486850d)
+
+Memo-first branding — everything Context Memo produces is a "memo", not generic "content."
+
+Landing page changes:
+- "CONTENT INTELLIGENCE" → "COMPETITIVE WATCH"
+- "AUTO-GENERATE CONTENT" → "GENERATE MEMOS"
+- "POPULAR CONTENT" → "FEATURED MEMOS"
+- "VIEW ALL CONTENT" → "VIEW ALL MEMOS"
+- "Content intelligence" (pricing) → "Competitive watch"
+- Trust section: "THE AUTHENTICITY PRINCIPLE" → "NOT ANOTHER BLOG POST"
+- New positioning copy: memos structured for people, AI, and search; cross-referenced with brand data; transparent about AI generation
+- Feature descriptions updated to memo-first language
+
+Dashboard changes:
+- Settings: "Content Settings" → "Memo Settings" (nav + heading + all descriptions)
+- Memo edit: "Content" card → "Memo", helper text updated
+- Activity detail: all explanatory text uses "memos" for our output
+- Competitor/entity list: "content monitoring" → "memo generation" / "visibility scans"
+- Brand actions: "Educational content" → "Step-by-step memo", "Content pipeline" → "Memo pipeline"
+
+Public pages:
+- /memos index: meta description + hero copy updated to memo-first language
+
+Left untouched: "competitor content" references (legitimately about their blog posts/articles)
+
+**Files changed (8):**
+- `app/page.tsx` - Landing page rebrand
+- `app/(dashboard)/brands/[brandId]/settings/page.tsx` - Memo Settings
+- `app/(dashboard)/brands/[brandId]/memos/[memoId]/page.tsx` - Memo edit copy
+- `app/(public)/memos/page.tsx` - Public memos meta/hero
+- `components/dashboard/activity-detail.tsx` - Activity explanations
+- `components/dashboard/brand-actions.tsx` - Action descriptions
+- `components/dashboard/competitor-list.tsx` - Competitor dialogs
+- `components/dashboard/entity-list.tsx` - Entity dialogs
+
+---
 
 **Add Popular Content Section to Homepage** (3e00a73)
 - New "Popular Content" section on homepage showcasing curated memos

@@ -46,6 +46,7 @@ import {
   promptLabRun, 
   promptLabStop 
 } from '@/lib/inngest/functions/prompt-lab'
+import { dailyDigest } from '@/lib/inngest/functions/daily-digest'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,

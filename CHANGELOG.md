@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.19.3] - 2026-02-06
+
+### Changed
+- **Memo-First Branding**: Rebranded all "content" references to "memos" across the product UI
+  - Landing page: "Content Intelligence" → "Competitive Watch", "Auto-Generate Content" → "Generate Memos", "Popular Content" → "Featured Memos"
+  - New trust section: "Not Another Blog Post" — positioning memos as structured, brand-verified, built for AI
+  - Settings: "Content Settings" → "Memo Settings" with updated descriptions
+  - Updated copy across activity detail, memo editor, competitor list, entity list, and brand actions
+  - Left "competitor content" references untouched (refers to their blog posts, not our memos)
+
+---
+
 ## [0.19.2] - 2026-02-06
 
 ### Added
