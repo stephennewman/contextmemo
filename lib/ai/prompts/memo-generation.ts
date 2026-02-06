@@ -153,6 +153,7 @@ RULES:
 7. Write in a flowing, readable style that explains concepts clearly
 8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
 9. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
+10. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." - end with specific takeaways or let the content end naturally.
 
 {{verified_insights}}
 
@@ -236,6 +237,7 @@ RULES:
 6. Write in complete, flowing paragraphs that explain concepts clearly
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
 8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
+9. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." - end with specific takeaways or let the content end naturally.
 
 {{verified_insights}}
 
@@ -321,6 +323,7 @@ RULES:
 6. Write conversationally, as if explaining to a colleague who asked for guidance
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that establish thought leadership
 8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context. General claims without fake citations are fine.
+9. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." or "With these strategies, you'll be well on your way to...". End with specific, actionable takeaways or just let the content end naturally.
 
 {{verified_insights}}
 
@@ -430,6 +433,7 @@ RULES:
 6. Write conversationally, as if advising a colleague exploring their options
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that differentiate the brand
 8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
+9. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." - end with specific takeaways or let the content end naturally.
 
 {{verified_insights}}
 
