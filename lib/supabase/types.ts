@@ -274,6 +274,9 @@ export interface Database {
           previous_cited: boolean | null
           new_competitors_found: string[] | null
           position_change: number | null
+          // Sentiment analysis
+          brand_sentiment: 'positive' | 'negative' | 'neutral' | null
+          sentiment_reason: string | null
         }
         Insert: {
           id?: string
@@ -296,6 +299,9 @@ export interface Database {
           previous_cited?: boolean | null
           new_competitors_found?: string[] | null
           position_change?: number | null
+          // Sentiment analysis
+          brand_sentiment?: 'positive' | 'negative' | 'neutral' | null
+          sentiment_reason?: string | null
         }
         Update: {
           id?: string
@@ -318,6 +324,9 @@ export interface Database {
           previous_cited?: boolean | null
           new_competitors_found?: string[] | null
           position_change?: number | null
+          // Sentiment analysis
+          brand_sentiment?: 'positive' | 'negative' | 'neutral' | null
+          sentiment_reason?: string | null
         }
       }
       memos: {

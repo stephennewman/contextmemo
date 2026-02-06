@@ -8,6 +8,7 @@ import { PerplexitySearchResultJson, QueryStatus } from '@/lib/supabase/types'
 import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorDiscovered } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { reportUsageToStripe, calculateCredits } from '@/lib/stripe/usage'
+import { classifySentiment } from '@/lib/utils/sentiment'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -105,6 +106,9 @@ interface ScanResult {
   searchResults: PerplexitySearchResultJson[] | null
   brandInCitations: boolean | null
   citationSource: 'perplexity' | 'openrouter-native' | null
+  // Sentiment analysis
+  brandSentiment: 'positive' | 'negative' | 'neutral' | null
+  sentimentReason: string | null
   // Token usage for cost tracking
   inputTokens: number
   outputTokens: number
@@ -270,6 +274,8 @@ export const scanRun = inngest.createFunction(
         search_results: r.searchResults,
         brand_in_citations: r.brandInCitations,
         citation_source: r.citationSource,
+        brand_sentiment: r.brandSentiment,
+        sentiment_reason: r.sentimentReason,
         scanned_at: new Date().toISOString(),
       }))
 
@@ -1074,6 +1080,11 @@ async function scanWithOpenRouter(
     responseLower.includes(name)
   )
 
+  // Classify sentiment of brand mention
+  const sentimentResult = brandMentioned 
+    ? classifySentiment(text, brandName, brandContext) 
+    : null
+
   return {
     responseText: text,
     brandMentioned,
@@ -1083,6 +1094,8 @@ async function scanWithOpenRouter(
     citations: citations.length > 0 ? citations : null,
     searchResults,
     brandInCitations,
+    brandSentiment: sentimentResult?.sentiment || null,
+    sentimentReason: sentimentResult?.reason || null,
     inputTokens: usage?.prompt_tokens || 0,
     outputTokens: usage?.completion_tokens || 0,
   }
@@ -1148,6 +1161,11 @@ async function scanWithPerplexityDirect(
     snippet: sr.snippet,
   }))
 
+  // Classify sentiment of brand mention
+  const sentimentResult = brandMentioned 
+    ? classifySentiment(text, brandName, brandContext) 
+    : null
+
   return {
     responseText: text,
     brandMentioned,
@@ -1158,6 +1176,8 @@ async function scanWithPerplexityDirect(
     citations,
     searchResults: searchResultsJson.length > 0 ? searchResultsJson : null,
     brandInCitations,
+    brandSentiment: sentimentResult?.sentiment || null,
+    sentimentReason: sentimentResult?.reason || null,
     inputTokens: usage?.promptTokens || 0,
     outputTokens: usage?.completionTokens || 0,
   }

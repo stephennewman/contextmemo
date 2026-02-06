@@ -90,7 +90,7 @@ export default async function BrandPage({ params }: Props) {
   // Get ALL queries including inactive/excluded (for citation-to-prompt mapping)
   const { data: allQueries } = await supabase
     .from('queries')
-    .select('id, query_text, query_type, persona, priority')
+    .select('id, query_text, query_type, persona, priority, funnel_stage')
     .eq('brand_id', brandId)
 
   // Get all scans for history (up to last 90 days)

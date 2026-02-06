@@ -15,6 +15,10 @@ import {
   BarChart3,
   MessageSquare,
   Hash,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
+  Target,
 } from 'lucide-react'
 import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns'
 import { FunnelStage, FUNNEL_STAGE_META } from '@/lib/supabase/types'
@@ -24,7 +28,10 @@ interface ScanResult {
   query_id: string
   model: string
   brand_mentioned: boolean
+  brand_position?: number | null
   brand_in_citations?: boolean | null
+  brand_sentiment?: 'positive' | 'negative' | 'neutral' | null
+  sentiment_reason?: string | null
   citations?: string[] | null
   competitors_mentioned: string[] | null
   scanned_at: string
@@ -239,6 +246,25 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
     
     const trend = secondHalfRate - firstHalfRate
 
+    // Sentiment stats
+    const mentionedScans = filteredScans.filter(s => s.brand_mentioned)
+    const sentimentCounts = {
+      positive: mentionedScans.filter(s => s.brand_sentiment === 'positive').length,
+      negative: mentionedScans.filter(s => s.brand_sentiment === 'negative').length,
+      neutral: mentionedScans.filter(s => s.brand_sentiment === 'neutral').length,
+      unclassified: mentionedScans.filter(s => !s.brand_sentiment).length,
+    }
+    const totalClassified = sentimentCounts.positive + sentimentCounts.negative + sentimentCounts.neutral
+    const sentimentScore = totalClassified > 0
+      ? Math.round(((sentimentCounts.positive - sentimentCounts.negative) / totalClassified) * 100)
+      : null
+
+    // Brand position stats
+    const positionScans = filteredScans.filter(s => s.brand_position != null && s.brand_position > 0)
+    const avgPosition = positionScans.length > 0
+      ? positionScans.reduce((sum, s) => sum + (s.brand_position || 0), 0) / positionScans.length
+      : null
+
     return {
       totalScans: filteredScans.length,
       scansWithCitations: scansWithCitations.length,
@@ -250,6 +276,13 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
       uniqueUrls: allUrls.size,
       uniqueDomains: citationsByDomain.length,
       trend,
+      // Sentiment
+      sentimentCounts,
+      sentimentScore,
+      totalMentioned: mentionedScans.length,
+      // Position
+      avgPosition,
+      positionCount: positionScans.length,
     }
   }, [filteredScans, citationsByDomain, timelineData])
 
@@ -306,6 +339,24 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
       // Count memos targeting this funnel stage
       const stageMemos = memos.filter(m => MEMO_FUNNEL_MAP[m.memo_type] === stage)
       
+      // Sentiment at this funnel stage
+      const mentionedScansAtStage = stageScans.filter(s => s.brand_mentioned)
+      const stageSentiment = {
+        positive: mentionedScansAtStage.filter(s => s.brand_sentiment === 'positive').length,
+        negative: mentionedScansAtStage.filter(s => s.brand_sentiment === 'negative').length,
+        neutral: mentionedScansAtStage.filter(s => s.brand_sentiment === 'neutral').length,
+      }
+      const stageClassified = stageSentiment.positive + stageSentiment.negative + stageSentiment.neutral
+      const stageSentimentScore = stageClassified > 0
+        ? Math.round(((stageSentiment.positive - stageSentiment.negative) / stageClassified) * 100)
+        : null
+      
+      // Average position at this funnel stage
+      const positionScansAtStage = stageScans.filter(s => s.brand_position != null && s.brand_position > 0)
+      const avgPositionAtStage = positionScansAtStage.length > 0
+        ? positionScansAtStage.reduce((sum, s) => sum + (s.brand_position || 0), 0) / positionScansAtStage.length
+        : null
+
       return {
         stage,
         meta: FUNNEL_STAGE_META[stage],
@@ -319,6 +370,10 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
         topDomains,
         memoCount: stageMemos.length,
         publishedMemos: stageMemos.filter(m => m.status === 'published').length,
+        // New: sentiment + position per funnel stage
+        sentiment: stageSentiment,
+        sentimentScore: stageSentimentScore,
+        avgPosition: avgPositionAtStage,
       }
     })
   }, [queries, filteredScans, brandDomain, memos])
@@ -356,7 +411,7 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-cyan-500">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -377,38 +432,140 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
           </CardContent>
         </Card>
 
+        {/* Sentiment Score */}
+        <Card className={`border-l-4 ${
+          stats.sentimentScore !== null && stats.sentimentScore > 0 
+            ? 'border-l-green-500' 
+            : stats.sentimentScore !== null && stats.sentimentScore < 0 
+              ? 'border-l-red-500' 
+              : 'border-l-slate-300'
+        }`}>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sentiment</p>
+            {stats.sentimentScore !== null ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <p className={`text-3xl font-bold ${
+                    stats.sentimentScore > 0 ? 'text-green-600' : 
+                    stats.sentimentScore < 0 ? 'text-red-600' : 'text-slate-600'
+                  }`}>
+                    {stats.sentimentScore > 0 ? '+' : ''}{stats.sentimentScore}
+                  </p>
+                  {stats.sentimentScore > 20 && <ThumbsUp className="h-5 w-5 text-green-500" />}
+                  {stats.sentimentScore < -20 && <ThumbsDown className="h-5 w-5 text-red-500" />}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] text-green-600">{stats.sentimentCounts.positive} pos</span>
+                  <span className="text-[10px] text-slate-400">{stats.sentimentCounts.neutral} neu</span>
+                  <span className="text-[10px] text-red-500">{stats.sentimentCounts.negative} neg</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-slate-300">--</p>
+                <p className="text-xs text-muted-foreground mt-1">No data yet</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Average Position */}
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Position</p>
+            {stats.avgPosition !== null ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <p className="text-3xl font-bold text-amber-600">
+                    #{stats.avgPosition.toFixed(1)}
+                  </p>
+                  <Target className="h-5 w-5 text-amber-400" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  across {stats.positionCount} mention{stats.positionCount !== 1 ? 's' : ''}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-slate-300">--</p>
+                <p className="text-xs text-muted-foreground mt-1">Not mentioned yet</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Citations</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Citations</p>
             <p className="text-3xl font-bold">{stats.totalCitations}</p>
-            <p className="text-xs text-muted-foreground mt-1">across all scans</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Unique URLs</p>
-            <p className="text-3xl font-bold">{stats.uniqueUrls}</p>
-            <p className="text-xs text-muted-foreground mt-1">distinct pages cited</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Domains</p>
-            <p className="text-3xl font-bold">{stats.uniqueDomains}</p>
-            <p className="text-xs text-muted-foreground mt-1">sources cited</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Scans</p>
-            <p className="text-3xl font-bold">{stats.totalScans}</p>
-            <p className="text-xs text-muted-foreground mt-1">in selected period</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.uniqueUrls} URLs · {stats.uniqueDomains} domains
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Sentiment Breakdown Bar */}
+      {stats.totalMentioned > 0 && (stats.sentimentCounts.positive + stats.sentimentCounts.negative + stats.sentimentCounts.neutral) > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium">Sentiment Breakdown</p>
+              <p className="text-xs text-muted-foreground">{stats.totalMentioned} mentions analyzed</p>
+            </div>
+            <div className="h-3 rounded-full overflow-hidden flex">
+              {stats.sentimentCounts.positive > 0 && (
+                <div 
+                  className="bg-green-500 transition-all" 
+                  style={{ width: `${(stats.sentimentCounts.positive / stats.totalMentioned) * 100}%` }}
+                  title={`Positive: ${stats.sentimentCounts.positive}`}
+                />
+              )}
+              {stats.sentimentCounts.neutral > 0 && (
+                <div 
+                  className="bg-slate-300 transition-all" 
+                  style={{ width: `${(stats.sentimentCounts.neutral / stats.totalMentioned) * 100}%` }}
+                  title={`Neutral: ${stats.sentimentCounts.neutral}`}
+                />
+              )}
+              {stats.sentimentCounts.negative > 0 && (
+                <div 
+                  className="bg-red-500 transition-all" 
+                  style={{ width: `${(stats.sentimentCounts.negative / stats.totalMentioned) * 100}%` }}
+                  title={`Negative: ${stats.sentimentCounts.negative}`}
+                />
+              )}
+              {stats.sentimentCounts.unclassified > 0 && (
+                <div 
+                  className="bg-slate-100 transition-all" 
+                  style={{ width: `${(stats.sentimentCounts.unclassified / stats.totalMentioned) * 100}%` }}
+                  title={`Unclassified: ${stats.sentimentCounts.unclassified}`}
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                <span className="text-xs text-muted-foreground">Positive ({Math.round((stats.sentimentCounts.positive / stats.totalMentioned) * 100)}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                <span className="text-xs text-muted-foreground">Neutral ({Math.round((stats.sentimentCounts.neutral / stats.totalMentioned) * 100)}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                <span className="text-xs text-muted-foreground">Negative ({Math.round((stats.sentimentCounts.negative / stats.totalMentioned) * 100)}%)</span>
+              </div>
+              {stats.sentimentCounts.unclassified > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-100 border" />
+                  <span className="text-xs text-muted-foreground">Pending ({stats.sentimentCounts.unclassified})</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Funnel Breakdown */}
       <Card>
@@ -420,7 +577,7 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {funnelStats.map(({ stage, meta, queryCount, scanCount, mentionRate, citationRate, scansWithCitations, topCompetitors, topDomains, memoCount, publishedMemos }) => {
+            {funnelStats.map(({ stage, meta, queryCount, scanCount, mentionRate, citationRate, scansWithCitations, topCompetitors, topDomains, memoCount, publishedMemos, sentiment, sentimentScore, avgPosition }) => {
               const isGap = scanCount > 0 && citationRate === 0 && mentionRate < 30
               const isStrong = citationRate >= 30 || mentionRate >= 60
               
@@ -478,6 +635,36 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                       </div>
                     </div>
                   </div>
+
+                  {/* Sentiment + Position at this stage */}
+                  {(sentimentScore !== null || avgPosition !== null) && (
+                    <div className="flex items-center gap-3">
+                      {sentimentScore !== null && (
+                        <div className="flex items-center gap-1.5">
+                          {sentimentScore > 0 ? (
+                            <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
+                          ) : sentimentScore < 0 ? (
+                            <ThumbsDown className="h-3.5 w-3.5 text-red-500" />
+                          ) : (
+                            <Minus className="h-3.5 w-3.5 text-slate-400" />
+                          )}
+                          <span className={`text-xs font-medium ${
+                            sentimentScore > 0 ? 'text-green-600' : sentimentScore < 0 ? 'text-red-600' : 'text-slate-500'
+                          }`}>
+                            {sentimentScore > 0 ? '+' : ''}{sentimentScore} sentiment
+                          </span>
+                        </div>
+                      )}
+                      {avgPosition !== null && (
+                        <div className="flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-amber-500" />
+                          <span className="text-xs font-medium text-amber-600">
+                            Avg #{avgPosition.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Competitors at this stage */}
                   {topCompetitors.length > 0 && (

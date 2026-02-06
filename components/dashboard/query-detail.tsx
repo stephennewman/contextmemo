@@ -86,6 +86,8 @@ interface ScanResult {
   brand_context?: string | null
   brand_position?: number | null
   brand_in_citations?: boolean | null
+  brand_sentiment?: 'positive' | 'negative' | 'neutral' | null
+  sentiment_reason?: string | null
   citations?: string[] | null
   competitors_mentioned: string[] | null
   scanned_at: string
@@ -334,6 +336,30 @@ export function QueryDetail({
                             )}
                           </div>
                         </div>
+
+                        {/* Sentiment badge */}
+                        {scan.brand_sentiment && (
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                scan.brand_sentiment === 'positive' 
+                                  ? 'border-green-300 text-green-700 bg-green-50' 
+                                  : scan.brand_sentiment === 'negative'
+                                    ? 'border-red-300 text-red-700 bg-red-50'
+                                    : 'border-slate-300 text-slate-600 bg-slate-50'
+                              }`}
+                            >
+                              {scan.brand_sentiment === 'positive' ? '+ Positive' : 
+                               scan.brand_sentiment === 'negative' ? '- Negative' : '~ Neutral'}
+                            </Badge>
+                            {scan.sentiment_reason && (
+                              <span className="text-xs text-muted-foreground italic truncate">
+                                {scan.sentiment_reason}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {/* Brand context if mentioned */}
                         {scan.brand_mentioned && scan.brand_context && (
