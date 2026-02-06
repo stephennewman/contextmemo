@@ -248,7 +248,7 @@ export default async function Home() {
               </div>
               <h3 className="font-black text-xl tracking-tight mb-3">AUTO-GENERATED MEMOS</h3>
               <p className="text-slate-400 mb-6">
-                AI creates factual, citable content based on your website. Optimized for AI citation.
+                Fresh, structured memos cross-referenced with your brand for accuracy. No hallucinations, no fluff.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2 text-sm font-semibold">
@@ -296,9 +296,9 @@ export default async function Home() {
               <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
                 <MessageSquare className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">CONTENT INTELLIGENCE</h3>
+              <h3 className="font-black text-xl tracking-tight mb-3">COMPETITIVE WATCH</h3>
               <p className="text-slate-400 mb-6">
-                Monitor competitor content daily. Auto-generate responses in your brand&apos;s voice.
+                Monitor competitor activity daily. Auto-generate response memos in your brand&apos;s voice.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2 text-sm font-semibold">
@@ -307,11 +307,11 @@ export default async function Home() {
                 </li>
                 <li className="flex items-center gap-2 text-sm font-semibold">
                   <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Smart content filtering
+                  Smart relevance filtering
                 </li>
                 <li className="flex items-center gap-2 text-sm font-semibold">
                   <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Auto-publish responses
+                  Auto-publish response memos
                 </li>
               </ul>
             </div>
@@ -323,7 +323,7 @@ export default async function Home() {
               </div>
               <h3 className="font-black text-xl tracking-tight mb-3">PERSONA TARGETING</h3>
               <p className="text-slate-400 mb-6">
-                AI detects your target personas and generates content specifically for each audience.
+                AI detects your target personas and generates memos specifically for each audience.
               </p>
               <ul className="space-y-2">
                 <li className="flex items-center gap-2 text-sm font-semibold">
@@ -393,9 +393,9 @@ export default async function Home() {
               <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
                 4
               </div>
-              <h3 className="font-black text-lg mb-3">AUTO-GENERATE CONTENT</h3>
+              <h3 className="font-black text-lg mb-3">GENERATE MEMOS</h3>
               <p className="text-slate-600">
-                For gaps, Context Memo creates factual memos that AI models can cite—based on verified facts.
+                For gaps, we generate structured memos cross-referenced with your brand data. Factual, citable, and built for how AI actually reads.
               </p>
             </div>
           </div>
@@ -416,20 +416,20 @@ export default async function Home() {
               <Shield className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h3 className="font-black text-2xl tracking-tight mb-3">THE AUTHENTICITY PRINCIPLE</h3>
+              <h3 className="font-black text-2xl tracking-tight mb-3">NOT ANOTHER BLOG POST</h3>
               <p className="text-xl text-slate-400">
-                We only create content based on facts from your website. No hallucinations. 
-                No fake claims. Every statement is traceable to a source.
+                Memos are structured for how AI actually reads — fresh, properly formatted, and cross-referenced with your brand for accuracy. 
+                No hallucinations. No filler. Every claim is traceable to a source.
               </p>
             </div>
           </div>
           
           <div className="grid sm:grid-cols-2 gap-4">
             {[
-              "Only verified facts from your website",
-              "Competitor info from public sources",
-              "Citations on every memo",
-              "\"Last verified\" timestamps"
+              "Cross-referenced with your brand data",
+              "Structured for people, AI, and search",
+              "Transparent about AI generation",
+              "Every claim traceable to a source"
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3 p-5 bg-white/5 border border-white/10">
                 <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />
@@ -447,7 +447,7 @@ export default async function Home() {
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 text-[#0EA5E9] text-sm font-bold tracking-wide mb-6">
                 <TrendingUp className="h-4 w-4" />
-                POPULAR CONTENT
+                FEATURED MEMOS
               </div>
               <h2 className="text-4xl md:text-5xl font-black tracking-tight">LEARN AI VISIBILITY</h2>
               <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
@@ -490,7 +490,7 @@ export default async function Home() {
             <div className="mt-8 text-center">
               <Button asChild variant="outline" className="border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white text-[#0F172A] font-bold rounded-none px-8">
                 <Link href="/memos">
-                  VIEW ALL CONTENT
+                  VIEW ALL MEMOS
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -525,7 +525,7 @@ export default async function Home() {
               <div className="text-5xl mb-6">✍️</div>
               <h3 className="font-black text-xl mb-3">CONTENT TEAMS</h3>
               <p className="text-slate-600">
-                Scale AI-optimized content without manual effort. Auto-generated memos fill gaps automatically.
+                Replace the blog grind with structured memos. Auto-generated, brand-accurate, and built for AI discovery.
               </p>
             </div>
           </div>
@@ -571,7 +571,7 @@ export default async function Home() {
                 "Competitor tracking",
                 "Search console sync",
                 "Daily automation",
-                "Content intelligence"
+                "Competitive watch"
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />

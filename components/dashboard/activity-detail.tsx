@@ -154,12 +154,12 @@ const ACTIVITY_EXPLANATIONS: Record<string, {
 **Alternative memos** — "Alternatives to [Competitor]" pages
 **Industry memos** — Your brand for a specific use case/industry
 **How-to memos** — Guides featuring your product`,
-    whyItMatters: `Memos give AI models factual content to cite when users ask about your category. They're published to your subdomain (yourname.contextmemo.com) and designed to be crawled and referenced by AI.`,
-    nextSteps: `Review the memo content, make edits if needed, and ensure it's published.`,
+    whyItMatters: `Memos give AI models factual, structured information to cite when users ask about your category. They're published to your subdomain (yourname.contextmemo.com) and designed to be crawled and referenced by AI.`,
+    nextSteps: `Review the memo, make edits if needed, and ensure it's published.`,
   },
   memo_published: {
     whatItMeans: `A memo is now live at your contextmemo.com subdomain and can be discovered by AI crawlers and search engines.`,
-    whyItMatters: `Published memos increase your chances of being cited by AI models. The more factual, well-structured content about your brand, the better.`,
+    whyItMatters: `Published memos increase your chances of being cited by AI models. The more factual, well-structured memos about your brand, the better.`,
     nextSteps: `Share the memo URL, add internal links from your main site, and monitor if AI models start citing it.`,
   },
   competitor_discovered: {
@@ -167,14 +167,14 @@ const ACTIVITY_EXPLANATIONS: Record<string, {
 
 - Generate comparison prompts ("Your brand vs Competitor")
 - Track share of voice in AI responses
-- Monitor competitor content for response opportunities`,
+- Monitor competitors for response memo opportunities`,
     whyItMatters: `Understanding who you compete with in AI search helps focus your visibility efforts on the right battles.`,
     nextSteps: `Review discovered competitors, remove any that aren't relevant, and add any that were missed.`,
   },
   competitor_content_found: {
     whatItMeans: `A competitor published new content (blog post, article, guide) that we detected during our daily scan.`,
     whyItMatters: `Competitor content can influence what AI models say about your category. Tracking it lets you respond with your own perspective.`,
-    nextSteps: `Read the article to understand their angle, and consider creating response content if relevant.`,
+    nextSteps: `Read the article to understand their angle, and consider creating a response memo if relevant.`,
   },
   context_extracted: {
     whatItMeans: `Context Memo analyzed your website and extracted key information:
@@ -184,13 +184,13 @@ const ACTIVITY_EXPLANATIONS: Record<string, {
 - Target markets and industries
 - Brand tone and voice
 - Social links and credibility signals`,
-    whyItMatters: `This context is used to generate accurate prompts and memos. Better context = more relevant content.`,
+    whyItMatters: `This context is used to generate accurate prompts and memos. Better context = more relevant memos.`,
     nextSteps: `Review extracted context in Settings and make corrections if anything is inaccurate.`,
   },
   ai_traffic_detected: {
-    whatItMeans: `Someone visited your content after clicking a link in an AI response (ChatGPT, Perplexity, Claude, etc.)`,
+    whatItMeans: `Someone visited your memo after clicking a link in an AI response (ChatGPT, Perplexity, Claude, etc.)`,
     whyItMatters: `This is the ultimate proof that AI visibility drives real traffic. Track which AI sources send the most visitors.`,
-    nextSteps: `Analyze which content drives AI traffic and double down on similar topics.`,
+    nextSteps: `Analyze which memos drive AI traffic and double down on similar topics.`,
   },
   discovery_scan_completed: {
     whatItMeans: `A discovery scan tested 50+ variations of prompts to find where your brand IS being mentioned by AI models, even for queries you weren't tracking.`,
@@ -204,7 +204,7 @@ const ACTIVITY_EXPLANATIONS: Record<string, {
 - Discovering new competitors (weekly)
 - Generating new prompts (weekly)
 - Running AI visibility scans (daily)
-- Scanning competitor content (daily)`,
+- Scanning competitors (daily)`,
     whyItMatters: `Automation keeps your visibility monitoring current without manual work.`,
     nextSteps: `Review any alerts or changes that came from the daily run.`,
   },

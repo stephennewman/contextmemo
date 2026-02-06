@@ -172,7 +172,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
   }
 
   const handleDelete = async (competitorId: string, competitorName: string) => {
-    if (!confirm(`Delete "${competitorName}" permanently? This will also remove any related content tracking.`)) {
+    if (!confirm(`Delete "${competitorName}" permanently? This will also remove any related tracking data.`)) {
       return
     }
 
@@ -260,7 +260,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
               <DialogHeader>
                 <DialogTitle>Add Competitor</DialogTitle>
                 <DialogDescription>
-                  Add a competitor to track in visibility scans and content monitoring.
+                  Add a competitor to track in visibility scans and memo generation.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -282,7 +282,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
                     onChange={(e) => setNewDomain(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Used for content monitoring and comparison memos
+                    Used for visibility scans and comparison memos
                   </p>
                 </div>
               </div>
@@ -484,7 +484,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
             <span className="text-yellow-600">○</span> Medium confidence = Likely competitor
           </p>
           <p>
-            Excluded competitors won&apos;t appear in visibility scans or content monitoring.
+            Excluded competitors won&apos;t appear in visibility scans or memo generation.
             Delete incorrect ones to prevent them from being re-suggested.
           </p>
         </div>

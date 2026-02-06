@@ -468,7 +468,7 @@ export default function MemoEditPage() {
         <div className="md:col-span-2 space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Content</CardTitle>
+              <CardTitle className="text-base">Memo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -513,7 +513,7 @@ export default function MemoEditPage() {
                 </Badge>
               </div>
               <CardDescription>
-                Elements that help AI understand and cite your content
+                Elements that help AI understand and cite your memo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -527,7 +527,7 @@ export default function MemoEditPage() {
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{aiCounts.headings}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 -mt-1 ml-5">Use ## for main sections. AI uses these to navigate content.</p>
+                <p className="text-[11px] text-slate-400 -mt-1 ml-5">Use ## for main sections. AI uses these to navigate your memo.</p>
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -567,7 +567,7 @@ export default function MemoEditPage() {
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{aiOptimization.hasSources ? '✓' : '—'}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 -mt-1 ml-5">Add a ## Sources section. AI trusts sourced content more.</p>
+                <p className="text-[11px] text-slate-400 -mt-1 ml-5">Add a ## Sources section. AI trusts sourced memos more.</p>
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -603,7 +603,7 @@ export default function MemoEditPage() {
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{aiCounts.brandMentions}</span>
                 </div>
-                <p className="text-[11px] text-slate-400 -mt-1 ml-5">Mention &quot;{brand.name}&quot; naturally so AI associates content with brand.</p>
+                <p className="text-[11px] text-slate-400 -mt-1 ml-5">Mention &quot;{brand.name}&quot; naturally so AI associates this memo with your brand.</p>
               </div>
             </CardContent>
           </Card>

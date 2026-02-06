@@ -358,7 +358,7 @@ export function EntityList({
   }
 
   const handleDelete = async (entityId: string, entityName: string) => {
-    if (!confirm(`Delete "${entityName}" permanently? This will also remove any related content tracking.`)) {
+    if (!confirm(`Delete "${entityName}" permanently? This will also remove any related tracking data.`)) {
       return
     }
 
@@ -473,7 +473,7 @@ export function EntityList({
                       onChange={(e) => setNewDomain(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Used for content monitoring and citation tracking
+                      Used for visibility scans and citation tracking
                     </p>
                   </div>
                 </div>

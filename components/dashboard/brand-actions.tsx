@@ -301,7 +301,7 @@ export function GenerateMemoDropdown({
   // Show generic memo types
   const memoTypes = [
     { id: 'industry', label: 'Industry Overview', description: 'Your brand for specific industries' },
-    { id: 'how_to', label: 'How-To Guide', description: 'Educational content for your solution' },
+    { id: 'how_to', label: 'How-To Guide', description: 'Step-by-step memo for your solution' },
     { id: 'alternative', label: 'Alternative To', description: 'Position as alternative to competitor' },
   ]
 
@@ -498,7 +498,7 @@ export function GenerateMemosButton({ brandId }: { brandId: string }) {
       })
       
       if (res.ok) {
-        toast.success('Content pipeline started - scanning, classifying, and generating memos')
+        toast.success('Memo pipeline started - scanning, classifying, and generating memos')
         // Refresh after a delay
         setTimeout(() => router.refresh(), 5000)
       } else {

@@ -50,7 +50,7 @@ const NAV_SECTIONS = [
   { id: 'offers', label: 'Offers & Pricing', icon: DollarSign },
   { id: 'expert-insights', label: 'Expert Insights', icon: Mic, highlight: true },
   { id: 'brand-voice', label: 'Brand Voice', icon: MessageSquare },
-  { id: 'content', label: 'Content Settings', icon: FileText },
+  { id: 'content', label: 'Memo Settings', icon: FileText },
   { id: 'personas', label: 'Target Personas', icon: Users },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
@@ -941,7 +941,7 @@ export default function BrandSettingsPage() {
                 <Building2 className="h-5 w-5" />
                 Brand Context
               </CardTitle>
-              <CardDescription>Company information used by AI for content generation</CardDescription>
+              <CardDescription>Company information used by AI for memo generation</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -996,7 +996,7 @@ export default function BrandSettingsPage() {
                     <Percent className="h-5 w-5" />
                     Markets & Focus
                   </CardTitle>
-                  <CardDescription>Adjust focus percentage to weight content generation for each market</CardDescription>
+                  <CardDescription>Adjust focus percentage to weight memo generation for each market</CardDescription>
                 </div>
                 {!isAddingMarket && (
                   <Button variant="outline" size="sm" onClick={() => setIsAddingMarket(true)} className="gap-1">
@@ -1058,16 +1058,16 @@ export default function BrandSettingsPage() {
                         <span className="text-xs text-muted-foreground w-10">100%</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {market.focus >= 70 ? 'High focus - will generate more content for this market' :
-                         market.focus >= 40 ? 'Medium focus - balanced content generation' :
-                         'Low focus - less content will target this market'}
+                        {market.focus >= 70 ? 'High focus - will generate more memos for this market' :
+                         market.focus >= 40 ? 'Medium focus - balanced memo generation' :
+                         'Low focus - fewer memos will target this market'}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground py-8 text-center">
-                  No markets defined yet. Add markets to control content generation focus.
+                  No markets defined yet. Add markets to control memo generation focus.
                 </div>
               )}
 
@@ -1245,7 +1245,7 @@ export default function BrandSettingsPage() {
                 <DollarSign className="h-5 w-5" />
                 Offers & Pricing
               </CardTitle>
-              <CardDescription>Calls-to-action used in generated content</CardDescription>
+              <CardDescription>Calls-to-action used in generated memos</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Primary Offer */}
@@ -1378,7 +1378,7 @@ export default function BrandSettingsPage() {
                 <MessageSquare className="h-5 w-5" />
                 Brand Voice
               </CardTitle>
-              <CardDescription>Configure how your brand communicates in generated content</CardDescription>
+              <CardDescription>Configure how your brand communicates in generated memos</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -1486,13 +1486,13 @@ export default function BrandSettingsPage() {
           </Card>
         </section>
 
-        {/* Content Settings Section */}
+        {/* Memo Settings Section */}
         <section id="content" ref={(el) => { sectionRefs.current['content'] = el }} className="scroll-mt-24">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Content Settings
+                Memo Settings
               </CardTitle>
               <CardDescription>Configure how memos are generated and published</CardDescription>
             </CardHeader>
@@ -1632,7 +1632,7 @@ export default function BrandSettingsPage() {
                   <Plug className="h-5 w-5" />
                   HubSpot Integration
                 </CardTitle>
-                <CardDescription>Push AI-generated content directly to your HubSpot blog</CardDescription>
+                <CardDescription>Push memos directly to your HubSpot blog</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {hubspotConnected ? (
@@ -1660,7 +1660,7 @@ export default function BrandSettingsPage() {
                       )}
                     </div>
                     <div className="flex items-center justify-between pt-2">
-                      <div><p className="font-medium">Auto-sync content</p><p className="text-sm text-muted-foreground">Automatically push generated content to HubSpot</p></div>
+                      <div><p className="font-medium">Auto-sync memos</p><p className="text-sm text-muted-foreground">Automatically push generated memos to HubSpot</p></div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={hubspotConfig.auto_sync || false} onChange={(e) => setHubspotConfig({ ...hubspotConfig, auto_sync: e.target.checked })} className="sr-only peer" />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
@@ -1677,7 +1677,7 @@ export default function BrandSettingsPage() {
                     )}
                     <Separator className="my-4" />
                     <div className="flex items-center justify-between">
-                      <div><p className="font-medium">Resync All Content</p><p className="text-sm text-muted-foreground">Update all HubSpot posts with latest content, images, and author</p></div>
+                      <div><p className="font-medium">Resync All Memos</p><p className="text-sm text-muted-foreground">Update all HubSpot posts with latest memo content, images, and author</p></div>
                       <Button variant="outline" size="sm" onClick={handleHubSpotResync} disabled={hubspotResyncing}>
                         {hubspotResyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                         {hubspotResyncing ? 'Resyncing...' : 'Resync All'}
@@ -1691,7 +1691,7 @@ export default function BrandSettingsPage() {
                         <Link2 className="h-6 w-6 text-orange-600" />
                       </div>
                       <h3 className="font-medium mb-2">Connect your HubSpot account</h3>
-                      <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">Automatically push AI-generated content to your HubSpot blog.</p>
+                      <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">Automatically push memos to your HubSpot blog.</p>
                       <Button onClick={handleHubSpotConnect}>
                         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.164 7.93V5.084a2.198 2.198 0 001.267-1.984 2.21 2.21 0 00-4.42 0c0 .873.51 1.627 1.248 1.984v2.846a5.267 5.267 0 00-3.222 1.778l-6.84-5.073a2.628 2.628 0 00.044-.457 2.616 2.616 0 10-2.615 2.615c.461 0 .893-.12 1.269-.33l6.696 4.963a5.264 5.264 0 00-.163 1.31c0 .47.062.925.178 1.358l-3.478 1.665a2.1 2.1 0 00-1.84-1.086 2.114 2.114 0 100 4.227 2.114 2.114 0 002.063-1.673l3.618-1.732a5.28 5.28 0 009.236-3.498 5.28 5.28 0 00-3.041-4.767zm-.95 7.586a2.633 2.633 0 110-5.266 2.633 2.633 0 010 5.266z"/></svg>
                         Connect HubSpot

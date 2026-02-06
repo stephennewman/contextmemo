@@ -11,14 +11,14 @@ const supabase = createClient(
 
 export const metadata: Metadata = {
   title: 'Memos - Context Memo',
-  description: 'AI-optimized content to help your brand get discovered by ChatGPT, Claude, Perplexity, and other AI assistants.',
+  description: 'Structured memos built for people, AI models, and search engines. Fresh, factual, and cross-referenced with brand data.',
 }
 
 const MEMO_CATEGORIES = [
   {
     slug: 'guides',
     title: 'Guides',
-    description: 'Educational content explaining concepts and strategies',
+    description: 'In-depth memos explaining concepts and strategies',
     memoTypes: ['guide', 'industry'],
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +113,7 @@ export default async function MemosIndexPage() {
           </nav>
           <h1 className="text-5xl md:text-6xl font-black tracking-tight">Memos</h1>
           <p className="text-slate-400 mt-6 text-xl max-w-2xl leading-relaxed">
-            AI-optimized content designed to help brands get discovered by ChatGPT, Claude, Perplexity, and other AI assistants.
+            Structured memos built for people, AI models, and search engines. Fresh, factual, and cross-referenced for accuracy.
           </p>
         </div>
       </div>
