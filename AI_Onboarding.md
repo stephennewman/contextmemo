@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 6, 2026  
-> **Version:** 0.20.0  
-> **Status:** MVP Complete + Live Feed Terminal UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email
+> **Version:** 0.19.5  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email
 
 ---
 
@@ -389,28 +389,6 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 6, 2026
-
-**Replace Tabs Dashboard with Live Feed Terminal** (a152103)
-- Removed all 8 tabs (Profile, Activity, Scans, Memos, Prompts, Entities, Sources, Watch) from brand page
-- Replaced with single continuous terminal-style live feed powered by feed_events table
-- New `BrandLiveFeed` client component with dark terminal aesthetic matching onboarding
-- Filter pills: ALL, SCANS, MEMOS, ENTITIES, WATCH, ACTION
-- Compact stats bar: citation score, prompts, memos, scans, entities
-- Inline action buttons on feed items (MEMO, SKIP, DISMISS)
-- Real-time polling every 10s with LIVE indicator and timestamp
-- Quick action buttons (SCAN, GENERATE) in stats bar
-- Load more pagination with cursor-based scrolling
-- Event type styling (WIN, CITED, GAP, WATCH, ENTITY, STREAK, etc.)
-- Simplified brand page server component - fewer DB queries, faster load
-- Onboarding flow preserved for new brands
-
-**Files created:**
-- `components/dashboard/brand-live-feed.tsx` - Live feed terminal component
-
-**Files changed:**
-- `app/(dashboard)/brands/[brandId]/page.tsx` - Complete rewrite: tabs → live feed
-
----
 
 **Add Vercel Analytics** (4ea8dc4)
 - Installed `@vercel/analytics` package
