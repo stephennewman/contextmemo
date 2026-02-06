@@ -30,7 +30,6 @@ import { CompetitorContentFeed } from '@/components/dashboard/competitor-content
 import { EntityList } from '@/components/dashboard/entity-list'
 import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
-import { AlertsList } from '@/components/dashboard/alerts-list'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 
@@ -202,17 +201,7 @@ export default async function BrandPage({ params }: Props) {
 
   // SUNSET: AI traffic removed (0 usage)
 
-  // Get alerts for this brand
-  const { data: alerts } = await supabase
-    .from('alerts')
-    .select('*')
-    .eq('brand_id', brandId)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
-  const unreadAlerts = alerts?.filter(a => !a.read) || []
-
-  // SUNSET: Attribution events, prompt intelligence, model insights removed (0 usage)
+  // SUNSET: Alerts, Attribution events, prompt intelligence, model insights removed (0 usage)
 
   // Helper to check if a query contains the brand name (case-insensitive)
   // These queries skew visibility data since they'll always mention the brand
@@ -426,15 +415,7 @@ export default async function BrandPage({ params }: Props) {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
-            ALERTS{(alerts?.length || 0) > 0 && ` (${alerts?.length})`}
-            {unreadAlerts.length > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#F59E0B] text-[9px] font-bold text-white flex items-center justify-center">
-                {unreadAlerts.length > 9 ? '9+' : unreadAlerts.length}
-              </span>
-            )}
-          </TabsTrigger>
-          {/* SUNSET: Search, AI Traffic, Intelligence, QFO, MAP, LAB, Strategy tabs removed (zero usage) */}
+          {/* SUNSET: Alerts, Search, AI Traffic, Intelligence, QFO, MAP, LAB, Strategy tabs removed (zero usage) */}
         </TabsList>
 
         {/* Brand Profile Tab - All extracted brand information */}
@@ -674,25 +655,7 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
-        {/* SUNSET: Search, Traffic, Intelligence tabs removed (zero usage) */}
-
-        <TabsContent value="alerts">
-          <AlertsList 
-            alerts={(alerts || []) as Array<{
-              id: string
-              brand_id: string
-              alert_type: string
-              title: string
-              message: string | null
-              read: boolean
-              data: Record<string, unknown> | null
-              created_at: string
-            }>}
-            unreadCount={unreadAlerts.length}
-          />
-        </TabsContent>
-
-        {/* SUNSET: QFO, MAP, LAB, STRATEGY tabs removed (zero usage) */}
+        {/* SUNSET: Search, Traffic, Intelligence, Alerts, QFO, MAP, LAB, STRATEGY tabs removed (zero usage) */}
       </Tabs>
     </div>
   )

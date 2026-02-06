@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { 
   Loader2, Save, Trash2, ExternalLink, CheckCircle2, Link2,
   Settings, Building2, MessageSquare, FileText, Users, Target,
-  Plug, AlertTriangle, ChevronRight, Plus, X, Sparkles, RefreshCw,
+  Plug, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Plus, X, Sparkles, RefreshCw,
   Crown, User, Mic, Swords, ToggleLeft, ToggleRight, Globe, DollarSign,
   Tag, Percent
 } from 'lucide-react'
@@ -196,6 +196,7 @@ export default function BrandSettingsPage() {
   }
   const [competitors, setCompetitors] = useState<Competitor[]>([])
   const [togglingCompetitorId, setTogglingCompetitorId] = useState<string | null>(null)
+  const [excludedExpanded, setExcludedExpanded] = useState(false)
   const [addCompetitorOpen, setAddCompetitorOpen] = useState(false)
   const [newCompetitor, setNewCompetitor] = useState({ name: '', domain: '' })
   const [addingCompetitor, setAddingCompetitor] = useState(false)
@@ -1177,36 +1178,55 @@ export default function BrandSettingsPage() {
                 </div>
               )}
 
-              {/* Excluded Competitors */}
+              {/* Excluded Competitors - Collapsible */}
               {competitors.filter(c => !c.is_active).length > 0 && (
                 <div className="pt-4 border-t">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 block">Excluded from Tracking</Label>
-                  <div className="space-y-2">
-                    {competitors.filter(c => !c.is_active).map((competitor) => (
-                      <div key={competitor.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 opacity-60">
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{competitor.name}</p>
-                          {competitor.domain && (
-                            <p className="text-sm text-muted-foreground">{competitor.domain}</p>
-                          )}
+                  <button
+                    onClick={() => setExcludedExpanded(!excludedExpanded)}
+                    className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide cursor-pointer">
+                        Excluded from Tracking
+                      </Label>
+                      <Badge variant="secondary" className="text-xs">
+                        {competitors.filter(c => !c.is_active).length}
+                      </Badge>
+                    </div>
+                    {excludedExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                  {excludedExpanded && (
+                    <div className="space-y-2 mt-2">
+                      {competitors.filter(c => !c.is_active).map((competitor) => (
+                        <div key={competitor.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 opacity-60">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{competitor.name}</p>
+                            {competitor.domain && (
+                              <p className="text-sm text-muted-foreground">{competitor.domain}</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleCompetitor(competitor.id, false)}
+                            disabled={togglingCompetitorId === competitor.id}
+                            className="text-muted-foreground hover:text-green-600"
+                            title="Re-include in tracking"
+                          >
+                            {togglingCompetitorId === competitor.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ToggleLeft className="h-4 w-4" />
+                            )}
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleCompetitor(competitor.id, false)}
-                          disabled={togglingCompetitorId === competitor.id}
-                          className="text-muted-foreground hover:text-green-600"
-                          title="Re-include in tracking"
-                        >
-                          {togglingCompetitorId === competitor.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <ToggleLeft className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

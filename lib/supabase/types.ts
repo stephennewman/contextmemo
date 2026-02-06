@@ -330,6 +330,8 @@ export interface Database {
           version: number
           created_at: string
           updated_at: string
+          featured: boolean
+          sort_order: number
         }
         Insert: {
           id?: string
@@ -351,6 +353,8 @@ export interface Database {
           version?: number
           created_at?: string
           updated_at?: string
+          featured?: boolean
+          sort_order?: number
         }
         Update: {
           id?: string
@@ -360,6 +364,8 @@ export interface Database {
           memo_type?: string
           slug?: string
           title?: string
+          featured?: boolean
+          sort_order?: number
           content_markdown?: string
           content_html?: string | null
           meta_description?: string | null

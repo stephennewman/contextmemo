@@ -319,9 +319,29 @@ export default function MemoEditPage() {
 
   // Use localhost in development, production URL otherwise
   const isDev = process.env.NODE_ENV === 'development' || typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  const publicUrl = isDev 
-    ? `http://localhost:3000/memo/${brand.subdomain}/${slug}`
-    : `https://${brand.subdomain}.contextmemo.com/${slug}`
+  
+  // Context Memo's own memos use /memos routes on main domain
+  const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
+  const isContextMemoBrand = brandId === CONTEXT_MEMO_BRAND_ID
+  
+  let publicUrl: string
+  if (isDev) {
+    publicUrl = `http://localhost:3000/memo/${brand.subdomain}/${slug}`
+  } else if (isContextMemoBrand && memo) {
+    const typeToRoute: Record<string, string> = {
+      guide: '/memos/guides',
+      industry: '/memos/guides',
+      comparison: '/memos/compare',
+      alternative: '/memos/compare',
+      how_to: '/memos/how-to',
+      response: '/memos/how-to',
+    }
+    const route = typeToRoute[memo.memo_type] || '/memos/how-to'
+    const cleanSlug = slug.replace(/^(guides|compare|how-to|resources)\//, '')
+    publicUrl = `https://contextmemo.com${route}/${cleanSlug}`
+  } else {
+    publicUrl = `https://${brand.subdomain}.contextmemo.com/${slug}`
+  }
 
   // Analyze AI optimization elements with counts
   const headingCount = (content.match(/^##\s/gm) || []).length + (content.match(/^#\s/gm) || []).length

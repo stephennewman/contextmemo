@@ -16,7 +16,6 @@ import { CompetitorContentFeed } from './competitor-content-feed'
 import { CompetitorList } from './competitor-list'
 import { SearchConsoleView } from './search-console-view'
 import { AITrafficView } from './ai-traffic-view'
-import { AlertsList } from './alerts-list'
 import { AttributionDashboard } from './attribution-dashboard'
 import { PromptIntelligenceFeed } from './prompt-intelligence-feed'
 import { ModelInsightsPanel } from './model-insights-panel'
@@ -48,7 +47,6 @@ type TabData = {
   competitorContent?: unknown[]
   competitorFeeds?: unknown[]
   aiTraffic?: unknown[]
-  alerts?: unknown[]
   attributionEvents?: unknown[]
   promptIntelligence?: unknown[]
   modelInsights?: unknown
@@ -117,7 +115,6 @@ export function BrandTabs({
         <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH</TabsTrigger>
         <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC</TabsTrigger>
         <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">INTELLIGENCE</TabsTrigger>
-        <TabsTrigger value="alerts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">ALERTS</TabsTrigger>
       </TabsList>
 
       {/* Profile Tab - Always loaded */}
@@ -161,6 +158,7 @@ export function BrandTabs({
                   title: string
                   slug: string
                   status: string
+                  memo_type: string
                   published_at: string | null
                   schema_json: Record<string, unknown> | null
                   content_markdown: string
@@ -172,6 +170,7 @@ export function BrandTabs({
                       title: string
                       slug: string
                       status: string
+                      memo_type: string
                       published_at: string | null
                       schema_json: Record<string, unknown> | null
                       content_markdown: string
@@ -374,17 +373,6 @@ export function BrandTabs({
         )}
       </TabsContent>
 
-      {/* Alerts Tab */}
-      <TabsContent value="alerts">
-        {loading === 'alerts' ? <TabLoader /> : (
-          <AlertsList 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            alerts={(tabData.alerts || []) as any}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            unreadCount={((tabData.alerts as any) || []).filter((a: any) => !a.read).length}
-          />
-        )}
-      </TabsContent>
     </Tabs>
   )
 }

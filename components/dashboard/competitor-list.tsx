@@ -23,7 +23,9 @@ import {
   Plus,
   Trash2,
   RefreshCw,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -54,6 +56,7 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
   const [competitors, setCompetitors] = useState(initialCompetitors)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [excludedExpanded, setExcludedExpanded] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [adding, setAdding] = useState(false)
   const [rediscovering, setRediscovering] = useState(false)
@@ -400,59 +403,76 @@ export function CompetitorList({ brandId, competitors: initialCompetitors }: Com
           </p>
         )}
 
-        {/* Excluded Competitors */}
+        {/* Excluded Competitors - Collapsible */}
         {excludedCompetitors.length > 0 && (
           <div className="pt-4 border-t">
-            <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-              Excluded from Tracking
-            </p>
-            <div className="space-y-2">
-              {excludedCompetitors.map((competitor) => (
-                <div 
-                  key={competitor.id} 
-                  className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 opacity-60"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{competitor.name}</p>
-                    {competitor.domain && (
-                      <p className="text-sm text-muted-foreground">
-                        {competitor.domain}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggle(competitor.id, false)}
-                      disabled={togglingId === competitor.id}
-                      className="text-muted-foreground hover:text-green-600"
-                      title="Re-enable tracking"
-                    >
-                      {togglingId === competitor.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ToggleLeft className="h-4 w-4" />
+            <button
+              onClick={() => setExcludedExpanded(!excludedExpanded)}
+              className="flex items-center justify-between w-full text-left hover:opacity-80 transition-opacity"
+            >
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Excluded from Tracking
+                </p>
+                <Badge variant="secondary" className="text-xs">
+                  {excludedCompetitors.length}
+                </Badge>
+              </div>
+              {excludedExpanded ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            {excludedExpanded && (
+              <div className="space-y-2 mt-2">
+                {excludedCompetitors.map((competitor) => (
+                  <div 
+                    key={competitor.id} 
+                    className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 opacity-60"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{competitor.name}</p>
+                      {competitor.domain && (
+                        <p className="text-sm text-muted-foreground">
+                          {competitor.domain}
+                        </p>
                       )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(competitor.id, competitor.name)}
-                      disabled={deletingId === competitor.id}
-                      className="text-muted-foreground hover:text-destructive"
-                      title="Delete competitor"
-                    >
-                      {deletingId === competitor.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggle(competitor.id, false)}
+                        disabled={togglingId === competitor.id}
+                        className="text-muted-foreground hover:text-green-600"
+                        title="Re-enable tracking"
+                      >
+                        {togglingId === competitor.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ToggleLeft className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(competitor.id, competitor.name)}
+                        disabled={deletingId === competitor.id}
+                        className="text-muted-foreground hover:text-destructive"
+                        title="Delete competitor"
+                      >
+                        {deletingId === competitor.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

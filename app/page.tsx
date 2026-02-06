@@ -14,8 +14,16 @@ import {
   MessageSquare,
   FileText,
   TrendingUp,
-  Shield
+  Shield,
+  BookOpen
 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+import { CONTEXT_MEMO_BRAND_ID, getMemoUrl } from "@/lib/memo/render";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // Pricing tranches - users lock in their price forever
 const PRICING_TRANCHES = [
@@ -46,7 +54,17 @@ function getNextTranche(userCount: number) {
   return null;
 }
 
-export default function Home() {
+export default async function Home() {
+  // Fetch featured memos for popular content section
+  const { data: featuredMemos } = await supabase
+    .from('memos')
+    .select('id, title, slug, memo_type, meta_description')
+    .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
+    .eq('status', 'published')
+    .eq('featured', true)
+    .order('sort_order', { ascending: true })
+    .limit(6);
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
       {/* Header */}
@@ -422,8 +440,67 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Popular Content */}
+      {featuredMemos && featuredMemos.length > 0 && (
+        <section className="py-24 bg-white text-[#0F172A]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 text-[#0EA5E9] text-sm font-bold tracking-wide mb-6">
+                <TrendingUp className="h-4 w-4" />
+                POPULAR CONTENT
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight">LEARN AI VISIBILITY</h2>
+              <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
+                Everything you need to understand how AI search works and how to get your brand cited.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredMemos.map((memo) => {
+                const url = getMemoUrl(memo.slug, memo.memo_type);
+                
+                return (
+                  <Link
+                    key={memo.id}
+                    href={url}
+                    className="p-6 border-2 border-[#0F172A] group hover:bg-slate-50 hover:border-[#0EA5E9] transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <BookOpen className="h-4 w-4 text-[#0EA5E9]" />
+                      <span className="text-xs font-bold text-[#0EA5E9] uppercase tracking-wide">
+                        {memo.memo_type.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <h3 className="font-black text-lg tracking-tight mb-3 group-hover:text-[#0EA5E9] transition-colors line-clamp-2">
+                      {memo.title}
+                    </h3>
+                    {memo.meta_description && (
+                      <p className="text-slate-600 text-sm line-clamp-2">
+                        {memo.meta_description}
+                      </p>
+                    )}
+                    <div className="mt-4 flex items-center gap-1 text-sm font-bold text-[#0EA5E9] opacity-0 group-hover:opacity-100 transition-opacity">
+                      Read more <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            
+            <div className="mt-8 text-center">
+              <Button asChild variant="outline" className="border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white text-[#0F172A] font-bold rounded-none px-8">
+                <Link href="/memos">
+                  VIEW ALL CONTENT
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Use Cases */}
-      <section className="py-24 bg-white text-[#0F172A]">
+      <section className="py-24 bg-slate-100 text-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">BUILT FOR B2B TEAMS</h2>
