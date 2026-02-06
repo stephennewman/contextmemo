@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/client'
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/security/ip'
+import { rateLimit } from '@/lib/security/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rate = await rateLimit({
+      key: `billing:portal:ip:${ip}`,
+      windowMs: 60_000,
+      max: 10,
+    })
+
+    if (!rate.allowed) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

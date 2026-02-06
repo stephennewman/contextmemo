@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getCacheValue, setCacheValue } from '@/lib/cache/redis-cache'
 import { 
   ActivityLogEntry, 
   ActivityCategory, 
@@ -37,8 +38,16 @@ export async function GET(request: NextRequest) {
   const brandIds = searchParams.get('brands')?.split(',').filter(Boolean)
   const startDate = searchParams.get('start')
   const endDate = searchParams.get('end')
-  const limit = parseInt(searchParams.get('limit') || '50')
-  const offset = parseInt(searchParams.get('offset') || '0')
+  const rawLimit = parseInt(searchParams.get('limit') || '50')
+  const rawOffset = parseInt(searchParams.get('offset') || '0')
+  const limit = Math.min(Number.isNaN(rawLimit) ? 50 : rawLimit, 100)
+  const offset = Math.max(Number.isNaN(rawOffset) ? 0 : rawOffset, 0)
+
+  const cacheKey = `activity:${user.id}:${categories?.join('|') || 'all'}:${activityTypes?.join('|') || 'all'}:${brandIds?.join('|') || 'all'}:${startDate || 'none'}:${endDate || 'none'}:${limit}:${offset}`
+  const cached = await getCacheValue<{ activities: AggregatedActivity[]; total: number; hasMore: boolean; offset: number; limit: number }>(cacheKey)
+  if (cached) {
+    return NextResponse.json(cached)
+  }
 
   try {
     // Get user's brands first
@@ -48,7 +57,9 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (!brands || brands.length === 0) {
-      return NextResponse.json({ activities: [], total: 0, hasMore: false })
+      const emptyResponse = { activities: [], total: 0, hasMore: false, offset, limit }
+      await setCacheValue(cacheKey, emptyResponse, 30)
+      return NextResponse.json(emptyResponse)
     }
 
     const userBrandIds = brands.map(b => b.id)
@@ -60,7 +71,9 @@ export async function GET(request: NextRequest) {
       : userBrandIds
 
     if (targetBrandIds.length === 0) {
-      return NextResponse.json({ activities: [], total: 0, hasMore: false })
+      const emptyResponse = { activities: [], total: 0, hasMore: false, offset, limit }
+      await setCacheValue(cacheKey, emptyResponse, 30)
+      return NextResponse.json(emptyResponse)
     }
 
     const activities: AggregatedActivity[] = []
@@ -400,13 +413,17 @@ export async function GET(request: NextRequest) {
     const paginated = deduped.slice(offset, offset + limit)
     const hasMore = offset + limit < total
 
-    return NextResponse.json({
+    const response = {
       activities: paginated,
       total,
       hasMore,
       offset,
       limit,
-    })
+    }
+
+    await setCacheValue(cacheKey, response, 30)
+
+    return NextResponse.json(response)
 
   } catch (error) {
     console.error('Activity feed error:', error)

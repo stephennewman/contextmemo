@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe, getPlanByPriceId } from '@/lib/stripe/client'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { getClientIp } from '@/lib/security/ip'
+import { ensureIdempotency, rateLimit } from '@/lib/security/rate-limit'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +11,26 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  const allowlistRaw = process.env.STRIPE_WEBHOOK_IP_ALLOWLIST
+  const allowlist = allowlistRaw
+    ? allowlistRaw.split(',').map(entry => entry.trim()).filter(Boolean)
+    : []
+
+  if (allowlist.length > 0 && !allowlist.includes('*') && !allowlist.includes(ip)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const rate = await rateLimit({
+    key: `stripe:webhook:ip:${ip}`,
+    windowMs: 60_000,
+    max: 60,
+  })
+
+  if (!rate.allowed) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+  }
+
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 
@@ -30,6 +52,15 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid signature' },
       { status: 400 }
     )
+  }
+
+  const isFirstSeen = await ensureIdempotency(
+    `stripe:webhook:event:${event.id}`,
+    60 * 60 * 24
+  )
+
+  if (!isFirstSeen) {
+    return NextResponse.json({ error: 'Duplicate event' }, { status: 409 })
   }
 
   try {

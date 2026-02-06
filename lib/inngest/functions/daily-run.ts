@@ -1,5 +1,6 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
+import { getScanFrequencyDays, type PlanId } from '@/lib/stripe/client'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +40,7 @@ export const dailyRun = inngest.createFunction(
     const brands = await step.run('get-active-brands', async () => {
       const { data, error } = await supabase
         .from('brands')
-        .select('id, name, domain, context_extracted_at, created_at, updated_at')
+        .select('id, name, domain, tenant_id, context_extracted_at, created_at, updated_at')
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -67,11 +68,30 @@ export const dailyRun = inngest.createFunction(
         isNewBrand: boolean
       }> = []
 
+      const tenantIds = Array.from(new Set(brands.map(brand => brand.tenant_id).filter(Boolean)))
+      const tenantPlans = new Map<string, PlanId>()
+
+      if (tenantIds.length > 0) {
+        const { data: tenants } = await supabase
+          .from('tenants')
+          .select('id, plan')
+          .in('id', tenantIds)
+
+        for (const tenant of tenants || []) {
+          if (tenant?.id && tenant?.plan) {
+            tenantPlans.set(tenant.id, tenant.plan as PlanId)
+          }
+        }
+      }
+
       for (const brand of brands) {
         const isNew = !brand.context_extracted_at
         const contextAge = brand.context_extracted_at 
           ? Math.floor((Date.now() - new Date(brand.context_extracted_at).getTime()) / (1000 * 60 * 60 * 24))
           : 999
+
+        const planId = tenantPlans.get(brand.tenant_id) || 'starter'
+        const scanFrequencyDays = getScanFrequencyDays(planId)
 
         // Get last competitor discovery, query generation, scan, and discovery scan times
         const [competitorsResult, queriesResult, lastScanResult, lastDiscoveryScanResult] = await Promise.all([
@@ -119,8 +139,8 @@ export const dailyRun = inngest.createFunction(
           needsCompetitorDiscovery: isOlderThanDays(lastCompetitorDiscovery, 7),
           // Generate new queries weekly or if never done
           needsQueryGeneration: isOlderThanDays(lastQueryGeneration, 7),
-          // Scan daily (or if never scanned)
-          needsScan: isOlderThanDays(lastScan, 1),
+          // Scan based on subscription cadence (or if never scanned)
+          needsScan: isOlderThanDays(lastScan, scanFrequencyDays),
           // Discovery scan weekly (or if never done) - explores new query patterns
           needsDiscoveryScan: isOlderThanDays(lastDiscoveryScan, 7),
         })

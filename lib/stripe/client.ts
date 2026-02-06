@@ -46,6 +46,7 @@ export const PLANS = {
       memos_per_month: 5,
       brands: 1,
       seats: 1,
+      scan_frequency_days: 7,
     },
   },
   growth: {
@@ -71,6 +72,7 @@ export const PLANS = {
       memos_per_month: -1, // Unlimited
       brands: 3,
       seats: 3,
+      scan_frequency_days: 3,
     },
   },
   enterprise: {
@@ -95,6 +97,7 @@ export const PLANS = {
       memos_per_month: -1,
       brands: -1,
       seats: -1,
+      scan_frequency_days: 1,
     },
   },
 } as const
@@ -123,7 +126,7 @@ export interface UsageCheck {
   allowed: boolean
   current: number
   limit: number
-  limitType: 'prompts' | 'memos_per_month' | 'brands' | 'models' | 'seats'
+  limitType: 'prompts' | 'memos_per_month' | 'brands' | 'models' | 'seats' | 'scan_frequency_days'
 }
 
 export function checkUsageLimit(
@@ -140,4 +143,11 @@ export function checkUsageLimit(
     limit: limit === -1 ? Infinity : limit,
     limitType,
   }
+}
+
+export function getScanFrequencyDays(planId: PlanId): number {
+  const plan = PLANS[planId]
+  const days = plan.limits.scan_frequency_days
+  if (typeof days !== 'number' || days <= 0) return 1
+  return days
 }

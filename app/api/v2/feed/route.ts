@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { FeedWorkflow, FeedSeverity, FeedEvent, FeedResponse } from '@/lib/feed/types'
+import { getCacheValue, setCacheValue } from '@/lib/cache/redis-cache'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -16,11 +17,18 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const brandId = searchParams.get('brandId')
   const cursor = searchParams.get('cursor')
-  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+  const rawLimit = parseInt(searchParams.get('limit') || '20')
+  const limit = Math.min(Number.isNaN(rawLimit) ? 20 : rawLimit, 50)
   const workflow = searchParams.get('workflow') as FeedWorkflow | 'all' | null
   const severity = searchParams.get('severity') as FeedSeverity | 'all' | null
   const unreadOnly = searchParams.get('unreadOnly') === 'true'
   const includeDismissed = searchParams.get('includeDismissed') === 'true'
+
+  const cacheKey = `feed:${user.id}:${brandId || 'all'}:${cursor || 'none'}:${limit}:${workflow || 'all'}:${severity || 'all'}:${unreadOnly}:${includeDismissed}`
+  const cached = await getCacheValue<FeedResponse>(cacheKey)
+  if (cached) {
+    return NextResponse.json(cached)
+  }
 
   // Use service client for queries
   const serviceClient = createServiceClient(
@@ -98,6 +106,8 @@ export async function GET(request: NextRequest) {
     unread_count: unreadCount || 0,
     total_count: count || 0,
   }
+
+  await setCacheValue(cacheKey, response, 30)
 
   return NextResponse.json(response)
 }
