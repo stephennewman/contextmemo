@@ -62,7 +62,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'GPT-4o Mini', 
     provider: 'openrouter', 
     modelId: 'openai/gpt-4o-mini:online', 
-    enabled: false, // DISABLED - enable for multi-model comparison
+    enabled: true, // ENABLED for before/after citation experiment
     citationSource: 'openrouter-native',
   },
   { 
@@ -70,7 +70,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Claude 3.5 Haiku', 
     provider: 'openrouter', 
     modelId: 'anthropic/claude-3.5-haiku:online', 
-    enabled: false, // DISABLED - enable for multi-model comparison
+    enabled: true, // ENABLED for before/after citation experiment
     citationSource: 'openrouter-native',
   },
   { 
@@ -78,7 +78,7 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Grok 4 Fast', 
     provider: 'openrouter', 
     modelId: 'x-ai/grok-4-fast:online', 
-    enabled: false, // DISABLED - enable for multi-model comparison
+    enabled: true, // ENABLED for before/after citation experiment
     citationSource: 'openrouter-native',
   },
 ]
