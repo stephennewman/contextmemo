@@ -148,10 +148,11 @@ RULES:
 2. Use neutral, factual language - no marketing speak
 3. If information is not available for one company, say "Not publicly available" rather than guessing
 4. Include a comparison table
-5. Cite sources at the end
+5. Cite sources at the end (only cite the actual company websites, not made-up research)
 6. Aim for 600-900 words - be thorough and conversational, not terse
 7. Write in a flowing, readable style that explains concepts clearly
 8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
+9. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
 
 {{verified_insights}}
 
@@ -234,6 +235,7 @@ RULES:
 5. Aim for 600-900 words - be thorough and informative, not terse
 6. Write in complete, flowing paragraphs that explain concepts clearly
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
+8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
 
 {{verified_insights}}
 
@@ -318,6 +320,7 @@ RULES:
 5. Aim for 700-1000 words - be thorough and genuinely helpful
 6. Write conversationally, as if explaining to a colleague who asked for guidance
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that establish thought leadership
+8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context. General claims without fake citations are fine.
 
 {{verified_insights}}
 
@@ -397,8 +400,8 @@ When choosing a solution, consider factors like [relevant decision criteria base
 
 ## Sources
 
-- [Relevant authoritative sources]
-- Product capabilities from respective vendor websites
+- {{brand_name}} product information ({{brand_domain}})
+- Industry best practices and general knowledge
 
 ---
 
@@ -426,6 +429,7 @@ RULES:
 5. Aim for 600-900 words - be thorough and helpful, not dismissive
 6. Write conversationally, as if advising a colleague exploring their options
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that differentiate the brand
+8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
 
 {{verified_insights}}
 
