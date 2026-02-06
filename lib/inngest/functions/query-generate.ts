@@ -21,6 +21,7 @@ interface GeneratedQuery {
   priority: number
   related_competitor: string | null
   persona?: PromptPersona | null
+  funnel_stage?: 'top_funnel' | 'mid_funnel' | 'bottom_funnel' | null
 }
 
 export const queryGenerate = inngest.createFunction(
@@ -255,6 +256,7 @@ export const queryGenerate = inngest.createFunction(
         auto_discovered: true,
         is_active: true,
         persona: q.persona || null,
+        funnel_stage: q.funnel_stage || null,
       }))
 
       // Use upsert to avoid duplicates

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, RefreshCw, Sparkles, ToggleLeft, ToggleRight, Globe, Plus, X, Settings, Pencil } from 'lucide-react'
+import { Loader2, RefreshCw, Sparkles, ToggleLeft, ToggleRight, Globe, Plus, X, Settings, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
 import { CorporatePositioningSection } from '@/components/dashboard/corporate-positioning'
@@ -75,6 +75,7 @@ export function ProfileSection({
   // Competitors state
   const [competitors, setCompetitors] = useState<Competitor[]>(initialCompetitors)
   const [togglingCompetitorId, setTogglingCompetitorId] = useState<string | null>(null)
+  const [showAllExcluded, setShowAllExcluded] = useState(false)
 
   // Market focus state
   const [marketFocus, setMarketFocus] = useState<MarketFocus[]>(() => {
@@ -502,32 +503,56 @@ export function ProfileSection({
               ) : (
                 <p className="text-sm text-muted-foreground">No competitors detected</p>
               )}
-              {competitors.filter(c => !c.is_active).length > 0 && (
-                <div className="pt-3 border-t">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Excluded</label>
-                  <div className="space-y-2">
-                    {competitors.filter(c => !c.is_active).map((competitor) => (
-                      <div key={competitor.id} className="flex items-center justify-between p-2 border rounded-lg bg-muted/30 opacity-60">
-                        <span className="text-sm truncate">{competitor.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleCompetitor(competitor.id, false)}
-                          disabled={togglingCompetitorId === competitor.id}
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600 shrink-0"
-                          title="Re-include in tracking"
-                        >
-                          {togglingCompetitorId === competitor.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <ToggleLeft className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    ))}
+              {(() => {
+                const excludedCompetitors = competitors.filter(c => !c.is_active)
+                const EXCLUDED_PREVIEW_COUNT = 10
+                const hasMore = excludedCompetitors.length > EXCLUDED_PREVIEW_COUNT
+                const visibleExcluded = showAllExcluded ? excludedCompetitors : excludedCompetitors.slice(0, EXCLUDED_PREVIEW_COUNT)
+                const hiddenCount = excludedCompetitors.length - EXCLUDED_PREVIEW_COUNT
+
+                return excludedCompetitors.length > 0 ? (
+                  <div className="pt-3 border-t">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">
+                      Excluded ({excludedCompetitors.length})
+                    </label>
+                    <div className="space-y-2">
+                      {visibleExcluded.map((competitor) => (
+                        <div key={competitor.id} className="flex items-center justify-between p-2 border rounded-lg bg-muted/30 opacity-60">
+                          <span className="text-sm truncate">{competitor.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleCompetitor(competitor.id, false)}
+                            disabled={togglingCompetitorId === competitor.id}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600 shrink-0"
+                            title="Re-include in tracking"
+                          >
+                            {togglingCompetitorId === competitor.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ToggleLeft className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    {hasMore && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAllExcluded(!showAllExcluded)}
+                        className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                      >
+                        {showAllExcluded ? (
+                          <>Show less <ChevronUp className="h-3 w-3" /></>
+                        ) : (
+                          <>Show {hiddenCount} more <ChevronDown className="h-3 w-3" /></>
+                        )}
+                      </Button>
+                    )}
                   </div>
-                </div>
-              )}
+                ) : null
+              })()}
             </CardContent>
           </Card>
 

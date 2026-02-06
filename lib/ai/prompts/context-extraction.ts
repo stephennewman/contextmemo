@@ -437,9 +437,21 @@ Respond with a JSON array:
     "query_text": "The high-intent buyer query",
     "query_type": "alternative" | "versus" | "solution" | "implementation",
     "priority": 1-100 (conversion likelihood if recommended),
-    "related_competitor": "EXACT competitor name from list above (REQUIRED for alternative/versus queries), null for others"
+    "related_competitor": "EXACT competitor name from list above (REQUIRED for alternative/versus queries), null for others",
+    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel"
   }
 ]
+
+FUNNEL STAGE RULES:
+- "top_funnel": Awareness/education — learning about a problem or topic (e.g., "how to improve X", "what is Y")
+- "mid_funnel": Evaluation/comparison — aware of solutions, comparing options (e.g., "best X for Y", "X vs Y", "top tools for Z")
+- "bottom_funnel": High intent/purchase — ready to buy, switch, or implement (e.g., "X alternatives", "switch from X", "X pricing", "implement X for my team")
+
+For the categories above:
+- ALTERNATIVE/SWITCHING → bottom_funnel (they're ready to switch)
+- COMPARISON/EVALUATION → mid_funnel (they're comparing)
+- SOLUTION-SEEKING → mid_funnel (they have a problem, evaluating options)
+- IMPLEMENTATION → bottom_funnel (they're ready to adopt)
 
 Generate 20-30 high-quality, high-intent queries. Ensure at least 10 queries have a related_competitor set.
 
@@ -544,9 +556,15 @@ Respond with a JSON array:
     "query_type": "intent_based",
     "priority": 1-100 (likelihood of conversion if brand is recommended),
     "source_intent": "Which pain point this relates to",
-    "related_competitor": null
+    "related_competitor": null,
+    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel"
   }
 ]
+
+FUNNEL STAGE RULES:
+- "top_funnel": Awareness — learning about a problem or topic area
+- "mid_funnel": Evaluation — aware of solutions, comparing or seeking recommendations  
+- "bottom_funnel": Purchase — ready to buy, switch, or implement a specific solution
 
 Generate 15-20 high-intent buyer queries. Quality over quantity.
 
@@ -618,8 +636,19 @@ Respond with a JSON array:
     "query_text": "The natural prompt this persona would ask",
     "query_type": "persona_based",
     "priority": 1-100 (conversion likelihood),
-    "related_competitor": "Competitor name if mentioned, null otherwise"
+    "related_competitor": "Competitor name if mentioned, null otherwise",
+    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel"
   }
 ]
+
+FUNNEL STAGE RULES:
+- "top_funnel": Awareness — learning about a problem or topic area
+- "mid_funnel": Evaluation — aware of solutions, comparing or seeking recommendations
+- "bottom_funnel": Purchase — ready to buy, switch, or implement a specific solution
+
+Specialists asking "how to" questions → often top_funnel or mid_funnel
+Managers evaluating tools for team → often mid_funnel
+Executives asking about ROI/strategic impact → often mid_funnel or bottom_funnel
+Anyone asking about pricing, alternatives, switching → bottom_funnel
 
 Respond ONLY with valid JSON array, no explanations.`

@@ -26,7 +26,8 @@ import {
   Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { ScanResult, Query, PromptPersona, PromptTheme } from '@/lib/supabase/types'
+import type { ScanResult, Query, PromptPersona, PromptTheme, FunnelStage } from '@/lib/supabase/types'
+import { FUNNEL_STAGE_META } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
@@ -906,6 +907,7 @@ interface PromptWithVisibility {
   query_text: string
   query_type: string | null
   persona: PromptPersona | null
+  funnel_stage: string | null
   priority: number
   visibility: number
   totalScans: number
@@ -926,6 +928,7 @@ export const QueryVisibilityList = PromptVisibilityList
 
 export function PromptVisibilityList({ queries, scanResults, brandName, brandId, themes = [] }: PromptVisibilityListProps) {
   const [personaFilter, setPersonaFilter] = useState<PromptPersona | 'all'>('all')
+  const [funnelFilter, setFunnelFilter] = useState<FunnelStage | 'all'>('all')
   const [selectedQuery, setSelectedQuery] = useState<Query | null>(null)
   const [isAddingPrompt, setIsAddingPrompt] = useState(false)
   const [newPrompt, setNewPrompt] = useState('')
@@ -980,6 +983,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
       query_text: q.query_text,
       query_type: q.query_type,
       persona: (q as any).persona || null,
+      funnel_stage: (q as any).funnel_stage || null,
       priority: q.priority,
       visibility: stats && stats.total > 0 
         ? Math.round((stats.mentioned / stats.total) * 100)
@@ -999,16 +1003,25 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
     return a.visibility - b.visibility
   })
 
-  // Apply persona filter
-  const filteredPrompts = personaFilter === 'all' 
-    ? promptsWithVisibility 
-    : promptsWithVisibility.filter(p => p.persona === personaFilter)
+  // Apply persona + funnel filter
+  const filteredPrompts = promptsWithVisibility.filter(p => {
+    if (personaFilter !== 'all' && p.persona !== personaFilter) return false
+    if (funnelFilter !== 'all' && p.funnel_stage !== funnelFilter) return false
+    return true
+  })
 
   // Count prompts by persona
   const personaCounts = promptsWithVisibility.reduce((acc, p) => {
     if (p.persona) {
       acc[p.persona] = (acc[p.persona] || 0) + 1
     }
+    return acc
+  }, {} as Record<string, number>)
+
+  // Count prompts by funnel stage
+  const funnelCounts = promptsWithVisibility.reduce((acc, p) => {
+    const stage = p.funnel_stage || 'untagged'
+    acc[stage] = (acc[stage] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
@@ -1053,14 +1066,53 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
           </div>
         )}
         
+        {/* Funnel stage filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-medium text-muted-foreground mr-1">Funnel:</span>
+          <button
+            onClick={() => setFunnelFilter('all')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              funnelFilter === 'all'
+                ? 'bg-[#0F172A] text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            All ({promptsWithVisibility.length})
+          </button>
+          {(['top_funnel', 'mid_funnel', 'bottom_funnel'] as FunnelStage[]).map((stage) => {
+            const meta = FUNNEL_STAGE_META[stage]
+            const count = funnelCounts[stage] || 0
+            if (count === 0) return null
+            return (
+              <button
+                key={stage}
+                onClick={() => setFunnelFilter(funnelFilter === stage ? 'all' : stage)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  funnelFilter === stage
+                    ? 'text-white'
+                    : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: funnelFilter === stage ? meta.color : meta.bgColor,
+                  color: funnelFilter === stage ? 'white' : meta.color,
+                }}
+              >
+                {meta.shortLabel} ({count})
+              </button>
+            )
+          })}
+        </div>
+
         {/* Persona filter */}
-        <div className="flex flex-wrap gap-2">
+        {Object.keys(personaCounts).length > 1 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-medium text-muted-foreground mr-1">Persona:</span>
           <Button
             variant={personaFilter === 'all' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setPersonaFilter('all')}
           >
-            All ({promptsWithVisibility.length})
+            All
           </Button>
           {Object.entries(personaCounts).map(([persona, count]) => {
             const display = getPersonaDisplay(persona)
@@ -1076,6 +1128,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
             )
           })}
         </div>
+        )}
 
         {filteredPrompts.length > 0 ? (
           <div className="space-y-2">
@@ -1092,6 +1145,17 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium truncate">&quot;{prompt.query_text}&quot;</p>
+                      {prompt.funnel_stage && FUNNEL_STAGE_META[prompt.funnel_stage as FunnelStage] && (
+                        <Badge
+                          className="text-[10px] px-1.5 py-0 shrink-0 font-bold"
+                          style={{
+                            backgroundColor: FUNNEL_STAGE_META[prompt.funnel_stage as FunnelStage].bgColor,
+                            color: FUNNEL_STAGE_META[prompt.funnel_stage as FunnelStage].color,
+                          }}
+                        >
+                          {FUNNEL_STAGE_META[prompt.funnel_stage as FunnelStage].shortLabel}
+                        </Badge>
+                      )}
                       {prompt.persona && (
                         <Badge className={`text-xs ${getPersonaDisplay(prompt.persona).color}`}>
                           {getPersonaDisplay(prompt.persona).label}

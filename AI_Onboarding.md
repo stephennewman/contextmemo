@@ -390,6 +390,17 @@ _Most recent deploys first_
 
 ### February 6, 2026
 
+**Add Vercel Analytics** (4ea8dc4)
+- Installed `@vercel/analytics` package
+- Added `<Analytics />` component to root `app/layout.tsx`
+- Tracks page views and visitors across all routes via Vercel dashboard
+
+**Files changed:**
+- `app/layout.tsx` - Added Analytics import and component
+- `package.json` / `package-lock.json` - Added @vercel/analytics dependency
+
+---
+
 **Fix: Memo Sources — Real Clickable URLs Instead of AI-Generated Filler** (0427164)
 - Sources section was showing hallucinated descriptions ("Perplexity AI documentation and behavior analysis") instead of actual links
 - Root causes: `{{brand_domain}}` placeholder was never replaced in generation code, prompt templates used vague text instead of markdown links, HOW_TO included filler "Industry best practices and general knowledge"

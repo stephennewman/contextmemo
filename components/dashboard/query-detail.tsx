@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -9,6 +9,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   MessageSquare,
   Bot,
@@ -18,8 +19,64 @@ import {
   ExternalLink,
   Users,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  FileText,
 } from 'lucide-react'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
+
+// Component to show the full AI response text with highlighting
+function ResponseTextSection({ responseText, brandName }: { responseText: string; brandName: string }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  // Highlight brand name in the response
+  const highlightedText = useMemo(() => {
+    if (!brandName) return responseText
+    const regex = new RegExp(`(${brandName})`, 'gi')
+    return responseText.split(regex).map((part, i) => 
+      part.toLowerCase() === brandName.toLowerCase() 
+        ? <mark key={i} className="bg-green-200 text-green-900 px-0.5 rounded">{part}</mark>
+        : part
+    )
+  }, [responseText, brandName])
+
+  const previewLength = 300
+  const needsTruncation = responseText.length > previewLength
+  const displayText = isExpanded ? highlightedText : responseText.slice(0, previewLength)
+
+  return (
+    <div className="mt-3 pt-3 border-t">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground w-full text-left mb-2"
+      >
+        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        <FileText className="h-4 w-4" />
+        AI Response
+      </button>
+      
+      {isExpanded ? (
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 text-sm leading-relaxed max-h-80 overflow-y-auto">
+          <div className="whitespace-pre-wrap">{highlightedText}</div>
+        </div>
+      ) : needsTruncation ? (
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 text-sm text-muted-foreground">
+          {displayText}...
+          <button 
+            onClick={() => setIsExpanded(true)}
+            className="text-cyan-600 hover:text-cyan-700 ml-1"
+          >
+            Show more
+          </button>
+        </div>
+      ) : (
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 text-sm text-muted-foreground whitespace-pre-wrap">
+          {responseText}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface ScanResult {
   id: string
@@ -321,6 +378,11 @@ export function QueryDetail({
                         <p className="text-xs text-muted-foreground pt-1">
                           Scanned {new Date(scan.scanned_at).toLocaleDateString()}
                         </p>
+
+                        {/* Full AI Response Text */}
+                        {scan.response_text && (
+                          <ResponseTextSection responseText={scan.response_text} brandName={brandName} />
+                        )}
                       </div>
                     )
                   })}

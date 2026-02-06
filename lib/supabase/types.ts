@@ -10,6 +10,14 @@ export type Json =
 export type QueryStatus = 'never_scanned' | 'gap' | 'cited' | 'lost_citation'
 export type QuerySourceType = 'original' | 'expanded' | 'competitor_inspired' | 'greenspace' | 'manual' | 'auto'
 export type QueryExcludedReason = 'irrelevant' | 'duplicate' | 'low_value' | 'other' | 'manual'
+export type FunnelStage = 'top_funnel' | 'mid_funnel' | 'bottom_funnel'
+
+// Funnel stage display metadata
+export const FUNNEL_STAGE_META: Record<FunnelStage, { label: string; shortLabel: string; color: string; bgColor: string; description: string }> = {
+  top_funnel: { label: 'Top of Funnel', shortLabel: 'TOFU', color: '#8B5CF6', bgColor: '#F5F3FF', description: 'Awareness — learning about a topic' },
+  mid_funnel: { label: 'Mid Funnel', shortLabel: 'MOFU', color: '#F59E0B', bgColor: '#FFFBEB', description: 'Evaluation — comparing solutions' },
+  bottom_funnel: { label: 'Bottom of Funnel', shortLabel: 'BOFU', color: '#10B981', bgColor: '#ECFDF5', description: 'Purchase — ready to buy/switch' },
+}
 
 // Perplexity search result structure for citations (stored as JSONB)
 export interface PerplexitySearchResultJson {
@@ -167,6 +175,7 @@ export interface Database {
           auto_discovered: boolean
           created_at: string
           persona: PromptPersona | null
+          funnel_stage: FunnelStage | null
           // Tracking fields
           scan_count: number
           last_scanned_at: string | null
@@ -195,6 +204,7 @@ export interface Database {
           auto_discovered?: boolean
           created_at?: string
           persona?: PromptPersona | null
+          funnel_stage?: FunnelStage | null
           // Tracking fields
           scan_count?: number
           last_scanned_at?: string | null
@@ -223,6 +233,7 @@ export interface Database {
           auto_discovered?: boolean
           created_at?: string
           persona?: PromptPersona | null
+          funnel_stage?: FunnelStage | null
           // Tracking fields
           scan_count?: number
           last_scanned_at?: string | null

@@ -32,6 +32,7 @@ import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
+import { CitationInsights } from '@/components/dashboard/citation-insights'
 
 // SUNSET: These features had zero usage and have been removed from the UI
 // - SearchConsoleView (0 rows in search_console_stats)
@@ -78,13 +79,19 @@ export default async function BrandPage({ params }: Props) {
   // Filter for active competitors (used in scans and content monitoring)
   const competitors = allCompetitors?.filter(c => c.is_active) || []
 
-  // Get queries
+  // Get queries (active only for UI display)
   const { data: queries } = await supabase
     .from('queries')
     .select('*')
     .eq('brand_id', brandId)
     .eq('is_active', true)
     .order('priority', { ascending: false })
+
+  // Get ALL queries including inactive/excluded (for citation-to-prompt mapping)
+  const { data: allQueries } = await supabase
+    .from('queries')
+    .select('id, query_text, query_type, persona, priority')
+    .eq('brand_id', brandId)
 
   // Get all scans for history (up to last 90 days)
   const ninetyDaysAgo = new Date()
@@ -396,6 +403,7 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="entities" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ENTITIES{(allCompetitors?.length || 0) > 0 && ` (${allCompetitors?.length})`}</TabsTrigger>
+          <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">SOURCES</TabsTrigger>
           <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
             WATCH
             {/* Show badge if there's new content today */}
@@ -625,6 +633,17 @@ export default async function BrandPage({ params }: Props) {
             content={competitorContent || []}
             competitors={competitors || []}
             feeds={competitorFeeds || []}
+          />
+        </TabsContent>
+
+        {/* SOURCES Tab - Citation insights and top sources */}
+        <TabsContent value="sources">
+          <CitationInsights
+            brandName={brand.name}
+            brandDomain={brand.domain}
+            scanResults={allScans || []}
+            queries={allQueries || []}
+            memos={memos || []}
           />
         </TabsContent>
 
