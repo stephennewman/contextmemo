@@ -48,7 +48,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { EntityType, ENTITY_TYPE_META } from '@/lib/supabase/types'
 
-type SortOption = 'citations' | 'name' | 'type'
+type SortOption = 'mentions' | 'citations' | 'name' | 'type'
 type EntityFilterOption = 'all' | 'competitors' | 'partners' | EntityType
 
 // Icon mapping for entity types
@@ -93,13 +93,17 @@ interface EntityListProps {
   entities: Entity[]
   citationCounts: Record<string, number>
   citationUrls: Record<string, string[]>
+  mentionCounts?: Record<string, number>
+  uniqueQueryCounts?: Record<string, number>
 }
 
 export function EntityList({ 
   brandId, 
   entities: initialEntities, 
   citationCounts,
-  citationUrls 
+  citationUrls,
+  mentionCounts = {},
+  uniqueQueryCounts = {},
 }: EntityListProps) {
   const [entities, setEntities] = useState(initialEntities)
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -113,8 +117,8 @@ export function EntityList({
   // New state for filtering/sorting
   const [showDiscovered, setShowDiscovered] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortOption>('citations')
-  const [trackedSortBy, setTrackedSortBy] = useState<SortOption>('citations')
+  const [sortBy, setSortBy] = useState<SortOption>('mentions')
+  const [trackedSortBy, setTrackedSortBy] = useState<SortOption>('mentions')
   const [expandedCitations, setExpandedCitations] = useState<Set<string>>(new Set())
   const [entityFilter, setEntityFilter] = useState<EntityFilterOption>('all')
 
@@ -174,6 +178,12 @@ export function EntityList({
     let sorted = [...trackedEntities].filter(matchesEntityFilter)
     
     switch (trackedSortBy) {
+      case 'mentions':
+        // Sort by unique query count (more meaningful than raw mention count)
+        sorted = sorted.sort((a, b) => 
+          (uniqueQueryCounts[b.id] || 0) - (uniqueQueryCounts[a.id] || 0)
+        )
+        break
       case 'citations':
         sorted = sorted.sort((a, b) => 
           (citationCounts[b.id] || 0) - (citationCounts[a.id] || 0)
@@ -193,7 +203,7 @@ export function EntityList({
     
     return sorted
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackedEntities, trackedSortBy, citationCounts, entityFilter])
+  }, [trackedEntities, trackedSortBy, citationCounts, uniqueQueryCounts, entityFilter])
 
   // Filter and sort discovered entities
   const filteredDiscovered = useMemo(() => {
@@ -213,6 +223,11 @@ export function EntityList({
     
     // Sort
     switch (sortBy) {
+      case 'mentions':
+        filtered = [...filtered].sort((a, b) => 
+          (uniqueQueryCounts[b.id] || 0) - (uniqueQueryCounts[a.id] || 0)
+        )
+        break
       case 'citations':
         filtered = [...filtered].sort((a, b) => 
           (citationCounts[b.id] || b.context?.citation_count || 0) - 
@@ -233,7 +248,7 @@ export function EntityList({
     
     return filtered
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discoveredEntities, searchQuery, sortBy, entityFilter, citationCounts])
+  }, [discoveredEntities, searchQuery, sortBy, entityFilter, citationCounts, uniqueQueryCounts])
 
   const handleAddEntity = async () => {
     if (!newName.trim()) {
@@ -558,15 +573,28 @@ export function EntityList({
             {sortedTracked.length > 1 && (
               <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
                 <button
+                  onClick={() => setTrackedSortBy('mentions')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                    trackedSortBy === 'mentions' 
+                      ? 'bg-white shadow-sm text-[#0F172A] font-medium' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Sort by prompts that mention this entity"
+                >
+                  <ArrowDownWideNarrow className="h-3 w-3" />
+                  Mentions
+                </button>
+                <button
                   onClick={() => setTrackedSortBy('citations')}
                   className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
                     trackedSortBy === 'citations' 
                       ? 'bg-white shadow-sm text-[#0F172A] font-medium' 
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
+                  title="Sort by citation count"
                 >
-                  <ArrowDownWideNarrow className="h-3 w-3" />
-                  Cited
+                  <FileText className="h-3 w-3" />
+                  Citations
                 </button>
                 <button
                   onClick={() => setTrackedSortBy('name')}
@@ -591,6 +619,7 @@ export function EntityList({
                 const TypeIcon = ENTITY_ICONS[entityType]
                 const citationCount = citationCounts[entity.id] || 0
                 const citations = citationUrls[entity.id] || []
+                const mentionCount = uniqueQueryCounts[entity.id] || 0
                 const isExpanded = expandedCitations.has(entity.id)
                 
                 return (
@@ -622,7 +651,7 @@ export function EntityList({
                               {typeMeta.label}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                             {entity.domain && (
                               <a 
                                 href={`https://${entity.domain}`}
@@ -635,6 +664,15 @@ export function EntityList({
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             )}
+                            {/* Mention count - number of unique prompts that mention this entity */}
+                            <span 
+                              className={`flex items-center gap-1 ${mentionCount > 0 ? 'text-amber-600 font-medium' : ''}`}
+                              title="Prompts where this entity was mentioned by AI"
+                            >
+                              <TrendingUp className="h-3 w-3" />
+                              {mentionCount} prompt{mentionCount !== 1 ? 's' : ''}
+                            </span>
+                            {/* Citation count with expandable URLs */}
                             {citationCount > 0 ? (
                               <button
                                 onClick={() => toggleCitations(entity.id)}
@@ -751,6 +789,18 @@ export function EntityList({
                 <div className="flex items-center gap-3 mb-3 flex-wrap">
                   <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
                     <button
+                      onClick={() => setSortBy('mentions')}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                        sortBy === 'mentions' 
+                          ? 'bg-white shadow-sm text-[#0F172A] font-medium' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                      title="Sort by prompts that mention this entity"
+                    >
+                      <ArrowDownWideNarrow className="h-3 w-3" />
+                      Mentions
+                    </button>
+                    <button
                       onClick={() => setSortBy('citations')}
                       className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
                         sortBy === 'citations' 
@@ -758,8 +808,8 @@ export function EntityList({
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <ArrowDownWideNarrow className="h-3 w-3" />
-                      Cited
+                      <FileText className="h-3 w-3" />
+                      Citations
                     </button>
                     <button
                       onClick={() => setSortBy('name')}
@@ -796,6 +846,7 @@ export function EntityList({
                     const typeMeta = ENTITY_TYPE_META[entityType]
                     const TypeIcon = ENTITY_ICONS[entityType]
                     const citationCount = citationCounts[entity.id] || entity.context?.citation_count || 0
+                    const mentionCount = uniqueQueryCounts[entity.id] || 0
                     
                     return (
                       <div 
@@ -829,6 +880,11 @@ export function EntityList({
                                   <span className="text-xs text-muted-foreground truncate">
                                     {entity.domain}
                                   </span>
+                                )}
+                                {mentionCount > 0 && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-50 text-amber-700 border-amber-300">
+                                    {mentionCount} prompt{mentionCount !== 1 ? 's' : ''}
+                                  </Badge>
                                 )}
                                 {citationCount > 0 && (
                                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">

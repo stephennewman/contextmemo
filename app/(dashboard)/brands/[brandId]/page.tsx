@@ -26,22 +26,24 @@ import { ProfileSection } from '@/components/dashboard/profile-section'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
-import { SearchConsoleView } from '@/components/dashboard/search-console-view'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { EntityList } from '@/components/dashboard/entity-list'
 import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ExportDropdown } from '@/components/dashboard/export-dropdown'
-import { AITrafficView } from '@/components/dashboard/ai-traffic-view'
 import { AlertsList } from '@/components/dashboard/alerts-list'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
-import { AttributionDashboard } from '@/components/dashboard/attribution-dashboard'
-import { PromptIntelligenceFeed } from '@/components/dashboard/prompt-intelligence-feed'
-import { ModelInsightsPanel } from '@/components/dashboard/model-insights-panel'
-import { PromptLab } from '@/components/dashboard/prompt-lab'
-import { QueryFanOut } from '@/components/dashboard/query-fan-out'
-import { EntityMap } from '@/components/dashboard/entity-map'
-import { StrategyPlaybook } from '@/components/dashboard/strategy-playbook'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
+
+// SUNSET: These features had zero usage and have been removed from the UI
+// - SearchConsoleView (0 rows in search_console_stats)
+// - AITrafficView (0 rows in ai_traffic)
+// - AttributionDashboard (0 rows in attribution_events)
+// - PromptIntelligenceFeed (0 rows in prompt_intelligence)
+// - ModelInsightsPanel (requires multi-model, only 1 enabled)
+// - PromptLab (only 2 runs ever)
+// - QueryFanOut (experimental)
+// - EntityMap (experimental)
+// - StrategyPlaybook (marketing fluff)
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -135,6 +137,39 @@ export default async function BrandPage({ params }: Props) {
     citationCountsByEntity[id] = urls.length
   }
 
+  // Build mention counts per entity from scan results
+  // competitors_mentioned is an array of entity names (strings)
+  const entityNameToId = new Map<string, string>()
+  for (const entity of (allCompetitors || [])) {
+    entityNameToId.set(entity.name.toLowerCase(), entity.id)
+  }
+  
+  const mentionCountsByEntity: Record<string, number> = {}
+  const mentionQueryIdsByEntity: Record<string, Set<string>> = {}
+  for (const scan of (allScans || [])) {
+    const mentioned = scan.competitors_mentioned as string[] | null
+    if (!mentioned) continue
+    for (const name of mentioned) {
+      const entityId = entityNameToId.get(name.toLowerCase())
+      if (entityId) {
+        mentionCountsByEntity[entityId] = (mentionCountsByEntity[entityId] || 0) + 1
+        // Track unique query IDs where this entity was mentioned
+        if (!mentionQueryIdsByEntity[entityId]) {
+          mentionQueryIdsByEntity[entityId] = new Set()
+        }
+        if (scan.query_id) {
+          mentionQueryIdsByEntity[entityId].add(scan.query_id)
+        }
+      }
+    }
+  }
+  
+  // Count unique queries per entity (more useful than raw mention count)
+  const uniqueQueryCountsByEntity: Record<string, number> = {}
+  for (const [id, queryIds] of Object.entries(mentionQueryIdsByEntity)) {
+    uniqueQueryCountsByEntity[id] = queryIds.size
+  }
+
   // Get memos
   const { data: memos } = await supabase
     .from('memos')
@@ -142,13 +177,7 @@ export default async function BrandPage({ params }: Props) {
     .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
-  // Get search console stats (last 90 days)
-  const { data: searchConsoleStats } = await supabase
-    .from('search_console_stats')
-    .select('*')
-    .eq('brand_id', brandId)
-    .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
-    .order('date', { ascending: false })
+  // SUNSET: Search console stats removed (0 usage)
 
   // Get competitor content (for content intelligence and watch tab)
   const competitorIds = (competitors || []).map(c => c.id)
@@ -171,14 +200,7 @@ export default async function BrandPage({ params }: Props) {
         .order('discovered_at', { ascending: false })
     : { data: [] }
 
-  // Get AI traffic data (last 90 days)
-  const { data: aiTraffic } = await supabase
-    .from('ai_traffic')
-    .select('*, memo:memo_id(title, slug)')
-    .eq('brand_id', brandId)
-    .gte('timestamp', ninetyDaysAgo.toISOString())
-    .order('timestamp', { ascending: false })
-    .limit(500)
+  // SUNSET: AI traffic removed (0 usage)
 
   // Get alerts for this brand
   const { data: alerts } = await supabase
@@ -190,76 +212,7 @@ export default async function BrandPage({ params }: Props) {
 
   const unreadAlerts = alerts?.filter(a => !a.read) || []
 
-  // Get attribution events
-  const { data: attributionEvents } = await supabase
-    .from('attribution_events')
-    .select('*')
-    .eq('brand_id', brandId)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
-  // Get prompt intelligence
-  const { data: promptIntelligence } = await supabase
-    .from('prompt_intelligence')
-    .select('*')
-    .eq('brand_id', brandId)
-    .order('opportunity_score', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  // Get model insights from most recent alert
-  const { data: modelInsightsAlert } = await supabase
-    .from('alerts')
-    .select('*')
-    .eq('brand_id', brandId)
-    .eq('alert_type', 'model_insights')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  const modelInsights = modelInsightsAlert?.data as {
-    models?: Array<{
-      model: string
-      displayName: string
-      totalScans: number
-      brandMentions: number
-      brandCitations: number
-      mentionRate: number
-      citationRate: number
-      avgPosition: number | null
-      topQueryTypes: Array<{ type: string; successRate: number }>
-      contentPreferences: Array<{ pattern: string; score: number }>
-    }>
-    recommendations?: Array<{
-      model: string
-      priority: 'high' | 'medium' | 'low'
-      title: string
-      description: string
-      actionItems: string[]
-    }>
-    overallCitationRate?: number
-    totalScans?: number
-  } | null
-
-  // Get latest discovery scan result
-  const { data: discoveryAlert } = await supabase
-    .from('alerts')
-    .select('*')
-    .eq('brand_id', brandId)
-    .eq('alert_type', 'discovery_complete')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-  
-  const discoveryResults = discoveryAlert?.data as {
-    totalQueries?: number
-    totalScans?: number
-    totalMentions?: number
-    mentionRate?: number
-    byCategory?: Array<{ category: string; mentions: number; total: number; rate: number }>
-    winningQueries?: Array<{ query: string; category: string; model: string; context: string | null }>
-    sampleFailures?: Array<{ query: string; category: string }>
-  } | null
+  // SUNSET: Attribution events, prompt intelligence, model insights removed (0 usage)
 
   // Helper to check if a query contains the brand name (case-insensitive)
   // These queries skew visibility data since they'll always mention the brand
@@ -293,36 +246,7 @@ export default async function BrandPage({ params }: Props) {
     ? Math.round((mentionedCount / totalScans) * 100)
     : 0
 
-  // Calculate visibility per query to find low-performers (exclude branded queries)
-  const queryVisibility = new Map<string, { mentioned: number; total: number }>()
-  unbiasedScans.forEach(scan => {
-    if (!scan.query_id) return
-    const current = queryVisibility.get(scan.query_id) || { mentioned: 0, total: 0 }
-    current.total++
-    if (scan.brand_mentioned) current.mentioned++
-    queryVisibility.set(scan.query_id, current)
-  })
-
-  // Find queries with low visibility (< 30%) that need memos (exclude branded queries)
-  const lowVisibilityQueries = (queries || [])
-    .filter(q => !queryContainsBrand(q.query_text)) // Exclude branded queries
-    .map(q => {
-      const stats = queryVisibility.get(q.id)
-      const visibility = stats && stats.total > 0 
-        ? Math.round((stats.mentioned / stats.total) * 100) 
-        : 0
-      return {
-        id: q.id,
-        query_text: q.query_text,
-        query_type: q.query_type,
-        visibility,
-        competitor_name: undefined, // Would need to join with competitors table
-        hasScans: stats ? stats.total > 0 : false,
-      }
-    })
-    .filter(q => q.hasScans && q.visibility < 30) // Only queries with scans and < 30% visibility
-    .sort((a, b) => a.visibility - b.visibility) // Worst first
-    .slice(0, 10)
+  // SUNSET: queryVisibility and lowVisibilityQueries removed (only used by Strategy Playbook)
 
   const context = brand.context as BrandContext
   const hasContext = context && Object.keys(context).length > 0
@@ -510,37 +434,7 @@ export default async function BrandPage({ params }: Props) {
               </span>
             )}
           </TabsTrigger>
-          {/* Only show Search tab if Google or Bing is configured */}
-          {(context?.search_console?.google?.enabled || context?.search_console?.bing?.enabled) && (
-            <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">SEARCH{(searchConsoleStats?.length || 0) > 0 && ` (${searchConsoleStats?.length})`}</TabsTrigger>
-          )}
-          {/* Only show AI Traffic tab if there's data */}
-          {(aiTraffic?.length || 0) > 0 && (
-            <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">AI TRAFFIC ({aiTraffic?.length})</TabsTrigger>
-          )}
-          {/* Only show Intelligence tab if there's data */}
-          {((promptIntelligence?.length || 0) > 0 || (attributionEvents?.length || 0) > 0 || modelInsights?.models?.length) && (
-            <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
-              INTELLIGENCE
-              {(promptIntelligence?.filter(p => p.status === 'new')?.length || 0) > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#F59E0B] text-[9px] font-bold text-white flex items-center justify-center">
-                  {promptIntelligence?.filter(p => p.status === 'new')?.length}
-                </span>
-              )}
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="qfo" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
-            QFO
-          </TabsTrigger>
-          <TabsTrigger value="map" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
-            MAP
-          </TabsTrigger>
-          <TabsTrigger value="lab" className="rounded-none border-0 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
-            LAB
-          </TabsTrigger>
-          <TabsTrigger value="strategy" className="rounded-none border-0 data-[state=active]:bg-[#10B981] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
-            STRATEGY
-          </TabsTrigger>
+          {/* SUNSET: Search, AI Traffic, Intelligence, QFO, MAP, LAB, Strategy tabs removed (zero usage) */}
         </TabsList>
 
         {/* Brand Profile Tab - All extracted brand information */}
@@ -706,6 +600,16 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="entities" className="space-y-4">
+          {/* Entity List - Primary view showing all entities with citations/mentions */}
+          <EntityList 
+            brandId={brandId} 
+            entities={allCompetitors || []}
+            citationCounts={citationCountsByEntity}
+            citationUrls={citationsByEntity}
+            mentionCounts={mentionCountsByEntity}
+            uniqueQueryCounts={uniqueQueryCountsByEntity}
+          />
+
           {/* Competitive Intelligence Dashboard */}
           <CompetitiveIntelligence
             brandName={brand.name}
@@ -720,14 +624,6 @@ export default async function BrandPage({ params }: Props) {
             content={competitorContent || []}
             competitors={competitors || []}
             feeds={competitorFeeds || []}
-          />
-          
-          {/* Entity List */}
-          <EntityList 
-            brandId={brandId} 
-            entities={allCompetitors || []}
-            citationCounts={citationCountsByEntity}
-            citationUrls={citationsByEntity}
           />
         </TabsContent>
 
@@ -758,74 +654,7 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
-        <TabsContent value="search">
-          <SearchConsoleView
-            brandId={brandId}
-            stats={searchConsoleStats || []}
-            queries={queries || []}
-            bingEnabled={!!(context?.search_console?.bing?.enabled && context?.search_console?.bing?.api_key)}
-            bingLastSyncedAt={context?.search_console?.bing?.last_synced_at}
-            googleEnabled={!!(context?.search_console?.google?.enabled && context?.search_console?.google?.refresh_token)}
-            googleLastSyncedAt={context?.search_console?.google?.last_synced_at}
-          />
-        </TabsContent>
-
-        <TabsContent value="traffic">
-          <AITrafficView
-            traffic={(aiTraffic || []) as Array<{
-              id: string
-              memo_id: string | null
-              page_url: string
-              referrer: string | null
-              referrer_source: 'chatgpt' | 'perplexity' | 'claude' | 'gemini' | 'copilot' | 'meta_ai' | 'poe' | 'you' | 'phind' | 'direct' | 'unknown_ai' | 'organic' | 'direct_nav'
-              timestamp: string
-              memo?: { title: string; slug: string } | null
-            }>}
-            brandName={brand.name}
-          />
-        </TabsContent>
-
-        <TabsContent value="intelligence" className="space-y-6">
-          {/* Attribution Dashboard */}
-          <AttributionDashboard
-            events={(attributionEvents || []) as Array<{
-              id: string
-              event_type: 'traffic' | 'contact' | 'deal' | 'closed_won'
-              ai_source: string | null
-              memo_id: string | null
-              deal_value: number | null
-              created_at: string
-              metadata?: Record<string, unknown>
-            }>}
-            brandName={brand.name}
-            hubspotEnabled={hubspotEnabled}
-          />
-
-          {/* Prompt Intelligence Feed */}
-          <PromptIntelligenceFeed
-            items={(promptIntelligence || []) as Array<{
-              id: string
-              category: 'trending' | 'competitor_win' | 'emerging' | 'declining'
-              prompt_text: string
-              insight_title: string
-              insight_description: string
-              competitors_winning: string[]
-              opportunity_score: number
-              action_suggestion: string
-              status: 'new' | 'reviewed' | 'actioned' | 'dismissed'
-              created_at: string
-            }>}
-            brandName={brand.name}
-          />
-
-          {/* Model Insights Panel */}
-          <ModelInsightsPanel
-            models={modelInsights?.models || []}
-            recommendations={modelInsights?.recommendations || []}
-            overallCitationRate={modelInsights?.overallCitationRate || citationScore}
-            totalScans={modelInsights?.totalScans || recentScans?.length || 0}
-          />
-        </TabsContent>
+        {/* SUNSET: Search, Traffic, Intelligence tabs removed (zero usage) */}
 
         <TabsContent value="alerts">
           <AlertsList 
@@ -843,40 +672,7 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
-        {/* Query Fan-Out - Sub-query analysis */}
-        <TabsContent value="qfo">
-          <QueryFanOut 
-            brandId={brandId} 
-            brandName={brand.name}
-            existingPrompts={(queries || []).map(q => ({ id: q.id, query_text: q.query_text }))}
-          />
-        </TabsContent>
-
-        {/* Entity Discovery Map - Visual entity relationships */}
-        <TabsContent value="map">
-          <EntityMap brandId={brandId} brandName={brand.name} />
-        </TabsContent>
-
-        {/* Prompt Lab - High-volume citation research */}
-        <TabsContent value="lab">
-          <PromptLab brandId={brandId} brandName={brand.name} />
-        </TabsContent>
-
-        {/* Strategy Playbook - AI Visibility Roadmap */}
-        <TabsContent value="strategy">
-          <StrategyPlaybook 
-            brandId={brandId} 
-            brandName={brand.name}
-            metrics={{
-              totalPrompts: queries?.length || 0,
-              gapsIdentified: lowVisibilityQueries.length,
-              memosGenerated: memos?.length || 0,
-              visibilityScore: visibilityScore,
-              aiTrafficVisits: aiTraffic?.length || 0,
-              daysActive: Math.floor((Date.now() - new Date(brand.created_at).getTime()) / (1000 * 60 * 60 * 24)),
-            }}
-          />
-        </TabsContent>
+        {/* SUNSET: QFO, MAP, LAB, STRATEGY tabs removed (zero usage) */}
       </Tabs>
     </div>
   )
