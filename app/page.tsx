@@ -543,8 +543,6 @@ export default function Home() {
               <Link href="/memos" className="hover:text-white transition-colors">MEMOS</Link>
               <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
               <Link href="/signup" className="hover:text-white transition-colors">SIGN UP</Link>
-              <Link href="/changelog" className="hover:text-white transition-colors">CHANGELOG</Link>
-              <Link href="/about/editorial" className="hover:text-white transition-colors">EDITORIAL</Link>
             </div>
             <p className="text-sm text-slate-500 font-semibold">
               &copy; 2026 CONTEXT MEMO
