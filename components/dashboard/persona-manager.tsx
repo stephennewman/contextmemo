@@ -199,123 +199,8 @@ export function PersonaManager({
 
   return (
     <div className="space-y-4">
-      {/* Personas Grid */}
-      {loading === 'regenerate' ? (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <PersonaSkeleton />
-          <PersonaSkeleton />
-          <PersonaSkeleton />
-        </div>
-      ) : sortedPersonas.length > 0 ? (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {sortedPersonas.map(persona => (
-            <div 
-              key={persona.id}
-              className={`p-4 border rounded-lg transition-opacity ${
-                persona.isEnabled 
-                  ? 'bg-card'
-                  : 'opacity-50 bg-muted/30'
-              }`}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm flex items-center gap-2">
-                    {persona.title}
-                    {persona.is_auto_detected && (
-                      <span title="Auto-detected">
-                        <Sparkles className="h-3 w-3 text-muted-foreground" />
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  {/* Toggle button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => togglePersona(persona.id, persona.isEnabled)}
-                    disabled={loading === persona.id}
-                    title={persona.isEnabled ? 'Disable persona' : 'Enable persona'}
-                  >
-                    {loading === persona.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : persona.isEnabled ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                  
-                  {/* Remove button (only for manually added) */}
-                  {!persona.is_auto_detected && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                      onClick={() => removePersona(persona.id)}
-                      disabled={loading === `remove-${persona.id}`}
-                      title="Remove persona"
-                    >
-                      {loading === `remove-${persona.id}` ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <X className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Badges */}
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                <Badge 
-                  variant="outline" 
-                  className={`text-[10px] px-1.5 py-0 flex items-center gap-1 ${SENIORITY_COLORS[persona.seniority]}`}
-                >
-                  {SENIORITY_ICONS[persona.seniority]}
-                  {persona.seniority}
-                </Badge>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {persona.function}
-                </Badge>
-              </div>
-
-              {/* Description */}
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {persona.description}
-              </p>
-
-              {/* Priorities */}
-              {persona.priorities && persona.priorities.length > 0 && (
-                <div className="mt-2 pt-2 border-t">
-                  <div className="flex flex-wrap gap-1">
-                    {persona.priorities.slice(0, 3).map((priority, i) => (
-                      <span key={i} className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        {priority}
-                      </span>
-                    ))}
-                    {persona.priorities.length > 3 && (
-                      <span className="text-[10px] text-muted-foreground">
-                        +{persona.priorities.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          No personas detected yet. Personas are automatically identified when analyzing your website.
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex gap-2">
+      {/* Action Buttons - Top Right */}
+      <div className="flex justify-end gap-2 -mt-1">
         <Button 
           variant="outline" 
           size="sm" 
@@ -432,6 +317,121 @@ export function PersonaManager({
         </DialogContent>
         </Dialog>
       </div>
+
+      {/* Personas Grid */}
+      {loading === 'regenerate' ? (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <PersonaSkeleton />
+          <PersonaSkeleton />
+          <PersonaSkeleton />
+        </div>
+      ) : sortedPersonas.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {sortedPersonas.map(persona => (
+            <div 
+              key={persona.id}
+              className={`p-4 border rounded-lg transition-opacity ${
+                persona.isEnabled 
+                  ? 'bg-card'
+                  : 'opacity-50 bg-muted/30'
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm flex items-center gap-2">
+                    {persona.title}
+                    {persona.is_auto_detected && (
+                      <span title="Auto-detected">
+                        <Sparkles className="h-3 w-3 text-muted-foreground" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  {/* Toggle button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => togglePersona(persona.id, persona.isEnabled)}
+                    disabled={loading === persona.id}
+                    title={persona.isEnabled ? 'Disable persona' : 'Enable persona'}
+                  >
+                    {loading === persona.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : persona.isEnabled ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                  
+                  {/* Remove button (only for manually added) */}
+                  {!persona.is_auto_detected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={() => removePersona(persona.id)}
+                      disabled={loading === `remove-${persona.id}`}
+                      title="Remove persona"
+                    >
+                      {loading === `remove-${persona.id}` ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <Badge 
+                  variant="outline" 
+                  className={`text-[10px] px-1.5 py-0 flex items-center gap-1 ${SENIORITY_COLORS[persona.seniority]}`}
+                >
+                  {SENIORITY_ICONS[persona.seniority]}
+                  {persona.seniority}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {persona.function}
+                </Badge>
+              </div>
+
+              {/* Description */}
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {persona.description}
+              </p>
+
+              {/* Priorities */}
+              {persona.priorities && persona.priorities.length > 0 && (
+                <div className="mt-2 pt-2 border-t">
+                  <div className="flex flex-wrap gap-1">
+                    {persona.priorities.slice(0, 3).map((priority, i) => (
+                      <span key={i} className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {priority}
+                      </span>
+                    ))}
+                    {persona.priorities.length > 3 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        +{persona.priorities.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          No personas detected yet. Personas are automatically identified when analyzing your website.
+        </div>
+      )}
 
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
