@@ -12,6 +12,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.20.0] - 2026-02-06
+
+### Added
+- **Content Coverage Audit** - New COVERAGE tab on brand page that maps the complete content topic universe
+  - Crawls brand's sitemap.xml to build a full inventory of existing website content
+  - AI generates 40-150 specific content topics the brand needs (comparisons, alternatives, how-tos, industry guides, definitions, use cases)
+  - Each topic is scored by priority (0-100) based on competitor density, content type, and funnel stage
+  - Topics are matched against existing content (website pages + memos) and marked as covered/partial/gap
+  - Coverage score with circular progress indicator and category breakdown
+  - "Top Priority Gaps" section with stack-ranked highest-impact missing content
+  - One-click "Generate" button per gap topic to create a memo
+  - Batch generate top 10 gaps at once
+  - Continuous monitoring: auto-adds comparison/alternative topics when new competitors are discovered in scans
+- **Site Content Inventory** utility (`lib/utils/site-inventory.ts`) - Fetches sitemap.xml, batch-classifies URLs by content type, and deep-reads key pages for quality assessment
+- **Topic Universe** database table and Inngest functions for generation and refresh
+- **Coverage API** endpoint at `/api/brands/[brandId]/coverage`
+
+---
+
 ## [0.19.5] - 2026-02-06
 
 ### Fixed

@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 6, 2026  
-> **Version:** 0.19.5  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email
+> **Version:** 0.20.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit
 
 ---
 
@@ -389,6 +389,41 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 6, 2026
+
+**Feature: Content Coverage Audit — Map Your Content Gaps**
+- New COVERAGE tab on brand page: maps the complete content topic universe a brand needs for AI visibility
+- **Site Content Inventory** (`lib/utils/site-inventory.ts`): fetches brand's sitemap.xml, batch-classifies all URLs by content type (blog, comparison, resource, product, industry, etc.), and deep-reads 10-15 key pages to assess content quality/word count
+  - Handles sitemap index files recursively, falls back to Jina site search if no sitemap
+  - Filters non-content URLs (privacy, terms, careers, login, etc.)
+  - Caps at 500 URLs, one GPT-4o-mini call for classification (~$0.02)
+- **Topic Universe Generator** (`lib/inngest/functions/topic-universe.ts`): generates 40-150 specific content topics per brand using GPT-4o with full brand context + competitor list + site inventory + existing memos
+  - Categories: comparisons, alternatives, how-tos, industry guides, definitions, use cases
+  - Each topic scored by priority (0-100) based on competitor density, content type citation potential, funnel stage
+  - AI matches topics against existing site content during generation (no brittle fuzzy matching)
+  - Topics marked as covered/partial/gap with references to matching pages/memos
+- **Coverage Score UI** (`components/dashboard/coverage-audit.tsx`): circular progress ring with percentage, category breakdown cards with mini progress bars, top priority gaps section, full topic list with filter/sort
+  - Empty state with "Run Coverage Audit" CTA for brands without topics
+  - One-click "Generate" per gap topic, batch "Generate Top 10" button
+  - Filter by status (all/gap/partial/covered), sort by priority/category/status
+- **Continuous Monitoring**: when new competitors are auto-discovered from scan results, automatically adds comparison + alternative topics to the topic universe
+- **Database**: `topic_universe` table with RLS policies, indexes on brand_id + status + priority
+- **API**: `generate_topic_universe` and `batch_generate_memos` actions, `/api/brands/[brandId]/coverage` GET endpoint
+
+**Files created:**
+- `lib/utils/site-inventory.ts` — Sitemap fetch + URL classification + deep-read
+- `lib/inngest/functions/topic-universe.ts` — Topic generation + refresh Inngest functions
+- `components/dashboard/coverage-audit.tsx` — Coverage tab UI component
+- `app/api/brands/[brandId]/coverage/route.ts` — Coverage data API
+
+**Files modified:**
+- `app/(dashboard)/brands/[brandId]/page.tsx` — Added COVERAGE tab + data fetch
+- `app/api/brands/[brandId]/actions/route.ts` — Added generate_topic_universe + batch_generate_memos actions
+- `app/api/inngest/route.ts` — Registered topicUniverseGenerate + topicUniverseRefresh
+- `lib/inngest/client.ts` — Added topic/universe-generate + topic/universe-refresh event types
+- `lib/inngest/functions/scan-run.ts` — Emit topic refresh when new competitors discovered
+- `lib/supabase/types.ts` — Added TopicUniverse, SitePageEntry, CoverageScore types
+
+---
 
 **Add Sentiment Analysis & Brand Position Tracking** (fd781cc)
 - New lightweight sentiment classifier (`lib/utils/sentiment.ts`) — classifies brand mentions as positive/negative/neutral using pattern matching, zero extra API cost

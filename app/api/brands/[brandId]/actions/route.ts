@@ -982,6 +982,103 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'generate_topic_universe':
+        await inngest.send({
+          name: 'topic/universe-generate',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Content coverage audit started. This may take 1-2 minutes.' 
+        })
+
+      case 'batch_generate_memos': {
+        // Generate memos for top N gap topics
+        const topicIds = body.topicIds as string[] | undefined
+        const limit = Math.min(body.limit || 10, 10) // Cap at 10
+
+        if (!topicIds || topicIds.length === 0) {
+          return NextResponse.json({ error: 'topicIds required' }, { status: 400 })
+        }
+
+        // Get the topics
+        const { data: topics } = await supabase
+          .from('topic_universe')
+          .select('*')
+          .eq('brand_id', brandId)
+          .in('id', topicIds.slice(0, limit))
+          .eq('status', 'gap')
+
+        if (!topics || topics.length === 0) {
+          return NextResponse.json({ error: 'No gap topics found' }, { status: 400 })
+        }
+
+        // Map topic content_type to memo_type
+        const typeMap: Record<string, string> = {
+          comparison: 'comparison',
+          alternative: 'alternative',
+          how_to: 'how_to',
+          industry: 'industry',
+          definition: 'how_to', // definitions use how_to template
+          guide: 'industry', // guides use industry template
+        }
+
+        // Find matching competitors for comparison/alternative topics
+        const competitorNames = topics
+          .filter(t => t.competitor_relevance?.length > 0)
+          .flatMap(t => t.competitor_relevance as string[])
+
+        const { data: competitors } = competitorNames.length > 0
+          ? await supabase
+              .from('competitors')
+              .select('id, name')
+              .eq('brand_id', brandId)
+              .eq('is_active', true)
+          : { data: [] }
+
+        const competitorLookup = new Map(
+          (competitors || []).map(c => [c.name.toLowerCase(), c.id])
+        )
+
+        // Trigger memo generation for each topic
+        const events = topics.map(topic => {
+          const memoType = typeMap[topic.content_type] || 'industry'
+          
+          // Find competitor ID for comparison/alternative topics
+          let competitorId: string | undefined
+          if (['comparison', 'alternative'].includes(topic.content_type) && topic.competitor_relevance?.length > 0) {
+            const compName = (topic.competitor_relevance as string[])[0]
+            competitorId = competitorLookup.get(compName.toLowerCase()) || undefined
+          }
+
+          return {
+            name: 'memo/generate' as const,
+            data: {
+              brandId,
+              memoType,
+              competitorId,
+              // Pass topic context for the memo generator
+              topicTitle: topic.title,
+              topicDescription: topic.description,
+            },
+          }
+        })
+
+        await inngest.send(events)
+
+        // Mark topics as having content in progress
+        await supabase
+          .from('topic_universe')
+          .update({ status: 'partial', updated_at: new Date().toISOString() })
+          .in('id', topics.map(t => t.id))
+
+        return NextResponse.json({ 
+          success: true, 
+          message: `Generating ${events.length} memos from coverage gaps`,
+          count: events.length,
+        })
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }

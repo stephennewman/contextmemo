@@ -152,4 +152,17 @@ export type InngestEvents = {
       competitorId?: string
     }
   }
+  // Topic Universe - Content Coverage Audit
+  'topic/universe-generate': {
+    data: {
+      brandId: string
+    }
+  }
+  'topic/universe-refresh': {
+    data: {
+      brandId: string
+      newEntityName?: string
+      newEntityType?: string
+    }
+  }
 }

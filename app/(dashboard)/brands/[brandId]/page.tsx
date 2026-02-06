@@ -33,6 +33,8 @@ import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
+import { CoverageAudit } from '@/components/dashboard/coverage-audit'
+import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
 
 // SUNSET: These features had zero usage and have been removed from the UI
 // - SearchConsoleView (0 rows in search_console_stats)
@@ -209,6 +211,39 @@ export default async function BrandPage({ params }: Props) {
   // SUNSET: AI traffic removed (0 usage)
 
   // SUNSET: Alerts, Attribution events, prompt intelligence, model insights removed (0 usage)
+
+  // Get topic universe data for coverage tab
+  const { data: topicUniverseData } = await supabase
+    .from('topic_universe')
+    .select('*')
+    .eq('brand_id', brandId)
+    .order('priority_score', { ascending: false })
+
+  const topicTopics = (topicUniverseData || []) as TopicUniverse[]
+  const hasTopicUniverse = topicTopics.length > 0
+
+  // Calculate coverage score if topics exist
+  let coverageScore: CoverageScore | null = null
+  if (hasTopicUniverse) {
+    const categories: TopicCategory[] = ['comparisons', 'alternatives', 'how_tos', 'industry_guides', 'definitions', 'use_cases']
+    const byCategory: CoverageScore['by_category'] = {} as CoverageScore['by_category']
+    for (const cat of categories) {
+      const catTopics = topicTopics.filter(t => t.category === cat)
+      byCategory[cat] = {
+        total: catTopics.length,
+        covered: catTopics.filter(t => t.status === 'covered').length,
+        gaps: catTopics.filter(t => t.status === 'gap').length,
+      }
+    }
+    coverageScore = {
+      total_topics: topicTopics.length,
+      covered: topicTopics.filter(t => t.status === 'covered').length,
+      partial: topicTopics.filter(t => t.status === 'partial').length,
+      gaps: topicTopics.filter(t => t.status === 'gap').length,
+      coverage_percent: Math.round((topicTopics.filter(t => t.status === 'covered').length / topicTopics.length) * 100),
+      by_category: byCategory,
+    }
+  }
 
   // Helper to check if a query contains the brand name (case-insensitive)
   // These queries skew visibility data since they'll always mention the brand
@@ -420,6 +455,17 @@ export default async function BrandPage({ params }: Props) {
                   today.setHours(0, 0, 0, 0)
                   return d >= today
                 }).length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="coverage" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
+            COVERAGE
+            {coverageScore && (
+              <span className={`ml-1.5 text-[10px] font-normal ${
+                coverageScore.coverage_percent >= 70 ? 'text-emerald-400' : 
+                coverageScore.coverage_percent >= 40 ? 'text-amber-400' : 'text-red-400'
+              }`}>
+                {coverageScore.coverage_percent}%
               </span>
             )}
           </TabsTrigger>
@@ -671,6 +717,17 @@ export default async function BrandPage({ params }: Props) {
               response_memo?: { id: string; title: string; slug: string; status: string }
             }>}
             competitors={competitors || []}
+          />
+        </TabsContent>
+
+        {/* Coverage Audit Tab */}
+        <TabsContent value="coverage">
+          <CoverageAudit
+            brandId={brandId}
+            brandName={brand.name}
+            initialTopics={topicTopics}
+            initialScore={coverageScore}
+            hasTopics={hasTopicUniverse}
           />
         </TabsContent>
 

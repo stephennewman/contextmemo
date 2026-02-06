@@ -932,6 +932,23 @@ export const scanRun = inngest.createFunction(
           source: 'scan',
         })
       }
+
+      // Trigger topic universe refresh for newly discovered competitors
+      // This adds comparison/alternative topics without regenerating the full universe
+      for (const competitor of (inserted || [])) {
+        try {
+          await inngest.send({
+            name: 'topic/universe-refresh',
+            data: {
+              brandId,
+              newEntityName: competitor.name,
+              newEntityType: 'competitor',
+            },
+          })
+        } catch (e) {
+          console.log('Topic refresh emit failed (non-critical):', (e as Error).message)
+        }
+      }
       
       console.log(`Auto-discovered ${inserted?.length || 0} new competitors from citations`)
       return { 

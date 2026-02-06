@@ -1458,6 +1458,58 @@ export const ACTIVITY_TYPE_META: Record<ActivityType, {
   error: { label: 'Error', icon: 'AlertTriangle', color: '#EF4444', category: 'system' },
 }
 
+// =============================================================================
+// Topic Universe (Coverage Audit)
+// =============================================================================
+
+export type TopicCategory = 'comparisons' | 'alternatives' | 'how_tos' | 'industry_guides' | 'definitions' | 'use_cases'
+export type TopicContentType = 'comparison' | 'alternative' | 'how_to' | 'industry' | 'definition' | 'guide'
+export type TopicStatus = 'gap' | 'partial' | 'covered'
+export type TopicSource = 'ai_generated' | 'entity_discovered' | 'competitor_content' | 'manual'
+
+export interface TopicUniverse {
+  id: string
+  brand_id: string
+  title: string
+  category: TopicCategory
+  content_type: TopicContentType
+  description: string | null
+  target_persona: string | null
+  funnel_stage: 'top_funnel' | 'mid_funnel' | 'bottom_funnel' | null
+  competitor_relevance: string[]
+  estimated_competitor_coverage: number
+  priority_score: number
+  impact_rationale: string | null
+  status: TopicStatus
+  matched_memo_id: string | null
+  matched_page_url: string | null
+  created_at: string
+  updated_at: string
+  refreshed_at: string | null
+  source: TopicSource
+}
+
+// Site inventory page entry (from sitemap crawl + classification)
+export interface SitePageEntry {
+  url: string
+  title: string | null
+  content_type: 'blog' | 'landing' | 'resource' | 'product' | 'industry' | 'comparison' | 'case_study' | 'docs' | 'other'
+  topics: string[]
+  lastmod: string | null
+  word_count: number | null
+  content_quality: 'substantive' | 'thin' | null
+}
+
+// Coverage score summary
+export interface CoverageScore {
+  total_topics: number
+  covered: number
+  partial: number
+  gaps: number
+  coverage_percent: number
+  by_category: Record<TopicCategory, { total: number; covered: number; gaps: number }>
+}
+
 // Category metadata
 export const ACTIVITY_CATEGORY_META: Record<ActivityCategory, {
   label: string

@@ -47,6 +47,7 @@ import {
   promptLabStop 
 } from '@/lib/inngest/functions/prompt-lab'
 import { dailyDigest } from '@/lib/inngest/functions/daily-digest'
+import { topicUniverseGenerate, topicUniverseRefresh } from '@/lib/inngest/functions/topic-universe'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -120,6 +121,10 @@ export const { GET, POST, PUT } = serve({
     
     // Daily digest email - 9 AM ET
     dailyDigest,             // Send daily visibility summary via Resend
+    
+    // Topic Universe - Content Coverage Audit
+    topicUniverseGenerate,   // Generate full topic universe for a brand
+    topicUniverseRefresh,    // Add topics for newly discovered entities
   ],
 })
 // Sync trigger Wed Feb  4 13:26:53 EST 2026
