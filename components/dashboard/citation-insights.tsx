@@ -22,7 +22,6 @@ import {
 } from 'lucide-react'
 import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns'
 import { FunnelStage, FUNNEL_STAGE_META } from '@/lib/supabase/types'
-import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 interface ScanResult {
   id: string
@@ -303,31 +302,6 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
       const brandCited = scansWithCitations.filter(s => s.brand_in_citations === true).length
       const mentioned = stageScans.filter(s => s.brand_mentioned).length
       
-      // Aggregate competitors mentioned at this funnel stage
-      // Count unique scans per competitor (not total occurrences) and filter blocklist
-      const competitorScanSets = new Map<string, Set<string>>()
-      stageScans.forEach(scan => {
-        const seen = new Set<string>() // dedupe within single scan
-        ;(scan.competitors_mentioned || []).forEach(comp => {
-          const normalized = comp.toLowerCase().trim()
-          if (seen.has(normalized)) return
-          seen.add(normalized)
-          if (isBlockedCompetitorName(comp)) return
-          if (!competitorScanSets.has(comp)) {
-            competitorScanSets.set(comp, new Set())
-          }
-          competitorScanSets.get(comp)!.add(scan.id)
-        })
-      })
-      const topCompetitors = Array.from(competitorScanSets.entries())
-        .sort((a, b) => b[1].size - a[1].size)
-        .slice(0, 5)
-        .map(([name, scanIds]) => ({
-          name,
-          mentions: scanIds.size,
-          mentionRate: stageScans.length > 0 ? Math.round((scanIds.size / stageScans.length) * 100) : 0,
-        }))
-      
       // Aggregate cited domains at this stage
       const domainCounts = new Map<string, number>()
       stageScans.forEach(scan => {
@@ -376,7 +350,6 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
         citationRate: scansWithCitations.length > 0 ? Math.round((brandCited / scansWithCitations.length) * 100) : 0,
         brandCited,
         scansWithCitations: scansWithCitations.length,
-        topCompetitors,
         topDomains,
         memoCount: stageMemos.length,
         publishedMemos: stageMemos.filter(m => m.status === 'published').length,
@@ -587,7 +560,7 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {funnelStats.map(({ stage, meta, queryCount, scanCount, mentionRate, citationRate, scansWithCitations, topCompetitors, topDomains, memoCount, publishedMemos, sentiment, sentimentScore, avgPosition }) => {
+            {funnelStats.map(({ stage, meta, queryCount, scanCount, mentionRate, citationRate, scansWithCitations, topDomains, memoCount, publishedMemos, sentiment, sentimentScore, avgPosition }) => {
               const isGap = scanCount > 0 && citationRate === 0 && mentionRate < 30
               const isStrong = citationRate >= 30 || mentionRate >= 60
               
@@ -673,35 +646,6 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                           </span>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* Competitors at this stage */}
-                  {topCompetitors.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        Competitors mentioned
-                      </p>
-                      <div className="space-y-1.5">
-                        {topCompetitors.map(({ name, mentionRate: compRate }) => (
-                          <div key={name} className="flex items-center gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-0.5">
-                                <span className="text-xs truncate">{name}</span>
-                                <span className={`text-xs font-medium ${compRate > mentionRate ? 'text-red-600' : 'text-muted-foreground'}`}>
-                                  {compRate}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${compRate > mentionRate ? 'bg-red-400' : 'bg-slate-300'}`}
-                                  style={{ width: `${compRate}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   )}
 
