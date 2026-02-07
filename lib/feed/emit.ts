@@ -3,7 +3,7 @@
  * Helper functions for Inngest jobs to emit feed events
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import type { 
   FeedWorkflow, 
   FeedEventType, 
@@ -12,10 +12,7 @@ import type {
   FeedEventData 
 } from './types'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 interface EmitFeedEventParams {
   tenant_id: string

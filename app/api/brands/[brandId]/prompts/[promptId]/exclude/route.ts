@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { emitPromptExcluded } from '@/lib/feed/emit'
+import { z } from 'zod'
 
 export async function POST(
   request: NextRequest,
@@ -9,6 +10,10 @@ export async function POST(
 ) {
   const supabase = await createClient()
   const { brandId, promptId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId) || !uuidRegex.test(promptId)) {
+    return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+  }
   
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -16,8 +21,18 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
-  const reason = body.reason || 'manual'
+  const schema = z.object({
+    reason: z.string().min(2).max(200).optional(),
+  })
+
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+
+  const reason = parsed.data.reason || 'manual'
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

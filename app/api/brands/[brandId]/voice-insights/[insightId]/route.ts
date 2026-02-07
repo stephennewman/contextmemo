@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { z } from 'zod'
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 // GET - Get a single voice insight
 export async function GET(
@@ -7,6 +10,9 @@ export async function GET(
   { params }: { params: Promise<{ brandId: string; insightId: string }> }
 ) {
   const { brandId, insightId } = await params
+  if (!uuidRegex.test(brandId) || !uuidRegex.test(insightId)) {
+    return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify auth
@@ -35,6 +41,9 @@ export async function PATCH(
   { params }: { params: Promise<{ brandId: string; insightId: string }> }
 ) {
   const { brandId, insightId } = await params
+  if (!uuidRegex.test(brandId) || !uuidRegex.test(insightId)) {
+    return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify auth
@@ -43,7 +52,23 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
-  const body = await request.json()
+  const schema = z.object({
+    title: z.string().min(2).max(200).optional(),
+    transcript: z.string().min(10).optional(),
+    topic: z.string().min(2).optional(),
+    tags: z.array(z.string()).optional(),
+    recorded_by_name: z.string().min(2).max(100).optional(),
+    recorded_by_title: z.string().optional(),
+    recorded_by_linkedin_url: z.string().url().optional(),
+    status: z.string().optional(),
+  })
+
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid update payload' }, { status: 400 })
+  }
+
   const allowedFields = [
     'title',
     'transcript',
@@ -58,8 +83,8 @@ export async function PATCH(
   // Filter to only allowed fields
   const updates: Record<string, unknown> = {}
   for (const field of allowedFields) {
-    if (body[field] !== undefined) {
-      updates[field] = body[field]
+    if (parsed.data[field as keyof typeof parsed.data] !== undefined) {
+      updates[field] = parsed.data[field as keyof typeof parsed.data]
     }
   }
   
@@ -91,6 +116,9 @@ export async function DELETE(
   { params }: { params: Promise<{ brandId: string; insightId: string }> }
 ) {
   const { brandId, insightId } = await params
+  if (!uuidRegex.test(brandId) || !uuidRegex.test(insightId)) {
+    return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify auth

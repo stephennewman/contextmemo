@@ -519,14 +519,14 @@ async function batchScanQueries(
 }
 ```
 
-**2. No Model Selection Optimization**
+**2. Model Selection Optimization**
 
 **Current:**
-- Uses same model for all queries
-- Doesn't consider query complexity
-- Over-provisions for simple queries
+- ✅ Model selection implemented based on query complexity
+- Simple queries use cheaper models
+- Complex queries use stronger models
 
-**Recommendation:**
+**Implementation:**
 ```typescript
 interface QueryComplexity {
   length: number

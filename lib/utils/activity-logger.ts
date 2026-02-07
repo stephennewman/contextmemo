@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { 
   ActivityType, 
   ActivityCategory,
@@ -6,10 +6,7 @@ import {
 } from '@/lib/supabase/types'
 
 // Create a server-side Supabase client for Inngest functions
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 interface LogActivityParams {
   brandId: string

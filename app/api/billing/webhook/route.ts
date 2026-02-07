@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { getClientIp } from '@/lib/security/ip'
 import { ensureIdempotency, rateLimit } from '@/lib/security/rate-limit'
+import { logSecurityEvent } from '@/lib/security/security-events'
+import { logBillingEvent } from '@/lib/stripe/billing-events'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,6 +50,12 @@ export async function POST(request: NextRequest) {
     )
   } catch (err) {
     console.error('Webhook signature verification failed:', err)
+    await logSecurityEvent({
+      type: 'webhook_invalid',
+      ip,
+      path: '/api/billing/webhook',
+      details: { reason: 'signature_verification_failed' },
+    })
     return NextResponse.json(
       { error: 'Invalid signature' },
       { status: 400 }
@@ -117,6 +125,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!tenant) {
     console.error('Tenant not found for customer:', customerId)
+    await logBillingEvent({
+      eventType: 'checkout.session.completed',
+      customerId,
+      subscriptionId,
+      status: 'tenant_not_found',
+    })
     return
   }
 
@@ -130,9 +144,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .from('tenants')
     .update({
       plan: plan?.id || 'starter',
-      // Store subscription metadata for reference
+      stripe_subscription_id: subscriptionId,
     })
     .eq('id', tenant.id)
+
+  await logBillingEvent({
+    eventType: 'checkout.session.completed',
+    tenantId: tenant.id,
+    customerId,
+    subscriptionId,
+    status: 'updated',
+    metadata: { plan: plan?.id || 'starter' },
+  })
 
   console.log(`Checkout completed for tenant ${tenant.id}, plan: ${plan?.id}`)
 }
@@ -152,6 +175,12 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
   if (!tenant) {
     console.error('Tenant not found for customer:', customerId)
+    await logBillingEvent({
+      eventType: 'customer.subscription.updated',
+      customerId,
+      subscriptionId: subscription.id,
+      status: 'tenant_not_found',
+    })
     return
   }
 
@@ -159,11 +188,23 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   if (status === 'active' || status === 'trialing') {
     await supabase
       .from('tenants')
-      .update({ plan: plan?.id || 'free' })
+      .update({
+        plan: plan?.id || 'free',
+        stripe_subscription_id: subscription.id,
+      })
       .eq('id', tenant.id)
 
     console.log(`Subscription updated for tenant ${tenant.id}, plan: ${plan?.id}, status: ${status}`)
   }
+
+  await logBillingEvent({
+    eventType: 'customer.subscription.updated',
+    tenantId: tenant.id,
+    customerId,
+    subscriptionId: subscription.id,
+    status,
+    metadata: { plan: plan?.id || 'free' },
+  })
 }
 
 async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
@@ -178,6 +219,12 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
 
   if (!tenant) {
     console.error('Tenant not found for customer:', customerId)
+    await logBillingEvent({
+      eventType: 'customer.subscription.deleted',
+      customerId,
+      subscriptionId: subscription.id,
+      status: 'tenant_not_found',
+    })
     return
   }
 
@@ -188,6 +235,14 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
     .eq('id', tenant.id)
 
   console.log(`Subscription canceled for tenant ${tenant.id}`)
+
+  await logBillingEvent({
+    eventType: 'customer.subscription.deleted',
+    tenantId: tenant.id,
+    customerId,
+    subscriptionId: subscription.id,
+    status: 'canceled',
+  })
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
@@ -202,6 +257,12 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   if (!tenant) {
     console.error('Tenant not found for customer:', customerId)
+    await logBillingEvent({
+      eventType: 'invoice.payment_failed',
+      customerId,
+      invoiceId: invoice.id,
+      status: 'tenant_not_found',
+    })
     return
   }
 
@@ -213,13 +274,25 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     .limit(1)
 
   if (brands && brands[0]) {
-    await supabase.from('alerts').insert({
+    const { error: alertError } = await supabase.from('alerts').insert({
       brand_id: brands[0].id,
       alert_type: 'payment_failed',
       title: 'Payment Failed',
       message: 'Your payment failed. Please update your payment method to continue using ContextMemo.',
     })
+
+    if (alertError) {
+      console.error('Failed to create payment alert:', alertError)
+    }
   }
 
   console.log(`Payment failed for tenant ${tenant.id}`)
+
+  await logBillingEvent({
+    eventType: 'invoice.payment_failed',
+    tenantId: tenant.id,
+    customerId,
+    invoiceId: invoice.id,
+    status: invoice.status || 'failed',
+  })
 }

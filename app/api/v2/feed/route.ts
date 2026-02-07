@@ -3,6 +3,18 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { FeedWorkflow, FeedSeverity, FeedEvent, FeedResponse } from '@/lib/feed/types'
 import { getCacheValue, setCacheValue } from '@/lib/cache/redis-cache'
+import { z } from 'zod'
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const uuidSchema = z.string().regex(uuidRegex, 'Invalid UUID')
+const patchSchema = z.object({
+  event_ids: z.array(uuidSchema).min(1),
+  action: z.enum(['mark_read', 'mark_unread', 'dismiss', 'pin', 'unpin']),
+})
+const postSchema = z.object({
+  event_id: uuidSchema,
+  action: z.string().min(1),
+})
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -122,12 +134,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
-  const { event_ids, action } = body
+  const body = await request.json().catch(() => null)
+  const parsed = patchSchema.safeParse(body)
 
-  if (!event_ids || !Array.isArray(event_ids)) {
-    return NextResponse.json({ error: 'event_ids required' }, { status: 400 })
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
+
+  const { event_ids, action } = parsed.data
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -190,12 +204,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
-  const { event_id, action } = body
+  const body = await request.json().catch(() => null)
+  const parsed = postSchema.safeParse(body)
 
-  if (!event_id || !action) {
-    return NextResponse.json({ error: 'event_id and action required' }, { status: 400 })
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
+
+  const { event_id, action } = parsed.data
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

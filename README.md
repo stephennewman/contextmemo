@@ -32,6 +32,9 @@ Optional configuration:
 - AUTH_RATE_LIMIT_WINDOW_MS: Shared window for auth rate limiting (default 60000)
 - AUTH_RATE_LIMIT_MAX_LOGIN: Max login attempts per window (default 8)
 - AUTH_RATE_LIMIT_MAX_SIGNUP: Max signup attempts per window (default 5)
+- CSRF_ALLOWED_ORIGINS: Comma-separated allowed origins for API POST/PUT/PATCH/DELETE
+- SESSION_MAX_AGE_HOURS: Max session age before forced re-login (default 168)
+- ADMIN_EMAILS: Comma-separated list of admin emails allowed to access /admin
 
 ## Learn More
 

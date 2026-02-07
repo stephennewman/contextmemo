@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
 import { getHubSpotToken } from '@/lib/hubspot/oauth'
+import { z } from 'zod'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 interface HubSpotBlogPost {
   name: string
@@ -33,8 +31,22 @@ export async function POST(
 ) {
   try {
     const { brandId, memoId } = await params
-    const body = await request.json()
-    const { publish = false } = body
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(brandId) || !uuidRegex.test(memoId)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+    }
+
+    const schema = z.object({
+      publish: z.boolean().optional(),
+    })
+
+    const body = await request.json().catch(() => null)
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    const { publish = false } = parsed.data
 
     // Get brand with HubSpot config
     const { data: brand, error: brandError } = await supabase
@@ -215,7 +227,7 @@ export async function POST(
   } catch (error) {
     console.error('HubSpot sync error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

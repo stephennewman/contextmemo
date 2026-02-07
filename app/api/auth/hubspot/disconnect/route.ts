@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   
   if (brandError) {
     console.error('Brand lookup error:', brandError)
-    return NextResponse.json({ error: 'Brand not found', details: brandError.message }, { status: 404 })
+    return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
   if (!brand) {

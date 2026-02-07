@@ -1,15 +1,12 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { marked } from 'marked'
 import { headers } from 'next/headers'
 import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
 
 // Use service role client for public access
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Helper to detect if accessed via subdomain
 async function isSubdomainAccess(subdomain: string): Promise<boolean> {

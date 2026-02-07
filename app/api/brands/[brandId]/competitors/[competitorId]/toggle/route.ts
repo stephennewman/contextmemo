@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { z } from 'zod'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,8 +14,23 @@ export async function POST(
 ) {
   try {
     const { brandId, competitorId } = await params
-    const body = await request.json()
-    const { is_active } = body
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(brandId) || !uuidRegex.test(competitorId)) {
+      return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 })
+    }
+
+    const schema = z.object({
+      is_active: z.boolean(),
+    })
+
+    const body = await request.json().catch(() => null)
+    const parsed = schema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    const { is_active } = parsed.data
 
     // Verify user is authenticated
     const serverClient = await createServerClient()

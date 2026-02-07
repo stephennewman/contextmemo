@@ -46,8 +46,9 @@ export default function SignupPage() {
     setLoading(true)
 
     // Basic validation
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{12,}$/
+    if (!passwordPolicy.test(password)) {
+      setError('Password must be 12+ chars and include upper, lower, number, and symbol')
       setLoading(false)
       return
     }

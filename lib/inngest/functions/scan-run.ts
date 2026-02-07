@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { queryPerplexity, checkBrandInCitations } from '@/lib/utils/perplexity'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations, OpenRouterAnnotation } from '@/lib/utils/openrouter'
@@ -8,10 +8,7 @@ import { PerplexitySearchResultJson, QueryStatus } from '@/lib/supabase/types'
 import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorDiscovered } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Lazy-load OpenRouter provider
 let _openrouter: ReturnType<typeof import('@openrouter/ai-sdk-provider').createOpenRouter> | null = null
@@ -37,6 +34,13 @@ interface ModelConfig {
   modelId: string
   enabled: boolean
   citationSource: 'perplexity' | 'openrouter-native'
+}
+
+interface QueryComplexity {
+  length: number
+  hasComparison: boolean
+  hasTechnicalTerms: boolean
+  expectedTokens: number
 }
 
 // Citation-capable models only
@@ -81,6 +85,37 @@ const SCAN_MODELS: ModelConfig[] = [
   },
 ]
 
+function calculateQueryComplexity(query: string): QueryComplexity {
+  return {
+    length: query.length,
+    hasComparison: /\b(vs|versus|compare|alternative|alternatives|best|top)\b/i.test(query),
+    hasTechnicalTerms: /\b[A-Z]{2,}\b/.test(query) || /\b(architecture|integration|compliance|security|deployment|scalability)\b/i.test(query),
+    expectedTokens: Math.ceil(query.length / 4),
+  }
+}
+
+function selectModelsForQuery(query: string, enabledModels: ModelConfig[]): ModelConfig[] {
+  if (enabledModels.length <= 1) return enabledModels
+
+  const complexity = calculateQueryComplexity(query)
+  const byId = new Map(enabledModels.map(model => [model.id, model]))
+
+  if (complexity.expectedTokens < 120 && !complexity.hasComparison && !complexity.hasTechnicalTerms) {
+    return byId.has('gpt-4o-mini') ? [byId.get('gpt-4o-mini')!] : [enabledModels[0]]
+  }
+
+  if (complexity.expectedTokens < 500) {
+    if (byId.has('claude-3-5-haiku')) return [byId.get('claude-3-5-haiku')!]
+    if (byId.has('gpt-4o-mini')) return [byId.get('gpt-4o-mini')!]
+    return [enabledModels[0]]
+  }
+
+  if (byId.has('grok-4-fast')) return [byId.get('grok-4-fast')!]
+  if (byId.has('claude-3-5-haiku')) return [byId.get('claude-3-5-haiku')!]
+  if (byId.has('perplexity-sonar')) return [byId.get('perplexity-sonar')!]
+  return [enabledModels[0]]
+}
+
 // Get model instance for OpenRouter
 async function getModelInstance(config: ModelConfig) {
   if (config.provider !== 'openrouter') {
@@ -122,30 +157,44 @@ export const scanRun = inngest.createFunction(
 
     // Step 1: Get brand and queries
     const { brand, queries, competitors } = await step.run('get-data', async () => {
-      const [brandResult, queriesResult, competitorsResult] = await Promise.all([
+      const [brandResult, competitorsResult] = await Promise.all([
         supabase
           .from('brands')
           .select('*')
           .eq('id', brandId)
           .single(),
-        queryIds
-          ? supabase
-              .from('queries')
-              .select('*')
-              .in('id', queryIds)
-          : supabase
-              .from('queries')
-              .select('*')
-              .eq('brand_id', brandId)
-              .eq('is_active', true)
-              .order('priority', { ascending: false })
-              .limit(100), // Scan up to 100 queries per run
         // Get ALL competitors (tracked + discovered) for mention detection
         supabase
           .from('competitors')
           .select('name')
           .eq('brand_id', brandId),
       ])
+
+      let queriesResult: { data: unknown[] | null } = { data: [] }
+      if (queryIds && queryIds.length > 0) {
+        const chunks: string[][] = []
+        for (let i = 0; i < queryIds.length; i += 100) {
+          chunks.push(queryIds.slice(i, i + 100))
+        }
+        const chunkResults = await Promise.all(
+          chunks.map(chunk =>
+            supabase
+              .from('queries')
+              .select('*')
+              .in('id', chunk)
+          )
+        )
+        queriesResult = { data: chunkResults.flatMap(r => r.data || []) }
+      } else {
+        const { data } = await supabase
+          .from('queries')
+          .select('*')
+          .eq('brand_id', brandId)
+          .eq('is_active', true)
+          .order('priority', { ascending: false })
+          .limit(100) // Scan up to 100 queries per run
+        queriesResult = { data: data || [] }
+      }
 
       if (brandResult.error || !brandResult.data) {
         throw new Error('Brand not found')
@@ -168,6 +217,7 @@ export const scanRun = inngest.createFunction(
 
     // Get enabled models
     const enabledModels = SCAN_MODELS.filter(m => m.enabled)
+    const modelDisplayById = new Map(enabledModels.map(model => [model.id, model.displayName]))
     
     // Step 2: Run scans for each query across all enabled models
     const scanResults: ScanResult[] = []
@@ -180,8 +230,9 @@ export const scanRun = inngest.createFunction(
       
       const batchResults = await step.run(`scan-batch-${i}`, async () => {
         // Run all queries in this batch in parallel
-        const batchPromises = batch.flatMap(query => 
-          enabledModels.map(async modelConfig => {
+        const batchPromises = batch.flatMap(query => {
+          const selectedModels = selectModelsForQuery(query.query_text, enabledModels)
+          return selectedModels.map(async modelConfig => {
             try {
               if (modelConfig.provider === 'perplexity-direct') {
                 const scanResult = await scanWithPerplexityDirect(
@@ -216,7 +267,7 @@ export const scanRun = inngest.createFunction(
               return null // Return null for failed scans
             }
           })
-        )
+        })
         
         const results = await Promise.all(batchPromises)
         return results.filter((r): r is ScanResult => r !== null)
@@ -497,6 +548,10 @@ export const scanRun = inngest.createFunction(
       })
       
       // V2 Feed event: Scan complete
+      const modelsUsed = Array.from(new Set(
+        scanResults.map(result => modelDisplayById.get(result.model) || result.model)
+      ))
+
       await emitScanComplete({
         tenant_id: brand.tenant_id,
         brand_id: brandId,
@@ -504,7 +559,7 @@ export const scanRun = inngest.createFunction(
         citation_rate: citationScore,
         mention_rate: visibilityScore,
         gaps_found: gaps.length,
-        models_used: enabledModels.map(m => m.displayName),
+        models_used: modelsUsed,
       })
       
       // V2 Feed events: Gap identified for worst gaps
@@ -519,6 +574,10 @@ export const scanRun = inngest.createFunction(
         const gapScans = scanResults.filter(r => r.queryId === gapQuery.id && r.brandInCitations !== true)
         const winner = gapScans.find(s => s.competitorsMentioned.length > 0)?.competitorsMentioned[0]
         
+        const modelsChecked = Array.from(new Set(
+          gapScans.map(result => modelDisplayById.get(result.model) || result.model)
+        ))
+
         await emitGapIdentified({
           tenant_id: brand.tenant_id,
           brand_id: brandId,
@@ -526,7 +585,7 @@ export const scanRun = inngest.createFunction(
           query_text: gapQuery.query_text,
           visibility_rate: 0,
           winner_name: winner,
-          models_checked: enabledModels.map(m => m.displayName),
+          models_checked: modelsChecked,
         })
       }
     })

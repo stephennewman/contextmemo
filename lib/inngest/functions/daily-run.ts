@@ -1,11 +1,8 @@
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getScanFrequencyDays, type PlanId } from '@/lib/stripe/client'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Helper to check if a date is older than X days
 function isOlderThanDays(date: string | null, days: number): boolean {
@@ -14,6 +11,14 @@ function isOlderThanDays(date: string | null, days: number): boolean {
   const now = new Date()
   const diffDays = (now.getTime() - then.getTime()) / (1000 * 60 * 60 * 24)
   return diffDays >= days
+}
+
+function isOlderThanHours(date: string | null, hours: number): boolean {
+  if (!date) return true
+  const then = new Date(date)
+  const now = new Date()
+  const diffHours = (now.getTime() - then.getTime()) / (1000 * 60 * 60)
+  return diffHours >= hours
 }
 
 /**
@@ -69,7 +74,9 @@ export const dailyRun = inngest.createFunction(
       }> = []
 
       const tenantIds = Array.from(new Set(brands.map(brand => brand.tenant_id).filter(Boolean)))
+      const brandIds = brands.map(brand => brand.id)
       const tenantPlans = new Map<string, PlanId>()
+      const brandSettings = new Map<string, { auto_scan_enabled?: boolean; daily_scan_cap?: number }>()
 
       if (tenantIds.length > 0) {
         const { data: tenants } = await supabase
@@ -84,6 +91,20 @@ export const dailyRun = inngest.createFunction(
         }
       }
 
+      if (brandIds.length > 0) {
+        const { data: settings } = await supabase
+          .from('brand_settings')
+          .select('brand_id, auto_scan_enabled, daily_scan_cap')
+          .in('brand_id', brandIds)
+
+        for (const setting of settings || []) {
+          brandSettings.set(setting.brand_id, {
+            auto_scan_enabled: setting.auto_scan_enabled,
+            daily_scan_cap: setting.daily_scan_cap,
+          })
+        }
+      }
+
       for (const brand of brands) {
         const isNew = !brand.context_extracted_at
         const contextAge = brand.context_extracted_at 
@@ -94,7 +115,10 @@ export const dailyRun = inngest.createFunction(
         const scanFrequencyDays = getScanFrequencyDays(planId)
 
         // Get last competitor discovery, query generation, scan, and discovery scan times
-        const [competitorsResult, queriesResult, lastScanResult, lastDiscoveryScanResult] = await Promise.all([
+        const startOfDay = new Date()
+        startOfDay.setHours(0, 0, 0, 0)
+
+        const [competitorsResult, queriesResult, lastScanResult, lastDiscoveryScanResult, recentSiteActivityResult, scansTodayResult] = await Promise.all([
           supabase
             .from('competitors')
             .select('created_at')
@@ -122,12 +146,31 @@ export const dailyRun = inngest.createFunction(
             .eq('alert_type', 'discovery_complete')
             .order('created_at', { ascending: false })
             .limit(1),
+          supabase
+            .from('search_console_stats')
+            .select('id', { count: 'exact', head: true })
+            .eq('brand_id', brand.id)
+            .gte('date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+          supabase
+            .from('scan_results')
+            .select('id', { count: 'exact', head: true })
+            .eq('brand_id', brand.id)
+            .gte('scanned_at', startOfDay.toISOString()),
         ])
 
         const lastCompetitorDiscovery = competitorsResult.data?.[0]?.created_at
         const lastQueryGeneration = queriesResult.data?.[0]?.created_at
         const lastScan = lastScanResult.data?.[0]?.scanned_at
         const lastDiscoveryScan = lastDiscoveryScanResult.data?.[0]?.created_at
+
+        const recentActivityCount = recentSiteActivityResult.error ? 0 : (recentSiteActivityResult.count || 0)
+        const hasRecentSiteActivity = recentActivityCount > 0 && isOlderThanHours(lastScan, 6)
+
+        const settings = brandSettings.get(brand.id)
+        const autoScanEnabled = settings?.auto_scan_enabled ?? true
+        const dailyScanCap = settings?.daily_scan_cap ?? null
+        const scansToday = scansTodayResult.error ? 0 : (scansTodayResult.count || 0)
+        const dailyCapReached = dailyScanCap !== null && scansToday >= dailyScanCap
 
         tasks.push({
           brandId: brand.id,
@@ -140,7 +183,8 @@ export const dailyRun = inngest.createFunction(
           // Generate new queries weekly or if never done
           needsQueryGeneration: isOlderThanDays(lastQueryGeneration, 7),
           // Scan based on subscription cadence (or if never scanned)
-          needsScan: isOlderThanDays(lastScan, scanFrequencyDays),
+          // Also trigger if recent brand-site search console activity was detected and last scan is stale enough
+          needsScan: autoScanEnabled && !dailyCapReached && (isOlderThanDays(lastScan, scanFrequencyDays) || hasRecentSiteActivity),
           // Discovery scan weekly (or if never done) - explores new query patterns
           needsDiscoveryScan: isOlderThanDays(lastDiscoveryScan, 7),
         })

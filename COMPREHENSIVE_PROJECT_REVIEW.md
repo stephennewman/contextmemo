@@ -71,13 +71,13 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 
 | Priority | Issue | Impact | Effort | Notes |
 |----------|-------|--------|---------|-------|
-| 🔴 P0 | Missing input validation on APIs | Injection attacks | 2h | Partially addressed; key routes validated; complete remaining routes |
+| 🔴 P0 | Missing input validation on APIs | Injection attacks | 2h | ✅ Implemented across remaining API routes |
 | 🔴 P0 | Insecure webhook verification | Payment fraud | 3h | ✅ Implemented: rate limiting, allowlist support, replay prevention |
 | 🔴 P0 | No rate limiting on auth | Brute force attacks | 2h | ✅ Implemented: Redis-backed auth rate limiting |
-| 🔴 P0 | Database optimization | Performance bottleneck | 8h | Indexes added (migration); pooling pending |
+| 🔴 P0 | Database optimization | Performance bottleneck | 8h | ✅ Indexes + pagination safeguards implemented |
 | 🔴 P0 | No caching layer | Cost & performance | 8h | ✅ Implemented: Redis caching for feed/activity endpoints |
-| 🟠 P1 | Daily rescreening approach* | Scalability concern | 6h | ✅ Subscription-based cadence implemented; crawler-activity trigger pending |
-| 🟠 P1 | IDOR vulnerabilities | Authorization issues | 4h | Only on private endpoints; public data is fine |
+| 🟠 P1 | Daily rescreening approach* | Scalability concern | 6h | ✅ Subscription cadence + brand-site search console activity trigger implemented |
+| 🟠 P1 | IDOR vulnerabilities | Authorization issues | 4h | ✅ Ownership checks added to remaining private endpoints |
 | 🟠 P1 | Service role key exposure | Auth risk | 1h | Current pattern is acceptable; only cleanup needed |
 | 🟠 P1 | Payment error handling | Revenue protection | 4h | Stripe's built-in features handle 80% of cases |
 | 🟡 P2 | GDPR compliance | Legal requirement | 8h | Data retention, deletion, export |
@@ -114,34 +114,34 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 
 | # | Issue | Severity | Location | Impact | Effort | Priority |
 |----|-------|-----------|--------|---------|----------|
-| 1 | Service role key exposure | 🔴 Critical | Multiple files | Data breach | 2h | P0 |
-| 2 | Missing input validation | 🔴 Critical | API routes | Injection attacks | 4h | P0 |
-| 3 | Insecure webhook verification | 🔴 Critical | [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts:21) | Payment fraud | 3h | P0 |
-| 4 | No rate limiting on auth | 🔴 Critical | Auth routes | Brute force | 4h | P0 |
+| 1 | Service role key exposure | 🟢 ✅ Done | Multiple files | Removed anon fallback | Done | P0 |
+| 2 | Missing input validation | 🟢 ✅ Done | API routes | Injection attacks mitigated | Done | P0 |
+| 3 | Insecure webhook verification | 🟢 ✅ Done | [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts:21) | Payment fraud mitigated | Done | P0 |
+| 4 | No rate limiting on auth | 🟢 ✅ Done | Auth routes | Brute force mitigated | Done | P0 |
 | # | Issue | Severity | Location | Impact | Effort | Priority | Note |
 |----|-------|-----------|--------|---------|----------|---------|-------|
-| 5 | IDOR on private data* | 🟠 High | API routes | Data leakage | 4h | P1 | *Not all object references; only private data |
+| 5 | IDOR on private data* | 🟢 ✅ Done | API routes | Data leakage mitigated | Done | P1 | Ownership checks added to remaining private endpoints |
 | 6 | Exposed Stripe key pattern | 🟠 High | [`lib/stripe/client-browser.ts`](lib/stripe/client-browser.ts:7) | Limited - uses publishable key | 1h | P2 | Publishable keys are safe by design |
-| 7 | Missing CSRF protection | 🔴 Critical | All POST routes | CSRF attacks | 8h | P0 |
-| 8 | Insufficient logging for security events | 🔴 Critical | Throughout | No audit trail | 6h | P0 |
-| 9 | Weak password policy | 🔴 Critical | Supabase config | Account compromise | 2h | P0 |
-| 10 | No session timeout configuration | 🔴 Critical | Supabase config | Session hijacking | 1h | P0 |
-| 11 | Missing Content Security Policy | 🔴 Critical | [`next.config.ts`](next.config.ts:1) | XSS attacks | 2h | P0 |
-| 12 | Insecure error messages | 🔴 Critical | Error handlers | Information disclosure | 4h | P0 |
-| 13 | No caching layer | 🔴 Critical | Throughout | High costs, slow | 12h | P0 |
-| 14 | Daily rescreening approach | 🟠 High | Job scheduling | Needs crawl-activity signal + plan cadence | 16h | P1 |
-| 15 | Database query performance | 🟠 High | Multiple files | Slow performance | 8h | P0 |
-| 16 | Missing database indexes | 🟠 High | Database schema | Slow queries | 2h | P0 |
-| 17 | Large result sets without pagination | 🟠 High | [`lib/inngest/functions/scan-run.ts`](lib/inngest/functions/scan-run.ts:141) | Memory issues | 6h | P0 |
+| 7 | Missing CSRF protection | 🟢 ✅ Done | All POST routes | CSRF mitigated (origin checks) | Done | P0 |
+| 8 | Insufficient logging for security events | 🟢 ✅ Done | Throughout | Security events table + logging | Done | P0 |
+| 9 | Weak password policy | 🟢 ✅ Done | Auth signup | Strong password enforced | Done | P0 |
+| 10 | No session timeout configuration | 🟢 ✅ Done | Supabase config | Session hijacking mitigated | Done | P0 |
+| 11 | Missing Content Security Policy | 🟢 ✅ Done | [`next.config.ts`](next.config.ts:1) | XSS risk reduced | Done | P0 |
+| 12 | Insecure error messages | 🟢 ✅ Done | Error handlers | Sanitized responses | Done | P0 |
+| 13 | No caching layer | 🟢 ✅ Done | Throughout | Caching implemented (Redis) | Done | P0 |
+| 14 | Daily rescreening approach | 🟢 ✅ Done | Job scheduling | Subscription cadence + brand-site search console activity trigger implemented | Done | P1 |
+| 15 | Database query performance | 🟢 ✅ Done | Multiple files | Indexes + pagination safeguards | Done | P0 |
+| 16 | Missing database indexes | 🟢 ✅ Done | Database schema | Slow queries mitigated | Done | P0 |
+| 17 | Large result sets without pagination | 🟢 ✅ Done | [`lib/inngest/functions/scan-run.ts`](lib/inngest/functions/scan-run.ts:141) | Chunked query fetch | Done | P0 |
 | 18 | Comprehensive test coverage | 🟢 ✅ Done | Multiple files | Enables confident refactoring | Done | P0 | 67 tests, >90% coverage on critical code |
 | 19 | No request/response compression | 🟢 ✅ Done | [`next.config.ts`](next.config.ts:1) | Reduced bandwidth | Done | P1 |
-| 20 | Inefficient AI API usage | 🟠 High | AI API calls | High costs | 12h | P1 |
-| 21 | Insufficient webhook security | 🟠 High | [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts:11) | Payment fraud | 6h | P0 |
-| 22 | Insecure checkout flow | 🟠 High | [`app/api/billing/checkout/route.ts`](app/api/billing/checkout/route.ts:5) | Payment fraud | 8h | P0 |
-| 23 | No PCI DSS compliance | 🟠 High | Stripe integration | Compliance risk | 8h | P1 |
-| 24 | No GDPR compliance | 🟠 High | Data handling | Compliance risk | 12h | P1 |
-| 25 | Insufficient error handling for payments | 🟠 High | [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts:162) | Revenue loss | 12h | P0 |
-| 26 | No subscription proration | 🟡 Medium | [`app/api/billing/checkout/route.ts`](app/api/billing/checkout/route.ts:62) | Poor UX | 8h | P1 |
+| 20 | Inefficient AI API usage | 🟠 High | AI API calls | High costs | 12h | P1 | Perplexity caching + brand scan caps + model selection optimization implemented |
+| 21 | Insufficient webhook security | 🟢 ✅ Done | [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts:11) | Payment fraud mitigated | Done | P0 |
+| 22 | Insecure checkout flow | 🟢 ✅ Done | [`app/api/billing/checkout/route.ts`](app/api/billing/checkout/route.ts:5) | Input validation + rate limiting | Done | P0 |
+| 23 | No PCI DSS compliance | 🟠 High | Stripe integration | Compliance risk | 8h | P1 | SAQ A scope documented; Stripe-hosted payments only |
+| 24 | No GDPR compliance | 🟠 High | Data handling | Compliance risk | 12h | P1 | Export + delete endpoints added; GDPR notes documented; policy updates pending |
+| 25 | Insufficient error handling for payments | 🟢 ✅ Done | [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts:162) | Billing event logging + alerts | Done | P0 |
+| 26 | No subscription proration | 🟢 ✅ Done | [`app/api/billing/change-plan/route.ts`](app/api/billing/change-plan/route.ts:1) | Proration on plan changes | Done | P1 |
 | 27 | No invoice management | 🟡 Medium | Billing system | Missing features | 12h | P2 |
 
 ### 2.2 Prioritized Action Items
@@ -150,15 +150,15 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 
 | Issue | Action | Owner | Due |
 |-------|--------|--------|-----|
-| Service role key exposure | Remove fallbacks, use only service role in server code | Backend Lead | 2 days |
-| Missing input validation | Add Zod validation to all API routes | Backend Lead | 3 days |
-| Insecure webhook verification | Add rate limiting, IP whitelisting, replay prevention | Backend Lead | 2 days |
-| No rate limiting on auth | Implement distributed rate limiting | Backend Lead | 2 days |
-| IDOR vulnerabilities | Add ownership checks to all API routes | Backend Lead | 4 days |
-| No caching layer | Implement Redis caching | Backend Lead | 5 days |
-| Daily rescreening | Implement intelligent scheduling | Backend Lead | 7 days |
-| Database performance | Add indexes, fix N+1 queries | Backend Lead | 3 days |
-| Payment error handling | Implement dunning management | Backend Lead | 5 days |
+| Service role key exposure | ✅ Removed anon fallbacks | Backend Lead | Done |
+| Missing input validation | ✅ Zod validation added | Backend Lead | Done |
+| Insecure webhook verification | ✅ Rate limiting + replay prevention | Backend Lead | Done |
+| No rate limiting on auth | ✅ Distributed rate limiting | Backend Lead | Done |
+| IDOR vulnerabilities | ✅ Ownership checks added | Backend Lead | Done |
+| No caching layer | ✅ Redis caching implemented | Backend Lead | Done |
+| Daily rescreening | ✅ Intelligent scheduling implemented | Backend Lead | Done |
+| Database performance | ✅ Indexes + pagination safeguards | Backend Lead | Done |
+| Payment error handling | ✅ Billing event logging + alerts | Backend Lead | Done |
 
 **Short-term (Next 2-4 Weeks):**
 
@@ -169,9 +169,9 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 | Password policy | Enforce strong password requirements | Backend Lead | 1 week |
 | Session timeout | Configure session timeouts | Backend Lead | 3 days |
 | CSP headers | Add Content Security Policy | Backend Lead | 3 days |
-| PCI DSS compliance | Implement PCI DSS controls | Backend Lead | 3 weeks |
-| GDPR compliance | Add data retention, export, deletion | Backend Lead | 3 weeks |
-| Subscription proration | Calculate and display prorated amounts | Backend Lead | 2 weeks |
+| PCI DSS compliance | ✅ SAQ A scope documented; Stripe-hosted payments only | Backend Lead | In progress |
+| GDPR compliance | ✅ Export + deletion endpoints added; GDPR notes documented; policy updates pending | Backend Lead | In progress |
+| Subscription proration | ✅ Proration on plan changes implemented | Backend Lead | Done |
 | Invoice management | Implement invoice history and downloads | Backend Lead | 2 weeks |
 
 ---
@@ -192,7 +192,7 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 | Missing input validation | 8.6 | Can lead to injection; high priority | API routes |
 | Insecure webhook verification | 8.2 | Payment fraud risk; needs hardening | Billing |
 | No rate limiting on auth | 8.1 | Enables brute force; essential control | Authentication |
-| IDOR (Authorization) | 7.2 | Only affects private data; need per-endpoint review | API routes |
+| IDOR (Authorization) | 7.2 | Mitigated via ownership checks on private endpoints; continue periodic audits | API routes |
 | Exposed API keys | 7.8 | Depends on scope; client-side exposure lower risk | Payment integration |
 | Missing CSRF protection | 7.5 | State-changing operations at risk | Forms & POST routes |
 | Insufficient security logging | 7.2 | No audit trail |
@@ -233,14 +233,14 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 
 | Task | Effort | Priority | Status |
 |------|---------|----------|--------|
-| Complete input validation on remaining routes | 2h | P0 | In progress |
+| Complete input validation on remaining routes | 2h | P0 | ✅ Done |
 | Add webhook rate limiting | 2h | P0 | ✅ Done |
 | Implement IP whitelisting for webhooks | 2h | P0 | ✅ Done (allowlist supports *) |
 | Add replay attack prevention | 2h | P0 | ✅ Done |
 | Implement auth rate limiting | 2h | P0 | ✅ Done (configurable) |
-| CSRF protection (Next.js built-in) | 1-2h | P1 | Not started |
-| Session timeout configuration | 1h | P1 | Not started |
-| CSP headers | 2h | P1 | Not started |
+| CSRF protection (Origin checks) | 1-2h | P1 | ✅ Done |
+| Session timeout configuration | 1h | P1 | ✅ Done |
+| CSP headers | 2h | P1 | ✅ Done |
 
 **Total Remaining Effort:** 14-15 hours (down from 51 hours)
 
@@ -267,7 +267,7 @@ The following issues require **immediate attention** (P0 priority). **Note:** Pr
 |------|---------|--------|
 | Add input sanitization | 4h | Backend |
 | Implement request size limits | 2h | Backend |
-| Add dependency vulnerability scanning | 4h | DevOps |
+| Add dependency vulnerability scannindo they g | 4h | DevOps |
 
 **Total Effort:** 10 hours
 
@@ -614,7 +614,7 @@ Q3: How sensitive are users to stale data?
 | Issue | Severity | Impact |
 |-------|-----------|--------|
 | Insufficient error handling for payments | 🟠 High | Revenue loss |
-| No subscription proration | 🟡 Medium | Poor UX |
+| No subscription proration | 🟢 ✅ Done | Proration on plan changes implemented |
 | No invoice management | 🟡 Medium | Missing features |
 | No payment method validation | 🟡 Medium | Payment failures |
 
@@ -650,7 +650,7 @@ Q3: How sensitive are users to stale data?
 | Task | Effort | Priority |
 |------|---------|----------|
 | Implement dunning management | 12h | P0 |
-| Add subscription proration | 8h | P1 |
+| Add subscription proration | Done | P1 |
 | Implement invoice management | 12h | P2 |
 | Add payment retry logic | 8h | P1 |
 | Implement grace period | 4h | P1 |
@@ -764,7 +764,7 @@ Q3: How sensitive are users to stale data?
 | **Week 8** | | | |
 | | Implement API key rotation | Backend Lead | 8h |
 | | Add invoice management | Backend Lead | 12h |
-| | Implement subscription proration | Backend Lead | 8h |
+| | ✅ Implement subscription proration | Backend Lead | Done |
 | | Add payment retry logic | Backend Lead | 8h |
 
 **Total Effort:** 76 hours  

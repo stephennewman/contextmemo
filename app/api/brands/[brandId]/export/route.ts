@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 interface ExportParams {
   params: Promise<{ brandId: string }>
@@ -12,10 +10,47 @@ interface ExportParams {
 
 export async function GET(request: NextRequest, { params }: ExportParams) {
   const { brandId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId' }, { status: 400 })
+  }
+
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: brand } = await supabase
+    .from('brands')
+    .select('id, tenant_id, organization_id')
+    .eq('id', brandId)
+    .single()
+
+  if (!brand) {
+    return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
+  }
+
+  let hasAccess = brand.tenant_id === user.id
+  if (!hasAccess && brand.organization_id) {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('organization_id', brand.organization_id)
+      .eq('user_id', user.id)
+      .single()
+    hasAccess = !!membership
+  }
+
+  if (!hasAccess) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const searchParams = request.nextUrl.searchParams
   const type = searchParams.get('type') || 'scans' // scans, prompts, memos, competitors
   const format = searchParams.get('format') || 'csv' // csv, json
-  const days = parseInt(searchParams.get('days') || '90')
+  const rawDays = parseInt(searchParams.get('days') || '90')
+  const days = Number.isNaN(rawDays) ? 90 : Math.min(Math.max(rawDays, 1), 365)
 
   // Calculate date range
   const startDate = new Date()

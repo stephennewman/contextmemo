@@ -32,6 +32,9 @@ export default function NewBrandPage() {
   const [userEmail, setUserEmail] = useState('')
   const [verifying, setVerifying] = useState(false)
 
+  const googleSearchConsoleSiteUrl = domain ? `sc-domain:${domain}` : ''
+  const bingWebmasterSiteUrl = domain ? `https://${domain}` : ''
+
   // Sanitize input to prevent XSS and other attacks
   const sanitizeInput = (input: string): string => {
     return input
@@ -202,6 +205,18 @@ export default function NewBrandPage() {
           name: sanitizedBrandName,
           domain: sanitizedDomain,
           subdomain: sanitizedSubdomain,
+          context: {
+            search_console: {
+              bing: {
+                enabled: false,
+                site_url: `https://${sanitizedDomain}`,
+              },
+              google: {
+                enabled: false,
+                site_url: `sc-domain:${sanitizedDomain}`,
+              },
+            },
+          },
           verified: isVerified,
           verification_method: isVerified ? 'email_domain' : null,
           verified_at: isVerified ? new Date().toISOString() : null,
@@ -426,6 +441,11 @@ export default function NewBrandPage() {
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Memo URL:</dt>
                   <dd className="font-medium">{subdomain}.contextmemo.com</dd>
+                </div>
+                <div className="pt-2">
+                  <dt className="text-muted-foreground">Crawl tracking (brand site):</dt>
+                  <dd className="font-medium">Google: {googleSearchConsoleSiteUrl || '—'}</dd>
+                  <dd className="font-medium">Bing: {bingWebmasterSiteUrl || '—'}</dd>
                 </div>
               </dl>
             </div>

@@ -63,7 +63,6 @@ export async function GET(request: NextRequest) {
     console.error('Brand lookup error:', brandError)
     return NextResponse.json({ 
       error: 'Brand not found', 
-      details: brandError.message,
       brandId 
     }, { status: 404 })
   }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { BrandContext, TargetPersona, PersonaSeniority } from '@/lib/supabase/types'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
+import { z } from 'zod'
 
 interface RouteParams {
   params: Promise<{ brandId: string }>
@@ -11,6 +12,10 @@ interface RouteParams {
 // Simple PATCH for updating disabled_personas list
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { brandId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -28,12 +33,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
-  const body = await request.json()
-  const { disabled_personas } = body
+  const schema = z.object({
+    disabled_personas: z.array(z.string()),
+  })
 
-  if (!Array.isArray(disabled_personas)) {
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+
+  if (!parsed.success) {
     return NextResponse.json({ error: 'disabled_personas must be an array' }, { status: 400 })
   }
+
+  const { disabled_personas } = parsed.data
 
   const context = (brand.context || {}) as BrandContext
   context.disabled_personas = disabled_personas
@@ -59,6 +70,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { brandId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify authentication
@@ -78,15 +93,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
-  const body = await request.json()
-  const { action } = body
+  const actionSchema = z.object({
+    action: z.enum(['toggle_persona', 'add_persona', 'remove_persona', 'regenerate_personas']),
+  })
+
+  const body = await request.json().catch(() => null)
+  const actionParsed = actionSchema.safeParse(body)
+
+  if (!actionParsed.success) {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  }
+
+  const { action } = actionParsed.data
   const context = (brand.context || {}) as BrandContext
 
   try {
     switch (action) {
       case 'toggle_persona': {
         // Toggle a persona on/off
-        const { personaId, enabled } = body
+        const toggleSchema = z.object({
+          personaId: z.string().min(1),
+          enabled: z.boolean(),
+        })
+        const toggleParsed = toggleSchema.safeParse(body)
+        if (!toggleParsed.success) {
+          return NextResponse.json({ error: 'personaId and enabled required' }, { status: 400 })
+        }
+        const { personaId, enabled } = toggleParsed.data
         if (!personaId) {
           return NextResponse.json({ error: 'personaId required' }, { status: 400 })
         }
@@ -123,7 +156,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       case 'add_persona': {
         // Add a new persona
-        const { title, seniority, function: func, description, phrasing_style, priorities } = body
+        const addSchema = z.object({
+          title: z.string().min(2),
+          seniority: z.enum(['executive', 'manager', 'specialist']),
+          function: z.string().min(2),
+          description: z.string().min(5),
+          phrasing_style: z.string().optional(),
+          priorities: z.array(z.string()).optional(),
+        })
+        const addParsed = addSchema.safeParse(body)
+        if (!addParsed.success) {
+          return NextResponse.json({ error: 'title, function, and description are required' }, { status: 400 })
+        }
+        const { title, seniority, function: func, description, phrasing_style, priorities } = addParsed.data
         
         if (!title || !func || !description) {
           return NextResponse.json({ 
@@ -187,7 +232,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       case 'remove_persona': {
         // Remove a persona entirely
-        const { personaId } = body
+        const removeSchema = z.object({ personaId: z.string().min(1) })
+        const removeParsed = removeSchema.safeParse(body)
+        if (!removeParsed.success) {
+          return NextResponse.json({ error: 'personaId required' }, { status: 400 })
+        }
+        const { personaId } = removeParsed.data
         if (!personaId) {
           return NextResponse.json({ error: 'personaId required' }, { status: 400 })
         }

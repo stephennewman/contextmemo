@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getClientIp } from '@/lib/security/ip'
 import { rateLimit } from '@/lib/security/rate-limit'
+import { logSecurityEvent } from '@/lib/security/security-events'
 
 const payloadSchema = z.object({
   action: z.enum(['login', 'signup']),
@@ -38,6 +39,12 @@ export async function POST(request: NextRequest) {
   })
 
   if (!ipResult.allowed) {
+    await logSecurityEvent({
+      type: 'rate_limited',
+      ip,
+      path: '/api/auth/rate-limit',
+      details: { action, scope: 'ip' },
+    })
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
   }
 
@@ -49,6 +56,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!emailResult.allowed) {
+      await logSecurityEvent({
+        type: 'rate_limited',
+        ip,
+        path: '/api/auth/rate-limit',
+        details: { action, scope: 'email' },
+      })
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
   }

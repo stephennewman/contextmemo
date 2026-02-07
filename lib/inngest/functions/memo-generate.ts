@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { 
@@ -13,10 +13,7 @@ import {
 import { BrandContext, VoiceInsight } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Helper to sanitize slugs - removes special characters, normalizes spaces
 function sanitizeSlug(text: string): string {

@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { detectAISource } from '@/lib/supabase/types'
+import { z } from 'zod'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const isValidUrl = (value: string) => {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const trackSchema = z.object({
+  brandId: z.string().regex(uuidRegex, 'Invalid brandId'),
+  memoId: z.string().regex(uuidRegex, 'Invalid memoId').optional(),
+  pageUrl: z.string().refine(isValidUrl, 'Invalid pageUrl'),
+  referrer: z.string().optional(),
+})
 
 // Rate limiting: track IPs to prevent abuse
 const recentRequests = new Map<string, number>()
@@ -41,8 +56,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const body = await request.json()
-    const { brandId, memoId, pageUrl, referrer } = body
+    const body = await request.json().catch(() => null)
+    const parsed = trackSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    const { brandId, memoId, pageUrl, referrer } = parsed.data
     
     if (!brandId || !pageUrl) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -102,7 +123,7 @@ export async function GET(request: NextRequest) {
   const memoId = searchParams.get('m')
   const pageUrl = searchParams.get('u')
   
-  if (brandId && pageUrl) {
+  if (brandId && pageUrl && uuidRegex.test(brandId)) {
     // Fire and forget - don't wait for DB
     const userAgent = request.headers.get('user-agent')
     const referrer = request.headers.get('referer')
@@ -112,18 +133,28 @@ export async function GET(request: NextRequest) {
       const country = request.headers.get('x-vercel-ip-country') || 
                      request.headers.get('cf-ipcountry') ||
                      null
-                     
-      // Fire and forget - don't block the pixel response
-      void supabase.from('ai_traffic').insert({
-        brand_id: brandId,
-        memo_id: memoId || null,
-        page_url: decodeURIComponent(pageUrl),
-        referrer: referrer || null,
-        referrer_source: referrerSource,
-        user_agent: userAgent,
-        country,
-        timestamp: new Date().toISOString(),
-      })
+
+      let decodedUrl: string | null = null
+      try {
+        decodedUrl = decodeURIComponent(pageUrl)
+      } catch {
+        decodedUrl = null
+      }
+
+      if (decodedUrl && isValidUrl(decodedUrl)) {
+        const safeMemoId = memoId && uuidRegex.test(memoId) ? memoId : null
+        // Fire and forget - don't block the pixel response
+        void supabase.from('ai_traffic').insert({
+          brand_id: brandId,
+          memo_id: safeMemoId,
+          page_url: decodedUrl,
+          referrer: referrer || null,
+          referrer_source: referrerSource,
+          user_agent: userAgent,
+          country,
+          timestamp: new Date().toISOString(),
+        })
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { inngest } from '@/lib/inngest/client'
+import { z } from 'zod'
 
 interface RouteParams {
   params: Promise<{ brandId: string }>
@@ -8,6 +9,10 @@ interface RouteParams {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { brandId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify authentication
@@ -27,8 +32,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
-  const body = await request.json()
-  const { action } = body
+  const schema = z.object({
+    action: z.string().min(1),
+    queryIds: z.array(z.string().regex(uuidRegex)).optional(),
+    queryId: z.string().regex(uuidRegex).optional(),
+    memoId: z.string().regex(uuidRegex).optional(),
+    memoType: z.string().optional(),
+  }).passthrough()
+
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+  const { action } = parsed.data
+  const bodyData = parsed.data
 
   try {
     switch (action) {
@@ -65,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       case 'run_scan':
         await inngest.send({
           name: 'scan/run',
-          data: { brandId, queryIds: body.queryIds, autoGenerateMemos: true },
+          data: { brandId, queryIds: bodyData.queryIds, autoGenerateMemos: true },
         })
         return NextResponse.json({ 
           success: true, 
@@ -73,15 +91,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
 
       case 'generate_memo':
-        if (!body.memoType) {
+        if (!bodyData.memoType) {
           return NextResponse.json({ error: 'memoType required' }, { status: 400 })
         }
         await inngest.send({
           name: 'memo/generate',
           data: { 
             brandId, 
-            queryId: body.queryId,
-            memoType: body.memoType,
+            queryId: bodyData.queryId,
+            memoType: bodyData.memoType,
           },
         })
         return NextResponse.json({ 
@@ -91,7 +109,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       case 'regenerate_memo': {
         // Regenerate an existing memo that may have failed
-        if (!body.memoId) {
+        if (!bodyData.memoId) {
           return NextResponse.json({ error: 'memoId required' }, { status: 400 })
         }
 
@@ -99,7 +117,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const { data: existingMemo, error: memoError } = await supabase
           .from('memos')
           .select('id, slug, memo_type, source_query_id')
-          .eq('id', body.memoId)
+          .eq('id', bodyData.memoId)
           .eq('brand_id', brandId)
           .single()
 
@@ -111,7 +129,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         await supabase
           .from('memos')
           .delete()
-          .eq('id', body.memoId)
+          .eq('id', bodyData.memoId)
 
         // Trigger new memo generation with the same type
         await inngest.send({
@@ -177,7 +195,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Run scan with auto memo generation enabled
         await inngest.send({
           name: 'scan/run',
-          data: { brandId, queryIds: body.queryIds, autoGenerateMemos: true },
+          data: { brandId, queryIds: bodyData.queryIds, autoGenerateMemos: true },
         })
         return NextResponse.json({ 
           success: true, 
@@ -381,7 +399,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Scan Google AI Overviews (requires SERPAPI_KEY)
         await inngest.send({
           name: 'ai-overview/scan',
-          data: { brandId, maxQueries: body.maxQueries || 10 },
+          data: { brandId, maxQueries: bodyData.maxQueries || 10 },
         })
         return NextResponse.json({ 
           success: true, 
@@ -393,7 +411,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const currentContext = brand.context as Record<string, unknown> | null || {}
         const updatedContext = {
           ...currentContext,
-          prompt_themes: body.themes || [],
+          prompt_themes: bodyData.themes || [],
         }
         
         const { error: updateError } = await supabase
