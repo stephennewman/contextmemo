@@ -27,58 +27,52 @@ export default async function V2DashboardPage() {
     .select('id, name')
     .eq('tenant_id', user.id)
 
-  // Get aggregate stats across all brands
-  const brandIds = brands?.map(b => b.id) || []
+  // Scope all stats to the primary brand so counts match what the user sees when clicking through
+  const primaryBrandId = brands?.[0]?.id
   
   // Get recent scan results for citation rate
   const ninetyDaysAgo = new Date()
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
   
-  const { data: recentScans } = brandIds.length > 0 
+  const { data: recentScans } = primaryBrandId
     ? await serviceClient
         .from('scan_results')
         .select('brand_mentioned, brand_in_citations')
-        .in('brand_id', brandIds)
+        .eq('brand_id', primaryBrandId)
         .gte('scanned_at', ninetyDaysAgo.toISOString())
     : { data: [] }
 
-  // Calculate overall citation rate
+  // Calculate citation rate
   const scansWithCitations = (recentScans || []).filter(s => s.brand_in_citations !== null)
   const brandCitedCount = scansWithCitations.filter(s => s.brand_in_citations === true).length
   const citationRate = scansWithCitations.length > 0 
     ? Math.round((brandCitedCount / scansWithCitations.length) * 100)
     : 0
 
-  // Get memo count
-  const { count: memoCount } = brandIds.length > 0
+  // Get memo count - scoped to primary brand to match linked page
+  const { count: memoCount } = primaryBrandId
     ? await serviceClient
         .from('memos')
         .select('*', { count: 'exact', head: true })
-        .in('brand_id', brandIds)
+        .eq('brand_id', primaryBrandId)
         .eq('status', 'published')
     : { count: 0 }
 
-  // Get prompt counts per brand
-  const promptCountsByBrand: Record<string, number> = {}
-  let totalPromptCount = 0
-  if (brands && brands.length > 0) {
-    for (const brand of brands) {
-      const { count } = await serviceClient
+  // Get prompt count - scoped to primary brand to match linked page
+  const { count: promptCount } = primaryBrandId
+    ? await serviceClient
         .from('queries')
         .select('*', { count: 'exact', head: true })
-        .eq('brand_id', brand.id)
+        .eq('brand_id', primaryBrandId)
         .eq('is_active', true)
-      promptCountsByBrand[brand.id] = count || 0
-      totalPromptCount += count || 0
-    }
-  }
+    : { count: 0 }
 
-  // Get competitor count
-  const { count: competitorCount } = brandIds.length > 0
+  // Get competitor count - scoped to primary brand to match linked page
+  const { count: competitorCount } = primaryBrandId
     ? await serviceClient
         .from('competitors')
         .select('*', { count: 'exact', head: true })
-        .in('brand_id', brandIds)
+        .eq('brand_id', primaryBrandId)
         .eq('is_active', true)
     : { count: 0 }
 
