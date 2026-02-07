@@ -82,8 +82,8 @@ const AVAILABLE_MODELS = [
 const JOBS: JobDef[] = [
   {
     key: 'scan',
-    label: 'Daily Scan',
-    description: '4 AI models × your prompts',
+    label: 'AI Scan',
+    description: 'Multi-model visibility check',
     icon: <Search className="h-4 w-4" />,
     enabledField: 'auto_scan_enabled',
     scheduleField: 'scan_schedule',
