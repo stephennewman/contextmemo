@@ -37,6 +37,7 @@ interface BrandAutomation {
     prompt_intelligence_enabled: boolean
     auto_memo_enabled: boolean
     daily_memo_cap: number
+    scan_models: string[] | null
     monthly_credit_cap: number | null
     pause_at_cap: boolean
   } | null
@@ -59,6 +60,14 @@ interface JobDef {
   scheduleOptions?: { value: string; label: string }[]
   costWeight: 'high' | 'medium' | 'low'
 }
+
+// Available scan models
+const AVAILABLE_MODELS = [
+  { id: 'perplexity-sonar', label: 'Perplexity Sonar', cost: '$' },
+  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', cost: '$$' },
+  { id: 'claude-3-5-haiku', label: 'Claude 3.5 Haiku', cost: '$$$' },
+  { id: 'grok-4-fast', label: 'Grok 4 Fast', cost: '$$' },
+]
 
 const JOBS: JobDef[] = [
   {
@@ -398,8 +407,63 @@ export function AutomationsGrid() {
                   })}
                 </div>
 
+                {/* Scan Models */}
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                    Scan Models
+                    <span className="ml-2 font-normal normal-case">
+                      {settings.scan_models 
+                        ? `${settings.scan_models.length} of ${AVAILABLE_MODELS.length} active`
+                        : `All ${AVAILABLE_MODELS.length} active (default)`
+                      }
+                    </span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {AVAILABLE_MODELS.map(model => {
+                      // If scan_models is null, all are active (global default)
+                      const activeModels = settings.scan_models || AVAILABLE_MODELS.map(m => m.id)
+                      const isActive = activeModels.includes(model.id)
+                      
+                      return (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            // Build new model list
+                            const current = settings.scan_models || AVAILABLE_MODELS.map(m => m.id)
+                            let next: string[]
+                            if (isActive) {
+                              // Don't allow disabling all models
+                              if (current.length <= 1) {
+                                toast.error('At least one model must be enabled')
+                                return
+                              }
+                              next = current.filter(id => id !== model.id)
+                            } else {
+                              next = [...current, model.id]
+                            }
+                            // If all models are selected, set to null (use defaults)
+                            const value = next.length === AVAILABLE_MODELS.length ? null : next
+                            updateSetting(brand.id, 'scan_models', value)
+                          }}
+                          className={`flex items-center gap-2 px-3 py-1.5 border rounded text-xs font-medium transition-colors ${
+                            isActive 
+                              ? 'border-[#0EA5E9] bg-sky-50 text-[#0EA5E9]' 
+                              : 'border-slate-200 bg-white text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[#0EA5E9]' : 'bg-slate-300'}`} />
+                          {model.label}
+                          <span className={`text-[10px] ${isActive ? 'text-sky-400' : 'text-slate-300'}`}>
+                            {model.cost}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
                 {/* Extra settings row */}
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-6 text-sm">
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-6 text-sm">
                   <div className="flex items-center gap-2">
                     <label className="text-muted-foreground">Scan cap:</label>
                     <select

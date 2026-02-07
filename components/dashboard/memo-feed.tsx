@@ -198,6 +198,9 @@ export function MemoFeed({
     )
   }
 
+  // First memo with unsaved changes — drives the sticky bottom bar
+  const dirtyMemoId = memos.find(m => isDirty(m.id))?.id || null
+
   const handleSave = async (memoId: string) => {
     setState(prev => ({ ...prev, saving: { ...prev.saving, [memoId]: true } }))
     try {
@@ -524,7 +527,6 @@ export function MemoFeed({
             const isSyncing = state.syncing[memo.id]
             const isRegenerating = state.regenerating[memo.id]
             const isFeedbackSending = state.feedbackSending[memo.id]
-            const hasDirtyChanges = isDirty(memo.id)
             const liveUrl = getMemoUrl(memo)
             const wordCount = getWordCount(memo.content_markdown)
             const sourcesCount = Array.isArray(memo.sources) ? memo.sources.length : 0
@@ -710,45 +712,6 @@ export function MemoFeed({
                         placeholder="Markdown content..."
                       />
                     </div>
-                    {/* Bottom toolbar */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-slate-100 border-t border-slate-200">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSave(memo.id)}
-                          disabled={isSaving || !hasDirtyChanges}
-                          className={`font-bold text-xs transition-all ${
-                            hasDirtyChanges
-                              ? 'bg-[#0EA5E9] hover:bg-[#0284C7] text-white'
-                              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          }`}
-                        >
-                          {isSaving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
-                          {hasDirtyChanges ? 'SAVE' : 'SAVED'}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => cancelContentEditing(memo.id)}
-                          className="text-xs text-zinc-500"
-                        >
-                          Cancel
-                        </Button>
-                        {hasDirtyChanges && (
-                          <span className="text-[10px] text-amber-600 font-medium">Unsaved changes</span>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRegenerate(memo.id, memo)}
-                        disabled={isRegenerating}
-                        className="text-xs"
-                      >
-                        {isRegenerating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                        Regenerate
-                      </Button>
-                    </div>
                   </div>
                 )}
 
@@ -886,35 +849,6 @@ export function MemoFeed({
                         </div>
                       </div>
                     </div>
-                    {/* Bottom toolbar */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-sky-100/50 border-t border-sky-200">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSave(memo.id)}
-                          disabled={isSaving || !hasDirtyChanges}
-                          className={`font-bold text-xs transition-all ${
-                            hasDirtyChanges
-                              ? 'bg-[#0EA5E9] hover:bg-[#0284C7] text-white'
-                              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          }`}
-                        >
-                          {isSaving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
-                          {hasDirtyChanges ? 'SAVE' : 'SAVED'}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => cancelContentEditing(memo.id)}
-                          className="text-xs text-zinc-500"
-                        >
-                          Cancel
-                        </Button>
-                        {hasDirtyChanges && (
-                          <span className="text-[10px] text-amber-600 font-medium">Unsaved changes</span>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -922,6 +856,55 @@ export function MemoFeed({
           })
         )}
       </div>
+
+      {/* Fixed bottom bar — appears when any memo has unsaved changes */}
+      {dirtyMemoId && (() => {
+        const dirtyMemo = memos.find(m => m.id === dirtyMemoId)
+        const isSavingThis = state.saving[dirtyMemoId]
+        const isRegeneratingThis = state.regenerating[dirtyMemoId]
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-50 border-t-[3px] border-[#0F172A] bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+            <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-xs text-zinc-500">
+                  Editing: <span className="font-bold text-[#0F172A]">{dirtyMemo?.title}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => cancelContentEditing(dirtyMemoId)}
+                  className="text-xs text-zinc-500 hover:text-zinc-700"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Discard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => dirtyMemo && handleRegenerate(dirtyMemoId, dirtyMemo)}
+                  disabled={isRegeneratingThis}
+                  className="text-xs"
+                >
+                  {isRegeneratingThis ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                  Regenerate
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleSave(dirtyMemoId)}
+                  disabled={isSavingThis}
+                  className="bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold text-xs px-4"
+                >
+                  {isSavingThis ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+                  SAVE CHANGES
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -220,8 +220,18 @@ export const scanRun = inngest.createFunction(
       return await trackJobStart(brandId, 'scan', { queryCount: queries.length })
     })
 
-    // Get enabled models
-    const enabledModels = SCAN_MODELS.filter(m => m.enabled)
+    // Get enabled models — check per-brand settings first, fall back to global config
+    const { data: modelSettings } = await supabase
+      .from('brand_settings')
+      .select('scan_models')
+      .eq('brand_id', brandId)
+      .single()
+    
+    const enabledModels = (modelSettings?.scan_models && modelSettings.scan_models.length > 0)
+      ? SCAN_MODELS.filter(m => modelSettings.scan_models.includes(m.id))
+      : SCAN_MODELS.filter(m => m.enabled)
+    
+    console.log(`[Scan] Brand ${brandId}: using ${enabledModels.length} models: ${enabledModels.map(m => m.id).join(', ')}`)
     
     // Step 2: Run scans for each query across all enabled models
     const scanResults: ScanResult[] = []

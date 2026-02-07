@@ -102,6 +102,8 @@ export async function GET() {
         // Memos
         auto_memo_enabled: s.auto_memo_enabled ?? false,
         daily_memo_cap: s.daily_memo_cap ?? 2,
+        // Models
+        scan_models: s.scan_models ?? null, // null = use global defaults
         // Cost controls
         monthly_credit_cap: s.monthly_credit_cap ?? null,
         pause_at_cap: s.pause_at_cap ?? true,
@@ -156,7 +158,7 @@ export async function PATCH(request: Request) {
 
   // Allowlist of updatable fields
   const allowedFields = [
-    'auto_scan_enabled', 'daily_scan_cap', 'scan_schedule',
+    'auto_scan_enabled', 'daily_scan_cap', 'scan_schedule', 'scan_models',
     'weekly_greenspace_enabled', 'discovery_schedule',
     'competitor_content_enabled', 'competitor_content_schedule',
     'auto_respond_content', 'content_generation_schedule',
