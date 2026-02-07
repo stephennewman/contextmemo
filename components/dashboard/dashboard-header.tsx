@@ -23,7 +23,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Zap, Settings, LogOut, User, Loader2 } from 'lucide-react'
 import { UsageBadge } from './usage-badge'
-import { ActivityIndicator } from './activity-indicator'
 import { toast } from 'sonner'
 
 interface DashboardHeaderProps {
@@ -131,7 +130,6 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
           </div>
           
           <div className="flex items-center gap-3">
-            <ActivityIndicator />
             <UsageBadge />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -16,12 +16,13 @@ import { PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { EntityList } from '@/components/dashboard/entity-list'
-import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
+// CompetitorWatch merged into CoverageAudit as unified Content tab
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { BrandLogo } from '@/components/dashboard/brand-logo'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
 import { CoverageAudit } from '@/components/dashboard/coverage-audit'
+import { AutomationStatusBar } from '@/components/dashboard/automation-status-bar'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
 
 // SUNSET: These features had zero usage and have been removed from the UI
@@ -71,6 +72,7 @@ export default async function BrandPage({ params }: Props) {
     { data: allScans },
     { data: memos },
     { data: topicUniverseData },
+    { data: brandSettings },
   ] = await Promise.all([
     // All competitors (including excluded for display)
     supabase
@@ -109,6 +111,12 @@ export default async function BrandPage({ params }: Props) {
       .select('*')
       .eq('brand_id', brandId)
       .order('priority_score', { ascending: false }),
+    // Brand automation settings
+    supabase
+      .from('brand_settings')
+      .select('auto_scan_enabled, scan_schedule, daily_scan_cap, weekly_greenspace_enabled, discovery_schedule, competitor_content_enabled, competitor_content_schedule, auto_respond_content, content_generation_schedule, auto_verify_citations, auto_expand_network, prompt_enrichment_enabled, prompt_intelligence_enabled, auto_memo_enabled, daily_memo_cap')
+      .eq('brand_id', brandId)
+      .single(),
   ])
 
   // Filter for active competitors (used in scans and content monitoring)
@@ -405,11 +413,8 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="entities" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ENTITIES{(allCompetitors?.length || 0) > 0 && ` (${allCompetitors?.length})`}</TabsTrigger>
           <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">CITATIONS{(allScans?.reduce((sum, s) => sum + ((s.citations as string[])?.length || 0), 0) || 0) > 0 && ` (${allScans?.reduce((sum, s) => sum + ((s.citations as string[])?.length || 0), 0)})`}</TabsTrigger>
-          <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
-            WATCH
-          </TabsTrigger>
-          <TabsTrigger value="coverage" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
-            COVERAGE
+          <TabsTrigger value="content" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
+            CONTENT
           </TabsTrigger>
           {/* SUNSET: Alerts, Search, AI Traffic, Intelligence, QFO, MAP, LAB, Strategy tabs removed (zero usage) */}
         </TabsList>
@@ -432,6 +437,12 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="prompts" className="space-y-4">
+          <AutomationStatusBar items={[
+            { label: 'AI Scan', enabled: brandSettings?.auto_scan_enabled ?? true, schedule: brandSettings?.scan_schedule ?? 'daily' },
+            { label: 'Discovery', enabled: brandSettings?.weekly_greenspace_enabled ?? false, schedule: brandSettings?.discovery_schedule ?? 'weekly' },
+            { label: 'Enrichment', enabled: brandSettings?.prompt_enrichment_enabled ?? true },
+            { label: 'Intelligence', enabled: brandSettings?.prompt_intelligence_enabled ?? true },
+          ]} />
           <PromptVisibilityList 
             queries={queries || []} 
             scanResults={allScans || []}
@@ -444,7 +455,12 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
-        <TabsContent value="memos">
+        <TabsContent value="memos" className="space-y-4">
+          <AutomationStatusBar items={[
+            { label: 'Auto Memo', enabled: brandSettings?.auto_memo_enabled ?? false },
+            { label: 'Content Gen', enabled: brandSettings?.auto_respond_content ?? false, schedule: brandSettings?.content_generation_schedule ?? 'weekdays' },
+            ...(brandSettings?.auto_memo_enabled ? [{ label: `Cap: ${brandSettings?.daily_memo_cap ?? 2}/day`, enabled: true }] : []),
+          ]} />
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -490,6 +506,10 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="entities" className="space-y-4">
+          <AutomationStatusBar items={[
+            { label: 'Competitor Intel', enabled: brandSettings?.competitor_content_enabled ?? true, schedule: brandSettings?.competitor_content_schedule ?? 'daily' },
+            { label: 'Auto Expand', enabled: brandSettings?.auto_expand_network ?? false },
+          ]} />
           {/* Entity List - Primary view showing all entities with citations/mentions */}
           <EntityList 
             brandId={brandId} 
@@ -518,7 +538,10 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         {/* SOURCES Tab - Citation insights and top sources */}
-        <TabsContent value="sources">
+        <TabsContent value="sources" className="space-y-4">
+          <AutomationStatusBar items={[
+            { label: 'Citation Verify', enabled: brandSettings?.auto_verify_citations ?? true },
+          ]} />
           <CitationInsights
             brandName={brand.name}
             brandDomain={brand.domain}
@@ -528,11 +551,16 @@ export default async function BrandPage({ params }: Props) {
           />
         </TabsContent>
 
-        {/* WATCH Tab - Monitor competitor content activity */}
-        <TabsContent value="watch">
-          <CompetitorWatch
+        {/* Content Tab - Coverage gaps + Competitor activity */}
+        <TabsContent value="content">
+          <CoverageAudit
             brandId={brandId}
-            content={(competitorContent || []) as Array<{
+            brandName={brand.name}
+            brandDomain={brand.domain || ''}
+            initialTopics={topicTopics}
+            initialScore={coverageScore}
+            hasTopics={hasTopicUniverse}
+            competitorContent={(competitorContent || []) as Array<{
               id: string
               competitor_id: string
               url: string
@@ -552,18 +580,6 @@ export default async function BrandPage({ params }: Props) {
               response_memo?: { id: string; title: string; slug: string; status: string }
             }>}
             competitors={competitors || []}
-          />
-        </TabsContent>
-
-        {/* Coverage Audit Tab */}
-        <TabsContent value="coverage">
-          <CoverageAudit
-            brandId={brandId}
-            brandName={brand.name}
-            brandDomain={brand.domain || ''}
-            initialTopics={topicTopics}
-            initialScore={coverageScore}
-            hasTopics={hasTopicUniverse}
           />
         </TabsContent>
 
