@@ -388,6 +388,14 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 7, 2026 (v5)
+
+**Cleanup: Remove SCANS vanity metric from brand dashboard**
+- Removed the "SCANS / 100 / last 90 days" hero card from the brand dashboard top row.
+- Raw scan count is not actionable — already visible in the Prompts tab subtitle.
+- Dashboard hero now shows 3 cards (was 4): Citation Score, Memos, Prompts. Grid changed from `md:grid-cols-4` to `md:grid-cols-3`.
+- **Files changed:** `app/(dashboard)/brands/[brandId]/page.tsx`
+
 ### February 7, 2026 (v4)
 
 **Feature: Prompt Score + Enhanced Prompt Analysis View**
