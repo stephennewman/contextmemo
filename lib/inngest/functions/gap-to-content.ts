@@ -288,7 +288,7 @@ export const gapToContent = inngest.createFunction(
       await logSingleUsage(
         brand.tenant_id, brand.id, 'gap_to_content',
         normalizeModelId('openai/gpt-4o'),
-        usage?.inputTokens || 0, usage?.outputTokens || 0
+        usage?.promptTokens || 0, usage?.completionTokens || 0
       )
 
       // Parse JSON from response

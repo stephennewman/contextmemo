@@ -1296,7 +1296,7 @@ async function scanWithPerplexityDirect(
     brandInCitations,
     brandSentiment: sentimentResult?.sentiment || null,
     sentimentReason: sentimentResult?.reason || null,
-    inputTokens: usage?.inputTokens || 0,
-    outputTokens: usage?.outputTokens || 0,
+    inputTokens: usage?.promptTokens || 0,
+    outputTokens: usage?.completionTokens || 0,
   }
 }

@@ -1291,7 +1291,7 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
           await logSingleUsage(
             brand.tenant_id, brandId, 'competitor_respond',
             normalizeModelId(generationModel),
-            usage?.inputTokens || 0, usage?.outputTokens || 0
+            usage?.promptTokens || 0, usage?.completionTokens || 0
           )
 
           // Extract title from generated content (first # heading)
@@ -1312,9 +1312,9 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
             generationModel,
             durationMs,
             tokens: {
-              prompt: usage?.inputTokens || 0,
-              completion: usage?.outputTokens || 0,
-              total: (usage?.inputTokens || 0) + (usage?.outputTokens || 0),
+              prompt: usage?.promptTokens || 0,
+              completion: usage?.completionTokens || 0,
+              total: (usage?.promptTokens || 0) + (usage?.completionTokens || 0),
             },
           }
         } catch (e) {

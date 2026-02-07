@@ -229,7 +229,7 @@ Provide 3-5 strategic insights in JSON format:
         await logSingleUsage(
           brand.tenant_id, brandId, 'prompt_intelligence',
           normalizeModelId('openai/gpt-4o-mini'),
-          usage?.inputTokens || 0, usage?.outputTokens || 0
+          usage?.promptTokens || 0, usage?.completionTokens || 0
         )
 
         const jsonMatch = text.match(/\{[\s\S]*\}/)

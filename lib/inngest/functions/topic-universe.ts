@@ -292,7 +292,7 @@ export const topicUniverseGenerate = inngest.createFunction(
       await logSingleUsage(
         brandData.brand.tenant_id, brandId, 'topic_universe',
         normalizeModelId('openai/gpt-4o'),
-        usage?.inputTokens || 0, usage?.outputTokens || 0
+        usage?.promptTokens || 0, usage?.completionTokens || 0
       )
 
       // Parse JSON response
