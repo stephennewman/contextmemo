@@ -55,6 +55,7 @@ export function UsageBadge() {
       <DropdownMenuTrigger asChild>
         <button 
           className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded hover:bg-slate-700 transition-colors"
+          suppressHydrationWarning
         >
           <Wallet className={`h-4 w-4 ${isLow ? 'text-[#F59E0B]' : 'text-[#10B981]'}`} />
           <span className={`text-sm font-mono ${isLow ? 'text-[#F59E0B]' : 'text-[#10B981]'}`}>
