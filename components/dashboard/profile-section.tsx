@@ -170,11 +170,11 @@ export function ProfileSection({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+      {hasContext && context ? (
+        <div className="space-y-6">
+          {/* Unified Profile + Corporate Positioning card */}
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Profile</CardTitle>
               <CardDescription>
                 All information extracted from {brandDomain}
@@ -182,19 +182,15 @@ export function ProfileSection({
                   <span> · Last updated {new Date(contextExtractedAt).toLocaleDateString()}</span>
                 )}
               </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {hasContext && context ? (
-        <div className="space-y-6">
-          {/* Corporate Positioning - Full width, at the top */}
-          <CorporatePositioningSection 
-            positioning={context?.corporate_positioning} 
-            brandName={brandName}
-            brandId={brandId} 
-          />
+            </CardHeader>
+            <div className="border-t" />
+            <CorporatePositioningSection 
+              positioning={context?.corporate_positioning} 
+              brandName={brandName}
+              brandId={brandId}
+              embedded
+            />
+          </Card>
           
           {/* Existing profile cards */}
           <div className="grid gap-6 lg:grid-cols-2">

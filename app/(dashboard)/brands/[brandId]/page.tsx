@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   ExternalLink,
   TrendingUp,
@@ -17,7 +17,6 @@ import { CompetitiveIntelligence } from '@/components/dashboard/competitive-inte
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { EntityList } from '@/components/dashboard/entity-list'
 import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
-import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
@@ -477,24 +476,6 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="prompts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Prompts</CardTitle>
-                  <CardDescription>
-                    {queries?.length || 0} prompts tracked · {allScans?.length || 0} scans last 90 days
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ExportDropdown brandId={brandId} />
-                  <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
-                  <GenerateMemosButton brandId={brandId} />
-                  <ScanButton brandId={brandId} brandName={brand.name} />
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
           <PromptVisibilityList 
             queries={queries || []} 
             scanResults={allScans || []}

@@ -32,6 +32,7 @@ import { toast } from 'sonner'
 import type { ScanResult, Query, PromptPersona, PromptTheme, FunnelStage } from '@/lib/supabase/types'
 import { FUNNEL_STAGE_META } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
+import { ScanButton } from '@/components/dashboard/brand-actions'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 import { calculatePromptScore, getPromptScoreColor } from '@/lib/utils/prompt-score'
 import { formatDistanceToNow } from 'date-fns'
@@ -1293,39 +1294,27 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
 
   return (
     <div className="space-y-4">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-l-4 border-l-[#0EA5E9]">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Citation Rate</p>
-            <p className="text-2xl font-bold text-[#0EA5E9] mt-1">{overallCitationRate}%</p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-[#10B981]">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cited</p>
-            <p className="text-2xl font-bold mt-1">{filterCounts.cited}</p>
-            <p className="text-xs text-muted-foreground">of {filterCounts.all} prompts</p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-[#F59E0B]">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gaps</p>
-            <p className="text-2xl font-bold mt-1">{filterCounts.gap}</p>
-            <p className="text-xs text-muted-foreground">need attention</p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-[#EF4444]">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Opportunities</p>
-            <p className="text-2xl font-bold mt-1">{filterCounts.opportunities}</p>
-            <p className="text-xs text-muted-foreground">competitors winning</p>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
-        <CardContent className="space-y-4 pt-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Prompts</CardTitle>
+              <CardDescription>
+                {queries.length} prompts tracked · {scanResults.length} scans last 90 days
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              {brandId && !isAddingPrompt && (
+                <Button variant="outline" size="sm" onClick={() => setIsAddingPrompt(true)} className="gap-1">
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Prompt
+                </Button>
+              )}
+              {brandId && <ScanButton brandId={brandId} brandName={brandName} />}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Add Prompt Input */}
           {isAddingPrompt && (
             <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
@@ -1365,12 +1354,6 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                 </button>
               )
             })}
-            {brandId && !isAddingPrompt && (
-              <Button variant="outline" size="sm" onClick={() => setIsAddingPrompt(true)} className="gap-1 ml-auto">
-                <Plus className="h-3.5 w-3.5" />
-                Add Prompt
-              </Button>
-            )}
           </div>
 
           {/* Funnel + Persona + Search row */}

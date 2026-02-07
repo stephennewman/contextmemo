@@ -40,6 +40,7 @@ interface CorporatePositioningSectionProps {
   brandName: string
   brandId: string
   onUpdate?: (positioning: CorporatePositioningType) => void
+  embedded?: boolean
 }
 
 // Calculate field completion
@@ -258,7 +259,7 @@ function EditableList({
   )
 }
 
-export function CorporatePositioningSection({ positioning, brandName, brandId, onUpdate }: CorporatePositioningSectionProps) {
+export function CorporatePositioningSection({ positioning, brandName, brandId, onUpdate, embedded = false }: CorporatePositioningSectionProps) {
   const [editingSection, setEditingSection] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [localData, setLocalData] = useState<CorporatePositioningType>(positioning || {})
@@ -304,8 +305,8 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
   const displayData = editingSection ? localData : (positioning || {})
   
   if (!positioning) {
-    return (
-      <Card>
+    const emptyContent = (
+      <>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -320,16 +321,20 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
             <FileText className="h-12 w-12 mx-auto mb-3 opacity-20" />
             <p>No corporate positioning data extracted yet.</p>
             <p className="text-sm mt-1">
-              Click &quot;Refresh Context&quot; to analyze the brand website and extract positioning data.
+              Run onboarding to analyze the brand website and extract positioning data.
             </p>
           </div>
         </CardContent>
-      </Card>
+      </>
     )
+    if (embedded) return <div>{emptyContent}</div>
+    return <Card>{emptyContent}</Card>
   }
   
+  const Wrapper = embedded ? 'div' : Card
+  
   return (
-    <Card>
+    <Wrapper>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
@@ -1033,6 +1038,6 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
           )}
         </CollapsibleSection>
       </CardContent>
-    </Card>
+    </Wrapper>
   )
 }
