@@ -19,14 +19,44 @@ export async function GET() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Get brands the user owns
-  const { data: brands } = await serviceClient
+  // Get user's organization memberships
+  const { data: memberships } = await serviceClient
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', user.id)
+
+  const orgIds = memberships?.map(m => m.organization_id).filter(Boolean) || []
+
+  // Get brands via org membership
+  let brands: { id: string; name: string; domain: string; is_paused: boolean; last_scan_at: string | null; visibility_score: number | null }[] = []
+  
+  if (orgIds.length > 0) {
+    const { data: orgBrands } = await serviceClient
+      .from('brands')
+      .select('id, name, domain, is_paused, last_scan_at, visibility_score')
+      .in('organization_id', orgIds)
+      .order('created_at', { ascending: true })
+    brands = orgBrands || []
+  }
+
+  // Also get brands owned by user's tenant (tenant_id = user.id)
+  const { data: tenantBrands } = await serviceClient
     .from('brands')
     .select('id, name, domain, is_paused, last_scan_at, visibility_score')
     .eq('tenant_id', user.id)
     .order('created_at', { ascending: true })
 
-  if (!brands || brands.length === 0) {
+  // Merge and dedupe
+  if (tenantBrands) {
+    const existingIds = new Set(brands.map(b => b.id))
+    for (const brand of tenantBrands) {
+      if (!existingIds.has(brand.id)) {
+        brands.push(brand)
+      }
+    }
+  }
+
+  if (brands.length === 0) {
     return NextResponse.json({ brands: [] })
   }
 
@@ -219,16 +249,34 @@ export async function PATCH(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Verify brand ownership
+  // Verify brand access (tenant ownership OR org membership)
   const { data: brand } = await serviceClient
     .from('brands')
-    .select('id, tenant_id')
+    .select('id, tenant_id, organization_id')
     .eq('id', brandId)
-    .eq('tenant_id', user.id)
     .single()
 
   if (!brand) {
-    return NextResponse.json({ error: 'Brand not found or not authorized' }, { status: 404 })
+    return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
+  }
+
+  // Check tenant ownership
+  const isTenantOwner = brand.tenant_id === user.id
+
+  // Check org membership
+  let isOrgMember = false
+  if (brand.organization_id) {
+    const { data: membership } = await serviceClient
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('organization_id', brand.organization_id)
+      .single()
+    isOrgMember = !!membership
+  }
+
+  if (!isTenantOwner && !isOrgMember) {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
   // Allowlist of updatable fields

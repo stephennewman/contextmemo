@@ -388,6 +388,14 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 7, 2026 (v2)
+
+**Feature: 100% Usage Tracking — All AI Calls Now Log to usage_events**
+- **Problem:** Only 3 of 15 Inngest functions with AI calls (scan-run, prompt-enrich, discovery-scan) were logging costs to `usage_events`. The other 12 functions were invisible to budget guardrails, meaning monthly caps and spend alerts were undercounting by ~60%.
+- **Solution:** Created `lib/utils/usage-logger.ts` with `logSingleUsage`/`logUsageEvents`/`normalizeModelId` helpers. Added per-call usage logging to all 12 untracked functions across both OpenRouter and direct OpenAI SDK calls. Added `gpt-4o` pricing to `lib/config/costs.ts` (was previously approximated as gpt-4o-mini).
+- **Files changed:** `lib/utils/usage-logger.ts` (new), `lib/config/costs.ts`, plus 12 Inngest functions: `citation-loop.ts`, `citation-verify.ts`, `competitor-content.ts`, `gap-to-content.ts`, `topic-universe.ts`, `prompt-intelligence.ts`, `query-generate.ts`, `context-extract.ts`, `memo-generate.ts`, `competitor-discover.ts`, `competitor-enrich.ts`, `prompt-lab.ts`
+- **Impact:** Budget guardrails (monthly caps, alerts, auto-pause) now enforce against 100% of actual AI spend per brand. Automations page spend display is now accurate.
+
 ### February 7, 2026
 
 **Feature: Per-Brand Automation Controls — Toggle Jobs On/Off + Set Schedules**
