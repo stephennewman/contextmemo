@@ -388,7 +388,21 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
-### February 7, 2026 (v2)
+### February 7, 2026 (v4)
+
+**Feature: Prompt Score + Enhanced Prompt Analysis View**
+- **Prompt Score (0-100):** New scoring system measuring how valuable each prompt is for potential buyers. Three components: Citation Richness (0-30), Buyer Intent (0-40, keyword detection for BOFU/MOFU patterns), Competitive Density (0-30). Score stored in DB and auto-updated on each scan.
+- **Database:** Added `prompt_score` column to `queries` table with index. Backfilled all 1,000 existing prompts (194 high, 282 medium, 396 low, 128 minimal).
+- **Cited entities per prompt:** New Globe row showing top domains AI models cite when answering each prompt (e.g., g2.com, capterra.com).
+- **Relative scan timestamps:** Changed "Scanned Feb 7" to "Scanned 2 hours ago" with exact time tooltip.
+- **Memo indicator:** Blue badge showing linked memo count per prompt via `source_query_id`.
+- **Sort options expanded:** Default, Prompt Score, Mention Rate, Citation Count, Recently Scanned.
+- **V2 Prompts page:** Prompt Score badge + sort by score/streak.
+- **Backend:** scan-run.ts now calculates and stores prompt_score after every scan.
+- **Files created:** `lib/utils/prompt-score.ts`, `app/api/backfill-prompt-score/route.ts`
+- **Files changed:** `lib/supabase/types.ts`, `lib/inngest/functions/scan-run.ts`, `components/dashboard/scan-results-view.tsx`, `app/(dashboard)/brands/[brandId]/page.tsx`, `app/v2/brands/[brandId]/prompts/prompts-list-client.tsx`
+
+### February 7, 2026 (v3)
 
 **Feature: 100% Usage Tracking — All AI Calls Now Log to usage_events**
 - **Problem:** Only 3 of 15 Inngest functions with AI calls (scan-run, prompt-enrich, discovery-scan) were logging costs to `usage_events`. The other 12 functions were invisible to budget guardrails, meaning monthly caps and spend alerts were undercounting by ~60%.
