@@ -512,25 +512,14 @@ export default async function BrandPage({ params }: Props) {
           <div className="text-xs text-zinc-500 mt-1">new this week · {publishedMemos.length} published</div>
         </StatCardLink>
 
-        {/* Scans This Week */}
-        <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
+        {/* Entities - clicks to ENTITIES tab */}
+        <StatCardLink tabValue="entities" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
-            {scansDelta !== 0 && (
-              <span className={`flex items-center gap-0.5 text-xs font-bold ${scansDelta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {scansDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {scansDelta > 0 ? '+' : ''}{scansDelta}
-              </span>
-            )}
-            {scansDelta === 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-zinc-400">
-                <Minus className="h-3 w-3" />
-              </span>
-            )}
+            <span className="text-xs font-bold tracking-widest text-zinc-500">ENTITIES</span>
           </div>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{scansThisWeek}</div>
-          <div className="text-xs text-zinc-500 mt-1">this week · {allScansCount} last 90d</div>
-        </div>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{allCompetitors?.length || 0}</div>
+          <div className="text-xs text-zinc-500 mt-1">{competitors?.length || 0} active · {(allCompetitors?.length || 0) - (competitors?.length || 0)} excluded</div>
+        </StatCardLink>
       </div>
 
       {/* No scans CTA */}
