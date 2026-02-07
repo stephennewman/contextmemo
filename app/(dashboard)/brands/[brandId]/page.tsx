@@ -316,7 +316,7 @@ export default async function BrandPage({ params }: Props) {
               </a>
             </div>
           </div>
-          <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} />
+          <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} lastScanAt={brand.last_scan_at} />
         </div>
 
         {/* Onboarding Flow - Auto-runs full pipeline */}
@@ -364,7 +364,7 @@ export default async function BrandPage({ params }: Props) {
             </div>
           </div>
         </div>
-        <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} />
+        <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} lastScanAt={brand.last_scan_at} />
       </div>
 
       {/* Paused Warning Banner */}
