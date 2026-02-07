@@ -54,6 +54,8 @@ function getNextTranche(userCount: number) {
   return null;
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   // Fetch featured memos for popular content section
   const { data: featuredMemos } = await supabase

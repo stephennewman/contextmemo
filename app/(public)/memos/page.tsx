@@ -4,6 +4,8 @@ import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
 import { CONTEXT_MEMO_BRAND_ID } from '@/lib/memo/render'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
