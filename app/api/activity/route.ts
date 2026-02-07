@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
         .select('*')
         .in('brand_id', targetBrandIds)
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(300)
 
       if (alerts) {
         for (const alert of alerts) {
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
         .select('id, brand_id, title, slug, status, memo_type, created_at, published_at')
         .in('brand_id', targetBrandIds)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(200)
 
       if (memos) {
         for (const memo of memos) {
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
         .select('id, brand_id, name, domain, auto_discovered, created_at')
         .in('brand_id', targetBrandIds)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(200)
 
       if (competitors) {
         for (const comp of competitors) {
@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
         .in('brand_id', targetBrandIds)
         .eq('auto_discovered', true)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(200)
 
       if (queries) {
         // Group queries by brand and hour to avoid flooding the feed
@@ -336,7 +336,7 @@ export async function GET(request: NextRequest) {
         .from('competitor_content')
         .select('id, competitor_id, title, url, content_type, first_seen_at, competitors!inner(brand_id, name)')
         .order('first_seen_at', { ascending: false })
-        .limit(100) // Fetch more to account for filtering
+        .limit(300) // Fetch more to account for junk filtering
 
       // Junk title patterns to filter out
       const junkPatterns = [
@@ -354,7 +354,7 @@ export async function GET(request: NextRequest) {
       if (content) {
         let addedCount = 0
         for (const item of content) {
-          if (addedCount >= 30) break // Limit to 30 items after filtering
+          if (addedCount >= 100) break // Limit after junk filtering
           
           const brandId = (item.competitors as unknown as { brand_id: string }).brand_id
           if (!targetBrandIds.includes(brandId)) continue
@@ -449,7 +449,7 @@ export async function GET(request: NextRequest) {
           .select('id, brand_id, memo_id, page_url, referrer_source, timestamp')
           .in('brand_id', targetBrandIds)
           .order('timestamp', { ascending: false })
-          .limit(50)
+          .limit(200)
 
         if (traffic) {
           for (const t of traffic) {

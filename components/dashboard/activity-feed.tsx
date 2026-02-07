@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -691,10 +691,13 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
   // Activity detail
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null)
 
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const offsetRef = useRef(0)
+
   const fetchActivities = useCallback(async (reset = false) => {
     if (reset) {
       setLoading(true)
-      setOffset(0)
+      offsetRef.current = 0
       setError(null)
     } else {
       setLoadingMore(true)
@@ -706,8 +709,8 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
         params.set('categories', selectedCategories.join(','))
       }
       params.set('brands', brandId)
-      params.set('limit', '30')
-      params.set('offset', reset ? '0' : offset.toString())
+      params.set('limit', '50')
+      params.set('offset', reset ? '0' : offsetRef.current.toString())
 
       const res = await fetch(`/api/activity?${params.toString()}`)
       
@@ -724,7 +727,8 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
         setActivities(prev => [...prev, ...(data.activities || [])])
       }
       setHasMore(data.hasMore || false)
-      setOffset(reset ? 30 : offset + 30)
+      offsetRef.current = reset ? 50 : offsetRef.current + 50
+      setOffset(offsetRef.current)
     } catch (err) {
       console.error('Failed to fetch activities:', err)
       setError(err instanceof Error ? err.message : 'Failed to load activity')
@@ -732,11 +736,28 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [brandId, selectedCategories, offset])
+  }, [brandId, selectedCategories])
 
   useEffect(() => {
     fetchActivities(true)
   }, [selectedCategories, brandId])
+
+  // Infinite scroll: auto-load more when sentinel comes into view
+  useEffect(() => {
+    const sentinel = loadMoreRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchActivities(false)
+        }
+      },
+      { rootMargin: '200px' }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, loadingMore, loading, fetchActivities])
 
   const toggleCategory = (category: ActivityCategory) => {
     setSelectedCategories(prev => 
@@ -856,7 +877,7 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
         )}
 
         {/* Activity List */}
-        <div className="max-h-[600px] overflow-y-auto">
+        <div>
           {loading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -958,26 +979,15 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
                 )
               })}
               
-              {/* Load More */}
-              {hasMore && (
-                <div className="p-4">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => fetchActivities(false)}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      'Load More'
-                    )}
-                  </Button>
-                </div>
-              )}
+              {/* Infinite scroll sentinel */}
+              <div ref={loadMoreRef} className="p-4 text-center">
+                {loadingMore && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-slate-400">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Loading more...
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
