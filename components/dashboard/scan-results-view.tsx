@@ -23,13 +23,15 @@ import {
   Lightbulb,
   Plus,
   X,
-  Sparkles
+  Sparkles,
+  ArrowUpDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ScanResult, Query, PromptPersona, PromptTheme, FunnelStage } from '@/lib/supabase/types'
 import { FUNNEL_STAGE_META } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
+import { calculatePromptScore, getPromptScoreColor } from '@/lib/utils/prompt-score'
 
 // Prompt Themes Section - Critical keyword clusters for prompt targeting
 interface PromptThemesSectionProps {
@@ -904,6 +906,8 @@ export function ScanResultsView({ scanResults, queries, brandName, brandDomain, 
 // Enhanced prompt analysis - merged scans + prompts view
 type StatusFilter = 'all' | 'cited' | 'gap' | 'lost' | 'opportunities' | 'streaks'
 
+type SortOption = 'default' | 'prompt_score' | 'mention_rate'
+
 interface EnrichedPromptData {
   query: Query
   isBranded: boolean
@@ -920,6 +924,8 @@ interface EnrichedPromptData {
   competitorsMentioned: string[]
   // Is this an opportunity (competitors cited, brand not)
   isOpportunity: boolean
+  // Prompt score (0-100) - buyer relevance
+  promptScore: number
 }
 
 interface PromptVisibilityListProps {
@@ -944,6 +950,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
   const [isAddingPrompt, setIsAddingPrompt] = useState(false)
   const [newPrompt, setNewPrompt] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [sortOption, setSortOption] = useState<SortOption>('default')
   const router = useRouter()
 
   const addPrompt = async () => {
@@ -1043,6 +1050,20 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
       const brandEverMentioned = scans.some(s => s.brand_mentioned)
       const isOpportunity = !isBranded && hasCompetitorCitations && !brandEverCited && !brandEverMentioned
 
+      // Prompt score: use DB value if available, otherwise compute from scan data
+      const avgCitationCount = totalScans > 0
+        ? scans.reduce((sum, s) => sum + (s.citations?.length || 0), 0) / totalScans
+        : 0
+      const avgCompetitorCount = totalScans > 0
+        ? scans.reduce((sum, s) => sum + (s.competitors_mentioned?.filter(c => !isBlockedCompetitorName(c)).length || 0), 0) / totalScans
+        : 0
+      const promptScore = q.prompt_score > 0 ? q.prompt_score : calculatePromptScore({
+        queryText: q.query_text,
+        avgCitationCount,
+        avgCompetitorCount,
+        funnelStage: q.funnel_stage,
+      })
+
       return {
         query: q,
         isBranded,
@@ -1055,23 +1076,32 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
         trendChange,
         competitorsMentioned,
         isOpportunity,
+        promptScore,
       }
     })
 
-    // Sort: opportunities first, then by status priority (lost > gap > cited > never_scanned), then by mention rate ascending
+    // Sort based on selected option
     enriched.sort((a, b) => {
-      // Branded at end
+      // Branded always at end
       if (a.isBranded && !b.isBranded) return 1
       if (!a.isBranded && b.isBranded) return -1
-      // Opportunities first
+
+      if (sortOption === 'prompt_score') {
+        // Sort by prompt score descending (highest value first)
+        return b.promptScore - a.promptScore
+      }
+
+      if (sortOption === 'mention_rate') {
+        return b.mentionRate - a.mentionRate
+      }
+
+      // Default sort: opportunities first, then status priority, then mention rate
       if (a.isOpportunity && !b.isOpportunity) return -1
       if (!a.isOpportunity && b.isOpportunity) return 1
-      // Then by status priority
       const statusOrder: Record<string, number> = { lost_citation: 0, gap: 1, cited: 2, never_scanned: 3 }
       const aOrder = statusOrder[a.query.current_status] ?? 3
       const bOrder = statusOrder[b.query.current_status] ?? 3
       if (aOrder !== bOrder) return aOrder - bOrder
-      // Then by mention rate (lowest first = needs most attention)
       return a.mentionRate - b.mentionRate
     })
 
@@ -1095,7 +1125,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
     const overallRate = withCitations.length > 0 ? Math.round((brandCited / withCitations.length) * 100) : 0
 
     return { enrichedPrompts: enriched, filterCounts: counts, overallCitationRate: overallRate }
-  }, [queries, scanResults, brandName, competitors])
+  }, [queries, scanResults, brandName, competitors, sortOption])
 
   // Apply all filters
   const filteredPrompts = useMemo(() => {
@@ -1333,6 +1363,20 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
               </div>
             )}
 
+            {/* Sort */}
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as SortOption)}
+                className="text-[10px] font-medium border rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+              >
+                <option value="default">Default</option>
+                <option value="prompt_score">Prompt Score</option>
+                <option value="mention_rate">Mention Rate</option>
+              </select>
+            </div>
+
             {/* Search */}
             <div className="flex-1 min-w-[200px] max-w-xs ml-auto">
               <div className="relative">
@@ -1381,6 +1425,12 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {/* Prompt Score badge */}
+                      {!p.isBranded && p.promptScore > 0 && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${getPromptScoreColor(p.promptScore).bg} ${getPromptScoreColor(p.promptScore).text}`} title={`Prompt Score: ${p.promptScore}/100`}>
+                          {p.promptScore}
+                        </span>
+                      )}
                       {getTrendIcon(p)}
                       {p.isBranded ? (
                         <span className="text-xs text-muted-foreground">N/A</span>

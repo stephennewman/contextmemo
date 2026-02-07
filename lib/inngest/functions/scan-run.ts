@@ -448,7 +448,7 @@ export const scanRun = inngest.createFunction(
       // Fetch current query tracking data
       const { data: queryData } = await supabase
         .from('queries')
-        .select('id, query_text, scan_count, citation_streak, longest_streak, current_status, first_cited_at, last_cited_at, citation_lost_at, persona, source_type')
+        .select('id, query_text, scan_count, citation_streak, longest_streak, current_status, first_cited_at, last_cited_at, citation_lost_at, persona, source_type, funnel_stage')
         .in('id', queryIds)
       
       const queryMap = new Map(queryData?.map(q => [q.id, q]) || [])

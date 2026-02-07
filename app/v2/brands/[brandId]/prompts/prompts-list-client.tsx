@@ -30,6 +30,7 @@ import {
   Globe,
   ToggleLeft,
   ToggleRight,
+  ArrowUpDown,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ import {
 } from '@/components/ui/sheet'
 import { toast } from 'sonner'
 import type { Query, QueryExcludedReason } from '@/lib/supabase/types'
+import { getPromptScoreColor } from '@/lib/utils/prompt-score'
 
 // Competitor data from database
 interface CompetitorData {
@@ -77,6 +79,7 @@ interface EnrichedPrompt extends Query {
 }
 
 type FilterType = 'all' | 'cited' | 'mentioned' | 'gap' | 'lost' | 'streaks'
+type V2SortOption = 'default' | 'prompt_score' | 'streak'
 
 interface PromptsListClientProps {
   brandId: string
@@ -99,6 +102,7 @@ export function PromptsListClient({
   const [competitorLoading, setCompetitorLoading] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortOption, setSortOption] = useState<V2SortOption>('default')
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set())
   
   // Competitor drawer state
@@ -136,7 +140,7 @@ export function PromptsListClient({
     streaks: activePrompts.filter(p => (p.citation_streak || 0) >= 3).length,
   }), [activePrompts])
 
-  // Filtered prompts
+  // Filtered and sorted prompts
   const filteredPrompts = useMemo(() => {
     let filtered = activePrompts
 
@@ -169,8 +173,15 @@ export function PromptsListClient({
       )
     }
 
+    // Apply sort
+    if (sortOption === 'prompt_score') {
+      filtered = [...filtered].sort((a, b) => (b.prompt_score || 0) - (a.prompt_score || 0))
+    } else if (sortOption === 'streak') {
+      filtered = [...filtered].sort((a, b) => (b.citation_streak || 0) - (a.citation_streak || 0))
+    }
+
     return filtered
-  }, [activePrompts, activeFilter, searchQuery])
+  }, [activePrompts, activeFilter, searchQuery, sortOption])
 
   const handleExclude = async (promptId: string, reason: QueryExcludedReason = 'manual') => {
     setLoading(promptId)
@@ -376,6 +387,20 @@ export function PromptsListClient({
                 </button>
               ))}
             </div>
+
+            {/* Sort */}
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as V2SortOption)}
+                className="text-xs font-medium border rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]"
+              >
+                <option value="default">Default</option>
+                <option value="prompt_score">Prompt Score</option>
+                <option value="streak">Streak</option>
+              </select>
+            </div>
             
             {/* Search */}
             <div className="flex-1 max-w-xs">
@@ -423,6 +448,16 @@ export function PromptsListClient({
                     
                     {/* Metadata badges row */}
                     <div className="flex items-center flex-wrap gap-2">
+                      {/* Prompt Score */}
+                      {(prompt.prompt_score || 0) > 0 && (() => {
+                        const scoreColor = getPromptScoreColor(prompt.prompt_score || 0)
+                        return (
+                          <Badge className={`text-xs font-bold ${scoreColor.bg} ${scoreColor.text}`} title={`Prompt Score: ${prompt.prompt_score}/100 — ${scoreColor.label}`}>
+                            {prompt.prompt_score}
+                          </Badge>
+                        )
+                      })()}
+
                       {/* Citation Status */}
                       <Badge className={`text-xs ${getStatusColor(prompt.current_status)}`}>
                         {getStatusIcon(prompt.current_status)}
