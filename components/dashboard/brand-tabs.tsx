@@ -126,7 +126,6 @@ export function BrandTabs({
           context={context}
           contextExtractedAt={contextExtractedAt}
           hasContext={hasContext}
-          competitors={competitors}
         />
       </TabsContent>
 
