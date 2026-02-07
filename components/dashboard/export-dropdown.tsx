@@ -76,7 +76,7 @@ export function ExportDropdown({ brandId, variant = 'outline', size = 'sm' }: Ex
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size={size} className="rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white">
+        <Button variant="outline" size="sm">
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

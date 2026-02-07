@@ -34,6 +34,7 @@ import {
   Code,
   Quote,
   Minus,
+  Filter,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -908,41 +909,39 @@ export function MemoFeed({
   // --- Feed view ---
   return (
     <div className="space-y-4">
-      {/* Feed Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-zinc-500">
-            {memos.length} total · {publishedCount} published · {draftCount} drafts
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex border-2 border-[#0F172A]">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1 text-xs font-bold tracking-wide transition-colors ${
-                filter === 'all' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#0F172A] hover:bg-slate-50'
-              }`}
-            >
-              ALL
-            </button>
-            <button
-              onClick={() => setFilter('published')}
-              className={`px-3 py-1 text-xs font-bold tracking-wide border-l-2 border-[#0F172A] transition-colors ${
-                filter === 'published' ? 'bg-[#10B981] text-white' : 'bg-white text-[#0F172A] hover:bg-slate-50'
-              }`}
-            >
-              PUBLISHED
-            </button>
-            <button
-              onClick={() => setFilter('draft')}
-              className={`px-3 py-1 text-xs font-bold tracking-wide border-l-2 border-[#0F172A] transition-colors ${
-                filter === 'draft' ? 'bg-[#F59E0B] text-white' : 'bg-white text-[#0F172A] hover:bg-slate-50'
-              }`}
-            >
-              DRAFTS
-            </button>
-          </div>
-        </div>
+      {/* Filter Pills */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            filter === 'all'
+              ? 'bg-[#0F172A] text-white'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          All ({memos.length})
+        </button>
+        <button
+          onClick={() => setFilter('published')}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            filter === 'published'
+              ? 'bg-[#10B981] text-white'
+              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          }`}
+        >
+          Published ({publishedCount})
+        </button>
+        <button
+          onClick={() => setFilter('draft')}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            filter === 'draft'
+              ? 'bg-[#F59E0B] text-white'
+              : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+          }`}
+        >
+          Drafts ({draftCount})
+        </button>
       </div>
 
       {/* Scrolling Feed */}

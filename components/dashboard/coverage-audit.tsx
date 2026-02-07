@@ -287,21 +287,10 @@ export function CoverageAudit({
       {score && (
         <Card className="border-[#1E293B] bg-[#0F172A]">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-[#0EA5E9]" />
-                Coverage by Category
-              </CardTitle>
-              <Button
-                onClick={() => setShowModal(true)}
-                size="sm"
-                variant="outline"
-                className="gap-1 text-xs border-[#1E293B] text-gray-400 hover:text-white rounded-none"
-              >
-                <RefreshCw className="h-3 w-3" />
-                Refresh
-              </Button>
-            </div>
+            <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-[#0EA5E9]" />
+              Coverage by Category
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">

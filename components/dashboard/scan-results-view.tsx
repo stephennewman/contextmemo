@@ -1295,45 +1295,37 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
     <div className="space-y-4">
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 border-[3px] border-[#0F172A]" style={{ borderLeft: '6px solid #0EA5E9' }}>
-          <span className="text-[10px] font-bold tracking-widest text-zinc-500">CITATION RATE</span>
-          <div className="text-3xl font-bold text-[#0EA5E9] mt-1">{overallCitationRate}%</div>
-        </div>
-        <div className="p-4 border-[3px] border-[#0F172A]" style={{ borderLeft: '6px solid #10B981' }}>
-          <span className="text-[10px] font-bold tracking-widest text-zinc-500">CITED</span>
-          <div className="text-3xl font-bold text-[#0F172A] mt-1">{filterCounts.cited}</div>
-          <span className="text-xs text-zinc-500">of {filterCounts.all} prompts</span>
-        </div>
-        <div className="p-4 border-[3px] border-[#0F172A]" style={{ borderLeft: '6px solid #F59E0B' }}>
-          <span className="text-[10px] font-bold tracking-widest text-zinc-500">GAPS</span>
-          <div className="text-3xl font-bold text-[#0F172A] mt-1">{filterCounts.gap}</div>
-          <span className="text-xs text-zinc-500">need attention</span>
-        </div>
-        <div className="p-4 border-[3px] border-[#0F172A]" style={{ borderLeft: '6px solid #EF4444' }}>
-          <span className="text-[10px] font-bold tracking-widest text-zinc-500">OPPORTUNITIES</span>
-          <div className="text-3xl font-bold text-[#0F172A] mt-1">{filterCounts.opportunities}</div>
-          <span className="text-xs text-zinc-500">competitors winning</span>
-        </div>
+        <Card className="border-l-4 border-l-[#0EA5E9]">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Citation Rate</p>
+            <p className="text-2xl font-bold text-[#0EA5E9] mt-1">{overallCitationRate}%</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-[#10B981]">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cited</p>
+            <p className="text-2xl font-bold mt-1">{filterCounts.cited}</p>
+            <p className="text-xs text-muted-foreground">of {filterCounts.all} prompts</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-[#F59E0B]">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Gaps</p>
+            <p className="text-2xl font-bold mt-1">{filterCounts.gap}</p>
+            <p className="text-xs text-muted-foreground">need attention</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-[#EF4444]">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Opportunities</p>
+            <p className="text-2xl font-bold mt-1">{filterCounts.opportunities}</p>
+            <p className="text-xs text-muted-foreground">competitors winning</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Prompt Analysis</CardTitle>
-              <CardDescription>
-                Track how each prompt performs across AI models over time
-              </CardDescription>
-            </div>
-            {brandId && !isAddingPrompt && (
-              <Button variant="outline" onClick={() => setIsAddingPrompt(true)} className="gap-1">
-                <Plus className="h-4 w-4" />
-                Add Prompt
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           {/* Add Prompt Input */}
           {isAddingPrompt && (
             <div className="flex gap-2 p-3 bg-muted/50 rounded-lg">
@@ -1373,6 +1365,12 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                 </button>
               )
             })}
+            {brandId && !isAddingPrompt && (
+              <Button variant="outline" size="sm" onClick={() => setIsAddingPrompt(true)} className="gap-1 ml-auto">
+                <Plus className="h-3.5 w-3.5" />
+                Add Prompt
+              </Button>
+            )}
           </div>
 
           {/* Funnel + Persona + Search row */}

@@ -194,7 +194,8 @@ export function ScanButton({ brandId, brandName }: { brandId: string; brandName?
       <Button 
         onClick={() => setShowModal(true)} 
         size="sm"
-        className="gap-2 rounded-none bg-[#0EA5E9] hover:bg-[#0284C7] text-white"
+        variant="outline"
+        className="gap-2"
       >
         <RefreshCw className="h-4 w-4" />
         Scan
@@ -471,7 +472,8 @@ export function FindContentGapsButton({ brandId, brandName, competitorCount }: {
       <Button 
         onClick={() => setShowModal(true)}
         size="sm"
-        className="gap-2 rounded-none bg-[#10B981] hover:bg-[#059669] text-white"
+        variant="outline"
+        className="gap-2"
       >
         <FileText className="h-4 w-4" />
         Find Gaps
@@ -524,7 +526,8 @@ export function GenerateMemosButton({ brandId }: { brandId: string }) {
       onClick={handleClick}
       disabled={isLoading}
       size="sm"
-      className="gap-2 rounded-none bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+      variant="outline"
+      className="gap-2"
     >
       {isLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -673,7 +676,7 @@ export function AIOverviewScanButton({ brandId }: { brandId: string }) {
       disabled={loading}
       variant="outline"
       size="sm"
-      className="gap-2 rounded-none border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white"
+      className="gap-2"
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

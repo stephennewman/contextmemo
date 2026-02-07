@@ -315,16 +315,15 @@ export function CompetitorWatch({
         </Card>
       </div>
 
-      {/* Filter Label */}
-      <div className="flex items-center gap-2 text-sm">
-        <Filter className="h-4 w-4 text-muted-foreground" />
-        <span className="text-muted-foreground">Showing:</span>
-        <Badge variant="secondary" className="font-medium">
-          {filter === 'today' && `Today's Posts (${filteredContent.length})`}
-          {filter === 'yesterday' && `Yesterday's Posts (${filteredContent.length})`}
-          {filter === 'respondable' && `Memo Opportunities (${filteredContent.length})`}
-          {filter === 'all' && `All Recent Content (${filteredContent.length})`}
-        </Badge>
+      {/* Filter Active Label */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Filter className="h-4 w-4" />
+        <span>
+          {filter === 'today' && `Showing today's posts (${filteredContent.length})`}
+          {filter === 'yesterday' && `Showing yesterday's posts (${filteredContent.length})`}
+          {filter === 'respondable' && `Showing memo opportunities (${filteredContent.length})`}
+          {filter === 'all' && `Showing all recent content (${filteredContent.length})`}
+        </span>
       </div>
 
       {/* Active Exclusions */}
