@@ -161,10 +161,6 @@ export function CompetitorWatch({
     !!item.universal_topic &&
     item.status !== 'responded'
   )
-  const recentlyResponded = content.filter(item => 
-    item.status === 'responded' && 
-    isWithinHours(item.first_seen_at, 72)
-  )
 
   const handleScan = async () => {
     setScanning(true)
@@ -245,156 +241,126 @@ export function CompetitorWatch({
   }
 
   return (
-    <div className="space-y-4">
+    <Card>
       {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base">Watch</CardTitle>
-              <CardDescription>
-                Monitoring {competitors.length} competitor{competitors.length !== 1 ? 's' : ''} · {todayContent.length} new today
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleScan}
-                disabled={scanning}
-              >
-                {scanning ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                )}
-                Check Now
-              </Button>
-            </div>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">Watch</CardTitle>
+            <CardDescription>
+              Monitoring {competitors.length} competitor{competitors.length !== 1 ? 's' : ''} · {todayContent.length} new today
+            </CardDescription>
           </div>
-        </CardHeader>
-      </Card>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <Card 
-          className={`cursor-pointer transition-all ${filter === 'today' ? 'ring-2 ring-[#0EA5E9] bg-[#F0F9FF]' : 'hover:bg-muted/50'}`}
-          onClick={() => setFilter('today')}
-        >
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-3xl font-bold text-[#0EA5E9]">{todayContent.length}</div>
-            <div className="text-xs text-muted-foreground font-medium">Today</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${filter === 'yesterday' ? 'ring-2 ring-[#8B5CF6] bg-[#F5F3FF]' : 'hover:bg-muted/50'}`}
-          onClick={() => setFilter('yesterday')}
-        >
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-3xl font-bold text-[#8B5CF6]">{yesterdayContent.length}</div>
-            <div className="text-xs text-muted-foreground font-medium">Yesterday</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${filter === 'respondable' ? 'ring-2 ring-[#10B981] bg-[#ECFDF5]' : 'hover:bg-muted/50'}`}
-          onClick={() => setFilter('respondable')}
-        >
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-3xl font-bold text-[#10B981]">{respondableContent.length}</div>
-            <div className="text-xs text-muted-foreground font-medium">Memo Opportunities</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${filter === 'all' ? 'ring-2 ring-[#0F172A] bg-slate-50' : 'hover:bg-muted/50'}`}
-          onClick={() => setFilter('all')}
-        >
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-3xl font-bold">{recentlyResponded.length}</div>
-            <div className="text-xs text-muted-foreground font-medium">Responded (72h)</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filter Active Label */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Filter className="h-4 w-4" />
-        <span>
-          {filter === 'today' && `Showing today's posts (${filteredContent.length})`}
-          {filter === 'yesterday' && `Showing yesterday's posts (${filteredContent.length})`}
-          {filter === 'respondable' && `Showing memo opportunities (${filteredContent.length})`}
-          {filter === 'all' && `Showing all recent content (${filteredContent.length})`}
-        </span>
-      </div>
-
-      {/* Active Exclusions */}
-      {hasExclusions && (
-        <div className="flex items-center gap-2 flex-wrap text-sm">
-          <EyeOff className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Hidden:</span>
-          {Array.from(excludedCompetitors).map(compId => {
-            const comp = competitorLookup.get(compId)
-            return (
-              <Badge 
-                key={`exc-comp-${compId}`} 
-                variant="outline" 
-                className="cursor-pointer hover:bg-destructive/10 gap-1"
-                onClick={() => {
-                  const next = new Set(excludedCompetitors)
-                  next.delete(compId)
-                  setExcludedCompetitors(next)
-                }}
-              >
-                {comp?.name || 'Unknown'}
-                <X className="h-3 w-3" />
-              </Badge>
-            )
-          })}
-          {Array.from(excludedContentTypes).map(ct => (
-            <Badge 
-              key={`exc-ct-${ct}`} 
-              variant="outline" 
-              className="cursor-pointer hover:bg-destructive/10 gap-1"
-              onClick={() => {
-                const next = new Set(excludedContentTypes)
-                next.delete(ct)
-                setExcludedContentTypes(next)
-              }}
-            >
-              {CONTENT_TYPE_LABELS[ct] || ct}
-              <X className="h-3 w-3" />
-            </Badge>
-          ))}
-          {hiddenIds.size > 0 && (
-            <Badge 
-              variant="outline" 
-              className="cursor-pointer hover:bg-destructive/10 gap-1"
-              onClick={() => setHiddenIds(new Set())}
-            >
-              {hiddenIds.size} hidden post{hiddenIds.size !== 1 ? 's' : ''}
-              <X className="h-3 w-3" />
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
+          <Button 
+            variant="outline" 
             size="sm"
-            className="h-6 text-xs text-muted-foreground"
-            onClick={() => {
-              setExcludedCompetitors(new Set())
-              setExcludedContentTypes(new Set())
-              setHiddenIds(new Set())
-            }}
+            onClick={handleScan}
+            disabled={scanning}
           >
-            Clear all
+            {scanning ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Check Now
           </Button>
         </div>
-      )}
+      </CardHeader>
 
-      {/* Content List */}
-      <Card>
-        <CardContent className="pt-4">
-          {filteredContent.length > 0 ? (
-            <div className="space-y-3">
-              {filteredContent.slice(0, 30).map((item) => {
+      <CardContent className="space-y-4">
+        {/* Filters */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {(['today', 'yesterday', 'respondable', 'all'] as const).map((f) => {
+                const labels: Record<string, string> = {
+                  today: `Today (${todayContent.length})`,
+                  yesterday: `Yesterday (${yesterdayContent.length})`,
+                  respondable: `Memo Opportunities (${respondableContent.length})`,
+                  all: 'All',
+                }
+                return (
+                  <Button
+                    key={f}
+                    variant={filter === f ? 'default' : 'ghost'}
+                    size="sm"
+                    className={`text-xs h-7 ${filter === f ? '' : 'text-muted-foreground'}`}
+                    onClick={() => setFilter(f)}
+                  >
+                    {labels[f]}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+
+          {hasExclusions && (
+            <div className="flex items-center gap-2 flex-wrap text-sm">
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Hidden:</span>
+              {Array.from(excludedCompetitors).map(compId => {
+                const comp = competitorLookup.get(compId)
+                return (
+                  <Badge 
+                    key={`exc-comp-${compId}`} 
+                    variant="outline" 
+                    className="cursor-pointer hover:bg-destructive/10 gap-1"
+                    onClick={() => {
+                      const next = new Set(excludedCompetitors)
+                      next.delete(compId)
+                      setExcludedCompetitors(next)
+                    }}
+                  >
+                    {comp?.name || 'Unknown'}
+                    <X className="h-3 w-3" />
+                  </Badge>
+                )
+              })}
+              {Array.from(excludedContentTypes).map(ct => (
+                <Badge 
+                  key={`exc-ct-${ct}`} 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-destructive/10 gap-1"
+                  onClick={() => {
+                    const next = new Set(excludedContentTypes)
+                    next.delete(ct)
+                    setExcludedContentTypes(next)
+                  }}
+                >
+                  {CONTENT_TYPE_LABELS[ct] || ct}
+                  <X className="h-3 w-3" />
+                </Badge>
+              ))}
+              {hiddenIds.size > 0 && (
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-destructive/10 gap-1"
+                  onClick={() => setHiddenIds(new Set())}
+                >
+                  {hiddenIds.size} hidden post{hiddenIds.size !== 1 ? 's' : ''}
+                  <X className="h-3 w-3" />
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-muted-foreground"
+                onClick={() => {
+                  setExcludedCompetitors(new Set())
+                  setExcludedContentTypes(new Set())
+                  setHiddenIds(new Set())
+                }}
+              >
+                Clear all
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Content List */}
+        {filteredContent.length > 0 ? (
+          <div className="space-y-3">
+            {filteredContent.slice(0, 30).map((item) => {
                 const competitor = competitorLookup.get(item.competitor_id) || item.competitor
                 const canRespond = !item.is_competitor_specific && 
                   !!item.universal_topic &&
@@ -582,61 +548,32 @@ export function CompetitorWatch({
                 )
               })}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <Newspaper className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-30" />
-              <h3 className="text-lg font-semibold mb-2">
-                {filter === 'today' && 'No New Content Today'}
-                {filter === 'yesterday' && 'No Content From Yesterday'}
-                {filter === 'respondable' && 'No Memo Opportunities'}
-                {filter === 'all' && 'No Recent Content'}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {filter === 'today' && 'Check back later or run a scan to check for new posts.'}
-                {filter === 'yesterday' && 'No competitor content was detected from yesterday.'}
-                {filter === 'respondable' && "No competitor posts identified as memo opportunities right now."}
-                {filter === 'all' && 'No competitor content has been detected recently.'}
-              </p>
-              <Button variant="outline" onClick={handleScan} disabled={scanning}>
-                {scanning ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Check Feeds Now
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* How it works */}
-      <Card className="border-dashed">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            How Competitor Watch Works
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-xs text-muted-foreground grid md:grid-cols-4 gap-4">
-          <div>
-            <div className="font-medium text-foreground mb-1">1. Auto-Monitoring</div>
-            <p>RSS feeds are checked daily for new posts from your competitors.</p>
+        ) : (
+          <div className="text-center py-12">
+            <Newspaper className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-30" />
+            <h3 className="text-lg font-semibold mb-2">
+              {filter === 'today' && 'No New Content Today'}
+              {filter === 'yesterday' && 'No Content From Yesterday'}
+              {filter === 'respondable' && 'No Memo Opportunities'}
+              {filter === 'all' && 'No Recent Content'}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {filter === 'today' && 'Check back later or run a scan to check for new posts.'}
+              {filter === 'yesterday' && 'No competitor content was detected from yesterday.'}
+              {filter === 'respondable' && "No competitor posts identified as memo opportunities right now."}
+              {filter === 'all' && 'No competitor content has been detected recently.'}
+            </p>
+            <Button variant="outline" onClick={handleScan} disabled={scanning}>
+              {scanning ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Check Feeds Now
+            </Button>
           </div>
-          <div>
-            <div className="font-medium text-foreground mb-1">2. AI Classification</div>
-            <p>Content is classified as educational, industry analysis, or company-specific.</p>
-          </div>
-          <div>
-            <div className="font-medium text-foreground mb-1">3. Topic Extraction</div>
-            <p>Universal topics are extracted that you can write a differentiated take on.</p>
-          </div>
-          <div>
-            <div className="font-medium text-foreground mb-1">4. Response Generation</div>
-            <p>Click "Respond" to auto-generate a unique, better article from your brand's perspective.</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

@@ -117,9 +117,11 @@ export default async function BrandPage({ params }: Props) {
   const recentScans = allScans?.slice(0, 100) || []
 
   // Build citation counts per entity (competitor) from scan results
+  // Prefer active entities when multiple share the same domain
   const entityDomains = (allCompetitors || [])
     .filter(c => c.domain)
-    .map(c => ({ id: c.id, domain: c.domain!.toLowerCase() }))
+    .map(c => ({ id: c.id, domain: c.domain!.toLowerCase(), isActive: c.is_active }))
+    .sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0))
   
   // Collect citations per entity (with full URLs)
   const citationsByEntity: Record<string, string[]> = {}
@@ -129,7 +131,7 @@ export default async function BrandPage({ params }: Props) {
       try {
         const url = new URL(citation)
         const domain = url.hostname.replace('www.', '').toLowerCase()
-        // Find matching entity
+        // Find matching entity (active entities come first due to sort above)
         const entity = entityDomains.find(e => domain.includes(e.domain) || e.domain.includes(domain))
         if (entity) {
           if (!citationsByEntity[entity.id]) {
@@ -154,8 +156,10 @@ export default async function BrandPage({ params }: Props) {
 
   // Build mention counts per entity from scan results
   // competitors_mentioned is an array of entity names (strings)
+  // Active entities take priority when names collide (case-insensitive)
   const entityNameToId = new Map<string, string>()
-  for (const entity of (allCompetitors || [])) {
+  // Insert inactive first, then active overwrites — active wins
+  for (const entity of (allCompetitors || []).sort((a, b) => (a.is_active ? 1 : 0) - (b.is_active ? 1 : 0))) {
     entityNameToId.set(entity.name.toLowerCase(), entity.id)
   }
   
@@ -418,42 +422,18 @@ export default async function BrandPage({ params }: Props) {
 
       {/* Main Content - Tabs */}
       <Tabs defaultValue="prompts" className="space-y-4">
-        <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto flex-wrap">
+        <TabsList className="w-full justify-start bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto flex-wrap">
           <TabsTrigger value="profile" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROFILE</TabsTrigger>
           <TabsTrigger value="activity" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ACTIVITY</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="entities" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ENTITIES{(allCompetitors?.length || 0) > 0 && ` (${allCompetitors?.length})`}</TabsTrigger>
-          <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">CITATIONS</TabsTrigger>
-          <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
+          <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">CITATIONS{(allScans?.reduce((sum, s) => sum + ((s.citations as string[])?.length || 0), 0) || 0) > 0 && ` (${allScans?.reduce((sum, s) => sum + ((s.citations as string[])?.length || 0), 0)})`}</TabsTrigger>
+          <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
             WATCH
-            {/* Show badge if there's new content today */}
-            {competitorContent && competitorContent.filter(c => {
-              const d = new Date(c.published_at || c.first_seen_at)
-              const today = new Date()
-              today.setHours(0, 0, 0, 0)
-              return d >= today
-            }).length > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#0EA5E9] text-[9px] font-bold text-white flex items-center justify-center">
-                {competitorContent.filter(c => {
-                  const d = new Date(c.published_at || c.first_seen_at)
-                  const today = new Date()
-                  today.setHours(0, 0, 0, 0)
-                  return d >= today
-                }).length}
-              </span>
-            )}
           </TabsTrigger>
-          <TabsTrigger value="coverage" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
+          <TabsTrigger value="coverage" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">
             COVERAGE
-            {coverageScore && (
-              <span className={`ml-1.5 text-[10px] font-normal ${
-                coverageScore.coverage_percent >= 70 ? 'text-emerald-400' : 
-                coverageScore.coverage_percent >= 40 ? 'text-amber-400' : 'text-red-400'
-              }`}>
-                {coverageScore.coverage_percent}%
-              </span>
-            )}
           </TabsTrigger>
           {/* SUNSET: Alerts, Search, AI Traffic, Intelligence, QFO, MAP, LAB, Strategy tabs removed (zero usage) */}
         </TabsList>
@@ -489,48 +469,48 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="memos">
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">Memos</CardTitle>
-                    <CardDescription>
-                      {(memos || []).length} total · {(memos || []).filter((m: { status: string }) => m.status === 'published').length} published · {(memos || []).filter((m: { status: string }) => m.status === 'draft').length} drafts
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <GenerateMemoDropdown brandId={brandId} />
-                  </div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Memos</CardTitle>
+                  <CardDescription>
+                    {(memos || []).length} total · {(memos || []).filter((m: { status: string }) => m.status === 'published').length} published · {(memos || []).filter((m: { status: string }) => m.status === 'draft').length} drafts
+                  </CardDescription>
                 </div>
-              </CardHeader>
-            </Card>
-            <MemoFeed
-              brandId={brandId}
-              brandName={brand.name}
-              brandSubdomain={brand.subdomain}
-              initialMemos={(memos || []) as Array<{
-                id: string
-                brand_id: string
-                title: string
-                slug: string
-                content_markdown: string
-                content_html: string | null
-                meta_description: string | null
-                status: 'draft' | 'published'
-                memo_type: string
-                published_at: string | null
-                created_at: string
-                updated_at: string
-                sources: unknown[] | null
-                verified_accurate: boolean
-                version: number
-                schema_json: Record<string, unknown> | null
-              }>}
-              hubspotEnabled={hubspotEnabled}
-              hubspotAutoPublish={hubspotAutoPublish}
-            />
-          </div>
+                <div className="flex items-center gap-2">
+                  <GenerateMemoDropdown brandId={brandId} />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <MemoFeed
+                brandId={brandId}
+                brandName={brand.name}
+                brandSubdomain={brand.subdomain}
+                initialMemos={(memos || []) as Array<{
+                  id: string
+                  brand_id: string
+                  title: string
+                  slug: string
+                  content_markdown: string
+                  content_html: string | null
+                  meta_description: string | null
+                  status: 'draft' | 'published'
+                  memo_type: string
+                  published_at: string | null
+                  created_at: string
+                  updated_at: string
+                  sources: unknown[] | null
+                  verified_accurate: boolean
+                  version: number
+                  schema_json: Record<string, unknown> | null
+                }>}
+                hubspotEnabled={hubspotEnabled}
+                hubspotAutoPublish={hubspotAutoPublish}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="entities" className="space-y-4">

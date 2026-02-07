@@ -98,10 +98,9 @@ function CollapsibleSection({
   const isComplete = fieldCount === totalFields
   
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border-b border-zinc-100 last:border-b-0">
       <div className={cn(
-        "flex items-center justify-between p-4",
-        isOpen && "border-b"
+        "flex items-center justify-between py-3"
       )}>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -152,7 +151,7 @@ function CollapsibleSection({
         </div>
       </div>
       {isOpen && (
-        <div className="p-4 bg-muted/20">
+        <div className="py-4">
           {children}
         </div>
       )}
@@ -331,11 +330,8 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
     return <Card>{emptyContent}</Card>
   }
   
-  const Wrapper = embedded ? 'div' : Card
-  
-  return (
-    <Wrapper>
-      <CardHeader>
+  const headerContent = (
+    <CardHeader>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
@@ -358,8 +354,11 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
           />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Section 1: Mission & Vision */}
+  )
+
+  const bodyContent = (
+    <CardContent className="space-y-4">
+      {/* Section 1: Mission & Vision */}
         <CollapsibleSection 
           title="Mission & Vision" 
           icon={Target}
@@ -1038,6 +1037,21 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
           )}
         </CollapsibleSection>
       </CardContent>
-    </Wrapper>
+  )
+
+  if (embedded) {
+    return (
+      <div className="flex flex-col gap-6">
+        {headerContent}
+        {bodyContent}
+      </div>
+    )
+  }
+
+  return (
+    <Card>
+      {headerContent}
+      {bodyContent}
+    </Card>
   )
 }

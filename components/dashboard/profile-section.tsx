@@ -173,7 +173,7 @@ export function ProfileSection({
       {hasContext && context ? (
         <div className="space-y-6">
           {/* Unified Profile + Corporate Positioning card */}
-          <Card>
+          <Card className="gap-4">
             <CardHeader>
               <CardTitle className="text-base">Profile</CardTitle>
               <CardDescription>
@@ -183,7 +183,7 @@ export function ProfileSection({
                 )}
               </CardDescription>
             </CardHeader>
-            <div className="border-t" />
+            <div className="mx-6 border-t border-zinc-200" />
             <CorporatePositioningSection 
               positioning={context?.corporate_positioning} 
               brandName={brandName}

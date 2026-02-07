@@ -6,13 +6,10 @@ import { Badge } from '@/components/ui/badge'
 import {
   ExternalLink,
   Link2,
-  TrendingUp,
-  TrendingDown,
   ChevronDown,
   ChevronRight,
   Globe,
   FileText,
-  BarChart3,
   MessageSquare,
   Hash,
   ThumbsUp,
@@ -20,7 +17,7 @@ import {
   Minus,
   Target,
 } from 'lucide-react'
-import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns'
+import { subDays, eachDayOfInterval, startOfDay } from 'date-fns'
 import { FunnelStage, FUNNEL_STAGE_META } from '@/lib/supabase/types'
 
 interface ScanResult {
@@ -361,11 +358,9 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
     })
   }, [queries, filteredScans, brandDomain, memos])
 
-  const maxRate = Math.max(...timelineData.map(d => d.citationRate), 100)
-
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Citations - unified card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -375,429 +370,46 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                 {stats.totalCitations} citations · {stats.uniqueDomains} domains · {stats.uniqueUrls} URLs
               </CardDescription>
             </div>
-            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
-              {(['7d', '30d', '90d'] as TimeRange[]).map((range) => (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+                {(['7d', '30d', '90d'] as TimeRange[]).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTimeRange(range)}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                      timeRange === range
+                        ? 'bg-white shadow-sm text-[#0F172A]'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
                 <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                    timeRange === range
+                  onClick={() => { setViewMode('urls'); setExpandedItem(null) }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    viewMode === 'urls'
                       ? 'bg-white shadow-sm text-[#0F172A]'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+                  <FileText className="h-3 w-3" />
+                  URLs
                 </button>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-cyan-500">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Citation Rate</p>
-                <p className="text-3xl font-bold text-cyan-600">{stats.citationRate}%</p>
-              </div>
-              {stats.trend !== 0 && (
-                <div className={`flex items-center gap-1 text-sm ${stats.trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stats.trend > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  {Math.abs(Math.round(stats.trend))}%
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.brandCited}/{stats.scansWithCitations} scans
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Sentiment Score */}
-        <Card className={`border-l-4 ${
-          stats.sentimentScore !== null && stats.sentimentScore > 0 
-            ? 'border-l-green-500' 
-            : stats.sentimentScore !== null && stats.sentimentScore < 0 
-              ? 'border-l-red-500' 
-              : 'border-l-slate-300'
-        }`}>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sentiment</p>
-            {stats.sentimentScore !== null ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <p className={`text-3xl font-bold ${
-                    stats.sentimentScore > 0 ? 'text-green-600' : 
-                    stats.sentimentScore < 0 ? 'text-red-600' : 'text-slate-600'
-                  }`}>
-                    {stats.sentimentScore > 0 ? '+' : ''}{stats.sentimentScore}
-                  </p>
-                  {stats.sentimentScore > 20 && <ThumbsUp className="h-5 w-5 text-green-500" />}
-                  {stats.sentimentScore < -20 && <ThumbsDown className="h-5 w-5 text-red-500" />}
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] text-green-600">{stats.sentimentCounts.positive} pos</span>
-                  <span className="text-[10px] text-slate-400">{stats.sentimentCounts.neutral} neu</span>
-                  <span className="text-[10px] text-red-500">{stats.sentimentCounts.negative} neg</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-3xl font-bold text-slate-300">--</p>
-                <p className="text-xs text-muted-foreground mt-1">No data yet</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Average Position */}
-        <Card className="border-l-4 border-l-amber-500">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Position</p>
-            {stats.avgPosition !== null ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <p className="text-3xl font-bold text-amber-600">
-                    #{stats.avgPosition.toFixed(1)}
-                  </p>
-                  <Target className="h-5 w-5 text-amber-400" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  across {stats.positionCount} mention{stats.positionCount !== 1 ? 's' : ''}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-3xl font-bold text-slate-300">--</p>
-                <p className="text-xs text-muted-foreground mt-1">Not mentioned yet</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Citations</p>
-            <p className="text-3xl font-bold">{stats.totalCitations}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.uniqueUrls} URLs · {stats.uniqueDomains} domains
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sentiment Breakdown Bar */}
-      {stats.totalMentioned > 0 && (stats.sentimentCounts.positive + stats.sentimentCounts.negative + stats.sentimentCounts.neutral) > 0 && (
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium">Sentiment Breakdown</p>
-              <p className="text-xs text-muted-foreground">{stats.totalMentioned} mentions analyzed</p>
-            </div>
-            <div className="h-3 rounded-full overflow-hidden flex">
-              {stats.sentimentCounts.positive > 0 && (
-                <div 
-                  className="bg-green-500 transition-all" 
-                  style={{ width: `${(stats.sentimentCounts.positive / stats.totalMentioned) * 100}%` }}
-                  title={`Positive: ${stats.sentimentCounts.positive}`}
-                />
-              )}
-              {stats.sentimentCounts.neutral > 0 && (
-                <div 
-                  className="bg-slate-300 transition-all" 
-                  style={{ width: `${(stats.sentimentCounts.neutral / stats.totalMentioned) * 100}%` }}
-                  title={`Neutral: ${stats.sentimentCounts.neutral}`}
-                />
-              )}
-              {stats.sentimentCounts.negative > 0 && (
-                <div 
-                  className="bg-red-500 transition-all" 
-                  style={{ width: `${(stats.sentimentCounts.negative / stats.totalMentioned) * 100}%` }}
-                  title={`Negative: ${stats.sentimentCounts.negative}`}
-                />
-              )}
-              {stats.sentimentCounts.unclassified > 0 && (
-                <div 
-                  className="bg-slate-100 transition-all" 
-                  style={{ width: `${(stats.sentimentCounts.unclassified / stats.totalMentioned) * 100}%` }}
-                  title={`Unclassified: ${stats.sentimentCounts.unclassified}`}
-                />
-              )}
-            </div>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                <span className="text-xs text-muted-foreground">Positive ({Math.round((stats.sentimentCounts.positive / stats.totalMentioned) * 100)}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <span className="text-xs text-muted-foreground">Neutral ({Math.round((stats.sentimentCounts.neutral / stats.totalMentioned) * 100)}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <span className="text-xs text-muted-foreground">Negative ({Math.round((stats.sentimentCounts.negative / stats.totalMentioned) * 100)}%)</span>
-              </div>
-              {stats.sentimentCounts.unclassified > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-slate-100 border" />
-                  <span className="text-xs text-muted-foreground">Pending ({stats.sentimentCounts.unclassified})</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Funnel Breakdown */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Visibility by Funnel Stage</CardTitle>
-          <CardDescription>
-            Where in the buyer journey is {brandName} visible — and where are the gaps?
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {funnelStats.map(({ stage, meta, queryCount, scanCount, mentionRate, citationRate, scansWithCitations, topDomains, memoCount, publishedMemos, sentiment, sentimentScore, avgPosition }) => {
-              const isGap = scanCount > 0 && citationRate === 0 && mentionRate < 30
-              const isStrong = citationRate >= 30 || mentionRate >= 60
-              
-              return (
-                <div
-                  key={stage}
-                  className="rounded-lg border p-4 space-y-4"
-                  style={{ borderLeftWidth: '4px', borderLeftColor: meta.color }}
+                <button
+                  onClick={() => { setViewMode('domains'); setExpandedItem(null) }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    viewMode === 'domains'
+                      ? 'bg-white shadow-sm text-[#0F172A]'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  {/* Header */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        className="text-xs font-bold px-2 py-0.5"
-                        style={{ backgroundColor: meta.bgColor, color: meta.color }}
-                      >
-                        {meta.shortLabel}
-                      </Badge>
-                      <span className="text-sm font-medium">{meta.label}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{meta.description}</p>
-                  </div>
-                  
-                  {/* Your Brand's Rates */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: meta.color }}>
-                      {brandName}
-                    </p>
-                    <div>
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">Citation</span>
-                        <span className="font-bold" style={{ color: citationRate > 0 ? meta.color : undefined }}>
-                          {scansWithCitations > 0 ? `${citationRate}%` : '—'}
-                        </span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${citationRate}%`, backgroundColor: meta.color }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-muted-foreground">Mention</span>
-                        <span className="font-bold" style={{ color: mentionRate > 0 ? meta.color : undefined }}>
-                          {scanCount > 0 ? `${mentionRate}%` : '—'}
-                        </span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all opacity-60"
-                          style={{ width: `${mentionRate}%`, backgroundColor: meta.color }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sentiment + Position at this stage */}
-                  {(sentimentScore !== null || avgPosition !== null) && (
-                    <div className="flex items-center gap-3">
-                      {sentimentScore !== null && (
-                        <div className="flex items-center gap-1.5">
-                          {sentimentScore > 0 ? (
-                            <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
-                          ) : sentimentScore < 0 ? (
-                            <ThumbsDown className="h-3.5 w-3.5 text-red-500" />
-                          ) : (
-                            <Minus className="h-3.5 w-3.5 text-slate-400" />
-                          )}
-                          <span className={`text-xs font-medium ${
-                            sentimentScore > 0 ? 'text-green-600' : sentimentScore < 0 ? 'text-red-600' : 'text-slate-500'
-                          }`}>
-                            {sentimentScore > 0 ? '+' : ''}{sentimentScore} sentiment
-                          </span>
-                        </div>
-                      )}
-                      {avgPosition !== null && (
-                        <div className="flex items-center gap-1.5">
-                          <Target className="h-3.5 w-3.5 text-amber-500" />
-                          <span className="text-xs font-medium text-amber-600">
-                            Avg #{avgPosition.toFixed(1)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Top cited domains at this stage */}
-                  {topDomains.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        Top cited sources
-                      </p>
-                      <div className="space-y-1">
-                        {topDomains.map(({ domain, citations, isBrand }) => (
-                          <div key={domain} className="flex items-center justify-between text-xs">
-                            <span className={`truncate ${isBrand ? 'font-medium' : ''}`} style={isBrand ? { color: meta.color } : {}}>
-                              {isBrand ? `${domain} ★` : domain}
-                            </span>
-                            <span className="text-muted-foreground shrink-0 ml-2">{citations}x</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content coverage */}
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{queryCount} prompts</span>
-                      <span className="text-muted-foreground">{scanCount} scans</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs mt-1">
-                      <span className="text-muted-foreground">
-                        {publishedMemos} memo{publishedMemos !== 1 ? 's' : ''} published
-                      </span>
-                      {memoCount > publishedMemos && (
-                        <span className="text-muted-foreground">
-                          {memoCount - publishedMemos} draft{memoCount - publishedMemos !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Gap / Strong indicator */}
-                  {isGap && scanCount > 5 && (
-                    <div className="px-2 py-1.5 bg-red-50 border border-red-200 rounded text-xs text-red-700 font-medium">
-                      Gap: Low visibility at this stage
-                    </div>
-                  )}
-                  {isStrong && (
-                    <div className="px-2 py-1.5 rounded text-xs font-medium" style={{ backgroundColor: meta.bgColor, color: meta.color }}>
-                      Strong visibility
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Citation Timeline */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-base">Citation Rate Over Time</CardTitle>
-          </div>
-          <CardDescription>
-            Percentage of scans where {brandName} was cited
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {timelineData.some(d => d.totalScans > 0) ? (
-            <div className="h-40 flex items-end gap-1">
-              {timelineData.map((day, i) => {
-                const height = day.citationRate > 0 ? Math.max((day.citationRate / maxRate) * 100, 4) : 0
-                const hasData = day.scansWithCitations > 0
-                
-                return (
-                  <div
-                    key={i}
-                    className="flex-1 flex flex-col items-center gap-1 group"
-                    title={`${format(day.date, 'MMM d')}: ${day.citationRate}% (${day.brandCited}/${day.scansWithCitations} scans)`}
-                  >
-                    <div className="w-full flex flex-col justify-end h-32">
-                      {hasData ? (
-                        <div
-                          className={`w-full rounded-t transition-all ${
-                            day.citationRate >= 50 ? 'bg-cyan-500' : 
-                            day.citationRate > 0 ? 'bg-cyan-300' : 'bg-slate-200'
-                          } group-hover:opacity-80`}
-                          style={{ height: `${height}%` }}
-                        />
-                      ) : (
-                        <div className="w-full h-1 bg-slate-100 rounded" />
-                      )}
-                    </div>
-                    {(timeRange === '7d' || i % (timeRange === '30d' ? 5 : 15) === 0) && (
-                      <span className="text-[10px] text-muted-foreground">
-                        {format(day.date, timeRange === '7d' ? 'EEE' : 'M/d')}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="h-40 flex items-center justify-center text-muted-foreground">
-              No scan data for selected period
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Top Cited Sources - with URL/Domain toggle and prompt mapping */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base">Top Cited Sources</CardTitle>
+                  <Globe className="h-3 w-3" />
+                  Domains
+                </button>
               </div>
-              <CardDescription>
-                {viewMode === 'urls' 
-                  ? 'Individual pages cited by AI — expand to see which prompts triggered each citation'
-                  : 'Domains cited by AI — expand to see URLs and prompts'
-                }
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
-              <button
-                onClick={() => { setViewMode('urls'); setExpandedItem(null) }}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                  viewMode === 'urls'
-                    ? 'bg-white shadow-sm text-[#0F172A]'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <FileText className="h-3 w-3" />
-                URLs
-              </button>
-              <button
-                onClick={() => { setViewMode('domains'); setExpandedItem(null) }}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                  viewMode === 'domains'
-                    ? 'bg-white shadow-sm text-[#0F172A]'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Globe className="h-3 w-3" />
-                Domains
-              </button>
             </div>
           </div>
         </CardHeader>
@@ -1102,6 +714,157 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
               <EmptyState />
             )
           )}
+          {/* Funnel Breakdown */}
+          <div className="mt-8 pt-6 border-t">
+            <div className="mb-4">
+              <h3 className="text-base font-semibold">Visibility by Funnel Stage</h3>
+              <p className="text-sm text-muted-foreground">
+                Where in the buyer journey is {brandName} visible — and where are the gaps?
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {funnelStats.map(({ stage, meta, queryCount, scanCount, mentionRate, citationRate, scansWithCitations, topDomains, memoCount, publishedMemos, sentiment, sentimentScore, avgPosition }) => {
+              const isGap = scanCount > 0 && citationRate === 0 && mentionRate < 30
+              const isStrong = citationRate >= 30 || mentionRate >= 60
+              
+              return (
+                <div
+                  key={stage}
+                  className="rounded-lg border p-4 space-y-4"
+                  style={{ borderLeftWidth: '4px', borderLeftColor: meta.color }}
+                >
+                  {/* Header */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge
+                        className="text-xs font-bold px-2 py-0.5"
+                        style={{ backgroundColor: meta.bgColor, color: meta.color }}
+                      >
+                        {meta.shortLabel}
+                      </Badge>
+                      <span className="text-sm font-medium">{meta.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{meta.description}</p>
+                  </div>
+                  
+                  {/* Your Brand's Rates */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: meta.color }}>
+                      {brandName}
+                    </p>
+                    <div>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-muted-foreground">Citation</span>
+                        <span className="font-bold" style={{ color: citationRate > 0 ? meta.color : undefined }}>
+                          {scansWithCitations > 0 ? `${citationRate}%` : '—'}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${citationRate}%`, backgroundColor: meta.color }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-muted-foreground">Mention</span>
+                        <span className="font-bold" style={{ color: mentionRate > 0 ? meta.color : undefined }}>
+                          {scanCount > 0 ? `${mentionRate}%` : '—'}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all opacity-60"
+                          style={{ width: `${mentionRate}%`, backgroundColor: meta.color }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sentiment + Position at this stage */}
+                  {(sentimentScore !== null || avgPosition !== null) && (
+                    <div className="flex items-center gap-3">
+                      {sentimentScore !== null && (
+                        <div className="flex items-center gap-1.5">
+                          {sentimentScore > 0 ? (
+                            <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
+                          ) : sentimentScore < 0 ? (
+                            <ThumbsDown className="h-3.5 w-3.5 text-red-500" />
+                          ) : (
+                            <Minus className="h-3.5 w-3.5 text-slate-400" />
+                          )}
+                          <span className={`text-xs font-medium ${
+                            sentimentScore > 0 ? 'text-green-600' : sentimentScore < 0 ? 'text-red-600' : 'text-slate-500'
+                          }`}>
+                            {sentimentScore > 0 ? '+' : ''}{sentimentScore} sentiment
+                          </span>
+                        </div>
+                      )}
+                      {avgPosition !== null && (
+                        <div className="flex items-center gap-1.5">
+                          <Target className="h-3.5 w-3.5 text-amber-500" />
+                          <span className="text-xs font-medium text-amber-600">
+                            Avg #{avgPosition.toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Top cited domains at this stage */}
+                  {topDomains.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Top cited sources
+                      </p>
+                      <div className="space-y-1">
+                        {topDomains.map(({ domain, citations, isBrand }) => (
+                          <div key={domain} className="flex items-center justify-between text-xs">
+                            <span className={`truncate ${isBrand ? 'font-medium' : ''}`} style={isBrand ? { color: meta.color } : {}}>
+                              {isBrand ? `${domain} ★` : domain}
+                            </span>
+                            <span className="text-muted-foreground shrink-0 ml-2">{citations}x</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content coverage */}
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{queryCount} prompts</span>
+                      <span className="text-muted-foreground">{scanCount} scans</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs mt-1">
+                      <span className="text-muted-foreground">
+                        {publishedMemos} memo{publishedMemos !== 1 ? 's' : ''} published
+                      </span>
+                      {memoCount > publishedMemos && (
+                        <span className="text-muted-foreground">
+                          {memoCount - publishedMemos} draft{memoCount - publishedMemos !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Gap / Strong indicator */}
+                  {isGap && scanCount > 5 && (
+                    <div className="px-2 py-1.5 bg-red-50 border border-red-200 rounded text-xs text-red-700 font-medium">
+                      Gap: Low visibility at this stage
+                    </div>
+                  )}
+                  {isStrong && (
+                    <div className="px-2 py-1.5 rounded text-xs font-medium" style={{ backgroundColor: meta.bgColor, color: meta.color }}>
+                      Strong visibility
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
