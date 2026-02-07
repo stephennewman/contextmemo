@@ -517,8 +517,8 @@ export default async function BrandPage({ params }: Props) {
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-bold tracking-widest text-zinc-500">ENTITIES</span>
           </div>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{allCompetitors?.length || 0}</div>
-          <div className="text-xs text-zinc-500 mt-1">{competitors?.length || 0} active · {(allCompetitors?.length || 0) - (competitors?.length || 0)} excluded</div>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{competitors?.length || 0}</div>
+          <div className="text-xs text-zinc-500 mt-1">tracked</div>
         </StatCardLink>
       </div>
 
