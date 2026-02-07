@@ -42,22 +42,31 @@ export async function GET() {
     .gte('started_at', tenMinutesAgo)
     .order('started_at', { ascending: false })
 
-  // Get last activity from activity_log (most recent completed activity)
-  const { data: lastActivity } = await supabase
-    .from('activity_log')
-    .select('created_at, title, activity_type')
-    .in('brand_id', brandIds)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+  // Get last activity from alerts table (most recent completed activity)
+  let lastActivity = null
+  try {
+    const { data } = await supabase
+      .from('alerts')
+      .select('created_at, title, alert_type')
+      .in('brand_id', brandIds)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (data) {
+      lastActivity = {
+        timestamp: data.created_at,
+        title: data.title,
+        type: data.alert_type,
+      }
+    }
+  } catch {
+    // alerts query failed, proceed without last activity
+  }
 
   return NextResponse.json({
     jobs: activeJobs || [],
     hasActive: (activeJobs?.length || 0) > 0,
-    lastActivity: lastActivity ? {
-      timestamp: lastActivity.created_at,
-      title: lastActivity.title,
-      type: lastActivity.activity_type,
-    } : null,
+    lastActivity,
   })
 }

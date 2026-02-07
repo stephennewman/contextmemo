@@ -681,6 +681,7 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   
   // Filters
   const [selectedCategories, setSelectedCategories] = useState<ActivityCategory[]>([])
@@ -692,6 +693,7 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
     if (reset) {
       setLoading(true)
       setOffset(0)
+      setError(null)
     } else {
       setLoadingMore(true)
     }
@@ -706,6 +708,12 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
       params.set('offset', reset ? '0' : offset.toString())
 
       const res = await fetch(`/api/activity?${params.toString()}`)
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to load activity (${res.status})`)
+      }
+      
       const data = await res.json()
 
       if (reset) {
@@ -715,8 +723,9 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
       }
       setHasMore(data.hasMore || false)
       setOffset(reset ? 30 : offset + 30)
-    } catch (error) {
-      console.error('Failed to fetch activities:', error)
+    } catch (err) {
+      console.error('Failed to fetch activities:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load activity')
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -829,6 +838,18 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
                 </div>
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto text-amber-400 mb-4" />
+            <p className="font-semibold text-[#0F172A]">Failed to load activity</p>
+            <p className="text-sm text-slate-500 mt-1">{error}</p>
+            <button 
+              onClick={() => fetchActivities(true)}
+              className="mt-3 text-sm font-semibold text-[#0EA5E9] hover:underline"
+            >
+              Try Again
+            </button>
           </div>
         ) : activities.length === 0 ? (
           <div className="p-8 text-center">
