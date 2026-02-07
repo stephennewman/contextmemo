@@ -388,6 +388,23 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 7, 2026
+
+**Feature: Per-Brand Automation Controls — Toggle Jobs On/Off + Set Schedules**
+- **Problem:** OpenRouter spend was not controllable per brand. All brands got the same jobs at the same frequency, and 6/9 inngest functions calling OpenRouter didn't log costs to `usage_events` (blind spots: citation-verify, citation-loop, gap-to-content, competitor-content, topic-universe, prompt-intelligence).
+- **Solution:** New `/automations` dashboard page showing all brands in one grid with:
+  - Per-job toggle switches (Daily Scan, Discovery Scan, Competitor Intel, Content Generation, Citation Verify, Prompt Enrichment, Prompt Intelligence)
+  - Per-job schedule dropdowns (daily/every other day/2x week/weekly/biweekly/monthly)
+  - Cost weight indicators ($/$$/$$$ per job)
+  - 7-day tracked spend per brand
+  - Master pause/play per brand
+  - Scan cap selector (25/50/100/200 queries)
+  - Auto-memo toggle + daily memo cap
+- **Database:** Added schedule + toggle columns to existing `brand_settings` table (was empty/unused). Auto-create trigger ensures every brand gets default settings.
+- **Backend wiring:** `daily-run.ts` now loads `brand_settings` for all brands before triggering any jobs. Each job respects its per-brand enabled/schedule setting. Individual inngest functions (`scan-run.ts`, `citation-verify.ts`, `competitor-content.ts`, `hourly-content.ts`) also check settings as a safety net.
+- **New utility:** `lib/utils/brand-settings.ts` — `getBrandSettings()`, `getAllBrandSettings()`, `shouldRunOnSchedule()` shared across all functions.
+- Files changed/created: `app/(dashboard)/automations/page.tsx`, `components/dashboard/automations-grid.tsx`, `app/api/brands/automations/route.ts`, `lib/utils/brand-settings.ts`, `lib/feed/types.ts`, `lib/inngest/functions/daily-run.ts`, `lib/inngest/functions/scan-run.ts`, `lib/inngest/functions/hourly-content.ts`, `lib/inngest/functions/citation-verify.ts`, `lib/inngest/functions/competitor-content.ts`, `components/dashboard/dashboard-header.tsx`
+
 ### February 6, 2026 (v2)
 
 **Fix: Watch Tab Classifier — Recognize Industry Topics on Competitor Product Pages**
