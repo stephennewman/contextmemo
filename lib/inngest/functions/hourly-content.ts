@@ -1,6 +1,7 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
+import { getAllBrandSettings } from '@/lib/utils/brand-settings'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,6 +27,7 @@ export const hourlyContentGenerate = inngest.createFunction(
       const { data } = await supabase
         .from('brands')
         .select('id, name, tenant_id')
+        .or('is_paused.is.null,is_paused.eq.false')
         .order('created_at', { ascending: true })
 
       return data || []
@@ -35,10 +37,30 @@ export const hourlyContentGenerate = inngest.createFunction(
       return { success: true, message: 'No brands to process' }
     }
 
+    // Step 1b: Load settings to check which brands have content generation enabled
+    const settingsMap = await step.run('load-settings', async () => {
+      const map = await getAllBrandSettings(brands.map(b => b.id))
+      const result: Record<string, { auto_respond_content: boolean; content_generation_schedule: string }> = {}
+      for (const [id, s] of map) {
+        result[id] = { auto_respond_content: s.auto_respond_content, content_generation_schedule: s.content_generation_schedule }
+      }
+      return result
+    })
+
+    // Filter brands to only those with content generation enabled and not 'off'
+    const eligibleBrands = brands.filter(b => {
+      const s = settingsMap[b.id]
+      return s && s.auto_respond_content && s.content_generation_schedule !== 'off'
+    })
+
+    if (eligibleBrands.length === 0) {
+      return { success: true, message: 'No brands with content generation enabled' }
+    }
+
     const results: Array<{ brandId: string; brandName: string; action: string }> = []
 
-    // Step 2: For each brand, process ONE piece of content
-    for (const brand of brands) {
+    // Step 2: For each eligible brand, process ONE piece of content
+    for (const brand of eligibleBrands) {
       const result = await step.run(`process-brand-${brand.id}`, async () => {
         // First, check if there's any content pending response (ready to generate memo)
         const { data: competitors } = await supabase

@@ -671,21 +671,33 @@ export const competitorContentScan = inngest.createFunction(
     const { brandId, retroactive = false, daysBack = 30 } = event.data
 
     // Step 1: Get brand and its competitors
-    const { brand, competitors } = await step.run('get-brand-and-competitors', async () => {
-      const [brandResult, competitorsResult] = await Promise.all([
+    const { brand, competitors, disabled } = await step.run('get-brand-and-competitors', async () => {
+      const [brandResult, competitorsResult, settingsResult] = await Promise.all([
         supabase.from('brands').select('*').eq('id', brandId).single(),
         supabase.from('competitors').select('*').eq('brand_id', brandId).eq('is_active', true),
+        supabase.from('brand_settings').select('competitor_content_enabled').eq('brand_id', brandId).single(),
       ])
 
       if (brandResult.error || !brandResult.data) {
         throw new Error('Brand not found')
       }
 
+      // Check if competitor content scanning is disabled
+      if (settingsResult.data && settingsResult.data.competitor_content_enabled === false) {
+        console.log(`[CompetitorContent] Disabled for brand ${brandId}, skipping`)
+        return { brand: brandResult.data, competitors: [], disabled: true }
+      }
+
       return {
         brand: brandResult.data,
         competitors: competitorsResult.data || [],
+        disabled: false,
       }
     })
+
+    if (disabled) {
+      return { success: true, skipped: true, reason: 'competitor_content_disabled' }
+    }
 
     if (competitors.length === 0) {
       return { success: true, message: 'No competitors to scan', newContent: 0 }

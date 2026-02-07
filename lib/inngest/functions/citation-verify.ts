@@ -94,6 +94,18 @@ export const verifyGap = inngest.createFunction(
         throw new Error('Brand not found')
       }
 
+      // Check if citation verification is enabled for this brand
+      const { data: brandSettings } = await supabase
+        .from('brand_settings')
+        .select('auto_verify_citations')
+        .eq('brand_id', gapData.brand_id)
+        .single()
+      
+      if (brandSettings && brandSettings.auto_verify_citations === false) {
+        console.log(`[CitationVerify] Verification disabled for brand ${gapData.brand_id}, skipping`)
+        return { gap: gapData, brand: brandData, memo: null, disabled: true }
+      }
+
       // Get the memo if it exists
       let memoData = null
       if (gapData.response_memo_id) {
@@ -105,8 +117,13 @@ export const verifyGap = inngest.createFunction(
         memoData = data
       }
 
-      return { gap: gapData, brand: brandData, memo: memoData }
+      return { gap: gapData, brand: brandData, memo: memoData, disabled: false }
     })
+
+    // Early exit if verification is disabled for this brand
+    if ((gap as { disabled?: boolean }).disabled) {
+      return { success: true, skipped: true, reason: 'verification_disabled' }
+    }
 
     const brandName = brand.name.toLowerCase()
     const brandDomain = brand.domain

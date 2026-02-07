@@ -149,57 +149,93 @@ export function OnboardingFlow({
     setHasStarted(true)
     addProgressLine(`Starting setup for ${brandName}...`, 'info')
     
-    // Run the pipeline: extract → competitors → queries → scan
+    // The Inngest pipeline is fully chained: extract → competitors → queries → scan.
+    // We only need to trigger the FIRST incomplete step. The rest chain automatically.
+    // The UI's job is just to poll and show progress as each step completes.
     const steps: OnboardingStep[] = ['extract', 'competitors', 'queries', 'scan']
     
+    // Find the first incomplete step to trigger
+    let triggerStep: OnboardingStep | null = null
     for (const step of steps) {
-      // Skip already completed steps (except scan which we always run)
       if (step !== 'scan' && completedSteps.has(step)) {
         addProgressLine(`✓ ${STEP_CONFIGS[step].shortTitle} already complete`, 'success')
         continue
       }
+      triggerStep = step
+      break
+    }
+
+    if (!triggerStep) {
+      // Everything already complete
+      setIsComplete(true)
+      addProgressLine(`✓ All steps already complete`, 'success')
+      return
+    }
+
+    // Trigger the first incomplete step - the Inngest chain handles the rest
+    const triggerConfig = STEP_CONFIGS[triggerStep]
+    setCurrentStep(triggerStep)
+    addProgressLine(``, 'info')
+    addProgressLine(`▶ ${triggerConfig.title}`, 'info')
+
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: triggerConfig.action }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Action failed')
+      }
+    } catch (error) {
+      completeWorkingLines()
+      addProgressLine(`⚠ Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'info')
+      setHasError(true)
+      return
+    }
+
+    // Now poll for ALL steps to complete (they chain automatically in Inngest)
+    for (const step of steps) {
+      if (step !== 'scan' && completedSteps.has(step)) {
+        continue // Already complete from initial state
+      }
 
       setCurrentStep(step)
       const config = STEP_CONFIGS[step]
-      addProgressLine(``, 'info') // Empty line for spacing
-      addProgressLine(`▶ ${config.title}`, 'info')
+      
+      // Show step header if this isn't the trigger step (which we already showed)
+      if (step !== triggerStep) {
+        addProgressLine(``, 'info')
+        addProgressLine(`▶ ${config.title}`, 'info')
+      }
 
-      // Trigger the action
-      try {
-        const response = await fetch(`/api/brands/${brandId}/actions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: config.action }),
-        })
-
-        if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || 'Action failed')
+      // Show progress messages while polling
+      messageIndexRef.current = 0
+      const showNextMessage = () => {
+        if (messageIndexRef.current < config.progressMessages.length) {
+          addProgressLine(config.progressMessages[messageIndexRef.current], 'working')
+          messageIndexRef.current++
         }
+      }
 
-        // Show progress messages while polling
-        messageIndexRef.current = 0
-        const showNextMessage = () => {
-          if (messageIndexRef.current < config.progressMessages.length) {
-            addProgressLine(config.progressMessages[messageIndexRef.current], 'working')
-            messageIndexRef.current++
-          }
-        }
+      // Show first message immediately
+      showNextMessage()
 
-        // Show first message immediately
+      // Poll for completion with progress messages
+      const pollStart = Date.now()
+      const maxPollTime = step === 'extract' ? 120000 : step === 'scan' ? 60000 : 90000
+
+      let stepCompleted = false
+      while (Date.now() - pollStart < maxPollTime) {
+        await new Promise(r => setTimeout(r, 3000))
+        
+        // Show next progress message
         showNextMessage()
 
-        // Poll for completion with progress messages
-        const pollStart = Date.now()
-        const maxPollTime = step === 'extract' ? 90000 : 60000 // Context extraction can take longer
-
-        while (Date.now() - pollStart < maxPollTime) {
-          await new Promise(r => setTimeout(r, 3000))
-          
-          // Show next progress message
-          showNextMessage()
-
-          // Check status
+        // Check status
+        try {
           const statusResponse = await fetch(`/api/brands/${brandId}/actions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -209,54 +245,54 @@ export function OnboardingFlow({
           if (statusResponse.ok) {
             const status = await statusResponse.json()
             
-            let stepComplete = false
+            let complete = false
             let summary = ''
 
             if (step === 'extract' && status.hasContext) {
-              stepComplete = true
+              complete = true
               summary = status.contextSummary || 'Profile extracted'
             } else if (step === 'competitors' && status.hasCompetitors) {
-              stepComplete = true
+              complete = true
               summary = `Found ${status.competitorCount || 0} competitors`
             } else if (step === 'queries' && status.hasQueries) {
-              stepComplete = true
+              complete = true
               summary = `Generated ${status.queryCount || 0} prompts`
             } else if (step === 'scan') {
               // Scan doesn't have a simple "complete" check, use timeout
               if (Date.now() - pollStart > 30000) {
-                stepComplete = true
+                complete = true
                 summary = 'Visibility scan initiated'
               }
             }
 
-            if (stepComplete) {
-              completeWorkingLines() // Stop spinners before showing success
+            if (complete) {
+              completeWorkingLines()
               addProgressLine(`✓ ${summary}`, 'success')
               setCompletedSteps(prev => new Set([...prev, step]))
+              stepCompleted = true
               break
             }
           }
+        } catch {
+          // Network error during polling, continue
         }
+      }
 
-        // If we hit max time and step didn't complete, mark as failed for critical steps
-        if (!completedSteps.has(step)) {
-          completeWorkingLines() // Stop spinners
-          
-          // For critical steps (extract, competitors, queries), this is a real failure
-          if (step !== 'scan') {
-            addProgressLine(`⚠ ${config.shortTitle} timed out - may still be processing in background`, 'info')
-            // Don't mark as complete - let the final check determine if we should retry
-          } else {
-            // Scan is non-critical, mark as complete
-            addProgressLine(`✓ ${config.shortTitle} processing...`, 'success')
-            setCompletedSteps(prev => new Set([...prev, step]))
-          }
+      // If we hit max time and step didn't complete
+      if (!stepCompleted) {
+        completeWorkingLines()
+        
+        if (step !== 'scan') {
+          addProgressLine(`⚠ ${config.shortTitle} timed out - may still be processing in background`, 'info')
+          // Critical step timed out - don't continue to dependent steps.
+          // The Inngest pipeline chains these automatically (extract → competitors → queries → scan),
+          // so the background pipeline will still complete even if the UI stops here.
+          break
+        } else {
+          // Scan is non-critical, mark as complete
+          addProgressLine(`✓ ${config.shortTitle} processing...`, 'success')
+          setCompletedSteps(prev => new Set([...prev, step]))
         }
-
-      } catch (error) {
-        completeWorkingLines() // Stop spinners on error too
-        addProgressLine(`⚠ Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'info')
-        // Continue with next step even on error
       }
     }
 

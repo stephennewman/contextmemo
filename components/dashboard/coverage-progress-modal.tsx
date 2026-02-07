@@ -213,7 +213,11 @@ export function CoverageProgressModal({
                 percent: score.coverage_percent,
               })
 
-              // Clear any remaining working lines by adding completion
+              // Resolve all remaining working spinners
+              setProgressLines(prev => prev.map(line =>
+                line.type === 'working' ? { ...line, type: 'success' as const } : line
+              ))
+
               addLine(``, 'info')
               addLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
               addLine(`COVERAGE AUDIT COMPLETE`, 'success')
@@ -247,6 +251,10 @@ export function CoverageProgressModal({
           for (const t of simulationRef.current) {
             clearTimeout(t)
           }
+          // Resolve all remaining working spinners
+          setProgressLines(prev => prev.map(line =>
+            line.type === 'working' ? { ...line, type: 'info' as const } : line
+          ))
           addLine(``, 'info')
           addLine(`Still processing. This can take a few minutes for large sites.`, 'info')
           addLine(`Close this window and refresh the page to check results.`, 'info')
@@ -255,6 +263,10 @@ export function CoverageProgressModal({
       }, 5000)
 
     } catch (error) {
+      // Resolve all remaining working spinners
+      setProgressLines(prev => prev.map(line =>
+        line.type === 'working' ? { ...line, type: 'info' as const } : line
+      ))
       addLine(``, 'info')
       addLine(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
       setIsComplete(true)

@@ -219,6 +219,7 @@ export interface BrandSettings {
   // W1: Core Discovery
   auto_scan_enabled: boolean
   daily_scan_cap: number
+  scan_schedule: 'daily' | 'every_other_day' | 'twice_weekly' | 'weekly'
   
   // W2: Network Expansion
   auto_expand_network: boolean
@@ -227,14 +228,22 @@ export interface BrandSettings {
   // W3: Competitive Response
   auto_respond_content: boolean
   content_response_threshold: 'all' | 'high' | 'critical'
+  competitor_content_enabled: boolean
+  competitor_content_schedule: 'daily' | 'every_other_day' | 'weekly'
+  content_generation_schedule: 'weekdays' | 'daily' | 'weekly' | 'off'
   
   // W4: Verification
   auto_verify_citations: boolean
   verification_retry_days: number
   
-  // W5: Greenspace
+  // W5: Greenspace / Discovery
   weekly_greenspace_enabled: boolean
   greenspace_day_of_week: number
+  discovery_schedule: 'weekly' | 'biweekly' | 'monthly'
+  
+  // Prompt workflows
+  prompt_enrichment_enabled: boolean
+  prompt_intelligence_enabled: boolean
   
   // Memo generation
   auto_memo_enabled: boolean

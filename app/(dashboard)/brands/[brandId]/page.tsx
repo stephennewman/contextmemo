@@ -1,30 +1,14 @@
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table'
 import { 
   ExternalLink,
   TrendingUp,
-  Pencil,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  FileText,
 } from 'lucide-react'
-import { formatDistanceToNow, format } from 'date-fns'
 import { BrandContext } from '@/lib/supabase/types'
-import { ScanButton, GenerateMemoDropdown, PushToHubSpotButton, FindContentGapsButton, GenerateMemosButton } from '@/components/dashboard/brand-actions'
+import { ScanButton, GenerateMemoDropdown, FindContentGapsButton, GenerateMemosButton } from '@/components/dashboard/brand-actions'
+import { MemoFeed } from '@/components/dashboard/memo-feed'
 import { ProfileSection } from '@/components/dashboard/profile-section'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
 import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
@@ -516,155 +500,39 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="memos">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Memos</CardTitle>
-                  <CardDescription>
-                    {memos?.length || 0} total &middot; {memos?.filter(m => m.status === 'published').length || 0} published &middot; {memos?.filter(m => m.status === 'draft').length || 0} drafts
-                  </CardDescription>
-                </div>
-                <GenerateMemoDropdown brandId={brandId} />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-[#0F172A]">Memos</h2>
               </div>
-            </CardHeader>
-            <CardContent>
-              {memos && memos.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead className="w-[30%]">Title</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Words</TableHead>
-                      <TableHead className="text-right">Sources</TableHead>
-                      <TableHead className="text-center">Verified</TableHead>
-                      <TableHead>Updated</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {memos.map((memo) => {
-                      const schemaJson = memo.schema_json as { 
-                        hubspot_synced_at?: string
-                      } | null
-                      const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
-                      const isContextMemoBrand = brandId === CONTEXT_MEMO_BRAND_ID
-                      
-                      let liveUrl: string
-                      if (isContextMemoBrand) {
-                        const typeToRoute: Record<string, string> = {
-                          guide: '/memos/guides',
-                          industry: '/memos/guides',
-                          comparison: '/memos/compare',
-                          alternative: '/memos/compare',
-                          how_to: '/memos/how-to',
-                          response: '/memos/how-to',
-                        }
-                        const route = typeToRoute[memo.memo_type] || '/memos/how-to'
-                        const cleanSlug = memo.slug.replace(/^(guides|compare|how-to|resources)\//, '')
-                        liveUrl = `https://contextmemo.com${route}/${cleanSlug}`
-                      } else {
-                        liveUrl = `https://${brand.subdomain}.contextmemo.com/${memo.slug}`
-                      }
-                      const memoTypeFormatted = memo.memo_type
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (l: string) => l.toUpperCase())
-                      
-                      // Stats
-                      const wordCount = memo.content_markdown
-                        ? memo.content_markdown.split(/\s+/).filter(Boolean).length
-                        : 0
-                      const sourcesArray = Array.isArray(memo.sources) ? memo.sources : []
-                      const sourcesCount = sourcesArray.length
-                      
-                      return (
-                        <TableRow key={memo.id} className="group">
-                          <TableCell>
-                            <div className="flex flex-col gap-0.5">
-                              {memo.status === 'published' ? (
-                                <a 
-                                  href={liveUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="font-medium hover:text-primary hover:underline flex items-center gap-1 group/link text-sm"
-                                >
-                                  <span className="truncate max-w-[260px]">{memo.title}</span>
-                                  <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0" />
-                                </a>
-                              ) : (
-                                <span className="font-medium truncate max-w-[260px] text-sm">{memo.title}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs font-normal">
-                              {memoTypeFormatted}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={memo.status === 'published' ? 'default' : 'secondary'} 
-                              className={`text-xs font-normal ${memo.status === 'published' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}`}
-                            >
-                              {memo.status === 'published' ? 'Published' : 'Draft'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
-                            {wordCount > 0 ? wordCount.toLocaleString() : '—'}
-                          </TableCell>
-                          <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
-                            {sourcesCount > 0 ? sourcesCount : '—'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {memo.verified_accurate ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
-                            ) : (
-                              <XCircle className="h-4 w-4 text-slate-300 mx-auto" />
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            <span title={format(new Date(memo.updated_at), 'PPpp')}>
-                              {formatDistanceToNow(new Date(memo.updated_at), { addSuffix: true })}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {memo.status === 'published' && (
-                                <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
-                                  <a href={liveUrl} target="_blank" rel="noopener noreferrer" title="View live">
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                              )}
-                              <PushToHubSpotButton 
-                                brandId={brandId}
-                                memoId={memo.id}
-                                hubspotEnabled={hubspotEnabled}
-                                hubspotAutoPublish={hubspotAutoPublish}
-                                hubspotSyncedAt={schemaJson?.hubspot_synced_at}
-                              />
-                              <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
-                                <Link href={`/brands/${brandId}/memos/${memo.id}`} title="Edit memo">
-                                  <Pencil className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground text-sm">No memos yet</p>
-                  <p className="text-muted-foreground text-xs mt-1">Use the Generate Memo button above to create your first memo.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <GenerateMemoDropdown brandId={brandId} />
+            </div>
+            <MemoFeed
+              brandId={brandId}
+              brandName={brand.name}
+              brandSubdomain={brand.subdomain}
+              initialMemos={(memos || []) as Array<{
+                id: string
+                brand_id: string
+                title: string
+                slug: string
+                content_markdown: string
+                content_html: string | null
+                meta_description: string | null
+                status: 'draft' | 'published'
+                memo_type: string
+                published_at: string | null
+                created_at: string
+                updated_at: string
+                sources: unknown[] | null
+                verified_accurate: boolean
+                version: number
+                schema_json: Record<string, unknown> | null
+              }>}
+              hubspotEnabled={hubspotEnabled}
+              hubspotAutoPublish={hubspotAutoPublish}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="prompts">

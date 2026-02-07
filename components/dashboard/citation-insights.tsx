@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns'
 import { FunnelStage, FUNNEL_STAGE_META } from '@/lib/supabase/types'
+import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 interface ScanResult {
   id: string
@@ -303,19 +304,28 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
       const mentioned = stageScans.filter(s => s.brand_mentioned).length
       
       // Aggregate competitors mentioned at this funnel stage
-      const competitorCounts = new Map<string, number>()
+      // Count unique scans per competitor (not total occurrences) and filter blocklist
+      const competitorScanSets = new Map<string, Set<string>>()
       stageScans.forEach(scan => {
-        (scan.competitors_mentioned || []).forEach(comp => {
-          competitorCounts.set(comp, (competitorCounts.get(comp) || 0) + 1)
+        const seen = new Set<string>() // dedupe within single scan
+        ;(scan.competitors_mentioned || []).forEach(comp => {
+          const normalized = comp.toLowerCase().trim()
+          if (seen.has(normalized)) return
+          seen.add(normalized)
+          if (isBlockedCompetitorName(comp)) return
+          if (!competitorScanSets.has(comp)) {
+            competitorScanSets.set(comp, new Set())
+          }
+          competitorScanSets.get(comp)!.add(scan.id)
         })
       })
-      const topCompetitors = Array.from(competitorCounts.entries())
-        .sort((a, b) => b[1] - a[1])
+      const topCompetitors = Array.from(competitorScanSets.entries())
+        .sort((a, b) => b[1].size - a[1].size)
         .slice(0, 5)
-        .map(([name, count]) => ({
+        .map(([name, scanIds]) => ({
           name,
-          mentions: count,
-          mentionRate: stageScans.length > 0 ? Math.round((count / stageScans.length) * 100) : 0,
+          mentions: scanIds.size,
+          mentionRate: stageScans.length > 0 ? Math.round((scanIds.size / stageScans.length) * 100) : 0,
         }))
       
       // Aggregate cited domains at this stage

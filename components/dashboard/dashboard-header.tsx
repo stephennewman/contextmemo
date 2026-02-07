@@ -109,9 +109,15 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
             <nav className="hidden md:flex items-center gap-1">
               <Link 
                 href="/dashboard" 
-                className={`px-4 py-2 text-sm font-semibold tracking-wide ${!currentBrandId ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'} transition-colors`}
+                className={`px-4 py-2 text-sm font-semibold tracking-wide ${!currentBrandId && !pathname.startsWith('/automations') ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'} transition-colors`}
               >
                 BRANDS
+              </Link>
+              <Link 
+                href="/automations" 
+                className={`px-4 py-2 text-sm font-semibold tracking-wide ${pathname.startsWith('/automations') ? 'bg-[#0EA5E9] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'} transition-colors`}
+              >
+                AUTOMATIONS
               </Link>
               {currentBrandId && (
                 <Link 

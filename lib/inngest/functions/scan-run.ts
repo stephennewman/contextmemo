@@ -145,7 +145,7 @@ export const scanRun = inngest.createFunction(
               .eq('brand_id', brandId)
               .eq('is_active', true)
               .order('priority', { ascending: false })
-              .limit(100), // Scan up to 100 queries per run
+              .limit(200), // Fetch up to 200, actual cap applied from brand_settings below
         // Get ALL competitors (tracked + discovered) for mention detection
         supabase
           .from('competitors')
@@ -168,9 +168,35 @@ export const scanRun = inngest.createFunction(
         }
       }
 
+      // Apply per-brand scan cap from brand_settings
+      let cappedQueries = queriesResult.data || []
+      const { data: brandSettings } = await supabase
+        .from('brand_settings')
+        .select('daily_scan_cap, auto_scan_enabled')
+        .eq('brand_id', brandId)
+        .single()
+      
+      if (brandSettings) {
+        if (brandSettings.auto_scan_enabled === false && !queryIds) {
+          // If auto scan is disabled and this isn't a manual scan (no specific queryIds), skip
+          console.log(`[Scan] Brand ${brandId} has auto_scan_enabled=false, skipping`)
+          return {
+            brand: brandResult.data,
+            queries: [],
+            competitors: [],
+            isPaused: false,
+          }
+        }
+        const cap = brandSettings.daily_scan_cap || 100
+        if (cappedQueries.length > cap) {
+          console.log(`[Scan] Brand ${brandId}: capping queries from ${cappedQueries.length} to ${cap}`)
+          cappedQueries = cappedQueries.slice(0, cap)
+        }
+      }
+
       return {
         brand: brandResult.data,
-        queries: queriesResult.data || [],
+        queries: cappedQueries,
         competitors: competitorsResult.data || [],
         isPaused: false,
       }
