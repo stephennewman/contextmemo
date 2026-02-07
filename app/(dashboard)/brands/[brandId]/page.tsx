@@ -6,5 +6,5 @@ interface Props {
 
 export default async function BrandPage({ params }: Props) {
   const { brandId } = await params
-  redirect(`/brands/${brandId}/prompts`)
+  redirect(`/brands/${brandId}/profile`)
 }
