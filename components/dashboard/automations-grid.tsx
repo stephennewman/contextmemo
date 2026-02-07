@@ -256,7 +256,7 @@ export function AutomationsGrid() {
           <DollarSign className="h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">7-day tracked spend:</span>
           <span className="font-bold font-mono">
-            ${data.reduce((sum, b) => sum + b.costs7d.totalCents, 0) / 100}
+            ${(data.reduce((sum, b) => sum + b.costs7d.totalCents, 0) / 100).toFixed(2)}
           </span>
         </div>
         <div className="text-muted-foreground">
