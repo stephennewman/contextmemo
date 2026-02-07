@@ -929,6 +929,8 @@ interface EnrichedPromptData {
   topCitedDomains: string[]
   // Total citation count across all scans
   totalCitations: number
+  // AI models that scanned this prompt
+  modelsScanned: string[]
   // Is this an opportunity (competitors cited, brand not)
   isOpportunity: boolean
   // Prompt score (0-100) - buyer relevance
@@ -955,6 +957,26 @@ interface PromptVisibilityListProps {
   competitors?: Array<{ id: string; name: string; domain: string | null; is_active: boolean }>
   themes?: PromptTheme[]
   memos?: PromptMemo[]
+}
+
+// Short display names for AI models
+const MODEL_SHORT_NAMES: Record<string, string> = {
+  'perplexity-sonar': 'Perplexity',
+  'gpt-4o-mini': 'GPT-4o Mini',
+  'gpt-4o': 'GPT-4o',
+  'claude-3-5-haiku': 'Claude Haiku',
+  'claude-3-5-sonnet': 'Claude Sonnet',
+  'grok-4-fast': 'Grok 4',
+  'grok-2': 'Grok 2',
+  'gemini-2.0-flash': 'Gemini Flash',
+  'llama-3.1-70b': 'Llama 70B',
+  'mistral-large': 'Mistral',
+  'deepseek-v3': 'DeepSeek',
+  'qwen-2.5-72b': 'Qwen 72B',
+}
+
+function getModelShortName(modelId: string): string {
+  return MODEL_SHORT_NAMES[modelId] || modelId.split('/').pop()?.replace(/:.*$/, '') || modelId
 }
 
 // Keep old name as alias for backward compatibility
@@ -1086,6 +1108,9 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
         .slice(0, 5)
         .map(([domain]) => domain)
 
+      // Models that scanned this prompt
+      const modelsScanned = [...new Set(scans.map(s => s.model))]
+
       // Related memos count
       const relatedMemoCount = memos.filter(m => m.source_query_id === q.id).length
 
@@ -1116,6 +1141,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
         competitorsMentioned,
         topCitedDomains,
         totalCitations,
+        modelsScanned,
         isOpportunity,
         promptScore,
         relatedMemoCount,
@@ -1571,16 +1597,17 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                     )}
                   </div>
 
-                  {/* Row 3: Entities mentioned + cited domains */}
-                  {(p.competitorsMentioned.length > 0 || p.topCitedDomains.length > 0) && (
+                  {/* Row 3: Entities, cited domains, models */}
+                  {(p.competitorsMentioned.length > 0 || p.topCitedDomains.length > 0 || p.modelsScanned.length > 0) && (
                     <div className="flex flex-col gap-1.5 mt-2">
                       {/* Competitors/entities mentioned in AI responses */}
                       {p.competitorsMentioned.length > 0 && (
                         <div className="flex items-center gap-1.5">
                           <Users className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-[10px] text-muted-foreground shrink-0">Entities:</span>
                           <div className="flex flex-wrap gap-1">
                             {p.competitorsMentioned.slice(0, 5).map((comp, idx) => (
-                              <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">
+                              <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600 capitalize">
                                 {comp}
                               </span>
                             ))}
@@ -1594,6 +1621,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                       {p.topCitedDomains.length > 0 && (
                         <div className="flex items-center gap-1.5">
                           <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-[10px] text-muted-foreground shrink-0">Sources:</span>
                           <div className="flex flex-wrap gap-1">
                             {p.topCitedDomains.slice(0, 4).map((domain, idx) => (
                               <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-sky-50 text-sky-700">
@@ -1603,6 +1631,20 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                             {p.topCitedDomains.length > 4 && (
                               <span className="text-[10px] text-muted-foreground">+{p.topCitedDomains.length - 4} more</span>
                             )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Models that scanned this prompt */}
+                      {p.modelsScanned.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <Bot className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-[10px] text-muted-foreground shrink-0">Models:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {p.modelsScanned.map((model, idx) => (
+                              <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-violet-50 text-violet-700">
+                                {getModelShortName(model)}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       )}
