@@ -83,18 +83,21 @@ export default async function BrandPage({ params }: Props) {
     .eq('brand_id', brandId)
 
   // Get all scans for history (up to last 90 days)
+  // Use lightweight select for the list view (no response_text blob)
+  // and explicit limit since Supabase defaults to 1000 rows
   const ninetyDaysAgo = new Date()
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
   
   const { data: allScans } = await supabase
     .from('scan_results')
-    .select('*')
+    .select('id, brand_id, query_id, model, brand_mentioned, brand_position, brand_context, brand_in_citations, competitors_mentioned, citations, search_results, scanned_at, is_first_citation, citation_status_changed, previous_cited, new_competitors_found, position_change, brand_sentiment, sentiment_reason')
     .eq('brand_id', brandId)
     .gte('scanned_at', ninetyDaysAgo.toISOString())
-    .order('scanned_at', { ascending: true })
+    .order('scanned_at', { ascending: false })
+    .limit(5000)
 
-  // Get recent scans for the summary
-  const recentScans = allScans?.slice(-100) || []
+  // Get recent scans for the summary (most recent first, take last 100)
+  const recentScans = allScans?.slice(0, 100) || []
 
   // Build citation counts per entity (competitor) from scan results
   const entityDomains = (allCompetitors || [])
@@ -390,7 +393,7 @@ export default async function BrandPage({ params }: Props) {
           </div>
           <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #F59E0B' }}>
             <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
-            <div className="text-4xl font-bold text-[#0F172A] mt-1">{recentScans?.length || 0}</div>
+            <div className="text-4xl font-bold text-[#0F172A] mt-1">{allScans?.length || 0}</div>
             <div className="text-sm text-zinc-500">last 90 days</div>
           </div>
         </div>
@@ -480,7 +483,7 @@ export default async function BrandPage({ params }: Props) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-[#0F172A]">Prompt Analysis</h2>
-              <p className="text-sm text-muted-foreground">Track performance across AI models · {recentScans?.length || 0} scans last 90 days</p>
+              <p className="text-sm text-muted-foreground">Track performance across AI models · {allScans?.length || 0} scans last 90 days</p>
             </div>
             <div className="flex gap-2">
               <ExportDropdown brandId={brandId} />
