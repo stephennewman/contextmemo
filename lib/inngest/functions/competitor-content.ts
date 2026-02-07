@@ -7,6 +7,7 @@ import { BrandContext, CompetitorFeed } from '@/lib/supabase/types'
 import { generateToneInstructions } from '@/lib/ai/prompts/memo-generation'
 import { emitCompetitorPublished } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 import crypto from 'crypto'
 import Parser from 'rss-parser'
 
@@ -670,6 +671,12 @@ export const competitorContentScan = inngest.createFunction(
   async ({ event, step }) => {
     const { brandId, retroactive = false, daysBack = 30 } = event.data
 
+    // Budget check
+    const canSpend = await step.run('check-budget', async () => canBrandSpend(brandId))
+    if (!canSpend) {
+      return { success: true, skipped: true, reason: 'budget_exceeded' }
+    }
+
     // Step 1: Get brand and its competitors
     const { brand, competitors, disabled } = await step.run('get-brand-and-competitors', async () => {
       const [brandResult, competitorsResult, settingsResult] = await Promise.all([
@@ -957,6 +964,13 @@ export const competitorContentClassify = inngest.createFunction(
   { event: 'competitor/content-classify' },
   async ({ event, step }) => {
     const { brandId, limit: requestedLimit } = event.data
+
+    // Budget check
+    const canSpendClassify = await step.run('check-budget', async () => canBrandSpend(brandId))
+    if (!canSpendClassify) {
+      return { success: true, skipped: true, reason: 'budget_exceeded' }
+    }
+
     // Use requested limit or default to 20
     const classifyLimit = requestedLimit || 20
 
@@ -1154,6 +1168,13 @@ export const competitorContentRespond = inngest.createFunction(
   { event: 'competitor/content-respond' },
   async ({ event, step }) => {
     const { brandId, limit: requestedLimit } = event.data
+
+    // Budget check
+    const canSpendRespond = await step.run('check-budget', async () => canBrandSpend(brandId))
+    if (!canSpendRespond) {
+      return { success: true, skipped: true, reason: 'budget_exceeded' }
+    }
+
     // Use requested limit or default to 5
     const processLimit = requestedLimit || 5
 

@@ -18,6 +18,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
 import { getHubSpotToken } from '@/lib/hubspot/oauth'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -214,6 +215,18 @@ export const gapToContent = inngest.createFunction(
   { event: 'gap/process' },
   async ({ event, step }) => {
     const { gapId, publishImmediately } = event.data
+
+    // Budget check — get brand from gap first
+    const gapBrand = await step.run('get-gap-brand', async () => {
+      const { data } = await supabase.from('content_gaps').select('brand_id').eq('id', gapId).single()
+      return data?.brand_id
+    })
+    if (gapBrand) {
+      const canSpend = await step.run('check-budget', async () => canBrandSpend(gapBrand))
+      if (!canSpend) {
+        return { success: true, skipped: true, reason: 'budget_exceeded' }
+      }
+    }
 
     // Step 1: Get gap and brand data
     const { gap, brand } = await step.run('get-data', async () => {

@@ -12,6 +12,7 @@ import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,6 +56,12 @@ export const analyzePromptIntelligence = inngest.createFunction(
   { event: 'prompt-intelligence/analyze' },
   async ({ event, step }) => {
     const { brandId, days = 14 } = event.data
+
+    // Budget check
+    const canSpend = await step.run('check-budget', async () => canBrandSpend(brandId))
+    if (!canSpend) {
+      return { success: true, skipped: true, reason: 'budget_exceeded' }
+    }
 
     // Get brand info
     const brand = await step.run('get-brand', async () => {

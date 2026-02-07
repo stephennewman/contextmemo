@@ -9,6 +9,7 @@ import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorD
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { reportUsageToStripe, calculateCredits } from '@/lib/stripe/usage'
 import { classifySentiment } from '@/lib/utils/sentiment'
+import { checkBrandBudget } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -125,6 +126,23 @@ export const scanRun = inngest.createFunction(
   { event: 'scan/run' },
   async ({ event, step }) => {
     const { brandId, queryIds, autoGenerateMemos = false } = event.data
+
+    // Step 0: Budget check — skip if brand is over its monthly cap
+    const budget = await step.run('check-budget', async () => {
+      return await checkBrandBudget(brandId)
+    })
+
+    if (!budget.allowed) {
+      console.log(`[Scan] Brand ${brandId} blocked by budget guard: ${budget.reason} (${budget.percentUsed}% used)`)
+      return {
+        success: true,
+        skipped: true,
+        reason: `budget_${budget.reason}`,
+        spentCents: budget.spentCents,
+        capCents: budget.capCents,
+        brandId,
+      }
+    }
 
     // Step 1: Get brand and queries
     const { brand, queries, competitors } = await step.run('get-data', async () => {

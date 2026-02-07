@@ -47,6 +47,14 @@ interface BrandAutomation {
     projectedMonthlyDollars: string
     byType: Record<string, number>
   }
+  budget: {
+    monthlySpentCents: number
+    monthlySpentDollars: string
+    monthlyCapDollars: number | null
+    alertAtPercent: number
+    pauseAtCap: boolean
+    percentUsed: number | null
+  }
   lastRuns: Record<string, string | null>
 }
 
@@ -287,7 +295,7 @@ export function AutomationsGrid() {
       </div>
 
       {/* Brand cards */}
-      {data.map(({ brand, settings, costs7d, lastRuns }) => {
+      {data.map(({ brand, settings, costs7d, budget, lastRuns }) => {
         const isExpanded = expanded.has(brand.id)
         const isPaused = brand.is_paused
         const isSaving = saving === brand.id
@@ -536,6 +544,72 @@ export function AutomationsGrid() {
                       </select>
                     </div>
                   )}
+                </div>
+
+                {/* Budget guardrails */}
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                    Budget Guardrails
+                  </p>
+                  <div className="flex flex-wrap items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <label className="text-muted-foreground">Monthly cap:</label>
+                      <select
+                        value={settings.monthly_credit_cap ?? 'none'}
+                        onChange={(e) => {
+                          const val = e.target.value === 'none' ? null : parseInt(e.target.value)
+                          updateSetting(brand.id, 'monthly_credit_cap', val)
+                        }}
+                        className="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
+                      >
+                        <option value="none">No limit</option>
+                        <option value="10">$10/mo</option>
+                        <option value="25">$25/mo</option>
+                        <option value="50">$50/mo</option>
+                        <option value="100">$100/mo</option>
+                        <option value="200">$200/mo</option>
+                        <option value="500">$500/mo</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="text-muted-foreground">Auto-pause at cap:</label>
+                      <Switch
+                        checked={settings.pause_at_cap}
+                        onCheckedChange={(val) => updateSetting(brand.id, 'pause_at_cap', val)}
+                      />
+                    </div>
+
+                    {/* Current month usage bar */}
+                    <div className="flex-1 min-w-48">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">
+                          This month: <span className="font-mono font-medium text-foreground">${budget.monthlySpentDollars}</span>
+                        </span>
+                        {budget.monthlyCapDollars ? (
+                          <span className={`font-mono font-medium ${
+                            (budget.percentUsed || 0) >= 90 ? 'text-red-600' :
+                            (budget.percentUsed || 0) >= 70 ? 'text-amber-600' : 'text-muted-foreground'
+                          }`}>
+                            {budget.percentUsed}% of ${budget.monthlyCapDollars}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">no cap set</span>
+                        )}
+                      </div>
+                      {budget.monthlyCapDollars && (
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all rounded-full ${
+                              (budget.percentUsed || 0) >= 90 ? 'bg-red-500' :
+                              (budget.percentUsed || 0) >= 70 ? 'bg-amber-500' : 'bg-[#0EA5E9]'
+                            }`}
+                            style={{ width: `${Math.min(100, budget.percentUsed || 0)}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

@@ -14,6 +14,7 @@ import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations } from '@/lib/utils/openrouter'
 import { emitCitationVerified } from '@/lib/feed/emit'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,6 +68,19 @@ export const verifyGap = inngest.createFunction(
   { event: 'gap/verify' },
   async ({ event, step }) => {
     const { gapId } = event.data
+
+    // Step 0: Get gap to find brand_id, then budget check
+    const gapBrandId = await step.run('get-gap-brand', async () => {
+      const { data } = await supabase.from('content_gaps').select('brand_id').eq('id', gapId).single()
+      return data?.brand_id
+    })
+
+    if (gapBrandId) {
+      const canSpend = await step.run('check-budget', async () => canBrandSpend(gapBrandId))
+      if (!canSpend) {
+        return { success: true, skipped: true, reason: 'budget_exceeded' }
+      }
+    }
 
     // Step 1: Get gap, brand, and related data
     const { gap, brand, memo } = await step.run('get-data', async () => {

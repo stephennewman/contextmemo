@@ -21,6 +21,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -125,6 +126,12 @@ export const citationLoopRun = inngest.createFunction(
   { event: 'citation-loop/run' },
   async ({ event, step }) => {
     const { brandId, maxCycles = 3 } = event.data
+
+    // Budget check
+    const canSpend = await step.run('check-budget', async () => canBrandSpend(brandId))
+    if (!canSpend) {
+      return { success: true, skipped: true, reason: 'budget_exceeded' }
+    }
 
     // Step 1: Get brand and existing scan results
     const { brand, recentScans } = await step.run('get-brand-data', async () => {

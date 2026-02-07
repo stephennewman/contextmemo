@@ -5,6 +5,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
 import { calculateTotalCost } from '@/lib/config/costs'
 import { isJunkQuery } from '@/lib/utils/query-validation'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -105,6 +106,12 @@ export const discoveryScan = inngest.createFunction(
   { event: 'discovery/scan' },
   async ({ event, step }) => {
     const { brandId } = event.data
+
+    // Budget check
+    const canSpend = await step.run('check-budget', async () => canBrandSpend(brandId))
+    if (!canSpend) {
+      return { success: true, skipped: true, reason: 'budget_exceeded' }
+    }
 
     // Step 1: Get brand context
     const brand = await step.run('get-brand', async () => {

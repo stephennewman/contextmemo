@@ -2,6 +2,7 @@ import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { getAllBrandSettings } from '@/lib/utils/brand-settings'
+import { canBrandSpend } from '@/lib/utils/budget-guard'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,6 +63,12 @@ export const hourlyContentGenerate = inngest.createFunction(
     // Step 2: For each eligible brand, process ONE piece of content
     for (const brand of eligibleBrands) {
       const result = await step.run(`process-brand-${brand.id}`, async () => {
+        // Budget check
+        const allowed = await canBrandSpend(brand.id)
+        if (!allowed) {
+          return { action: 'skip', reason: 'budget_exceeded' }
+        }
+
         // First, check if there's any content pending response (ready to generate memo)
         const { data: competitors } = await supabase
           .from('competitors')

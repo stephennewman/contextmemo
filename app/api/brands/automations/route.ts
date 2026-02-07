@@ -55,15 +55,35 @@ export async function GET() {
     'topic_universe': 'discovery',
   }
 
-  // Get recent usage costs per brand (last 7 days)
+  // Get usage costs per brand (7 days + current month)
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
-  const { data: usageEvents } = await serviceClient
-    .from('usage_events')
-    .select('brand_id, event_type, total_cost_cents')
-    .in('brand_id', brandIds)
-    .gte('created_at', sevenDaysAgo.toISOString())
+  const [usageEventsResult, monthlyUsageResult] = await Promise.all([
+    serviceClient
+      .from('usage_events')
+      .select('brand_id, event_type, total_cost_cents')
+      .in('brand_id', brandIds)
+      .gte('created_at', sevenDaysAgo.toISOString()),
+    serviceClient
+      .from('usage_events')
+      .select('brand_id, total_cost_cents')
+      .in('brand_id', brandIds)
+      .gte('created_at', monthStart),
+  ])
+
+  const usageEvents = usageEventsResult.data
+
+  // Aggregate monthly spend per brand
+  const monthlySpendByBrand = new Map<string, number>()
+  for (const event of monthlyUsageResult.data || []) {
+    if (!event.brand_id) continue
+    monthlySpendByBrand.set(
+      event.brand_id,
+      (monthlySpendByBrand.get(event.brand_id) || 0) + (Number(event.total_cost_cents) || 0)
+    )
+  }
 
   // Aggregate costs by brand and normalized job key
   const costsByBrand = new Map<string, { total: number; byType: Record<string, number> }>()
@@ -156,6 +176,16 @@ export async function GET() {
         projectedMonthlyCents: Math.round(costs.total * (30 / 7)),
         projectedMonthlyDollars: ((costs.total * (30 / 7)) / 100).toFixed(2),
         byType: costs.byType,
+      },
+      budget: {
+        monthlySpentCents: monthlySpendByBrand.get(brand.id) || 0,
+        monthlySpentDollars: ((monthlySpendByBrand.get(brand.id) || 0) / 100).toFixed(2),
+        monthlyCapDollars: s?.monthly_credit_cap ?? null,
+        alertAtPercent: s?.alert_at_percent ?? 80,
+        pauseAtCap: s?.pause_at_cap ?? true,
+        percentUsed: s?.monthly_credit_cap
+          ? Math.round(((monthlySpendByBrand.get(brand.id) || 0) / (s.monthly_credit_cap * 100)) * 100)
+          : null,
       },
       lastRuns: lastRunsByBrand.get(brand.id) || {},
     }
