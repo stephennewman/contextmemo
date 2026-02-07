@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent')
     
     // Detect AI source
-    const referrerSource = detectAISource(referrer, userAgent)
+    const referrerSource = detectAISource(referrer ?? null, userAgent)
     
     // Only track AI traffic and organic (skip direct_nav to reduce noise)
     if (referrerSource === 'direct_nav') {

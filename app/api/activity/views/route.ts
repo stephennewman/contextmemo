@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   try {
     const schema = z.object({
       name: z.string().min(2).max(100),
-      filters: z.record(z.unknown()),
+      filters: z.record(z.string(), z.unknown()),
       is_default: z.boolean().optional(),
     })
 

@@ -170,7 +170,7 @@ export const scanRun = inngest.createFunction(
           .eq('brand_id', brandId),
       ])
 
-      let queriesResult: { data: unknown[] | null } = { data: [] }
+      let queriesResult: { data: any[] | null } = { data: [] }
       if (queryIds && queryIds.length > 0) {
         const chunks: string[][] = []
         for (let i = 0; i < queryIds.length; i += 100) {
