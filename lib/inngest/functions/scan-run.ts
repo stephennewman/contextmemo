@@ -10,6 +10,7 @@ import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { reportUsageToStripe, calculateCredits } from '@/lib/stripe/usage'
 import { classifySentiment } from '@/lib/utils/sentiment'
 import { checkBrandBudget } from '@/lib/utils/budget-guard'
+import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -1163,10 +1164,18 @@ async function scanWithOpenRouter(
     brandContext = text.slice(start, end)
   }
 
-  // Find mentioned competitors
-  const competitorsMentioned = competitorNames.filter(name => 
-    responseLower.includes(name)
-  )
+  // Find mentioned competitors using word-boundary matching and blocklist filtering
+  const competitorsMentioned = competitorNames.filter(name => {
+    if (isBlockedCompetitorName(name)) return false
+    // Use word boundary regex to avoid substring false positives
+    try {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i')
+      return regex.test(text)
+    } catch {
+      return responseLower.includes(name)
+    }
+  })
 
   // Classify sentiment of brand mention
   const sentimentResult = brandMentioned 
@@ -1236,10 +1245,18 @@ async function scanWithPerplexityDirect(
     brandContext = text.slice(start, end)
   }
 
-  // Find mentioned competitors
-  const competitorsMentioned = competitorNames.filter(name => 
-    responseLower.includes(name)
-  )
+  // Find mentioned competitors using word-boundary matching and blocklist filtering
+  const competitorsMentioned = competitorNames.filter(name => {
+    if (isBlockedCompetitorName(name)) return false
+    // Use word boundary regex to avoid substring false positives
+    try {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i')
+      return regex.test(text)
+    } catch {
+      return responseLower.includes(name)
+    }
+  })
 
   // Convert search results to the JSON format for storage
   const searchResultsJson: PerplexitySearchResultJson[] = searchResults.map(sr => ({

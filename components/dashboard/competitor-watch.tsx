@@ -22,6 +22,9 @@ import {
   Zap,
   Filter,
   Bell,
+  X,
+  EyeOff,
+  Lightbulb,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -107,6 +110,9 @@ export function CompetitorWatch({
   const [scanning, setScanning] = useState(false)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'respondable' | 'today' | 'yesterday'>('today')
+  const [excludedCompetitors, setExcludedCompetitors] = useState<Set<string>>(new Set())
+  const [excludedContentTypes, setExcludedContentTypes] = useState<Set<string>>(new Set())
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
 
   const competitorLookup = new Map(competitors.map(c => [c.id, c]))
 
@@ -118,8 +124,13 @@ export function CompetitorWatch({
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000)
 
-  // Filter content
+  // Filter content (exclusions + view filter)
   const filteredContent = content.filter(item => {
+    // Apply exclusions
+    if (hiddenIds.has(item.id)) return false
+    if (excludedCompetitors.has(item.competitor_id)) return false
+    if (item.content_type && excludedContentTypes.has(item.content_type)) return false
+
     const itemDate = new Date(getDateForContent(item))
     
     switch (filter) {
@@ -136,6 +147,8 @@ export function CompetitorWatch({
         return true
     }
   }).sort((a, b) => new Date(getDateForContent(b)).getTime() - new Date(getDateForContent(a)).getTime())
+
+  const hasExclusions = excludedCompetitors.size > 0 || excludedContentTypes.size > 0 || hiddenIds.size > 0
 
   // Stats
   const todayContent = content.filter(item => new Date(getDateForContent(item)) >= todayStart)
@@ -291,7 +304,7 @@ export function CompetitorWatch({
         >
           <CardContent className="pt-4 pb-3 text-center">
             <div className="text-3xl font-bold text-[#10B981]">{respondableContent.length}</div>
-            <div className="text-xs text-muted-foreground font-medium">To Respond</div>
+            <div className="text-xs text-muted-foreground font-medium">Memo Opportunities</div>
           </CardContent>
         </Card>
         <Card 
@@ -312,10 +325,73 @@ export function CompetitorWatch({
         <Badge variant="secondary" className="font-medium">
           {filter === 'today' && `Today's Posts (${filteredContent.length})`}
           {filter === 'yesterday' && `Yesterday's Posts (${filteredContent.length})`}
-          {filter === 'respondable' && `Good to Respond (${filteredContent.length})`}
+          {filter === 'respondable' && `Memo Opportunities (${filteredContent.length})`}
           {filter === 'all' && `All Recent Content (${filteredContent.length})`}
         </Badge>
       </div>
+
+      {/* Active Exclusions */}
+      {hasExclusions && (
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <EyeOff className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Hidden:</span>
+          {Array.from(excludedCompetitors).map(compId => {
+            const comp = competitorLookup.get(compId)
+            return (
+              <Badge 
+                key={`exc-comp-${compId}`} 
+                variant="outline" 
+                className="cursor-pointer hover:bg-destructive/10 gap-1"
+                onClick={() => {
+                  const next = new Set(excludedCompetitors)
+                  next.delete(compId)
+                  setExcludedCompetitors(next)
+                }}
+              >
+                {comp?.name || 'Unknown'}
+                <X className="h-3 w-3" />
+              </Badge>
+            )
+          })}
+          {Array.from(excludedContentTypes).map(ct => (
+            <Badge 
+              key={`exc-ct-${ct}`} 
+              variant="outline" 
+              className="cursor-pointer hover:bg-destructive/10 gap-1"
+              onClick={() => {
+                const next = new Set(excludedContentTypes)
+                next.delete(ct)
+                setExcludedContentTypes(next)
+              }}
+            >
+              {CONTENT_TYPE_LABELS[ct] || ct}
+              <X className="h-3 w-3" />
+            </Badge>
+          ))}
+          {hiddenIds.size > 0 && (
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-destructive/10 gap-1"
+              onClick={() => setHiddenIds(new Set())}
+            >
+              {hiddenIds.size} hidden post{hiddenIds.size !== 1 ? 's' : ''}
+              <X className="h-3 w-3" />
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs text-muted-foreground"
+            onClick={() => {
+              setExcludedCompetitors(new Set())
+              setExcludedContentTypes(new Set())
+              setHiddenIds(new Set())
+            }}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
 
       {/* Content List */}
       <Card>
@@ -344,20 +420,45 @@ export function CompetitorWatch({
                       <div className="min-w-0 flex-1">
                         {/* Header row */}
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="outline" className="text-[10px] font-medium">
+                          <Badge 
+                            variant="outline" 
+                            className="text-[10px] font-medium cursor-pointer hover:bg-destructive/10 hover:line-through group/comp"
+                            onClick={() => {
+                              setExcludedCompetitors(prev => new Set([...prev, item.competitor_id]))
+                              toast.success(`Hiding ${competitor?.name || 'competitor'} from view`, {
+                                description: 'Click "Hidden" badges above to restore',
+                              })
+                            }}
+                            title={`Click to hide all ${competitor?.name} posts`}
+                          >
                             {competitor?.name || 'Unknown'}
+                            <X className="h-2.5 w-2.5 ml-0.5 opacity-0 group-hover/comp:opacity-100 transition-opacity" />
                           </Badge>
                           {item.content_type && (
                             <Badge 
                               variant={canRespond ? 'default' : 'secondary'} 
-                              className={`text-[10px] ${canRespond ? 'bg-[#0EA5E9]' : ''}`}
+                              className={`text-[10px] cursor-pointer hover:bg-destructive/10 hover:line-through group/ct ${canRespond ? 'bg-[#0EA5E9] hover:bg-[#0EA5E9]/70' : ''}`}
+                              onClick={() => {
+                                setExcludedContentTypes(prev => new Set([...prev, item.content_type!]))
+                                toast.success(`Hiding "${CONTENT_TYPE_LABELS[item.content_type!] || item.content_type}" content`, {
+                                  description: 'Click "Hidden" badges above to restore',
+                                })
+                              }}
+                              title={`Click to hide all "${CONTENT_TYPE_LABELS[item.content_type] || item.content_type}" content`}
                             >
                               {CONTENT_TYPE_LABELS[item.content_type] || item.content_type}
+                              <X className="h-2.5 w-2.5 ml-0.5 opacity-0 group-hover/ct:opacity-100 transition-opacity" />
                             </Badge>
                           )}
                           {item.is_competitor_specific && (
                             <Badge variant="secondary" className="text-[10px]">
                               Company-specific
+                            </Badge>
+                          )}
+                          {canRespond && (
+                            <Badge className="text-[10px] bg-[#10B981]/90 text-white">
+                              <Lightbulb className="h-3 w-3 mr-1" />
+                              Memo Candidate
                             </Badge>
                           )}
                           {isResponded && (
@@ -374,18 +475,18 @@ export function CompetitorWatch({
                           )}
                         </div>
 
-                        {/* Title */}
+                        {/* Title with content type subtitle */}
                         <a 
                           href={item.url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="font-medium text-sm hover:text-[#0EA5E9] flex items-center gap-1 group"
+                          className="font-medium text-sm hover:text-[#0EA5E9] inline-flex items-center gap-1.5"
                         >
                           {item.title}
-                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-3 w-3 text-muted-foreground/50 shrink-0" />
                         </a>
 
-                        {/* Summary */}
+                        {/* Content summary with type context */}
                         {item.content_summary && (
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {item.content_summary}
@@ -397,7 +498,7 @@ export function CompetitorWatch({
                           <div className="mt-2 flex items-center gap-1 text-xs">
                             <Sparkles className="h-3 w-3 text-[#0EA5E9]" />
                             <span className="text-[#0EA5E9] font-medium">
-                              Opportunity: "{item.universal_topic}"
+                              Opportunity: &ldquo;{item.universal_topic}&rdquo;
                             </span>
                           </div>
                         )}
@@ -459,11 +560,25 @@ export function CompetitorWatch({
                         {isResponded && item.response_memo && (
                           <a 
                             href={`/brands/${brandId}/memos/${item.response_memo.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="flex items-center gap-2 p-2 border rounded-lg hover:bg-muted transition-colors text-xs"
                           >
                             <FileText className="h-4 w-4 text-green-600" />
                             <span>View Response</span>
                           </a>
+                        )}
+                        {!canRespond && !isResponded && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setHiddenIds(prev => new Set([...prev, item.id]))}
+                            className="text-muted-foreground"
+                            title="Hide this post"
+                          >
+                            <EyeOff className="h-4 w-4 mr-1" />
+                            Hide
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -477,13 +592,13 @@ export function CompetitorWatch({
               <h3 className="text-lg font-semibold mb-2">
                 {filter === 'today' && 'No New Content Today'}
                 {filter === 'yesterday' && 'No Content From Yesterday'}
-                {filter === 'respondable' && 'All Caught Up!'}
+                {filter === 'respondable' && 'No Memo Opportunities'}
                 {filter === 'all' && 'No Recent Content'}
               </h3>
               <p className="text-muted-foreground mb-4">
                 {filter === 'today' && 'Check back later or run a scan to check for new posts.'}
                 {filter === 'yesterday' && 'No competitor content was detected from yesterday.'}
-                {filter === 'respondable' && "You've responded to all available content."}
+                {filter === 'respondable' && "No competitor posts identified as memo opportunities right now."}
                 {filter === 'all' && 'No competitor content has been detected recently.'}
               </p>
               <Button variant="outline" onClick={handleScan} disabled={scanning}>

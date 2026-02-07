@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. Aggregate from alerts table (already captures many activities)
+    try {
     if (shouldInclude('scan_completed', 'scan') || 
         shouldInclude('memo_published', 'content') ||
         shouldInclude('discovery_scan_completed', 'discovery') ||
@@ -196,8 +197,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    } catch (e) {
+      console.error('Activity: alerts query failed:', e)
+    }
 
     // 2. Aggregate recent memos (content category)
+    try {
     if (shouldInclude('memo_generated', 'content') || 
         shouldInclude('memo_published', 'content') ||
         !activityTypes) {
@@ -234,8 +239,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    } catch (e) {
+      console.error('Activity: memos query failed:', e)
+    }
 
     // 3. Aggregate competitor discoveries
+    try {
     if (shouldInclude('competitor_discovered', 'discovery') || !activityTypes) {
       const { data: competitors } = await supabase
         .from('competitors')
@@ -267,8 +276,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    } catch (e) {
+      console.error('Activity: competitors query failed:', e)
+    }
 
     // 4. Aggregate query generation
+    try {
     if (shouldInclude('query_generated', 'discovery') || !activityTypes) {
       const { data: queries } = await supabase
         .from('queries')
@@ -312,8 +325,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    } catch (e) {
+      console.error('Activity: queries query failed:', e)
+    }
 
     // 5. Aggregate competitor content discoveries
+    try {
     if (shouldInclude('competitor_content_found', 'discovery') || !activityTypes) {
       const { data: content } = await supabase
         .from('competitor_content')
@@ -367,8 +384,12 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    } catch (e) {
+      console.error('Activity: competitor_content query failed:', e)
+    }
 
     // 6. Aggregate scan results (summarized by day/brand)
+    try {
     if (shouldInclude('scan_completed', 'scan') || !activityTypes) {
       const { data: scans } = await supabase
         .from('scan_results')
@@ -416,10 +437,13 @@ export async function GET(request: NextRequest) {
         }
       }
     }
+    } catch (e) {
+      console.error('Activity: scan_results query failed:', e)
+    }
 
     // 7. Aggregate AI traffic (if table exists)
+    try {
     if (shouldInclude('ai_traffic_detected', 'traffic') || !activityTypes) {
-      try {
         const { data: traffic } = await supabase
           .from('ai_traffic')
           .select('id, brand_id, memo_id, page_url, referrer_source, timestamp')
@@ -450,9 +474,9 @@ export async function GET(request: NextRequest) {
             })
           }
         }
-      } catch {
-        // ai_traffic table may not exist yet
-      }
+    }
+    } catch {
+      // ai_traffic table may not exist yet
     }
 
     // Sort all activities by date descending

@@ -5,8 +5,9 @@ import { Switch } from '@/components/ui/switch'
 import { 
   Pause, Play, Search, Compass, Newspaper, FileText, 
   ShieldCheck, Brain, Sparkles, Loader2, DollarSign,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, ExternalLink,
 } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 
 // ---- Types ----
@@ -316,9 +317,12 @@ export function AutomationsGrid() {
                 </button>
                 <div>
                   <div className="flex items-center gap-3">
-                    <h3 className={`font-bold text-base ${isPaused ? 'text-muted-foreground' : ''}`}>
+                    <Link 
+                      href={`/brands/${brand.id}`}
+                      className={`font-bold text-base hover:underline ${isPaused ? 'text-muted-foreground' : ''}`}
+                    >
                       {brand.name}
-                    </h3>
+                    </Link>
                     {isPaused && (
                       <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 font-medium">
                         PAUSED

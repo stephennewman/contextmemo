@@ -16,12 +16,8 @@ import {
   CheckCircle2,
   AlertCircle,
   MinusCircle,
-  ChevronDown,
-  ChevronUp,
   ExternalLink,
-  Zap,
   Filter,
-  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
@@ -42,7 +38,7 @@ interface CoverageAuditProps {
 }
 
 type FilterStatus = 'all' | 'gap' | 'partial' | 'covered'
-type SortBy = 'priority' | 'category' | 'status'
+type SortBy = 'priority' | 'category' | 'status' | 'memo_type'
 
 // ============================================================================
 // Category display config
@@ -108,6 +104,9 @@ export function CoverageAudit({
           (statusOrder[a.status as keyof typeof statusOrder] ?? 3) - 
           (statusOrder[b.status as keyof typeof statusOrder] ?? 3)
         )
+        break
+      case 'memo_type':
+        filtered.sort((a, b) => (a.content_type || '').localeCompare(b.content_type || ''))
         break
     }
 
@@ -318,99 +317,26 @@ export function CoverageAudit({
         </Card>
       )}
 
-      {/* Top Gaps - Priority Action */}
-      {topGaps.length > 0 && (
-        <Card className="border-[#1E293B] bg-[#0F172A]">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-                <Zap className="h-4 w-4 text-amber-400" />
-                Top Priority Gaps
-                <Badge variant="outline" className="text-[10px] border-amber-500/20 text-amber-400">
-                  Highest Impact
-                </Badge>
-              </CardTitle>
-              <Button
-                onClick={() => setShowBatchModal(true)}
-                disabled={topGaps.length === 0}
-                size="sm"
-                className="gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-black rounded-none"
-              >
-                <Sparkles className="h-3 w-3" />
-                Generate Top {Math.min(topGaps.length, 10)}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {topGaps.slice(0, 5).map((topic, idx) => (
-                <div
-                  key={topic.id}
-                  className="flex items-center gap-3 p-3 rounded border border-[#1E293B] hover:border-[#334155] group transition-colors"
-                >
-                  <span className="text-lg font-bold text-gray-600 w-6 text-center">
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{topic.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px] border-[#1E293B] text-gray-400 rounded-none">
-                        {topic.content_type}
-                      </Badge>
-                      {topic.competitor_relevance && (topic.competitor_relevance as string[]).length > 0 && (
-                        <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
-                          <Users className="h-3 w-3" />
-                          {(topic.competitor_relevance as string[]).join(', ')}
-                        </span>
-                      )}
-                      {topic.estimated_competitor_coverage > 0 && (
-                        <span className="text-[10px] text-gray-500">
-                          {topic.estimated_competitor_coverage} competitors have this
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      className="text-[10px] rounded-none border"
-                      style={{
-                        backgroundColor: topic.priority_score >= 80 ? 'rgba(239,68,68,0.1)' : topic.priority_score >= 60 ? 'rgba(245,158,11,0.1)' : 'rgba(107,114,128,0.1)',
-                        color: topic.priority_score >= 80 ? '#EF4444' : topic.priority_score >= 60 ? '#F59E0B' : '#6B7280',
-                        borderColor: topic.priority_score >= 80 ? 'rgba(239,68,68,0.2)' : topic.priority_score >= 60 ? 'rgba(245,158,11,0.2)' : 'rgba(107,114,128,0.2)',
-                      }}
-                    >
-                      {topic.priority_score}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1 text-xs text-[#0EA5E9] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-none"
-                      onClick={() => generateMemoForTopic(topic.id)}
-                      disabled={generating.has(topic.id)}
-                    >
-                      {generating.has(topic.id) ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <FileText className="h-3 w-3" />
-                      )}
-                      Generate
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Full Topic List */}
       <Card className="border-[#1E293B] bg-[#0F172A]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[#0EA5E9]" />
-              All Topics ({filteredTopics.length})
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+                <FileText className="h-4 w-4 text-[#0EA5E9]" />
+                All Topics ({filteredTopics.length})
+              </CardTitle>
+              {topGaps.length > 0 && (
+                <Button
+                  onClick={() => setShowBatchModal(true)}
+                  size="sm"
+                  className="gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-black rounded-none"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Generate Top {Math.min(topGaps.length, 10)} Gaps
+                </Button>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {/* Status filter */}
               <div className="flex items-center gap-1">
@@ -443,6 +369,7 @@ export function CoverageAudit({
                 <option value="priority">Priority</option>
                 <option value="category">Category</option>
                 <option value="status">Status</option>
+                <option value="memo_type">Memo Type</option>
               </select>
             </div>
           </div>
@@ -499,8 +426,8 @@ export function CoverageAudit({
                     {topic.status === 'gap' && (
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className="gap-1 text-xs text-[#0EA5E9] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-none"
+                        variant="outline"
+                        className="gap-1 text-xs text-[#0EA5E9] border-[#0EA5E9]/30 hover:bg-[#0EA5E9]/10 hover:text-white rounded-none"
                         onClick={() => generateMemoForTopic(topic.id)}
                         disabled={generating.has(topic.id)}
                       >

@@ -49,6 +49,117 @@ export const BLOCKED_COMPETITOR_NAMES = new Set([
   'website',
   'websites',
   
+  // Common English words that are NOT real entities
+  // These get matched via substring and pollute competitor lists
+  'brand',
+  'brands',
+  'branding',
+  'read',
+  'reads',
+  'reader',
+  'sat',
+  'set',
+  'run',
+  'factors',
+  'factor',
+  'results',
+  'result',
+  'search',
+  'report',
+  'reports',
+  'reporting',
+  'track',
+  'tracking',
+  'tracker',
+  'test',
+  'testing',
+  'link',
+  'links',
+  'rank',
+  'ranking',
+  'rankings',
+  'score',
+  'scores',
+  'page',
+  'pages',
+  'site',
+  'sites',
+  'keyword',
+  'keywords',
+  'audit',
+  'audits',
+  'dashboard',
+  'monitor',
+  'monitoring',
+  'alert',
+  'alerts',
+  'compare',
+  'comparison',
+  'review',
+  'reviews',
+  'rate',
+  'rating',
+  'ratings',
+  'plan',
+  'plans',
+  'pricing',
+  'free',
+  'pro',
+  'premium',
+  'basic',
+  'team',
+  'teams',
+  'agency',
+  'startup',
+  'startups',
+  'growth',
+  'scale',
+  'insight',
+  'insights',
+  'metric',
+  'metrics',
+  'funnel',
+  'lead',
+  'leads',
+  'campaign',
+  'campaigns',
+  'channel',
+  'channels',
+  'social',
+  'email',
+  'ads',
+  'paid',
+  'organic',
+  'traffic',
+  'convert',
+  'conversion',
+  'conversions',
+  'revenue',
+  'roi',
+  'performance',
+  'optimize',
+  'optimization',
+  'strategy',
+  'feature',
+  'features',
+  'user',
+  'users',
+  'client',
+  'clients',
+  'account',
+  'accounts',
+  'pipeline',
+  'workflow',
+  'workflows',
+  'report',
+  'api',
+  'crm',
+  'cms',
+  'erp',
+  'saas',
+  'b2b',
+  'b2c',
+  
   // Common CRM/Marketing tools that brands USE but aren't competitors
   // (unless they're actually in the same market)
   'hubspot',
@@ -142,6 +253,36 @@ export const PUBLISHER_DOMAINS = new Set([
  * @param name The competitor name to check
  * @returns true if the name should be blocked
  */
+// Common short words that should never be competitors (all lowercase)
+// These are words <=5 chars that frequently match as substrings in AI responses
+const COMMON_SHORT_WORDS = new Set([
+  'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had',
+  'her', 'was', 'one', 'our', 'out', 'has', 'his', 'how', 'its', 'may',
+  'new', 'now', 'old', 'see', 'way', 'who', 'did', 'get', 'let', 'say',
+  'she', 'too', 'use', 'top', 'best', 'most', 'more', 'also', 'been',
+  'call', 'come', 'each', 'find', 'from', 'give', 'have', 'help', 'here',
+  'high', 'just', 'know', 'like', 'look', 'made', 'make', 'many', 'much',
+  'must', 'name', 'need', 'next', 'only', 'over', 'part', 'real', 'same',
+  'some', 'such', 'sure', 'take', 'tell', 'than', 'that', 'them', 'then',
+  'they', 'this', 'time', 'turn', 'very', 'want', 'well', 'what', 'when',
+  'will', 'with', 'work', 'year', 'your', 'about', 'after', 'being',
+  'could', 'every', 'first', 'found', 'great', 'house', 'large', 'later',
+  'learn', 'never', 'other', 'place', 'point', 'right', 'small', 'still',
+  'study', 'their', 'there', 'these', 'thing', 'think', 'those', 'three',
+  'today', 'under', 'using', 'value', 'where', 'which', 'while', 'world',
+  'would', 'write', 'above', 'below', 'check', 'clear', 'close', 'cover',
+  'early', 'given', 'going', 'green', 'group', 'human', 'ideal', 'image',
+  'issue', 'known', 'level', 'light', 'limit', 'local', 'major', 'match',
+  'might', 'model', 'money', 'month', 'night', 'noted', 'offer', 'often',
+  'order', 'paper', 'power', 'press', 'price', 'quick', 'range', 'ready',
+  'short', 'since', 'space', 'start', 'state', 'stock', 'store', 'table',
+  'taken', 'total', 'until', 'video', 'visit', 'watch', 'white', 'young',
+  // Marketing/SEO jargon that aren't entities
+  'boost', 'drive', 'click', 'share', 'reach', 'brand', 'trend', 'audit',
+  'score', 'index', 'cache', 'crawl', 'links', 'ranks', 'reads', 'serve',
+  'query', 'pixel', 'event', 'leads', 'churn', 'spend', 'yield', 'setup',
+])
+
 export function isBlockedCompetitorName(name: string): boolean {
   if (!name) return true
   
@@ -152,8 +293,13 @@ export function isBlockedCompetitorName(name: string): boolean {
     return true
   }
   
-  // Check if it's a single generic word (less than 3 chars or very common)
+  // Check if it's a single generic word (less than 3 chars)
   if (normalized.length < 3) {
+    return true
+  }
+  
+  // Block common short English words that are never real product names
+  if (!normalized.includes(' ') && COMMON_SHORT_WORDS.has(normalized)) {
     return true
   }
   
