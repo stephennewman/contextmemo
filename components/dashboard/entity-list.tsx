@@ -51,6 +51,12 @@ import { EntityType, ENTITY_TYPE_META } from '@/lib/supabase/types'
 type SortOption = 'mentions' | 'citations' | 'name' | 'type'
 type EntityFilterOption = 'all' | 'competitors' | 'partners' | EntityType
 
+// Safe lookup: if entity_type from DB isn't in ENTITY_TYPE_META, fall back to 'product_competitor'
+function safeEntityType(raw: string | null | undefined): EntityType {
+  const t = (raw || 'product_competitor') as EntityType
+  return ENTITY_TYPE_META[t] ? t : 'product_competitor'
+}
+
 // Icon mapping for entity types
 const ENTITY_ICONS: Record<EntityType, React.ComponentType<{ className?: string }>> = {
   product_competitor: Swords,
@@ -130,7 +136,7 @@ export function EntityList({
   const entityTypeCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     entities.forEach(e => {
-      const type = e.entity_type || 'product_competitor'
+      const type = safeEntityType(e.entity_type)
       counts[type] = (counts[type] || 0) + 1
     })
     return counts
@@ -139,7 +145,7 @@ export function EntityList({
   // Count competitors vs potential partners
   const competitorCount = useMemo(() => {
     return entities.filter(
-      e => (e.entity_type || 'product_competitor') === 'product_competitor'
+      e => safeEntityType(e.entity_type) === 'product_competitor'
     ).length
   }, [entities])
 
@@ -163,7 +169,7 @@ export function EntityList({
 
   // Filter function based on entity type
   const matchesEntityFilter = (e: Entity): boolean => {
-    const type = e.entity_type || 'product_competitor'
+    const type = safeEntityType(e.entity_type)
     
     if (entityFilter === 'all') return true
     if (entityFilter === 'competitors') return type === 'product_competitor'
@@ -196,7 +202,7 @@ export function EntityList({
         break
       case 'type':
         sorted = sorted.sort((a, b) => 
-          (a.entity_type || 'product_competitor').localeCompare(b.entity_type || 'product_competitor')
+          safeEntityType(a.entity_type).localeCompare(safeEntityType(b.entity_type))
         )
         break
     }
@@ -241,7 +247,7 @@ export function EntityList({
         break
       case 'type':
         filtered = [...filtered].sort((a, b) => 
-          (a.entity_type || 'product_competitor').localeCompare(b.entity_type || 'product_competitor')
+          safeEntityType(a.entity_type).localeCompare(safeEntityType(b.entity_type))
         )
         break
     }
@@ -614,7 +620,7 @@ export function EntityList({
           {sortedTracked.length > 0 ? (
             <div className="space-y-2">
               {sortedTracked.map((entity) => {
-                const entityType = (entity.entity_type || 'product_competitor') as EntityType
+                const entityType = safeEntityType(entity.entity_type)
                 const typeMeta = ENTITY_TYPE_META[entityType]
                 const TypeIcon = ENTITY_ICONS[entityType]
                 const citationCount = citationCounts[entity.id] || 0
@@ -842,7 +848,7 @@ export function EntityList({
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {filteredDiscovered.slice(0, 50).map((entity) => {
-                    const entityType = (entity.entity_type || 'product_competitor') as EntityType
+                    const entityType = safeEntityType(entity.entity_type)
                     const typeMeta = ENTITY_TYPE_META[entityType]
                     const TypeIcon = ENTITY_ICONS[entityType]
                     const citationCount = citationCounts[entity.id] || entity.context?.citation_count || 0

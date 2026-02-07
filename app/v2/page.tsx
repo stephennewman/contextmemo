@@ -58,14 +58,20 @@ export default async function V2DashboardPage() {
         .eq('status', 'published')
     : { count: 0 }
 
-  // Get prompt count
-  const { count: promptCount } = brandIds.length > 0
-    ? await serviceClient
+  // Get prompt counts per brand
+  const promptCountsByBrand: Record<string, number> = {}
+  let totalPromptCount = 0
+  if (brands && brands.length > 0) {
+    for (const brand of brands) {
+      const { count } = await serviceClient
         .from('queries')
         .select('*', { count: 'exact', head: true })
-        .in('brand_id', brandIds)
+        .eq('brand_id', brand.id)
         .eq('is_active', true)
-    : { count: 0 }
+      promptCountsByBrand[brand.id] = count || 0
+      totalPromptCount += count || 0
+    }
+  }
 
   // Get competitor count
   const { count: competitorCount } = brandIds.length > 0
