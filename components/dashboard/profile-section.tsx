@@ -1,29 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, RefreshCw, Sparkles, ToggleLeft, ToggleRight, Globe, Plus, X, Settings, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, Plus, X, Pencil, ChevronDown, ChevronUp, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
 import { CorporatePositioningSection } from '@/components/dashboard/corporate-positioning'
-import { BrandContext, MarketFocus, BrandOffer, BrandOffers } from '@/lib/supabase/types'
+import { BrandContext, MarketFocus, BrandOffer, BrandOffers, PromptTheme } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
-
-interface Competitor {
-  id: string
-  name: string
-  domain: string | null
-  description: string | null
-  auto_discovered: boolean
-  is_active: boolean
-}
 
 // Offer type options
 const OFFER_TYPES = [
@@ -55,7 +44,6 @@ interface ProfileSectionProps {
   context: BrandContext | null
   contextExtractedAt: string | null
   hasContext: boolean
-  competitors?: Competitor[]
 }
 
 export function ProfileSection({
@@ -65,17 +53,8 @@ export function ProfileSection({
   context,
   contextExtractedAt,
   hasContext,
-  competitors: initialCompetitors = [],
 }: ProfileSectionProps) {
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const initialTimestampRef = useRef<string | null>(null)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
-
-  // Competitors state
-  const [competitors, setCompetitors] = useState<Competitor[]>(initialCompetitors)
-  const [togglingCompetitorId, setTogglingCompetitorId] = useState<string | null>(null)
-  const [showAllExcluded, setShowAllExcluded] = useState(false)
 
   // Market focus state
   const [marketFocus, setMarketFocus] = useState<MarketFocus[]>(() => {
@@ -96,11 +75,6 @@ export function ProfileSection({
   const [savingOffers, setSavingOffers] = useState(false)
   const defaultOffer: BrandOffer = { type: 'demo', label: '' }
 
-  // Sync competitors when props change
-  useEffect(() => {
-    setCompetitors(initialCompetitors)
-  }, [initialCompetitors])
-
   // Sync market focus when context changes
   useEffect(() => {
     if (context?.market_focus && context.market_focus.length > 0) {
@@ -114,76 +88,6 @@ export function ProfileSection({
   useEffect(() => {
     setOffers(context?.offers || {})
   }, [context?.offers])
-
-  const refreshContext = async () => {
-    // Store the current timestamp to detect when it changes
-    initialTimestampRef.current = contextExtractedAt
-    setIsRefreshing(true)
-    
-    try {
-      const response = await fetch(`/api/brands/${brandId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'extract_context' }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Context extraction failed')
-      }
-
-      toast.success('Re-analyzing website. Widgets will update when complete.', {
-        duration: 5000,
-      })
-      
-      // Poll for completion - check every 3 seconds
-      pollIntervalRef.current = setInterval(async () => {
-        router.refresh()
-      }, 3000)
-
-      // Stop polling after 45 seconds max
-      setTimeout(() => {
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current)
-          pollIntervalRef.current = null
-        }
-        setIsRefreshing(false)
-      }, 45000)
-
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Context extraction failed')
-      setIsRefreshing(false)
-    }
-  }
-
-  // Competitor toggle handler
-  const handleToggleCompetitor = async (competitorId: string, currentlyActive: boolean) => {
-    setTogglingCompetitorId(competitorId)
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('competitors')
-        .update({ is_active: !currentlyActive })
-        .eq('id', competitorId)
-
-      if (error) throw error
-
-      setCompetitors(prev => 
-        prev.map(c => 
-          c.id === competitorId 
-            ? { ...c, is_active: !currentlyActive }
-            : c
-        )
-      )
-      toast.success(!currentlyActive ? 'Competitor included' : 'Competitor excluded')
-    } catch (error) {
-      toast.error('Failed to update competitor')
-      console.error(error)
-    } finally {
-      setTogglingCompetitorId(null)
-    }
-  }
 
   // Market focus handlers
   const addMarket = () => {
@@ -264,113 +168,26 @@ export function ProfileSection({
     }
   }
 
-  // When contextExtractedAt changes (new data arrived), stop the loading state
-  useEffect(() => {
-    if (isRefreshing && contextExtractedAt && initialTimestampRef.current !== contextExtractedAt) {
-      // New data arrived - stop polling and loading
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-      setIsRefreshing(false)
-      toast.success('Brand profile updated!', { duration: 3000 })
-    }
-  }, [contextExtractedAt, isRefreshing])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
-    }
-  }, [])
-
-  // Skeleton card component for loading state
-  const SkeletonCard = ({ title, className = '' }: { title: string; className?: string }) => (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex gap-2 flex-wrap">
-          <Skeleton className="h-6 w-20 rounded-full" />
-          <Skeleton className="h-6 w-24 rounded-full" />
-          <Skeleton className="h-6 w-16 rounded-full" />
-        </div>
-      </CardContent>
-    </Card>
-  )
-
   return (
     <div className="space-y-6">
-      {/* Header with refresh button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">Brand Profile</h2>
-          <p className="text-sm text-muted-foreground">
-            All information extracted from {brandDomain}
-            {contextExtractedAt && (
-              <span> • Last updated {new Date(contextExtractedAt).toLocaleDateString()}</span>
-            )}
-          </p>
-        </div>
-        <Button 
-          onClick={refreshContext} 
-          disabled={isRefreshing}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          {isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          {isRefreshing ? 'Refreshing...' : 'Refresh Context'}
-        </Button>
-      </div>
-
-      {/* Show skeleton loaders when refreshing */}
-      {isRefreshing ? (
-        <div className="space-y-6">
-          {/* Corporate Positioning Skeleton */}
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-72 mt-2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-2 w-full mb-4" />
-              <div className="space-y-3">
-                <Skeleton className="h-16 w-full rounded-lg" />
-                <Skeleton className="h-16 w-full rounded-lg" />
-                <Skeleton className="h-16 w-full rounded-lg" />
-              </div>
-            </CardContent>
-          </Card>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <SkeletonCard title="Company Information" />
-            <SkeletonCard title="Products & Services" />
-            <SkeletonCard title="Markets & Customers" />
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-base">Target Personas</CardTitle>
-                <CardDescription>Loading personas...</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <Skeleton className="h-24 w-full rounded-lg" />
-                  <Skeleton className="h-24 w-full rounded-lg" />
-                  <Skeleton className="h-24 w-full rounded-lg" />
-                </div>
-              </CardContent>
-            </Card>
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Profile</CardTitle>
+              <CardDescription>
+                All information extracted from {brandDomain}
+                {contextExtractedAt && (
+                  <span> · Last updated {new Date(contextExtractedAt).toLocaleDateString()}</span>
+                )}
+              </CardDescription>
+            </div>
           </div>
-        </div>
-      ) : hasContext && context ? (
+        </CardHeader>
+      </Card>
+
+      {hasContext && context ? (
         <div className="space-y-6">
           {/* Corporate Positioning - Full width, at the top */}
           <CorporatePositioningSection 
@@ -450,108 +267,76 @@ export function ProfileSection({
             </CardContent>
           </Card>
 
-          {/* Competitors */}
+          {/* Key Themes - Focus areas for content generation */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Competitors</CardTitle>
+                  <CardTitle className="text-base">Key Themes</CardTitle>
                   <CardDescription>
-                    {competitors.filter(c => c.is_active).length} included • {competitors.filter(c => !c.is_active).length} excluded
+                    Focus areas driving prompt and content strategy
                   </CardDescription>
                 </div>
-                <Link href={`/brands/${brandId}/settings#competitors`}>
-                  <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
-                    <Settings className="h-3 w-3" />
-                    Manage
-                  </Button>
-                </Link>
+                <Tag className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {competitors.filter(c => c.is_active).length > 0 ? (
-                <div className="space-y-2">
-                  {competitors.filter(c => c.is_active).map((competitor) => (
-                    <div key={competitor.id} className="flex items-center justify-between p-2 border rounded-lg">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="font-medium text-sm truncate">{competitor.name}</span>
-                        {competitor.auto_discovered && <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
-                        {competitor.domain && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                            <Globe className="h-3 w-3" />
-                            {competitor.domain}
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleCompetitor(competitor.id, true)}
-                        disabled={togglingCompetitorId === competitor.id}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                        title="Exclude from tracking"
-                      >
-                        {togglingCompetitorId === competitor.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <ToggleRight className="h-4 w-4 text-green-500" />
-                        )}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No competitors detected</p>
-              )}
               {(() => {
-                const excludedCompetitors = competitors.filter(c => !c.is_active)
-                const EXCLUDED_PREVIEW_COUNT = 10
-                const hasMore = excludedCompetitors.length > EXCLUDED_PREVIEW_COUNT
-                const visibleExcluded = showAllExcluded ? excludedCompetitors : excludedCompetitors.slice(0, EXCLUDED_PREVIEW_COUNT)
-                const hiddenCount = excludedCompetitors.length - EXCLUDED_PREVIEW_COUNT
-
-                return excludedCompetitors.length > 0 ? (
-                  <div className="pt-3 border-t">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">
-                      Excluded ({excludedCompetitors.length})
-                    </label>
-                    <div className="space-y-2">
-                      {visibleExcluded.map((competitor) => (
-                        <div key={competitor.id} className="flex items-center justify-between p-2 border rounded-lg bg-muted/30 opacity-60">
-                          <span className="text-sm truncate">{competitor.name}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleCompetitor(competitor.id, false)}
-                            disabled={togglingCompetitorId === competitor.id}
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600 shrink-0"
-                            title="Re-include in tracking"
-                          >
-                            {togglingCompetitorId === competitor.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <ToggleLeft className="h-4 w-4" />
-                            )}
-                          </Button>
+                const themes: PromptTheme[] = context?.prompt_themes || []
+                if (themes.length === 0) {
+                  return <p className="text-sm text-muted-foreground">No themes detected yet. Run a context refresh to extract themes.</p>
+                }
+                const highPriority = themes.filter(t => t.priority === 'high')
+                const mediumPriority = themes.filter(t => t.priority === 'medium')
+                const lowPriority = themes.filter(t => t.priority === 'low')
+                return (
+                  <div className="space-y-3">
+                    {highPriority.length > 0 && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">High Priority</label>
+                        <div className="flex flex-wrap gap-2">
+                          {highPriority.map((theme, i) => (
+                            <Badge key={i} className="bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-100">
+                              {theme.theme}
+                              {theme.category && <span className="ml-1 opacity-60 text-[10px]">· {theme.category}</span>}
+                            </Badge>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    {hasMore && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAllExcluded(!showAllExcluded)}
-                        className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                      >
-                        {showAllExcluded ? (
-                          <>Show less <ChevronUp className="h-3 w-3" /></>
-                        ) : (
-                          <>Show {hiddenCount} more <ChevronDown className="h-3 w-3" /></>
-                        )}
-                      </Button>
+                      </div>
                     )}
+                    {mediumPriority.length > 0 && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Medium Priority</label>
+                        <div className="flex flex-wrap gap-2">
+                          {mediumPriority.map((theme, i) => (
+                            <Badge key={i} variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+                              {theme.theme}
+                              {theme.category && <span className="ml-1 opacity-60 text-[10px]">· {theme.category}</span>}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {lowPriority.length > 0 && (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">Low Priority</label>
+                        <div className="flex flex-wrap gap-2">
+                          {lowPriority.map((theme, i) => (
+                            <Badge key={i} variant="outline" className="text-muted-foreground">
+                              {theme.theme}
+                              {theme.category && <span className="ml-1 opacity-60 text-[10px]">· {theme.category}</span>}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        {themes.length} theme{themes.length !== 1 ? 's' : ''} · {themes.filter(t => t.auto_detected).length} auto-detected
+                      </p>
+                    </div>
                   </div>
-                ) : null
+                )
               })()}
             </CardContent>
           </Card>
@@ -956,23 +741,9 @@ export function ProfileSection({
       ) : (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">
-              No brand context extracted yet. Click &quot;Refresh Context&quot; to analyze {brandDomain}.
+            <p className="text-muted-foreground">
+              No brand context extracted yet. Context will be extracted during onboarding.
             </p>
-            <Button 
-              onClick={refreshContext} 
-              disabled={isRefreshing}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Refresh Context
-            </Button>
           </CardContent>
         </Card>
       )}

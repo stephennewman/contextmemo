@@ -52,10 +52,10 @@ export default function BrandLoading() {
       <div className="space-y-4">
         {/* Tab List */}
         <div className="flex gap-1 border-b-[3px] border-[#0F172A] pb-0">
-          {['PROFILE', 'ACTIVITY', 'SCANS', 'MEMOS', 'PROMPTS', 'COMPETITORS'].map((tab, i) => (
+          {['PROFILE', 'ACTIVITY', 'PROMPTS', 'MEMOS', 'ENTITIES', 'SOURCES', 'WATCH', 'COVERAGE'].map((tab, i) => (
             <div
               key={tab}
-              className={`px-4 py-2 text-xs font-bold ${i === 0 ? 'bg-[#0EA5E9] text-white' : 'text-slate-400'}`}
+              className={`px-4 py-2 text-xs font-bold ${tab === 'PROMPTS' ? 'bg-[#0EA5E9] text-white' : 'text-slate-400'}`}
             >
               {tab}
             </div>

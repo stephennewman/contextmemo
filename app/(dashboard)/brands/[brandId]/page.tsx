@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   ExternalLink,
   TrendingUp,
@@ -59,44 +60,61 @@ export default async function BrandPage({ params }: Props) {
     notFound()
   }
 
-  // Get all competitors (including excluded for display)
-  const { data: allCompetitors } = await supabase
-    .from('competitors')
-    .select('*')
-    .eq('brand_id', brandId)
-  
+  // Run independent queries in parallel for speed
+  const ninetyDaysAgo = new Date()
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+
+  const [
+    { data: allCompetitors },
+    { data: queries },
+    { data: allQueries },
+    { data: allScans },
+    { data: memos },
+    { data: topicUniverseData },
+  ] = await Promise.all([
+    // All competitors (including excluded for display)
+    supabase
+      .from('competitors')
+      .select('*')
+      .eq('brand_id', brandId),
+    // Active queries for UI display
+    supabase
+      .from('queries')
+      .select('*')
+      .eq('brand_id', brandId)
+      .eq('is_active', true)
+      .order('priority', { ascending: false }),
+    // ALL queries including inactive (for citation-to-prompt mapping)
+    supabase
+      .from('queries')
+      .select('id, query_text, query_type, persona, priority, funnel_stage')
+      .eq('brand_id', brandId),
+    // Scans last 90 days
+    supabase
+      .from('scan_results')
+      .select('id, brand_id, query_id, model, response_text, brand_mentioned, brand_position, brand_context, brand_in_citations, competitors_mentioned, citations, search_results, scanned_at, is_first_citation, citation_status_changed, previous_cited, new_competitors_found, position_change, brand_sentiment, sentiment_reason')
+      .eq('brand_id', brandId)
+      .gte('scanned_at', ninetyDaysAgo.toISOString())
+      .order('scanned_at', { ascending: false })
+      .limit(5000),
+    // Memos
+    supabase
+      .from('memos')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('created_at', { ascending: false }),
+    // Topic universe data for coverage tab
+    supabase
+      .from('topic_universe')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('priority_score', { ascending: false }),
+  ])
+
   // Filter for active competitors (used in scans and content monitoring)
   const competitors = allCompetitors?.filter(c => c.is_active) || []
 
-  // Get queries (active only for UI display)
-  const { data: queries } = await supabase
-    .from('queries')
-    .select('*')
-    .eq('brand_id', brandId)
-    .eq('is_active', true)
-    .order('priority', { ascending: false })
-
-  // Get ALL queries including inactive/excluded (for citation-to-prompt mapping)
-  const { data: allQueries } = await supabase
-    .from('queries')
-    .select('id, query_text, query_type, persona, priority, funnel_stage')
-    .eq('brand_id', brandId)
-
-  // Get all scans for history (up to last 90 days)
-  // Use lightweight select for the list view (no response_text blob)
-  // and explicit limit since Supabase defaults to 1000 rows
-  const ninetyDaysAgo = new Date()
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
-  
-  const { data: allScans } = await supabase
-    .from('scan_results')
-    .select('id, brand_id, query_id, model, response_text, brand_mentioned, brand_position, brand_context, brand_in_citations, competitors_mentioned, citations, search_results, scanned_at, is_first_citation, citation_status_changed, previous_cited, new_competitors_found, position_change, brand_sentiment, sentiment_reason')
-    .eq('brand_id', brandId)
-    .gte('scanned_at', ninetyDaysAgo.toISOString())
-    .order('scanned_at', { ascending: false })
-    .limit(5000)
-
-  // Get recent scans for the summary (most recent first, take last 100)
+  // Recent scans for the summary (most recent first, take last 100)
   const recentScans = allScans?.slice(0, 100) || []
 
   // Build citation counts per entity (competitor) from scan results
@@ -168,46 +186,31 @@ export default async function BrandPage({ params }: Props) {
     uniqueQueryCountsByEntity[id] = queryIds.size
   }
 
-  // Get memos
-  const { data: memos } = await supabase
-    .from('memos')
-    .select('*')
-    .eq('brand_id', brandId)
-    .order('created_at', { ascending: false })
+  // SUNSET: Search console stats, AI traffic, Alerts, Attribution, prompt intelligence, model insights removed (0 usage)
 
-  // SUNSET: Search console stats removed (0 usage)
-
-  // Get competitor content (for content intelligence and watch tab)
+  // Get competitor content and feeds in parallel (depends on competitors)
   const competitorIds = (competitors || []).map(c => c.id)
-  const { data: competitorContent } = competitorIds.length > 0 
-    ? await supabase
-        .from('competitor_content')
-        .select('*, competitor:competitor_id(id, name, domain), response_memo:response_memo_id(id, title, slug, status)')
-        .in('competitor_id', competitorIds)
-        .order('first_seen_at', { ascending: false })
-        .limit(100) // Increased for watch tab filtering
-    : { data: [] }
-
-  // Get competitor RSS feeds
-  const { data: competitorFeeds } = competitorIds.length > 0
-    ? await supabase
-        .from('competitor_feeds')
-        .select('*')
-        .in('competitor_id', competitorIds)
-        .eq('is_active', true)
-        .order('discovered_at', { ascending: false })
-    : { data: [] }
-
-  // SUNSET: AI traffic removed (0 usage)
-
-  // SUNSET: Alerts, Attribution events, prompt intelligence, model insights removed (0 usage)
-
-  // Get topic universe data for coverage tab
-  const { data: topicUniverseData } = await supabase
-    .from('topic_universe')
-    .select('*')
-    .eq('brand_id', brandId)
-    .order('priority_score', { ascending: false })
+  const [
+    { data: competitorContent },
+    { data: competitorFeeds },
+  ] = await Promise.all([
+    competitorIds.length > 0 
+      ? supabase
+          .from('competitor_content')
+          .select('*, competitor:competitor_id(id, name, domain), response_memo:response_memo_id(id, title, slug, status)')
+          .in('competitor_id', competitorIds)
+          .order('first_seen_at', { ascending: false })
+          .limit(100)
+      : Promise.resolve({ data: [] as any[] }),
+    competitorIds.length > 0
+      ? supabase
+          .from('competitor_feeds')
+          .select('*')
+          .in('competitor_id', competitorIds)
+          .eq('is_active', true)
+          .order('discovered_at', { ascending: false })
+      : Promise.resolve({ data: [] as any[] }),
+  ])
 
   const topicTopics = (topicUniverseData || []) as TopicUniverse[]
   const hasTopicUniverse = topicTopics.length > 0
@@ -370,7 +373,7 @@ export default async function BrandPage({ params }: Props) {
 
       {/* Citation Score Hero - only show if we have scans */}
       {hasAnyScans ? (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <div className="p-6 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-[#0EA5E9]" strokeWidth={2.5} />
@@ -390,11 +393,6 @@ export default async function BrandPage({ params }: Props) {
             <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
             <div className="text-4xl font-bold text-[#0F172A] mt-1">{queries?.length || 0}</div>
             <div className="text-sm text-zinc-500">tracked</div>
-          </div>
-          <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #F59E0B' }}>
-            <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
-            <div className="text-4xl font-bold text-[#0F172A] mt-1">{allScans?.length || 0}</div>
-            <div className="text-sm text-zinc-500">last 90 days</div>
           </div>
         </div>
       ) : (
@@ -427,7 +425,7 @@ export default async function BrandPage({ params }: Props) {
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
           <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="entities" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ENTITIES{(allCompetitors?.length || 0) > 0 && ` (${allCompetitors?.length})`}</TabsTrigger>
-          <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">SOURCES</TabsTrigger>
+          <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">CITATIONS</TabsTrigger>
           <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
             WATCH
             {/* Show badge if there's new content today */}
@@ -470,7 +468,6 @@ export default async function BrandPage({ params }: Props) {
             context={context}
             contextExtractedAt={brand.context_extracted_at}
             hasContext={hasContext}
-            competitors={allCompetitors || []}
           />
         </TabsContent>
 
@@ -480,18 +477,24 @@ export default async function BrandPage({ params }: Props) {
         </TabsContent>
 
         <TabsContent value="prompts" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-[#0F172A]">Prompt Analysis</h2>
-              <p className="text-sm text-muted-foreground">Track performance across AI models · {allScans?.length || 0} scans last 90 days</p>
-            </div>
-            <div className="flex gap-2">
-              <ExportDropdown brandId={brandId} />
-              <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
-              <GenerateMemosButton brandId={brandId} />
-              <ScanButton brandId={brandId} brandName={brand.name} />
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Prompts</CardTitle>
+                  <CardDescription>
+                    {queries?.length || 0} prompts tracked · {allScans?.length || 0} scans last 90 days
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ExportDropdown brandId={brandId} />
+                  <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
+                  <GenerateMemosButton brandId={brandId} />
+                  <ScanButton brandId={brandId} brandName={brand.name} />
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
           <PromptVisibilityList 
             queries={queries || []} 
             scanResults={allScans || []}
@@ -506,12 +509,21 @@ export default async function BrandPage({ params }: Props) {
 
         <TabsContent value="memos">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-[#0F172A]">Memos</h2>
-              </div>
-              <GenerateMemoDropdown brandId={brandId} />
-            </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Memos</CardTitle>
+                    <CardDescription>
+                      {(memos || []).length} total · {(memos || []).filter((m: { status: string }) => m.status === 'published').length} published · {(memos || []).filter((m: { status: string }) => m.status === 'draft').length} drafts
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <GenerateMemoDropdown brandId={brandId} />
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
             <MemoFeed
               brandId={brandId}
               brandName={brand.name}

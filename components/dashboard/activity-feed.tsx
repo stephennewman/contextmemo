@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Sheet, 
   SheetContent, 
@@ -50,6 +51,7 @@ import {
   BookmarkPlus,
   Trash2,
   MoreHorizontal,
+  X,
 } from 'lucide-react'
 import { 
   ActivityCategory, 
@@ -768,29 +770,30 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
   const hasActiveFilters = selectedCategories.length > 0
 
   return (
-    <div className="border-[3px] border-[#0F172A] bg-white">
-      {/* Header */}
-      <div className="p-4 border-b-[3px] border-[#0F172A] bg-[#0F172A] text-white">
+    <Card>
+      <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-[#0EA5E9]" />
-            <h2 className="text-white font-bold tracking-wide">ACTIVITY FOR {brandName.toUpperCase()}</h2>
+          <div>
+            <CardTitle className="text-base">Activity</CardTitle>
+            <CardDescription>
+              Recent activity for {brandName}
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             {/* Filter Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 text-white hover:bg-white/10 relative">
+                <Button variant="outline" size="sm" className="relative">
                   <Filter className="h-4 w-4 mr-1" />
                   Filter
                   {hasActiveFilters && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#0EA5E9] text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-[#0EA5E9] text-white text-[10px] font-bold flex items-center justify-center rounded-full">
                       {selectedCategories.length}
                     </span>
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 border-2 border-[#0F172A] rounded-none">
+              <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
                 {(Object.keys(ACTIVITY_CATEGORY_META) as ActivityCategory[]).map(cat => {
                   const meta = ACTIVITY_CATEGORY_META[cat]
@@ -800,7 +803,6 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
                       key={cat}
                       checked={selectedCategories.includes(cat)}
                       onCheckedChange={() => toggleCategory(cat)}
-                      className="rounded-none"
                     >
                       <Icon className="h-4 w-4 mr-2" style={{ color: meta.color }} />
                       {meta.label}
@@ -813,7 +815,7 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={clearFilters}
-                      className="rounded-none text-red-600"
+                      className="text-red-600"
                     >
                       Clear All Filters
                     </DropdownMenuItem>
@@ -823,134 +825,163 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
             </DropdownMenu>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Activity List */}
-      <div className="max-h-[600px] overflow-y-auto">
-        {loading ? (
-          <div className="p-4 space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <Skeleton className="h-10 w-10 rounded-none" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto text-amber-400 mb-4" />
-            <p className="font-semibold text-[#0F172A]">Failed to load activity</p>
-            <p className="text-sm text-slate-500 mt-1">{error}</p>
-            <button 
-              onClick={() => fetchActivities(true)}
-              className="mt-3 text-sm font-semibold text-[#0EA5E9] hover:underline"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : activities.length === 0 ? (
-          <div className="p-8 text-center">
-            <Activity className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-            <p className="font-semibold text-[#0F172A]">No activity yet</p>
-            <p className="text-sm text-slate-500 mt-1">
-              {hasActiveFilters 
-                ? 'Try adjusting your filters'
-                : 'Activity will appear here as you use the platform'
-              }
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-200">
-            {activities.map((activity) => {
-              const meta = ACTIVITY_TYPE_META[activity.activity_type]
-              const Icon = ICONS[activity.icon] || ICONS[meta?.icon] || Activity
-              
+      <CardContent className="space-y-4">
+        {/* Active filter pills */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            {selectedCategories.map(cat => {
+              const meta = ACTIVITY_CATEGORY_META[cat]
               return (
-                <div 
-                  key={activity.id}
-                  className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedActivity(activity)}
+                <button
+                  key={cat}
+                  onClick={() => toggleCategory(cat)}
+                  className="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5"
+                  style={{ backgroundColor: `${meta.color}15`, color: meta.color }}
                 >
-                  <div className="flex gap-3">
-                    {/* Icon */}
-                    <div 
-                      className="h-10 w-10 flex items-center justify-center shrink-0"
-                      style={{ 
-                        backgroundColor: `${meta?.color || '#6B7280'}15`,
-                        borderLeft: `4px solid ${meta?.color || '#6B7280'}`
-                      }}
-                    >
-                      <Icon 
-                        className="h-5 w-5" 
-                        style={{ color: meta?.color || '#6B7280' }}
-                      />
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-sm text-[#0F172A] leading-tight">
-                            {activity.title}
-                          </p>
-                          {activity.description && (
-                            <p className="text-sm text-slate-600 mt-0.5 line-clamp-2">
-                              {activity.description}
-                            </p>
-                          )}
-                        </div>
-                        <span className="text-xs text-slate-400 whitespace-nowrap">
-                          {formatTime(activity.created_at)}
-                        </span>
-                      </div>
-                      
-                      {/* Footer */}
-                      {activity.link_url && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <a
-                            href={activity.link_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {activity.link_label || 'View'}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  {meta.label}
+                  <X className="h-3 w-3" />
+                </button>
               )
             })}
-            
-            {/* Load More */}
-            {hasMore && (
-              <div className="p-4">
-                <Button
-                  variant="outline"
-                  className="w-full rounded-none border-2 border-[#0F172A]"
-                  onClick={() => fetchActivities(false)}
-                  disabled={loadingMore}
-                >
-                  {loadingMore ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    'Load More'
-                  )}
-                </Button>
-              </div>
-            )}
+            <button
+              onClick={clearFilters}
+              className="px-3 py-1.5 rounded-full text-sm font-medium text-slate-500 hover:text-red-600 transition-colors"
+            >
+              Clear
+            </button>
           </div>
         )}
-      </div>
+
+        {/* Activity List */}
+        <div className="max-h-[600px] overflow-y-auto">
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-10 w-10 rounded" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="py-8 text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto text-amber-400 mb-4" />
+              <p className="font-semibold text-[#0F172A]">Failed to load activity</p>
+              <p className="text-sm text-slate-500 mt-1">{error}</p>
+              <button 
+                onClick={() => fetchActivities(true)}
+                className="mt-3 text-sm font-semibold text-[#0EA5E9] hover:underline"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="py-8 text-center">
+              <Activity className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+              <p className="font-semibold text-[#0F172A]">No activity yet</p>
+              <p className="text-sm text-slate-500 mt-1">
+                {hasActiveFilters 
+                  ? 'Try adjusting your filters'
+                  : 'Activity will appear here as you use the platform'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {activities.map((activity) => {
+                const meta = ACTIVITY_TYPE_META[activity.activity_type]
+                const Icon = ICONS[activity.icon] || ICONS[meta?.icon] || Activity
+                
+                return (
+                  <div 
+                    key={activity.id}
+                    className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedActivity(activity)}
+                  >
+                    <div className="flex gap-3">
+                      {/* Icon */}
+                      <div 
+                        className="h-10 w-10 flex items-center justify-center shrink-0 rounded"
+                        style={{ 
+                          backgroundColor: `${meta?.color || '#6B7280'}15`,
+                          borderLeft: `4px solid ${meta?.color || '#6B7280'}`
+                        }}
+                      >
+                        <Icon 
+                          className="h-5 w-5" 
+                          style={{ color: meta?.color || '#6B7280' }}
+                        />
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-sm text-[#0F172A] leading-tight">
+                              {activity.title}
+                            </p>
+                            {activity.description && (
+                              <p className="text-sm text-slate-600 mt-0.5 line-clamp-2">
+                                {activity.description}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-xs text-slate-400 whitespace-nowrap">
+                            {formatTime(activity.created_at)}
+                          </span>
+                        </div>
+                        
+                        {/* Footer */}
+                        {activity.link_url && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <a
+                              href={activity.link_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-[#0EA5E9] hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {activity.link_label || 'View'}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              
+              {/* Load More */}
+              {hasMore && (
+                <div className="p-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fetchActivities(false)}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
 
       {/* Activity Detail Modal */}
       <ActivityDetail
@@ -958,6 +989,6 @@ export function ActivityTab({ brandId, brandName }: ActivityTabProps) {
         isOpen={!!selectedActivity}
         onClose={() => setSelectedActivity(null)}
       />
-    </div>
+    </Card>
   )
 }

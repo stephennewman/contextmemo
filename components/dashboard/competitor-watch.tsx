@@ -247,33 +247,30 @@ export function CompetitorWatch({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <Card className="border-[#0EA5E9]" style={{ borderWidth: '3px', borderLeftWidth: '8px' }}>
-        <CardHeader className="pb-3">
+      <Card>
+        <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#0EA5E9] rounded">
-                <Eye className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Competitor Watch</CardTitle>
-                <CardDescription>
-                  Monitoring {competitors.length} competitor{competitors.length !== 1 ? 's' : ''} for new content
-                </CardDescription>
-              </div>
+            <div>
+              <CardTitle className="text-base">Watch</CardTitle>
+              <CardDescription>
+                Monitoring {competitors.length} competitor{competitors.length !== 1 ? 's' : ''} · {todayContent.length} new today
+              </CardDescription>
             </div>
-            <Button 
-              variant="default" 
-              onClick={handleScan}
-              disabled={scanning}
-              className="bg-[#0EA5E9] hover:bg-[#0284C7]"
-            >
-              {scanning ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Check Now
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleScan}
+                disabled={scanning}
+              >
+                {scanning ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                )}
+                Check Now
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

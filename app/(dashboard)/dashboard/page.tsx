@@ -13,7 +13,7 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Get brands with basic counts only - fast query
+  // Get brands with counts - filtered to published memos and active queries only
   const { data: brands } = await supabase
     .from('brands')
     .select(`
@@ -26,6 +26,8 @@ export default async function DashboardPage() {
       memos:memos(count),
       queries:queries(count)
     `)
+    .eq('memos.status', 'published')
+    .eq('queries.is_active', true)
     .order('created_at', { ascending: false })
 
   // If no brands, redirect to create one

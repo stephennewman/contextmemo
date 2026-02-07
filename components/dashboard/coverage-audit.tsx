@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -214,6 +214,30 @@ export function CoverageAudit({
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Coverage</CardTitle>
+              <CardDescription>
+                {score ? `${score.total_topics} topics · ${score.covered} covered · ${score.gaps} gaps` : `${topics.length} topics mapped`}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowModal(true)}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Coverage Score Header */}
       {score && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
