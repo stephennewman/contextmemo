@@ -6,6 +6,9 @@ import {
   ExternalLink,
   TrendingUp,
   AlertTriangle,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
 import { ScanButton, GenerateMemoDropdown, FindContentGapsButton, GenerateMemosButton } from '@/components/dashboard/brand-actions'
@@ -19,6 +22,7 @@ import { EntityList } from '@/components/dashboard/entity-list'
 import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
+import { BrandLogo } from '@/components/dashboard/brand-logo'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
 import { CoverageAudit } from '@/components/dashboard/coverage-audit'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
@@ -275,6 +279,49 @@ export default async function BrandPage({ params }: Props) {
 
   // SUNSET: queryVisibility and lowVisibilityQueries removed (only used by Strategy Playbook)
 
+  // Published memos only (not drafts)
+  const publishedMemos = (memos || []).filter((m: any) => m.status === 'published')
+
+  // Trending: this week vs last week
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+
+  const citationsThisWeek = (allScans || []).filter(s => 
+    s.brand_in_citations === true && new Date(s.scanned_at) >= sevenDaysAgo
+  ).length
+  const citationsLastWeek = (allScans || []).filter(s => 
+    s.brand_in_citations === true && new Date(s.scanned_at) >= fourteenDaysAgo && new Date(s.scanned_at) < sevenDaysAgo
+  ).length
+  const citationsDelta = citationsThisWeek - citationsLastWeek
+
+  const memosThisWeek = publishedMemos.filter((m: any) => new Date(m.published_at || m.created_at) >= sevenDaysAgo).length
+  const memosLastWeek = publishedMemos.filter((m: any) => {
+    const d = new Date(m.published_at || m.created_at)
+    return d >= fourteenDaysAgo && d < sevenDaysAgo
+  }).length
+  const memosDelta = memosThisWeek - memosLastWeek
+
+  const scansThisWeek = (allScans || []).filter(s => new Date(s.scanned_at) >= sevenDaysAgo).length
+  const scansLastWeek = (allScans || []).filter(s => {
+    const d = new Date(s.scanned_at)
+    return d >= fourteenDaysAgo && d < sevenDaysAgo
+  }).length
+  const scansDelta = scansThisWeek - scansLastWeek
+
+  // Overall brand score (0-100)
+  // Weighted: citation rate 40%, memo coverage 25%, scan activity 20%, prompt breadth 15%
+  const allScansCount = allScans?.length || 0
+  const allCitedCount = (allScans || []).filter(s => s.brand_in_citations === true).length
+  const rawCitationRate = allScansCount > 0 ? (allCitedCount / allScansCount) * 100 : 0
+  const citationComponent = Math.min(rawCitationRate * 2.5, 40) // Scale up, cap at 40
+  const promptCount = queries?.length || 0
+  const memoRatio = promptCount > 0 ? publishedMemos.length / promptCount : 0
+  const memoComponent = Math.min(memoRatio * 25, 25) // Cap at 25
+  const scanActivityComponent = allScansCount > 100 ? 20 : allScansCount > 20 ? 15 : allScansCount > 0 ? 10 : 0
+  const promptComponent = promptCount >= 30 ? 15 : promptCount >= 15 ? 10 : promptCount > 0 ? 5 : 0
+  const brandScore = Math.round(citationComponent + memoComponent + scanActivityComponent + promptComponent)
+
   const context = brand.context as BrandContext
   const hasContext = context && Object.keys(context).length > 0
   const hubspotEnabled = !!(context?.hubspot?.enabled && context?.hubspot?.access_token && context?.hubspot?.blog_id)
@@ -334,12 +381,13 @@ export default async function BrandPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Bold Electric Header */}
+      {/* Brand Header */}
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">DASHBOARD</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm text-zinc-500 font-medium">{brand.name}</span>
+        <div className="flex items-center gap-3">
+          <BrandLogo domain={brand.domain} name={brand.name} size={40} />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
+            <div className="flex items-center gap-2 mt-0.5">
             {brand.verified ? (
               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#10B981] text-white">VERIFIED</span>
             ) : (
@@ -349,15 +397,16 @@ export default async function BrandPage({ params }: Props) {
               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white">PAUSED</span>
             )}
             <span className="text-zinc-400">·</span>
-            <a 
-              href={`/memo/${brand.subdomain}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
-            >
-              {brand.subdomain}.contextmemo.com
-              <ExternalLink className="h-3 w-3" />
-            </a>
+              <a 
+                href={`/memo/${brand.subdomain}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
+              >
+                {brand.subdomain}.contextmemo.com
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         </div>
         <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} />
@@ -374,47 +423,94 @@ export default async function BrandPage({ params }: Props) {
         </div>
       )}
 
-      {/* Citation Score Hero - only show if we have scans */}
-      {hasAnyScans ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="p-6 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-5 w-5 text-[#0EA5E9]" strokeWidth={2.5} />
-              <span className="text-xs font-bold tracking-widest text-slate-400">CITATION SCORE</span>
-            </div>
-            <div className="text-5xl font-bold text-[#0EA5E9]">{citationScore}%</div>
-            <div className="w-full h-2 bg-slate-700 mt-3">
-              <div className="h-2 bg-[#0EA5E9]" style={{ width: `${citationScore}%` }} />
-            </div>
+      {/* Brand Stats Header */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {/* Brand Score - Hero Card */}
+        <div className="p-5 bg-[#0F172A] text-white relative overflow-hidden" style={{ borderLeft: '8px solid #0EA5E9' }}>
+          <div className="flex items-center gap-3 mb-3">
+            <BrandLogo domain={brand.domain} name={brand.name} size={32} />
+            <span className="text-xs font-bold tracking-widest text-slate-400">BRAND SCORE</span>
           </div>
-          <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
-            <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
-            <div className="text-4xl font-bold text-[#0F172A] mt-1">{memos?.length || 0}</div>
-            <div className="text-sm text-zinc-500">published</div>
+          <div className="text-5xl font-bold text-[#0EA5E9]">{brandScore}</div>
+          <div className="w-full h-2 bg-slate-700 mt-3 rounded-full">
+            <div className="h-2 bg-[#0EA5E9] rounded-full transition-all" style={{ width: `${brandScore}%` }} />
           </div>
-          <div className="p-6 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
-            <span className="text-xs font-bold tracking-widest text-zinc-500">PROMPTS</span>
-            <div className="text-4xl font-bold text-[#0F172A] mt-1">{queries?.length || 0}</div>
-            <div className="text-sm text-zinc-500">tracked</div>
-          </div>
+          <div className="text-[10px] text-slate-500 mt-2">out of 100</div>
         </div>
-      ) : (
-        /* No scans yet - prompt to run first scan */
-        <div className="p-6 border-[3px] border-[#0EA5E9] bg-[#F0F9FF]" style={{ borderLeft: '8px solid #0EA5E9' }}>
+
+        {/* Citations This Week */}
+        <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold tracking-widest text-zinc-500">CITATIONS</span>
+            {citationsDelta !== 0 && (
+              <span className={`flex items-center gap-0.5 text-xs font-bold ${citationsDelta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {citationsDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {citationsDelta > 0 ? '+' : ''}{citationsDelta}
+              </span>
+            )}
+            {citationsDelta === 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-zinc-400">
+                <Minus className="h-3 w-3" />
+              </span>
+            )}
+          </div>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{citationsThisWeek}</div>
+          <div className="text-xs text-zinc-500 mt-1">this week · {allCitedCount} total</div>
+        </div>
+
+        {/* Memos This Week */}
+        <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
+            {memosDelta !== 0 && (
+              <span className={`flex items-center gap-0.5 text-xs font-bold ${memosDelta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {memosDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {memosDelta > 0 ? '+' : ''}{memosDelta}
+              </span>
+            )}
+            {memosDelta === 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-zinc-400">
+                <Minus className="h-3 w-3" />
+              </span>
+            )}
+          </div>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{memosThisWeek}</div>
+          <div className="text-xs text-zinc-500 mt-1">new this week · {publishedMemos.length} published</div>
+        </div>
+
+        {/* Scans This Week */}
+        <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold tracking-widest text-zinc-500">SCANS</span>
+            {scansDelta !== 0 && (
+              <span className={`flex items-center gap-0.5 text-xs font-bold ${scansDelta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {scansDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {scansDelta > 0 ? '+' : ''}{scansDelta}
+              </span>
+            )}
+            {scansDelta === 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-zinc-400">
+                <Minus className="h-3 w-3" />
+              </span>
+            )}
+          </div>
+          <div className="text-4xl font-bold text-[#0F172A] mt-1">{scansThisWeek}</div>
+          <div className="text-xs text-zinc-500 mt-1">this week · {allScansCount} last 90d</div>
+        </div>
+      </div>
+
+      {/* No scans CTA */}
+      {!hasAnyScans && (
+        <div className="p-4 border-[3px] border-[#0EA5E9] bg-[#F0F9FF]" style={{ borderLeft: '8px solid #0EA5E9' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-[#0F172A] mb-1">Ready to scan!</h3>
               <p className="text-sm text-zinc-600">
-                Setup complete. Run your first scan to see how visible {brand.name} is across AI assistants.
-              </p>
-              <p className="text-xs text-zinc-500 mt-2">
-                {queries?.length || 0} prompts • {competitors?.length || 0} competitors • 1 AI model (GPT-4o Mini)
+                Run your first scan to see how visible {brand.name} is across AI assistants.
               </p>
             </div>
             <div className="flex gap-2">
               <ScanButton brandId={brandId} brandName={brand.name} />
-              <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
-              <GenerateMemosButton brandId={brandId} />
             </div>
           </div>
         </div>
