@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { crawlWebsite, fetchUrlAsMarkdown, searchWebsite } from '@/lib/utils/jina-reader'
+import { logSingleUsage } from '@/lib/utils/usage-logger'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -160,6 +161,12 @@ export const competitorEnrich = inngest.createFunction(
       return { success: false, reason: 'Could not fetch website content' }
     }
 
+    // Get tenant_id for usage logging
+    const tenantId = await step.run('get-tenant', async () => {
+      const { data } = await supabase.from('brands').select('tenant_id').eq('id', brandId).single()
+      return data?.tenant_id || ''
+    })
+
     // Step 3: Extract profile using AI
     const profile = await step.run('extract-profile', async () => {
       // Clean content
@@ -171,12 +178,16 @@ export const competitorEnrich = inngest.createFunction(
         .trim()
         .slice(0, 30000)
 
-      const { text } = await generateText({
+      const { text, usage: enrichUsage } = await generateText({
         model: openai('gpt-4o'),
         system: COMPETITOR_PROFILE_PROMPT,
         prompt: `Extract a competitive intelligence profile from this website content for: ${competitor.name} (${competitor.domain})\n\n${cleanContent}`,
         temperature: 0.2,
       })
+
+      if (tenantId) {
+        await logSingleUsage(tenantId, brandId, 'competitor_enrich', 'gpt-4o', enrichUsage?.promptTokens || 0, enrichUsage?.completionTokens || 0)
+      }
 
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {

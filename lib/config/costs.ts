@@ -8,6 +8,7 @@
 // Per-model token costs (per 1M tokens, in cents)
 export const TOKEN_COSTS = {
   'perplexity-sonar': { input: 100, output: 100 },     // ~$1/1M
+  'gpt-4o': { input: 250, output: 1000 },              // $2.50/$10 per 1M
   'gpt-4o-mini': { input: 15, output: 60 },            // $0.15/$0.60 per 1M
   'claude-3-5-haiku': { input: 80, output: 400 },      // $0.80/$4 per 1M
   'grok-4-fast': { input: 20, output: 50 },            // $0.20/$0.50 per 1M

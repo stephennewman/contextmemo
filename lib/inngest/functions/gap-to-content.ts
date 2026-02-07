@@ -19,6 +19,7 @@ import { marked } from 'marked'
 import { BrandContext, HubSpotConfig } from '@/lib/supabase/types'
 import { getHubSpotToken } from '@/lib/hubspot/oauth'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
+import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
 
 const supabase = createServiceRoleClient()
 
@@ -277,11 +278,18 @@ export const gapToContent = inngest.createFunction(
         .replace('{{content_structure}}', gap.content_structure || '')
         .replace('{{recommendation}}', gap.recommendation || '')
 
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model: openrouter('openai/gpt-4o'),
         prompt,
         temperature: 0.5,
       })
+
+      // Log usage
+      await logSingleUsage(
+        brand.tenant_id, brand.id, 'gap_to_content',
+        normalizeModelId('openai/gpt-4o'),
+        usage?.promptTokens || 0, usage?.completionTokens || 0
+      )
 
       // Parse JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/)

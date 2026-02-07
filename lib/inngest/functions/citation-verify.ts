@@ -15,6 +15,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations } from '@/lib/utils/openrouter'
 import { emitCitationVerified } from '@/lib/feed/emit'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
+import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
 
 const supabase = createServiceRoleClient()
 
@@ -182,6 +183,13 @@ export const verifyGap = inngest.createFunction(
           const data = await response.json()
           const text = data.choices?.[0]?.message?.content || ''
           const annotations = data.choices?.[0]?.message?.annotations || []
+
+          // Log usage
+          await logSingleUsage(
+            brand.tenant_id, brand.id, 'citation_verify',
+            normalizeModelId(model.modelId),
+            data.usage?.prompt_tokens || 0, data.usage?.completion_tokens || 0
+          )
 
           const responseLower = text.toLowerCase()
           const brandMentioned = responseLower.includes(brandName)

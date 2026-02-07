@@ -5,6 +5,7 @@ import { openai } from '@ai-sdk/openai'
 import { fetchUrlAsMarkdown, crawlWebsite, searchWebsite, JinaReaderResponse } from '@/lib/utils/jina-reader'
 import { CONTEXT_EXTRACTION_PROMPT } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext, ExistingPage } from '@/lib/supabase/types'
+import { logSingleUsage, logUsageEvents } from '@/lib/utils/usage-logger'
 
 // Create Supabase admin client for server-side operations
 const supabase = createServiceRoleClient()
@@ -55,6 +56,12 @@ export const contextExtract = inngest.createFunction(
   { event: 'context/extract' },
   async ({ event, step }) => {
     const { brandId, domain } = event.data
+
+    // Get tenant_id for usage logging
+    const tenantId = await step.run('get-tenant', async () => {
+      const { data } = await supabase.from('brands').select('tenant_id').eq('id', brandId).single()
+      return data?.tenant_id || ''
+    })
 
     // Step 1: Crawl the website (with web search fallback)
     const websiteContent = await step.run('crawl-website', async () => {
@@ -164,12 +171,16 @@ export const contextExtract = inngest.createFunction(
       
       // First attempt
       console.log(`Extracting context for ${domain}, content length: ${cleanContent.length}`)
-      const { text: firstAttempt } = await generateText({
+      const { text: firstAttempt, usage: u1 } = await generateText({
         model: openai('gpt-4o'),
         system: CONTEXT_EXTRACTION_PROMPT,
         prompt: `Extract brand context from this website content:\n\n${cleanContent}${sourceNote}`,
         temperature: 0.2,
       })
+
+      if (tenantId) {
+        await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', u1?.promptTokens || 0, u1?.completionTokens || 0)
+      }
 
       let result = extractJSON(firstAttempt)
       
@@ -180,7 +191,7 @@ export const contextExtract = inngest.createFunction(
         // Use even shorter content for retry
         const shortContent = cleanContent.slice(0, 15000)
         
-        const { text: retryAttempt } = await generateText({
+        const { text: retryAttempt, usage: u2 } = await generateText({
           model: openai('gpt-4o'),
           system: `Extract company information from website content. Return ONLY valid JSON with these fields:
 {
@@ -197,6 +208,10 @@ Be thorough but respond ONLY with JSON.`,
           prompt: `Extract from this content:\n\n${shortContent}`,
           temperature: 0.3,
         })
+
+        if (tenantId) {
+          await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', u2?.promptTokens || 0, u2?.completionTokens || 0)
+        }
         
         result = extractJSON(retryAttempt)
       }
@@ -233,7 +248,7 @@ Be thorough but respond ONLY with JSON.`,
         contentSnippet: p.content.slice(0, 1500) // First 1500 chars for topic extraction
       }))
 
-      const { text } = await generateText({
+      const { text, usage: u3 } = await generateText({
         model: openai('gpt-4o-mini'), // Use mini for efficiency
         prompt: `Extract the main topics/keywords from these website pages. For each page, identify 2-5 key topics that describe what the page is about.
 
@@ -267,6 +282,10 @@ Content type should match the page purpose:
 Respond ONLY with valid JSON array, no explanations.`,
         temperature: 0.2,
       })
+
+      if (tenantId) {
+        await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o-mini', u3?.promptTokens || 0, u3?.completionTokens || 0)
+      }
 
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/)

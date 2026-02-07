@@ -13,6 +13,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
+import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
 
 const supabase = createServiceRoleClient()
 
@@ -218,11 +219,18 @@ Provide 3-5 strategic insights in JSON format:
 }`
 
       try {
-        const { text } = await generateText({
+        const { text, usage } = await generateText({
           model: openrouter('openai/gpt-4o-mini'),
           prompt,
           temperature: 0.5,
         })
+
+        // Log usage
+        await logSingleUsage(
+          brand.tenant_id, brandId, 'prompt_intelligence',
+          normalizeModelId('openai/gpt-4o-mini'),
+          usage?.promptTokens || 0, usage?.completionTokens || 0
+        )
 
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (jsonMatch) {

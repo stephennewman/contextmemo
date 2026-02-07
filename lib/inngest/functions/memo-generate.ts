@@ -13,6 +13,7 @@ import {
 import { BrandContext, VoiceInsight, ExistingPage } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
 import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
+import { logSingleUsage } from '@/lib/utils/usage-logger'
 import { selectImageForMemo } from '@/lib/hubspot/image-selector'
 
 const supabase = createServiceRoleClient()
@@ -465,11 +466,16 @@ export const memoGenerate = inngest.createFunction(
           throw new Error(`Unknown memo type: ${memoType}`)
       }
 
-      const { text } = await generateText({
+      const { text, usage: memoUsage } = await generateText({
         model: openai('gpt-4o'),
         prompt,
         temperature: 0.3,
       })
+
+      await logSingleUsage(
+        brand.tenant_id, brandId, 'memo_generate',
+        'gpt-4o', memoUsage?.promptTokens || 0, memoUsage?.completionTokens || 0
+      )
 
       // Validate that we got actual content, not an error response
       const errorPhrases = [
@@ -499,7 +505,7 @@ export const memoGenerate = inngest.createFunction(
 
     // Step 4: Create meta description
     const metaDescription = await step.run('generate-meta', async () => {
-      const { text } = await generateText({
+      const { text, usage: metaUsage } = await generateText({
         model: openai('gpt-4o-mini'),
         prompt: `Write a 150-160 character meta description for this article about ${brand.name}. 
 
@@ -512,6 +518,12 @@ Article excerpt:
 ${memoContent.content.slice(0, 1000)}`,
         temperature: 0.3,
       })
+
+      await logSingleUsage(
+        brand.tenant_id, brandId, 'memo_generate',
+        'gpt-4o-mini', metaUsage?.promptTokens || 0, metaUsage?.completionTokens || 0
+      )
+
       return text.slice(0, 160)
     })
 

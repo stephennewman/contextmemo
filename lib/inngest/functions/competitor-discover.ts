@@ -4,6 +4,7 @@ import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { COMPETITOR_DISCOVERY_PROMPT } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext } from '@/lib/supabase/types'
+import { logSingleUsage } from '@/lib/utils/usage-logger'
 import { 
   isBlockedCompetitorName, 
   validateCompetitor,
@@ -148,11 +149,16 @@ export const competitorDiscover = inngest.createFunction(
         .replace('{{mentioned_competitors}}', mentionedList)
         .replace('{{deleted_competitors}}', deletedList)
 
-      const { text } = await generateText({
+      const { text, usage: discoverUsage } = await generateText({
         model: openai('gpt-4o'),
         prompt,
         temperature: 0.2, // Lower temperature for more consistent results
       })
+
+      await logSingleUsage(
+        brand.tenant_id, brandId, 'competitor_discover',
+        'gpt-4o', discoverUsage?.promptTokens || 0, discoverUsage?.completionTokens || 0
+      )
 
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/)

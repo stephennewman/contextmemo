@@ -22,6 +22,7 @@ import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
+import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
 
 const supabase = createServiceRoleClient()
 
@@ -208,7 +209,7 @@ export const citationLoopRun = inngest.createFunction(
         try {
           const homepage = await fetchUrlAsMarkdown(`https://${competitor.domain}`)
           
-          const { text } = await generateText({
+          const { text, usage: u1 } = await generateText({
             model: openrouter('openai/gpt-4o-mini'),
             prompt: `Extract key information about this company from their homepage:
 
@@ -231,6 +232,12 @@ Respond with JSON:
 }`,
             temperature: 0.3,
           })
+
+          await logSingleUsage(
+            brand.tenant_id, brandId, 'citation_loop',
+            normalizeModelId('openai/gpt-4o-mini'),
+            u1?.promptTokens || 0, u1?.completionTokens || 0
+          )
 
           const jsonMatch = text.match(/\{[\s\S]*\}/)
           if (jsonMatch) {
@@ -262,11 +269,17 @@ Respond with JSON:
           .replace('{{competitor_description}}', competitor.description || '')
           .replace('{{competitor_context}}', JSON.stringify(competitorContext, null, 2))
 
-        const { text } = await generateText({
+        const { text, usage: u2 } = await generateText({
           model: openrouter('openai/gpt-4o-mini'),
           prompt,
           temperature: 0.5,
         })
+
+        await logSingleUsage(
+          brand.tenant_id, brandId, 'citation_loop',
+          normalizeModelId('openai/gpt-4o-mini'),
+          u2?.promptTokens || 0, u2?.completionTokens || 0
+        )
 
         try {
           const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -305,6 +318,13 @@ Respond with JSON:
             const data = await response.json()
             const responseText = data.choices?.[0]?.message?.content || ''
             const annotations = data.choices?.[0]?.message?.annotations || []
+
+            // Log search usage
+            await logSingleUsage(
+              brand.tenant_id, brandId, 'citation_loop',
+              normalizeModelId('openai/gpt-4o-mini:online'),
+              data.usage?.prompt_tokens || 0, data.usage?.completion_tokens || 0
+            )
             
             // Check if competitor was mentioned
             const competitorMentioned = responseText.toLowerCase().includes(competitor.name.toLowerCase())
@@ -326,11 +346,17 @@ Respond with JSON:
               .replace('{{competitor_name}}', competitor.name)
               .replace('{{citations}}', citations.join('\n') || 'No citations provided')
 
-            const { text: analysisText } = await generateText({
+            const { text: analysisText, usage: u4 } = await generateText({
               model: openrouter('openai/gpt-4o-mini'),
               prompt: analysisPrompt,
               temperature: 0.3,
             })
+
+            await logSingleUsage(
+              brand.tenant_id, brandId, 'citation_loop',
+              normalizeModelId('openai/gpt-4o-mini'),
+              u4?.promptTokens || 0, u4?.completionTokens || 0
+            )
 
             const analysisMatch = analysisText.match(/\{[\s\S]*\}/)
             if (analysisMatch) {
@@ -427,6 +453,16 @@ export const analyzeCitation = inngest.createFunction(
       return { success: false, message: 'No competitors to analyze' }
     }
 
+    // Look up tenant_id for usage logging
+    const tenantId = await step.run('get-tenant', async () => {
+      const { data } = await supabase
+        .from('brands')
+        .select('tenant_id')
+        .eq('id', brandId)
+        .single()
+      return data?.tenant_id || ''
+    })
+
     const analyses: CitationAnalysis[] = []
 
     for (const competitorName of scanResult.competitors_mentioned) {
@@ -437,11 +473,19 @@ export const analyzeCitation = inngest.createFunction(
           .replace('{{competitor_name}}', competitorName)
           .replace('{{citations}}', (scanResult.citations || []).join('\n') || 'None')
 
-        const { text } = await generateText({
+        const { text, usage: u5 } = await generateText({
           model: openrouter('openai/gpt-4o-mini'),
           prompt,
           temperature: 0.3,
         })
+
+        if (tenantId) {
+          await logSingleUsage(
+            tenantId, brandId, 'citation_analysis',
+            normalizeModelId('openai/gpt-4o-mini'),
+            u5?.promptTokens || 0, u5?.completionTokens || 0
+          )
+        }
 
         const match = text.match(/\{[\s\S]*\}/)
         if (match) {

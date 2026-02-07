@@ -6,6 +6,7 @@ import { queryPerplexity, checkBrandInCitations } from '@/lib/utils/perplexity'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations, OpenRouterAnnotation } from '@/lib/utils/openrouter'
 import { calculateTotalCost } from '@/lib/config/costs'
 import { PerplexitySearchResultJson } from '@/lib/supabase/types'
+import { logUsageEvents } from '@/lib/utils/usage-logger'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -399,6 +400,50 @@ export const promptLabRun = inngest.createFunction(
       // Small delay between batches
       await step.sleep(`batch-delay-${batchNumber}`, '1s')
     }
+
+    // Log aggregate usage to usage_events for budget tracking
+    await step.run('log-usage-events', async () => {
+      if (promptsRun === 0) return
+
+      // Aggregate all scan results into usage entries per model
+      const modelTotals = new Map<string, { input: number; output: number; count: number }>()
+      for (const [modelId, stats] of Object.entries(citationsByModel)) {
+        if (stats.total > 0) {
+          modelTotals.set(modelId, { input: 0, output: 0, count: stats.total })
+        }
+      }
+
+      // Log as a single aggregate event per lab run
+      const entries = Array.from(modelTotals.entries()).map(([model]) => ({
+        model,
+        inputTokens: 0, // Detailed tokens tracked in lab_scan_results
+        outputTokens: 0,
+      }))
+
+      // Simple aggregate log — cost already tracked in totalCostCents
+      const { error } = await supabase.from('usage_events').insert({
+        tenant_id: brand.tenant_id,
+        brand_id: brandId,
+        event_type: 'prompt_lab',
+        model: 'gpt-4o-mini',
+        input_tokens: 0,
+        output_tokens: 0,
+        search_queries: promptsRun,
+        token_cost_cents: totalCostCents,
+        search_cost_cents: 0,
+        total_cost_cents: totalCostCents,
+        metadata: {
+          lab_run_id: labRunId,
+          prompts_run: promptsRun,
+          models_used: activeModels.map(m => m.id),
+          batches: batchNumber,
+        },
+      })
+
+      if (error) {
+        console.error('[Lab] Failed to log usage events:', error)
+      }
+    })
 
     // Finalize run
     const finalStats = await step.run('finalize-run', async () => {

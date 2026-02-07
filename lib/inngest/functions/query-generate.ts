@@ -10,6 +10,7 @@ import {
 } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext, UserIntent, TargetPersona, PromptPersona } from '@/lib/supabase/types'
 import { isJunkQuery } from '@/lib/utils/query-validation'
+import { logSingleUsage } from '@/lib/utils/usage-logger'
 
 const supabase = createServiceRoleClient()
 
@@ -73,11 +74,16 @@ export const queryGenerate = inngest.createFunction(
       const prompt = USER_INTENT_EXTRACTION_PROMPT
         .replace('{{homepage_content}}', contentToAnalyze.slice(0, 12000))
 
-      const { text } = await generateText({
+      const { text, usage: u1 } = await generateText({
         model: openai('gpt-4o'),
         prompt,
         temperature: 0.3,
       })
+
+      await logSingleUsage(
+        brand.tenant_id, brandId, 'query_generate',
+        'gpt-4o', u1?.promptTokens || 0, u1?.completionTokens || 0
+      )
 
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -106,11 +112,16 @@ export const queryGenerate = inngest.createFunction(
         .replace('{{markets}}', (context.markets || []).join(', ') || 'Not specified')
         .replace('{{competitors}}', competitorNames)
 
-      const { text } = await generateText({
+      const { text, usage: u2 } = await generateText({
         model: openai('gpt-4o'),
         prompt,
         temperature: 0.4,
       })
+
+      await logSingleUsage(
+        brand.tenant_id, brandId, 'query_generate',
+        'gpt-4o', u2?.promptTokens || 0, u2?.completionTokens || 0
+      )
 
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -140,11 +151,16 @@ export const queryGenerate = inngest.createFunction(
         .replace('{{description}}', context.description || '')
         .replace('{{user_intents}}', intentsText)
 
-      const { text } = await generateText({
+      const { text, usage: u3 } = await generateText({
         model: openai('gpt-4o'),
         prompt,
         temperature: 0.5, // Slightly higher temp for more natural variation
       })
+
+      await logSingleUsage(
+        brand.tenant_id, brandId, 'query_generate',
+        'gpt-4o', u3?.promptTokens || 0, u3?.completionTokens || 0
+      )
 
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -194,11 +210,16 @@ export const queryGenerate = inngest.createFunction(
             .replace('{{persona_priorities}}', persona.priorities.join(', '))
             .replace('{{persona_example}}', examplePhrasing)
 
-          const { text } = await generateText({
+          const { text, usage: uP } = await generateText({
             model: openai('gpt-4o'),
             prompt,
             temperature: 0.5,
           })
+
+          await logSingleUsage(
+            brand.tenant_id, brandId, 'query_generate',
+            'gpt-4o', uP?.promptTokens || 0, uP?.completionTokens || 0
+          )
 
           const jsonMatch = text.match(/\[[\s\S]*\]/)
           if (jsonMatch) {

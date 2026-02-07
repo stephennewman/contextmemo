@@ -18,6 +18,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { buildSiteInventory } from '@/lib/utils/site-inventory'
 import { BrandContext, TopicCategory, TopicContentType, SitePageEntry, CoverageScore } from '@/lib/supabase/types'
+import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -281,11 +282,18 @@ export const topicUniverseGenerate = inngest.createFunction(
         .replace('{{existing_site_pages}}', formatSitePages(siteInventory.pages))
         .replace('{{existing_memos}}', formatExistingMemos(brandData.memos))
 
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model: openrouter('openai/gpt-4o'),
         prompt,
         temperature: 0.3,
       })
+
+      // Log usage
+      await logSingleUsage(
+        brandData.brand.tenant_id, brandId, 'topic_universe',
+        normalizeModelId('openai/gpt-4o'),
+        usage?.promptTokens || 0, usage?.completionTokens || 0
+      )
 
       // Parse JSON response
       const jsonMatch = text.match(/\[[\s\S]*\]/)

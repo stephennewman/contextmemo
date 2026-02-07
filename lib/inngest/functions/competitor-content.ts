@@ -8,6 +8,7 @@ import { generateToneInstructions } from '@/lib/ai/prompts/memo-generation'
 import { emitCompetitorPublished } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
+import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
 import crypto from 'crypto'
 import Parser from 'rss-parser'
 
@@ -1064,11 +1065,17 @@ export const competitorContentClassify = inngest.createFunction(
           .replace('{{brand_capabilities}}', brandCapabilities || 'Not available')
 
         try {
-          const { text } = await generateText({
+          const { text, usage: classifyUsage } = await generateText({
             model: openrouter('openai/gpt-4o-mini'),
             prompt,
             temperature: 0.3,
           })
+
+          await logSingleUsage(
+            brand.tenant_id, brandId, 'competitor_classify',
+            normalizeModelId('openai/gpt-4o-mini'),
+            classifyUsage?.promptTokens || 0, classifyUsage?.completionTokens || 0
+          )
 
           const jsonMatch = text.match(/\{[\s\S]*\}/)
           if (!jsonMatch) return null
@@ -1281,6 +1288,12 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
 
           const durationMs = Date.now() - startTime
 
+          await logSingleUsage(
+            brand.tenant_id, brandId, 'competitor_respond',
+            normalizeModelId(generationModel),
+            usage?.promptTokens || 0, usage?.completionTokens || 0
+          )
+
           // Extract title from generated content (first # heading)
           const titleMatch = text.match(/^#\s+(.+)$/m)
           const title = titleMatch?.[1] || content.universal_topic
@@ -1323,7 +1336,7 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
       // Step 3: Generate meta description
       const metaDescription = await step.run(`meta-${content.id}`, async () => {
         try {
-          const { text } = await generateText({
+          const { text, usage: metaUsage } = await generateText({
             model: openrouter('openai/gpt-4o-mini'),
             prompt: `Write a 150-160 character meta description for this article about ${brand.name}.
 
@@ -1336,6 +1349,13 @@ Article excerpt:
 ${memo.content.slice(0, 1000)}`,
             temperature: 0.3,
           })
+
+          await logSingleUsage(
+            brand.tenant_id, brandId, 'competitor_respond',
+            normalizeModelId('openai/gpt-4o-mini'),
+            metaUsage?.promptTokens || 0, metaUsage?.completionTokens || 0
+          )
+
           return text.slice(0, 160)
         } catch (e) {
           return content.universal_topic?.slice(0, 150) || ''
