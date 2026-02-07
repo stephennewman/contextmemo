@@ -74,6 +74,12 @@ export async function POST(request: NextRequest) {
 
     await supabase.from('tenants').delete().eq('id', user.id)
 
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(user.id)
+    if (authDeleteError) {
+      console.error('Failed to delete auth user:', authDeleteError)
+      return NextResponse.json({ error: 'Failed to delete auth user' }, { status: 500 })
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Privacy delete error:', error)
