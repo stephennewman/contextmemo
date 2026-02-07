@@ -1,9 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandContext } from '@/lib/supabase/types'
-import { ScanButton, FindContentGapsButton, GenerateMemosButton } from '@/components/dashboard/brand-actions'
-import { ExportDropdown } from '@/components/dashboard/export-dropdown'
 import { PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { AutomationStatusBar } from '@/components/dashboard/automation-status-bar'
 
@@ -72,24 +69,6 @@ export default async function PromptsPage({ params }: Props) {
         { label: 'Enrichment', enabled: brandSettings?.prompt_enrichment_enabled ?? true },
         { label: 'Intelligence', enabled: brandSettings?.prompt_intelligence_enabled ?? true },
       ]} />
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base">Prompts</CardTitle>
-              <CardDescription>
-                {queries?.length || 0} prompts tracked · {allScans?.length || 0} scans last 90 days
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <ExportDropdown brandId={brandId} />
-              <FindContentGapsButton brandId={brandId} brandName={brand.name} competitorCount={competitors?.length || 0} />
-              <GenerateMemosButton brandId={brandId} />
-              <ScanButton brandId={brandId} brandName={brand.name} />
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
       <PromptVisibilityList
         queries={queries || []}
         scanResults={allScans || []}
