@@ -157,7 +157,7 @@ export const competitorDiscover = inngest.createFunction(
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'competitor_discover',
-        'gpt-4o', discoverUsage?.promptTokens || 0, discoverUsage?.completionTokens || 0
+        'gpt-4o', discoverUsage?.inputTokens || 0, discoverUsage?.outputTokens || 0
       )
 
       try {

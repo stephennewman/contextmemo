@@ -236,7 +236,7 @@ Respond with JSON:
           await logSingleUsage(
             brand.tenant_id, brandId, 'citation_loop',
             normalizeModelId('openai/gpt-4o-mini'),
-            u1?.promptTokens || 0, u1?.completionTokens || 0
+            u1?.inputTokens || 0, u1?.outputTokens || 0
           )
 
           const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -278,7 +278,7 @@ Respond with JSON:
         await logSingleUsage(
           brand.tenant_id, brandId, 'citation_loop',
           normalizeModelId('openai/gpt-4o-mini'),
-          u2?.promptTokens || 0, u2?.completionTokens || 0
+          u2?.inputTokens || 0, u2?.outputTokens || 0
         )
 
         try {
@@ -355,7 +355,7 @@ Respond with JSON:
             await logSingleUsage(
               brand.tenant_id, brandId, 'citation_loop',
               normalizeModelId('openai/gpt-4o-mini'),
-              u4?.promptTokens || 0, u4?.completionTokens || 0
+              u4?.inputTokens || 0, u4?.outputTokens || 0
             )
 
             const analysisMatch = analysisText.match(/\{[\s\S]*\}/)
@@ -483,7 +483,7 @@ export const analyzeCitation = inngest.createFunction(
           await logSingleUsage(
             tenantId, brandId, 'citation_analysis',
             normalizeModelId('openai/gpt-4o-mini'),
-            u5?.promptTokens || 0, u5?.completionTokens || 0
+            u5?.inputTokens || 0, u5?.outputTokens || 0
           )
         }
 

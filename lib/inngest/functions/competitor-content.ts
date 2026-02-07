@@ -1074,7 +1074,7 @@ export const competitorContentClassify = inngest.createFunction(
           await logSingleUsage(
             brand.tenant_id, brandId, 'competitor_classify',
             normalizeModelId('openai/gpt-4o-mini'),
-            classifyUsage?.promptTokens || 0, classifyUsage?.completionTokens || 0
+            classifyUsage?.inputTokens || 0, classifyUsage?.outputTokens || 0
           )
 
           const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -1291,7 +1291,7 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
           await logSingleUsage(
             brand.tenant_id, brandId, 'competitor_respond',
             normalizeModelId(generationModel),
-            usage?.promptTokens || 0, usage?.completionTokens || 0
+            usage?.inputTokens || 0, usage?.outputTokens || 0
           )
 
           // Extract title from generated content (first # heading)
@@ -1353,7 +1353,7 @@ ${memo.content.slice(0, 1000)}`,
           await logSingleUsage(
             brand.tenant_id, brandId, 'competitor_respond',
             normalizeModelId('openai/gpt-4o-mini'),
-            metaUsage?.promptTokens || 0, metaUsage?.completionTokens || 0
+            metaUsage?.inputTokens || 0, metaUsage?.outputTokens || 0
           )
 
           return text.slice(0, 160)

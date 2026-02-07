@@ -82,7 +82,7 @@ export const queryGenerate = inngest.createFunction(
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'query_generate',
-        'gpt-4o', u1?.promptTokens || 0, u1?.completionTokens || 0
+        'gpt-4o', u1?.inputTokens || 0, u1?.outputTokens || 0
       )
 
       try {
@@ -120,7 +120,7 @@ export const queryGenerate = inngest.createFunction(
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'query_generate',
-        'gpt-4o', u2?.promptTokens || 0, u2?.completionTokens || 0
+        'gpt-4o', u2?.inputTokens || 0, u2?.outputTokens || 0
       )
 
       try {
@@ -159,7 +159,7 @@ export const queryGenerate = inngest.createFunction(
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'query_generate',
-        'gpt-4o', u3?.promptTokens || 0, u3?.completionTokens || 0
+        'gpt-4o', u3?.inputTokens || 0, u3?.outputTokens || 0
       )
 
       try {
@@ -218,7 +218,7 @@ export const queryGenerate = inngest.createFunction(
 
           await logSingleUsage(
             brand.tenant_id, brandId, 'query_generate',
-            'gpt-4o', uP?.promptTokens || 0, uP?.completionTokens || 0
+            'gpt-4o', uP?.inputTokens || 0, uP?.outputTokens || 0
           )
 
           const jsonMatch = text.match(/\[[\s\S]*\]/)

@@ -186,7 +186,7 @@ export const competitorEnrich = inngest.createFunction(
       })
 
       if (tenantId) {
-        await logSingleUsage(tenantId, brandId, 'competitor_enrich', 'gpt-4o', enrichUsage?.promptTokens || 0, enrichUsage?.completionTokens || 0)
+        await logSingleUsage(tenantId, brandId, 'competitor_enrich', 'gpt-4o', enrichUsage?.inputTokens || 0, enrichUsage?.outputTokens || 0)
       }
 
       const jsonMatch = text.match(/\{[\s\S]*\}/)

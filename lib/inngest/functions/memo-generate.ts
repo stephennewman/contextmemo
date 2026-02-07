@@ -474,7 +474,7 @@ export const memoGenerate = inngest.createFunction(
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'memo_generate',
-        'gpt-4o', memoUsage?.promptTokens || 0, memoUsage?.completionTokens || 0
+        'gpt-4o', memoUsage?.inputTokens || 0, memoUsage?.outputTokens || 0
       )
 
       // Validate that we got actual content, not an error response
@@ -521,7 +521,7 @@ ${memoContent.content.slice(0, 1000)}`,
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'memo_generate',
-        'gpt-4o-mini', metaUsage?.promptTokens || 0, metaUsage?.completionTokens || 0
+        'gpt-4o-mini', metaUsage?.inputTokens || 0, metaUsage?.outputTokens || 0
       )
 
       return text.slice(0, 160)

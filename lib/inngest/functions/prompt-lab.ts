@@ -605,7 +605,7 @@ async function scanWithPerplexity(
     } catch {}
   }
 
-  const costs = calculateTotalCost(modelConfig.id, usage?.promptTokens || 0, usage?.completionTokens || 0)
+  const costs = calculateTotalCost(modelConfig.id, usage?.inputTokens || 0, usage?.outputTokens || 0)
 
   return {
     model: modelConfig.id,
@@ -614,8 +614,8 @@ async function scanWithPerplexity(
     brandCited,
     entitiesMentioned,
     citations: citations.length > 0 ? citations : null,
-    inputTokens: usage?.promptTokens || 0,
-    outputTokens: usage?.completionTokens || 0,
+    inputTokens: usage?.inputTokens || 0,
+    outputTokens: usage?.outputTokens || 0,
     costCents: costs.totalCost,
   }
 }

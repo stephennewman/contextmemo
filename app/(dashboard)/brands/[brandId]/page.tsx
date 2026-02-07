@@ -11,7 +11,7 @@ import { ScanButton, GenerateMemoDropdown, FindContentGapsButton, GenerateMemosB
 import { MemoFeed } from '@/components/dashboard/memo-feed'
 import { ProfileSection } from '@/components/dashboard/profile-section'
 import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
-import { ScanResultsView, PromptVisibilityList } from '@/components/dashboard/scan-results-view'
+import { PromptVisibilityList } from '@/components/dashboard/scan-results-view'
 import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
 import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { EntityList } from '@/components/dashboard/entity-list'
@@ -417,13 +417,12 @@ export default async function BrandPage({ params }: Props) {
       )}
 
       {/* Main Content - Tabs */}
-      <Tabs defaultValue="profile" className="space-y-4">
+      <Tabs defaultValue="prompts" className="space-y-4">
         <TabsList className="bg-transparent border-b-[3px] border-[#0F172A] rounded-none p-0 h-auto flex-wrap">
           <TabsTrigger value="profile" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROFILE</TabsTrigger>
           <TabsTrigger value="activity" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ACTIVITY</TabsTrigger>
-          <TabsTrigger value="scans" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">SCANS{(recentScans?.length || 0) > 0 && ` (${recentScans?.length})`}</TabsTrigger>
-          <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="prompts" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">PROMPTS{(queries?.length || 0) > 0 && ` (${queries?.length})`}</TabsTrigger>
+          <TabsTrigger value="memos" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">MEMOS{(memos?.length || 0) > 0 && ` (${memos?.length})`}</TabsTrigger>
           <TabsTrigger value="entities" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">ENTITIES{(allCompetitors?.length || 0) > 0 && ` (${allCompetitors?.length})`}</TabsTrigger>
           <TabsTrigger value="sources" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs">SOURCES</TabsTrigger>
           <TabsTrigger value="watch" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-4 py-2 font-bold text-xs relative">
@@ -477,11 +476,11 @@ export default async function BrandPage({ params }: Props) {
           <ActivityTab brandId={brandId} brandName={brand.name} />
         </TabsContent>
 
-        <TabsContent value="scans" className="space-y-4">
+        <TabsContent value="prompts" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Scan Results</h2>
-              <p className="text-sm text-muted-foreground">See what AI models say when asked about your industry</p>
+              <h2 className="text-lg font-bold text-[#0F172A]">Prompt Analysis</h2>
+              <p className="text-sm text-muted-foreground">Track performance across AI models · {recentScans?.length || 0} scans last 90 days</p>
             </div>
             <div className="flex gap-2">
               <ExportDropdown brandId={brandId} />
@@ -490,12 +489,14 @@ export default async function BrandPage({ params }: Props) {
               <ScanButton brandId={brandId} brandName={brand.name} />
             </div>
           </div>
-          <ScanResultsView 
-            scanResults={recentScans} 
+          <PromptVisibilityList 
             queries={queries || []} 
+            scanResults={recentScans}
             brandName={brand.name}
+            brandId={brandId}
             brandDomain={brand.domain}
             competitors={competitors || []}
+            themes={context?.prompt_themes || []}
           />
         </TabsContent>
 
@@ -533,16 +534,6 @@ export default async function BrandPage({ params }: Props) {
               hubspotAutoPublish={hubspotAutoPublish}
             />
           </div>
-        </TabsContent>
-
-        <TabsContent value="prompts">
-          <PromptVisibilityList 
-            queries={queries || []} 
-            scanResults={recentScans}
-            brandName={brand.name}
-            brandId={brandId}
-            themes={context?.prompt_themes || []}
-          />
         </TabsContent>
 
         <TabsContent value="entities" className="space-y-4">

@@ -179,7 +179,7 @@ export const contextExtract = inngest.createFunction(
       })
 
       if (tenantId) {
-        await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', u1?.promptTokens || 0, u1?.completionTokens || 0)
+        await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', u1?.inputTokens || 0, u1?.outputTokens || 0)
       }
 
       let result = extractJSON(firstAttempt)
@@ -210,7 +210,7 @@ Be thorough but respond ONLY with JSON.`,
         })
 
         if (tenantId) {
-          await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', u2?.promptTokens || 0, u2?.completionTokens || 0)
+          await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', u2?.inputTokens || 0, u2?.outputTokens || 0)
         }
         
         result = extractJSON(retryAttempt)
@@ -284,7 +284,7 @@ Respond ONLY with valid JSON array, no explanations.`,
       })
 
       if (tenantId) {
-        await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o-mini', u3?.promptTokens || 0, u3?.completionTokens || 0)
+        await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o-mini', u3?.inputTokens || 0, u3?.outputTokens || 0)
       }
 
       try {

@@ -192,6 +192,8 @@ export interface Database {
           // Exclusion tracking
           excluded_at: string | null
           excluded_reason: QueryExcludedReason | null
+          // Prompt score
+          prompt_score: number
         }
         Insert: {
           id?: string
@@ -221,6 +223,8 @@ export interface Database {
           // Exclusion tracking
           excluded_at?: string | null
           excluded_reason?: QueryExcludedReason | null
+          // Prompt score
+          prompt_score?: number
         }
         Update: {
           id?: string
@@ -250,6 +254,8 @@ export interface Database {
           // Exclusion tracking
           excluded_at?: string | null
           excluded_reason?: QueryExcludedReason | null
+          // Prompt score
+          prompt_score?: number
         }
       }
       scan_results: {

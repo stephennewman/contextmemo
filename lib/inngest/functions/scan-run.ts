@@ -11,6 +11,7 @@ import { reportUsageToStripe, calculateCredits } from '@/lib/stripe/usage'
 import { classifySentiment } from '@/lib/utils/sentiment'
 import { checkBrandBudget } from '@/lib/utils/budget-guard'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
+import { calculatePromptScore } from '@/lib/utils/prompt-score'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -481,6 +482,7 @@ export const scanRun = inngest.createFunction(
         first_cited_at?: string
         last_cited_at?: string
         citation_lost_at?: string
+        prompt_score?: number
       }> = []
       
       // Process each scan result
@@ -529,6 +531,16 @@ export const scanRun = inngest.createFunction(
           ? result.competitorsMentioned[0]
           : null
         
+        // Calculate prompt score based on citation volume + buyer intent + competitor density
+        const citationCount = result.citations?.length || 0
+        const competitorCount = result.competitorsMentioned?.length || 0
+        const promptScore = calculatePromptScore({
+          queryText: query.query_text,
+          avgCitationCount: citationCount,
+          avgCompetitorCount: competitorCount,
+          funnelStage: query.funnel_stage,
+        })
+        
         // Prepare query update
         const update: typeof queryUpdates[0] = {
           id: result.queryId,
@@ -537,6 +549,7 @@ export const scanRun = inngest.createFunction(
           citation_streak: newStreak,
           longest_streak: newLongestStreak,
           current_status: newStatus,
+          prompt_score: promptScore,
         }
         
         if (isFirstCitation) {
@@ -1283,7 +1296,7 @@ async function scanWithPerplexityDirect(
     brandInCitations,
     brandSentiment: sentimentResult?.sentiment || null,
     sentimentReason: sentimentResult?.reason || null,
-    inputTokens: usage?.promptTokens || 0,
-    outputTokens: usage?.completionTokens || 0,
+    inputTokens: usage?.inputTokens || 0,
+    outputTokens: usage?.outputTokens || 0,
   }
 }
