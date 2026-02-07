@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment Variables
+
+Set environment variables in your hosting provider (recommended) or locally in a .env.local file.
+
+Required for Redis Cloud:
+- REDIS_URL: Use the Redis Cloud connection string (rediss://) that includes username and password.
+
+Optional configuration:
+- STRIPE_WEBHOOK_IP_ALLOWLIST: Comma-separated IPs or * to allow all
+- AUTH_RATE_LIMIT_WINDOW_MS: Shared window for auth rate limiting (default 60000)
+- AUTH_RATE_LIMIT_MAX_LOGIN: Max login attempts per window (default 8)
+- AUTH_RATE_LIMIT_MAX_SIGNUP: Max signup attempts per window (default 5)
+- CSRF_ALLOWED_ORIGINS: Comma-separated allowed origins for API POST/PUT/PATCH/DELETE
+- SESSION_MAX_AGE_HOURS: Max session age before forced re-login (default 168)
+- ADMIN_EMAILS: Comma-separated list of admin emails allowed to access /admin
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -622,59 +622,62 @@ export function MemoFeed({
                 <div className="flex gap-6">
                   {/* Main editor */}
                   <div className="flex-1 min-w-0">
-                    {/* Formatting Toolbar */}
-                    <div className="flex items-center gap-0.5 border-2 border-b-0 border-slate-200 bg-slate-50 px-2 py-1.5 rounded-t-md">
-                      <button type="button" onClick={() => insertMarkdown('**', '**', 'bold')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Bold (⌘B)">
-                        <Bold className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => insertMarkdown('*', '*', 'italic')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Italic (⌘I)">
-                        <Italic className="h-4 w-4" />
-                      </button>
-                      <div className="w-px h-5 bg-slate-300 mx-1" />
-                      <button type="button" onClick={() => insertMarkdown('\n## ', '\n', 'Heading')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Heading 2">
-                        <Heading2 className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => insertMarkdown('\n### ', '\n', 'Subheading')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Heading 3">
-                        <Heading3 className="h-4 w-4" />
-                      </button>
-                      <div className="w-px h-5 bg-slate-300 mx-1" />
-                      <button type="button" onClick={() => insertMarkdown('\n- ', '\n', 'list item')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Bullet List">
-                        <List className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => insertMarkdown('\n1. ', '\n', 'list item')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Numbered List">
-                        <ListOrdered className="h-4 w-4" />
-                      </button>
-                      <div className="w-px h-5 bg-slate-300 mx-1" />
-                      <button type="button" onClick={() => insertMarkdown('[', '](url)', 'link text')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Link">
-                        <Link2 className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => insertMarkdown('`', '`', 'code')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Inline Code">
-                        <Code className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => insertMarkdown('\n> ', '\n', 'quote')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Blockquote">
-                        <Quote className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => insertMarkdown('\n---\n', '', '')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Horizontal Rule">
-                        <Minus className="h-4 w-4" />
-                      </button>
+                    {/* Editor container — single unified border */}
+                    <div className="border-2 border-slate-300 rounded-md">
+                      {/* Formatting Toolbar */}
+                      <div className="flex items-center gap-0.5 border-b border-slate-300 bg-slate-50 px-2 py-1.5 rounded-t-md sticky top-0 z-10">
+                        <button type="button" onClick={() => insertMarkdown('**', '**', 'bold')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Bold (⌘B)">
+                          <Bold className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => insertMarkdown('*', '*', 'italic')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Italic (⌘I)">
+                          <Italic className="h-4 w-4" />
+                        </button>
+                        <div className="w-px h-5 bg-slate-300 mx-1" />
+                        <button type="button" onClick={() => insertMarkdown('\n## ', '\n', 'Heading')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Heading 2">
+                          <Heading2 className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => insertMarkdown('\n### ', '\n', 'Subheading')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Heading 3">
+                          <Heading3 className="h-4 w-4" />
+                        </button>
+                        <div className="w-px h-5 bg-slate-300 mx-1" />
+                        <button type="button" onClick={() => insertMarkdown('\n- ', '\n', 'list item')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Bullet List">
+                          <List className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => insertMarkdown('\n1. ', '\n', 'list item')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Numbered List">
+                          <ListOrdered className="h-4 w-4" />
+                        </button>
+                        <div className="w-px h-5 bg-slate-300 mx-1" />
+                        <button type="button" onClick={() => insertMarkdown('[', '](url)', 'link text')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Link">
+                          <Link2 className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => insertMarkdown('`', '`', 'code')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Inline Code">
+                          <Code className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => insertMarkdown('\n> ', '\n', 'quote')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Blockquote">
+                          <Quote className="h-4 w-4" />
+                        </button>
+                        <button type="button" onClick={() => insertMarkdown('\n---\n', '', '')} className="p-1.5 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors" title="Horizontal Rule">
+                          <Minus className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <Textarea
+                        ref={textareaRef}
+                        value={editContent}
+                        onChange={(e) => setState(prev => ({
+                          ...prev,
+                          editContent: { ...prev.editContent, [editorMemoId]: e.target.value }
+                        }))}
+                        onKeyDown={(e) => {
+                          if (e.metaKey || e.ctrlKey) {
+                            if (e.key === 'b') { e.preventDefault(); insertMarkdown('**', '**', 'bold') }
+                            if (e.key === 'i') { e.preventDefault(); insertMarkdown('*', '*', 'italic') }
+                          }
+                        }}
+                        className="w-full min-h-[calc(100vh-300px)] font-mono text-sm border-0 bg-white p-4 resize-none rounded-none shadow-none focus-visible:ring-0 focus-visible:border-0"
+                        placeholder="Write your memo content in Markdown..."
+                        autoFocus
+                      />
                     </div>
-                    <Textarea
-                      ref={textareaRef}
-                      value={editContent}
-                      onChange={(e) => setState(prev => ({
-                        ...prev,
-                        editContent: { ...prev.editContent, [editorMemoId]: e.target.value }
-                      }))}
-                      onKeyDown={(e) => {
-                        if (e.metaKey || e.ctrlKey) {
-                          if (e.key === 'b') { e.preventDefault(); insertMarkdown('**', '**', 'bold') }
-                          if (e.key === 'i') { e.preventDefault(); insertMarkdown('*', '*', 'italic') }
-                        }
-                      }}
-                      className="w-full min-h-[calc(100vh-300px)] font-mono text-sm border-2 border-t-0 bg-white p-4 resize-none focus:border-[#0EA5E9] rounded-t-none"
-                      placeholder="Write your memo content in Markdown..."
-                      autoFocus
-                    />
                   </div>
 
                   {/* AI Optimization Sidebar */}

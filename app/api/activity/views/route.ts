@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ActivitySavedView } from '@/lib/supabase/types'
+import { z } from 'zod'
 
 // GET - List saved views for current user
 export async function GET() {
@@ -43,12 +44,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json()
-    const { name, filters, is_default } = body
+    const schema = z.object({
+      name: z.string().min(2).max(100),
+      filters: z.record(z.string(), z.unknown()),
+      is_default: z.boolean().optional(),
+    })
 
-    if (!name || !filters) {
+    const body = await request.json().catch(() => null)
+    const parsed = schema.safeParse(body)
+
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Name and filters are required' }, { status: 400 })
     }
+
+    const { name, filters, is_default } = parsed.data
 
     // If setting as default, unset other defaults first
     if (is_default) {
@@ -101,7 +110,8 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const viewId = searchParams.get('id')
 
-    if (!viewId) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!viewId || !uuidRegex.test(viewId)) {
       return NextResponse.json({ error: 'View ID required' }, { status: 400 })
     }
 

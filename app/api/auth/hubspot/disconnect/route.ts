@@ -10,11 +10,16 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { disconnectHubSpot } from '@/lib/hubspot/oauth'
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const { brandId } = body
+  const body = await request.json().catch(() => null)
+  const { brandId } = (body || {}) as { brandId?: string }
 
   if (!brandId) {
     return NextResponse.json({ error: 'brandId is required' }, { status: 400 })
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
   }
 
   // Verify user is authenticated
@@ -40,7 +45,7 @@ export async function POST(request: NextRequest) {
   
   if (brandError) {
     console.error('Brand lookup error:', brandError)
-    return NextResponse.json({ error: 'Brand not found', details: brandError.message }, { status: 404 })
+    return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
   }
 
   if (!brand) {

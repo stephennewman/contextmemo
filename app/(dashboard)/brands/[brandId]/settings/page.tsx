@@ -53,6 +53,7 @@ const NAV_SECTIONS = [
   { id: 'content', label: 'Memo Settings', icon: FileText },
   { id: 'personas', label: 'Target Personas', icon: Users },
   { id: 'integrations', label: 'Integrations', icon: Plug },
+  { id: 'privacy', label: 'Data & Privacy', icon: Link2 },
   { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
 ]
 
@@ -129,6 +130,8 @@ export default function BrandSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const [activeSection, setActiveSection] = useState('general')
   
   // Section refs for scroll-to behavior
@@ -564,6 +567,60 @@ export default function BrandSettingsPage() {
     } else {
       toast.success('Brand deleted')
       router.push('/dashboard')
+    }
+  }
+
+  const handleExportData = async () => {
+    setExporting(true)
+    try {
+      const response = await fetch('/api/privacy/export')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Export failed')
+      }
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `contextmemo-data-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+      toast.success('Data export downloaded')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export data')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Delete your account and all associated data? This action cannot be undone.')) return
+
+    setDeletingAccount(true)
+    try {
+      const response = await fetch('/api/privacy/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      toast.success('Account deleted')
+      router.push('/')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete account')
+    } finally {
+      setDeletingAccount(false)
     }
   }
 
@@ -1736,7 +1793,7 @@ export default function BrandSettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Site URL</Label>
-                      <Input value={searchConsoleConfig.bing?.site_url || `https://${brand.subdomain}.contextmemo.com`} onChange={(e) => setSearchConsoleConfig({ ...searchConsoleConfig, bing: { ...searchConsoleConfig.bing, site_url: e.target.value } })} />
+                      <Input value={searchConsoleConfig.bing?.site_url || (brand?.domain ? `https://${brand.domain}` : '')} onChange={(e) => setSearchConsoleConfig({ ...searchConsoleConfig, bing: { ...searchConsoleConfig.bing, site_url: e.target.value } })} />
                     </div>
                   </>
                 )}
@@ -1774,6 +1831,33 @@ export default function BrandSettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        {/* Data & Privacy Section */}
+        <section id="privacy" ref={(el) => { sectionRefs.current['privacy'] = el }} className="scroll-mt-24">
+          <Card>
+            <CardHeader>
+              <CardTitle>Data & Privacy</CardTitle>
+              <CardDescription>Export or delete your account data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Button variant="outline" onClick={handleExportData} disabled={exporting}>
+                  {exporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Download Data Export
+                </Button>
+              </div>
+              <Alert variant="destructive">
+                <AlertDescription>
+                  Deleting your account removes all brands, memos, scans, and related data. This action cannot be undone.
+                </AlertDescription>
+              </Alert>
+              <Button variant="destructive" onClick={handleDeleteAccount} disabled={deletingAccount}>
+                {deletingAccount && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete Account
+              </Button>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Danger Zone Section */}

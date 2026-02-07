@@ -46,8 +46,9 @@ export default function SignupPage() {
     setLoading(true)
 
     // Basic validation
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{12,}$/
+    if (!passwordPolicy.test(password)) {
+      setError('Password must be 12+ chars and include upper, lower, number, and symbol')
       setLoading(false)
       return
     }
@@ -63,6 +64,17 @@ export default function SignupPage() {
     }
 
     try {
+      const rateLimitResponse = await fetch('/api/auth/rate-limit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'signup', email }),
+      })
+
+      if (!rateLimitResponse.ok) {
+        setError('Too many attempts. Please wait and try again.')
+        return
+      }
+
       const supabase = createClient()
       
       // Always use production URL for email redirects (never localhost)

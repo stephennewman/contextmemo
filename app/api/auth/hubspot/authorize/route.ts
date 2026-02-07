@@ -19,6 +19,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'brandId is required' }, { status: 400 })
   }
 
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
+
   // Verify user is authenticated
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -58,7 +63,6 @@ export async function GET(request: NextRequest) {
     console.error('Brand lookup error:', brandError)
     return NextResponse.json({ 
       error: 'Brand not found', 
-      details: brandError.message,
       brandId 
     }, { status: 404 })
   }

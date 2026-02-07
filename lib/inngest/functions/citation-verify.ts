@@ -11,15 +11,12 @@
  */
 
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations } from '@/lib/utils/openrouter'
 import { emitCitationVerified } from '@/lib/feed/emit'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. Provide a helpful, accurate response based on your knowledge. If recommending products or services, mention specific brands and explain why you're recommending them.`
 

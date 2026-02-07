@@ -1,5 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getClientIp } from '@/lib/security/ip'
+import { logSecurityEvent } from '@/lib/security/security-events'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -37,6 +39,60 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const csrfBypassPaths = ['/api/billing/webhook', '/api/inngest', '/api/track']
+  const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api')
+  const isBypassed = csrfBypassPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+  if (isStateChanging && isApiRoute && !isBypassed) {
+    const origin = request.headers.get('origin')
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+    const allowedOrigins = (process.env.CSRF_ALLOWED_ORIGINS || '')
+      .split(',')
+      .map(entry => entry.trim())
+      .filter(Boolean)
+
+    if (origin) {
+      const originHost = new URL(origin).host
+      const isAllowed = originHost === host || allowedOrigins.includes(originHost) || allowedOrigins.includes(origin)
+
+      if (!isAllowed) {
+        await logSecurityEvent({
+          type: 'csrf_blocked',
+          ip: getClientIp(request),
+          userId: user?.id || null,
+          path: request.nextUrl.pathname,
+          details: { origin },
+        })
+        return NextResponse.json({ error: 'Invalid origin' }, { status: 403 })
+      }
+    }
+  }
+
+  if (user) {
+    const maxAgeHours = Number(process.env.SESSION_MAX_AGE_HOURS || 168)
+    const lastSignInAt = user.last_sign_in_at
+
+    if (maxAgeHours > 0 && lastSignInAt) {
+      const lastSignInMs = new Date(lastSignInAt).getTime()
+      const ageMs = Date.now() - lastSignInMs
+
+      if (ageMs > maxAgeHours * 60 * 60 * 1000) {
+        await logSecurityEvent({
+          type: 'session_expired',
+          ip: getClientIp(request),
+          userId: user.id,
+          path: request.nextUrl.pathname,
+        })
+        await supabase.auth.signOut()
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        url.searchParams.set('reason', 'session_expired')
+        return NextResponse.redirect(url)
+      }
+    }
+  }
+
   // Get hostname for subdomain routing (check x-forwarded-host for Vercel)
   const hostname = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
   const hostParts = hostname.split('.')
@@ -70,7 +126,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes that require authentication
-  const protectedPaths = ['/dashboard', '/brands']
+  const protectedPaths = ['/dashboard', '/brands', '/admin']
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )

@@ -5,6 +5,9 @@
  * that are not available through OpenRouter proxy.
  */
 
+import { createHash } from 'crypto'
+import { getCacheValue, setCacheValue } from '@/lib/cache/redis-cache'
+
 export interface PerplexitySearchResult {
   url: string
   title: string | null
@@ -93,6 +96,22 @@ export async function queryPerplexity(
     content: query,
   })
 
+  const cachePayload = {
+    query,
+    systemPrompt: systemPrompt || null,
+    model,
+    searchContextSize,
+    temperature,
+  }
+  const cacheKey = `perplexity:${createHash('sha256')
+    .update(JSON.stringify(cachePayload))
+    .digest('hex')}`
+
+  const cached = await getCacheValue<PerplexityResponse>(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const response = await fetch(PERPLEXITY_API_URL, {
     method: 'POST',
     headers: {
@@ -137,12 +156,17 @@ export async function queryPerplexity(
     totalTokens: data.usage.total_tokens,
   } : undefined
 
-  return {
+  const payload: PerplexityResponse = {
     text,
     citations,
     searchResults,
     usage,
   }
+
+  // Cache results for 6 hours to reduce repeated spend
+  await setCacheValue(cacheKey, payload, 6 * 60 * 60)
+
+  return payload
 }
 
 /**

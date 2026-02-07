@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
@@ -7,10 +7,7 @@ import { calculateTotalCost } from '@/lib/config/costs'
 import { isJunkQuery } from '@/lib/utils/query-validation'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Use OpenRouter for faster/cheaper scans
 const openrouter = createOpenRouter({

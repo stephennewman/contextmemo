@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { stripe, PLANS, PlanId } from '@/lib/stripe/client'
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/security/ip'
+import { rateLimit } from '@/lib/security/rate-limit'
+
+const planIds = Object.keys(PLANS) as [PlanId, ...PlanId[]]
+const checkoutSchema = z.object({
+  planId: z.enum(planIds),
+})
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rate = await rateLimit({
+      key: `billing:checkout:ip:${ip}`,
+      windowMs: 60_000,
+      max: 10,
+    })
+
+    if (!rate.allowed) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -11,8 +30,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { planId } = body as { planId: PlanId }
+    const body = await request.json().catch(() => null)
+    const parsed = checkoutSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    const { planId } = parsed.data
 
     if (!planId || !PLANS[planId]) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })

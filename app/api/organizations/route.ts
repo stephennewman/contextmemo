@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
+import { z } from 'zod'
 
-const serviceClient = createServiceClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const serviceClient = createServiceRoleClient()
 
 // GET - List user's organizations
 export async function GET() {
@@ -58,12 +56,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await request.json()
-  const { name } = body
+  const schema = z.object({
+    name: z.string().min(2).max(100),
+  })
 
-  if (!name || typeof name !== 'string' || name.trim().length < 2) {
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+
+  if (!parsed.success) {
     return NextResponse.json({ error: 'Name is required (min 2 characters)' }, { status: 400 })
   }
+
+  const { name } = parsed.data
 
   // Generate slug from name
   const slug = name

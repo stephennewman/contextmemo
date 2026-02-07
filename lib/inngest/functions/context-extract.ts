@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { fetchUrlAsMarkdown, crawlWebsite, searchWebsite, JinaReaderResponse } from '@/lib/utils/jina-reader'
@@ -7,10 +7,7 @@ import { CONTEXT_EXTRACTION_PROMPT } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext, ExistingPage } from '@/lib/supabase/types'
 
 // Create Supabase admin client for server-side operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Web search fallback using Jina Search API
 async function webSearchFallback(domain: string): Promise<string> {

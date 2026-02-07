@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     if (updateError) {
       console.error('Failed to save HubSpot config:', updateError)
       return NextResponse.redirect(
-        new URL(`/dashboard?error=save_failed&message=${encodeURIComponent(updateError.message)}`, request.url)
+        new URL('/dashboard?error=save_failed', request.url)
       )
     }
 
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('HubSpot OAuth error:', error)
     return NextResponse.redirect(
-      new URL(`/dashboard?error=oauth_failed&message=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`, request.url)
+      new URL('/dashboard?error=oauth_failed', request.url)
     )
   }
 }

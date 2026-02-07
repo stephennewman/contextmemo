@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { COMPETITOR_DISCOVERY_PROMPT } from '@/lib/ai/prompts/context-extraction'
@@ -10,10 +10,7 @@ import {
   getEntityTypeForDomain 
 } from '@/lib/config/competitor-blocklist'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 // Entity types for classification
 type EntityType = 

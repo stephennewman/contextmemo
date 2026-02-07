@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 interface HubSpotBlog {
   id: string
@@ -19,14 +20,21 @@ interface HubSpotBlogsResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    const { accessToken } = await request.json()
+    const schema = z.object({
+      accessToken: z.string().min(20),
+    })
 
-    if (!accessToken) {
+    const body = await request.json().catch(() => null)
+    const parsed = schema.safeParse(body)
+
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Access token is required' },
         { status: 400 }
       )
     }
+
+    const { accessToken } = parsed.data
 
     // Fetch blogs from HubSpot
     const response = await fetch(
@@ -94,7 +102,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('HubSpot blogs fetch error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to connect to HubSpot' },
+      { error: 'Failed to connect to HubSpot' },
       { status: 500 }
     )
   }

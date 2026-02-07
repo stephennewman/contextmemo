@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { hasPermission, OrgRole } from '@/lib/supabase/types'
 import crypto from 'crypto'
+import { z } from 'zod'
 
-const serviceClient = createServiceClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const serviceClient = createServiceRoleClient()
 
 interface RouteParams {
   params: Promise<{ orgId: string }>
 }
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 // Helper to check user's role in org
 async function getUserRole(userId: string, orgId: string): Promise<OrgRole | null> {
@@ -28,6 +28,9 @@ async function getUserRole(userId: string, orgId: string): Promise<OrgRole | nul
 // GET - List organization members
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { orgId } = await params
+  if (!uuidRegex.test(orgId)) {
+    return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 })
+  }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -81,6 +84,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST - Invite a new member
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { orgId } = await params
+  if (!uuidRegex.test(orgId)) {
+    return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 })
+  }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -94,12 +100,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Not authorized to invite members' }, { status: 403 })
   }
 
-  const body = await request.json()
-  const { email, inviteRole = 'member' } = body
+  const schema = z.object({
+    email: z.string().email(),
+    inviteRole: z.string().optional(),
+  })
 
-  if (!email || typeof email !== 'string') {
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+
+  if (!parsed.success) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
+
+  const { email, inviteRole = 'member' } = parsed.data
 
   // Validate role (can't invite someone with higher role than yourself)
   const validRoles = ['member', 'viewer']
@@ -180,6 +193,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 // DELETE - Remove a member
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { orgId } = await params
+  if (!uuidRegex.test(orgId)) {
+    return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 })
+  }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -195,6 +211,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const role = await getUserRole(user.id, orgId)
   if (!role || !hasPermission(role, 'manage_members')) {
     return NextResponse.json({ error: 'Not authorized to remove members' }, { status: 403 })
+  }
+
+  if (inviteId && !uuidRegex.test(inviteId)) {
+    return NextResponse.json({ error: 'Invalid invite ID' }, { status: 400 })
+  }
+
+  if (memberId && !uuidRegex.test(memberId)) {
+    return NextResponse.json({ error: 'Invalid member ID' }, { status: 400 })
   }
 
   if (inviteId) {

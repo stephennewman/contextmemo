@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
@@ -30,30 +30,89 @@ export default function NewBrandPage() {
   const [subdomain, setSubdomain] = useState('')
   const [isVerified, setIsVerified] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const [verifying, setVerifying] = useState(false)
+
+  const googleSearchConsoleSiteUrl = domain ? `sc-domain:${domain}` : ''
+  const bingWebmasterSiteUrl = domain ? `https://${domain}` : ''
+
+  // Sanitize input to prevent XSS and other attacks
+  const sanitizeInput = (input: string): string => {
+    return input
+      .trim()
+      .replace(/[<>"']/g, '') // Remove potential script injection characters
+      .substring(0, 255) // Limit length
+  }
 
   // Check domain verification when domain changes
-  const checkVerification = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (user?.email) {
-      setUserEmail(user.email)
-      const verified = verifyDomainOwnership(user.email, domain)
-      setIsVerified(verified)
+  const checkVerification = useCallback(async () => {
+    if (!domain || domain.length < 4) {
+      setIsVerified(false)
+      return
     }
-  }
+
+    setVerifying(true)
+    setError(null)
+    
+    try {
+      const supabase = createClient()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError) {
+        console.error('[Auth Error]', authError)
+        setError('Authentication error. Please sign in again.')
+        return
+      }
+      
+      if (user?.email) {
+        setUserEmail(user.email)
+        const verified = verifyDomainOwnership(user.email, domain)
+        setIsVerified(verified)
+      }
+    } catch (err) {
+      console.error('[Domain Verification Error]', err)
+      setError('Failed to verify domain. Please try again.')
+    } finally {
+      setVerifying(false)
+    }
+  }, [domain])
+
+  // Debounce domain verification
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (domain) {
+        checkVerification()
+      }
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [domain, checkVerification])
 
   // Generate subdomain from brand name
   const handleBrandNameChange = (name: string) => {
-    setBrandName(name)
-    const generated = generateSubdomain(name)
+    const sanitizedName = sanitizeInput(name)
+    setBrandName(sanitizedName)
+    const generated = generateSubdomain(sanitizedName)
     setSubdomain(generated)
+    setError(null) // Clear errors when user types
   }
 
   // Handle domain change
   const handleDomainChange = (value: string) => {
-    // Clean up the domain
-    let cleanDomain = value.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    // Clean up and sanitize the domain
+    const cleanDomain = value
+      .replace(/^https?:\/\//, '')
+      .replace(/\/.*$/, '')
+      .toLowerCase()
+      .trim()
+    
+    // Validate domain format
+    const domainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]?(\.[a-z0-9][a-z0-9-]*[a-z0-9]?)*\.[a-z]{2,}$/i
+    if (!domainRegex.test(cleanDomain)) {
+      setError('Please enter a valid domain (e.g., example.com)')
+    } else {
+      setError(null)
+    }
+    
     setDomain(cleanDomain)
   }
 
@@ -61,22 +120,36 @@ export default function NewBrandPage() {
     setError(null)
     setLoading(true)
 
-    // Validate subdomain
-    if (!isValidSubdomain(subdomain)) {
-      setError('Invalid subdomain. Use 3-63 lowercase letters, numbers, and hyphens.')
-      setLoading(false)
-      return
-    }
-
     try {
+      // Comprehensive validation
+      if (!brandName || brandName.length < 2) {
+        throw new Error('Brand name must be at least 2 characters long')
+      }
+
+      if (!domain || domain.length < 4) {
+        throw new Error('Please enter a valid domain')
+      }
+
+      if (!isValidSubdomain(subdomain)) {
+        throw new Error('Invalid subdomain. Use 3-63 lowercase letters, numbers, and hyphens (cannot start or end with hyphen)')
+      }
+
+      // Sanitize all inputs before submission
+      const sanitizedBrandName = sanitizeInput(brandName)
+      const sanitizedDomain = domain.toLowerCase().trim()
+      const sanitizedSubdomain = subdomain.toLowerCase().trim()
+
       const supabase = createClient()
       
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError) {
+        console.error('[Auth Error] Failed to get user:', authError)
+        throw new Error('Authentication error. Please sign in again.')
+      }
+      
       if (!user) {
-        setError('Please sign in to continue')
-        setLoading(false)
-        return
+        throw new Error('Please sign in to continue')
       }
 
       // Get or create tenant
@@ -98,33 +171,52 @@ export default function NewBrandPage() {
           })
 
         if (createError && !createError.message.includes('duplicate')) {
-          setError('Failed to create account')
-          setLoading(false)
-          return
+          console.error('[Tenant Creation Error]', {
+            code: createError.code,
+            message: createError.message,
+            userId: user.id,
+            timestamp: new Date().toISOString()
+          })
+          throw new Error('Failed to create account. Please contact support if this persists.')
         }
       }
 
       // Check if subdomain is taken
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('brands')
         .select('id')
-        .eq('subdomain', subdomain)
+        .eq('subdomain', sanitizedSubdomain)
         .single()
 
-      if (existing) {
-        setError('This subdomain is already taken. Please choose another.')
-        setLoading(false)
-        return
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('[Subdomain Check Error]', checkError)
+        throw new Error('Failed to verify subdomain availability. Please try again.')
       }
 
-      // Create brand
+      if (existing) {
+        throw new Error('This subdomain is already taken. Please choose another.')
+      }
+
+      // Create brand with sanitized inputs
       const { data: brand, error: brandError } = await supabase
         .from('brands')
         .insert({
           tenant_id: tenant?.id || user.id,
-          name: brandName,
-          domain: domain,
-          subdomain: subdomain,
+          name: sanitizedBrandName,
+          domain: sanitizedDomain,
+          subdomain: sanitizedSubdomain,
+          context: {
+            search_console: {
+              bing: {
+                enabled: false,
+                site_url: `https://${sanitizedDomain}`,
+              },
+              google: {
+                enabled: false,
+                site_url: `sc-domain:${sanitizedDomain}`,
+              },
+            },
+          },
           verified: isVerified,
           verification_method: isVerified ? 'email_domain' : null,
           verified_at: isVerified ? new Date().toISOString() : null,
@@ -133,20 +225,26 @@ export default function NewBrandPage() {
         .single()
 
       if (brandError) {
-        console.error('Brand creation error:', brandError)
-        console.error('Error details:', {
+        console.error('[Brand Creation Error]', {
           code: brandError.code,
           message: brandError.message,
           details: brandError.details,
           hint: brandError.hint,
-          user_id: user.id,
-          tenant_id: tenant?.id || user.id,
-          brand_name: brandName,
-          subdomain: subdomain
+          userId: user.id,
+          tenantId: tenant?.id || user.id,
+          brandName: sanitizedBrandName,
+          subdomain: sanitizedSubdomain,
+          timestamp: new Date().toISOString()
         })
-        setError(`Failed to create brand: ${brandError.message}`)
-        setLoading(false)
-        return
+        
+        // Provide user-friendly error messages
+        if (brandError.code === '23505') {
+          throw new Error('A brand with this subdomain already exists. Please choose a different subdomain.')
+        } else if (brandError.code === '23503') {
+          throw new Error('Account setup incomplete. Please refresh the page and try again.')
+        } else {
+          throw new Error(`Failed to create brand. Please try again or contact support if the issue persists.`)
+        }
       }
 
       toast.success('Brand created successfully!')
@@ -155,8 +253,16 @@ export default function NewBrandPage() {
       router.push(`/brands/${brand.id}`)
       router.refresh()
     } catch (err) {
-      console.error('Unexpected error:', err)
-      setError('An unexpected error occurred')
+      console.error('[Unexpected Error]', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        timestamp: new Date().toISOString()
+      })
+      
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -200,26 +306,39 @@ export default function NewBrandPage() {
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="brandName">Brand name</Label>
+              <Label htmlFor="brandName">Brand name *</Label>
               <Input
                 id="brandName"
+                data-testid="brand-name-input"
                 placeholder="e.g., Checkit"
                 value={brandName}
                 onChange={(e) => handleBrandNameChange(e.target.value)}
+                maxLength={255}
+                required
               />
+              {brandName && brandName.length < 2 && (
+                <p className="text-sm text-muted-foreground">Brand name must be at least 2 characters</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="domain">Website domain</Label>
+              <Label htmlFor="domain">Website domain *</Label>
               <div className="flex items-center">
                 <span className="text-muted-foreground mr-2">https://</span>
                 <Input
                   id="domain"
+                  data-testid="domain-input"
                   placeholder="checkit.net"
                   value={domain}
                   onChange={(e) => handleDomainChange(e.target.value)}
-                  onBlur={checkVerification}
+                  required
                 />
               </div>
+              {verifying && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Verifying domain...
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter>
@@ -258,11 +377,11 @@ export default function NewBrandPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium">Domain Verification</span>
                 {isVerified ? (
-                  <Badge className="bg-green-500">
+                  <Badge className="bg-green-500" data-testid="verification-badge">
                     <Check className="mr-1 h-3 w-3" /> Verified
                   </Badge>
                 ) : (
-                  <Badge variant="outline">
+                  <Badge variant="outline" data-testid="verification-badge">
                     <X className="mr-1 h-3 w-3" /> Not Verified
                   </Badge>
                 )}
@@ -278,19 +397,31 @@ export default function NewBrandPage() {
 
             {/* Subdomain */}
             <div className="space-y-2">
-              <Label htmlFor="subdomain">Your Context Memo URL</Label>
+              <Label htmlFor="subdomain">Your Context Memo URL *</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="subdomain"
+                  data-testid="subdomain-input"
                   value={subdomain}
-                  onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
+                  onChange={(e) => {
+                    setSubdomain(e.target.value.toLowerCase())
+                    setError(null)
+                  }}
                   className="flex-1"
+                  maxLength={63}
+                  required
                 />
-                <span className="text-muted-foreground">.contextmemo.com</span>
+                <span className="text-muted-foreground whitespace-nowrap">.contextmemo.com</span>
               </div>
               {subdomain && !isValidSubdomain(subdomain) && (
                 <p className="text-sm text-destructive">
-                  Invalid subdomain. Use 3-63 lowercase letters, numbers, and hyphens.
+                  Invalid subdomain. Use 3-63 lowercase letters, numbers, and hyphens (cannot start or end with hyphen).
+                </p>
+              )}
+              {subdomain && isValidSubdomain(subdomain) && (
+                <p className="text-sm text-green-600 flex items-center gap-1">
+                  <Check className="h-3 w-3" />
+                  Subdomain format is valid
                 </p>
               )}
             </div>
@@ -310,6 +441,11 @@ export default function NewBrandPage() {
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Memo URL:</dt>
                   <dd className="font-medium">{subdomain}.contextmemo.com</dd>
+                </div>
+                <div className="pt-2">
+                  <dt className="text-muted-foreground">Crawl tracking (brand site):</dt>
+                  <dd className="font-medium">Google: {googleSearchConsoleSiteUrl || '—'}</dd>
+                  <dd className="font-medium">Bing: {bingWebmasterSiteUrl || '—'}</dd>
                 </div>
               </dl>
             </div>

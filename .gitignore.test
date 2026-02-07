@@ -1,0 +1,18 @@
+# .gitignore additions for testing
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output
+
+# Vitest
+.vitest/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+test-results/
+
+# Test screenshots and videos
+test/screenshots/
+test/videos/

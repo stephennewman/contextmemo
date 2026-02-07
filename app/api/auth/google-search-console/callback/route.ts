@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { BrandContext } from '@/lib/supabase/types'
 
 // Google OAuth configuration
@@ -10,10 +10,7 @@ const REDIRECT_URI = process.env.NODE_ENV === 'production'
   : 'http://localhost:3000/api/auth/google-search-console/callback'
 
 // Use service role for updating brand context
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createServiceRoleClient()
 
 interface TokenResponse {
   access_token: string
@@ -46,6 +43,11 @@ export async function GET(request: NextRequest) {
     brandId = decoded.brandId
     userId = decoded.userId
   } catch {
+    return NextResponse.redirect(new URL('/dashboard?error=invalid_state', request.url))
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId) || !uuidRegex.test(userId)) {
     return NextResponse.redirect(new URL('/dashboard?error=invalid_state', request.url))
   }
 
@@ -87,6 +89,21 @@ export async function GET(request: NextRequest) {
 
   if (brandError || !brand) {
     return NextResponse.redirect(new URL('/dashboard?error=brand_not_found', request.url))
+  }
+
+  let hasAccess = brand.tenant_id === userId
+  if (!hasAccess && brand.organization_id) {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('organization_id', brand.organization_id)
+      .eq('user_id', userId)
+      .single()
+    hasAccess = !!membership
+  }
+
+  if (!hasAccess) {
+    return NextResponse.redirect(new URL('/dashboard?error=unauthorized', request.url))
   }
 
   // Update brand context with Google tokens

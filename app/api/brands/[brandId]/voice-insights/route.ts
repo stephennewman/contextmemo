@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { VoiceInsight, VoiceInsightTopic } from '@/lib/supabase/types'
+import { z } from 'zod'
 
 // GET - List voice insights for a brand
 export async function GET(
@@ -8,6 +9,10 @@ export async function GET(
   { params }: { params: Promise<{ brandId: string }> }
 ) {
   const { brandId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify auth
@@ -49,6 +54,10 @@ export async function POST(
   { params }: { params: Promise<{ brandId: string }> }
 ) {
   const { brandId } = await params
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(brandId)) {
+    return NextResponse.json({ error: 'Invalid brandId format' }, { status: 400 })
+  }
   const supabase = await createClient()
   
   // Verify auth
@@ -69,7 +78,30 @@ export async function POST(
   }
   
   // Parse request body
-  const body = await request.json()
+  const schema = z.object({
+    title: z.string().min(2).max(200),
+    transcript: z.string().min(10),
+    topic: z.string().min(2),
+    tags: z.array(z.string()).optional(),
+    audio_url: z.string().url().optional(),
+    audio_duration_seconds: z.number().nonnegative().optional(),
+    recorded_by_name: z.string().min(2).max(100),
+    recorded_by_title: z.string().optional(),
+    recorded_by_email: z.string().email().optional(),
+    recorded_by_linkedin_url: z.string().url().optional(),
+    status: z.string().optional(),
+  })
+
+  const body = await request.json().catch(() => null)
+  const parsed = schema.safeParse(body)
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Missing or invalid fields for voice insight' },
+      { status: 400 }
+    )
+  }
+
   const {
     title,
     transcript,
@@ -82,15 +114,7 @@ export async function POST(
     recorded_by_email,
     recorded_by_linkedin_url,
     status = 'active',
-  } = body
-  
-  // Validate required fields
-  if (!title || !transcript || !topic || !recorded_by_name) {
-    return NextResponse.json(
-      { error: 'Missing required fields: title, transcript, topic, recorded_by_name' },
-      { status: 400 }
-    )
-  }
+  } = parsed.data
   
   // Get IP and geolocation from request headers
   const ip_address = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
