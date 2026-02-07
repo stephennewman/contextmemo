@@ -23,6 +23,7 @@ import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { BrandLogo } from '@/components/dashboard/brand-logo'
+import { StatCardLink } from '@/components/dashboard/stat-card-link'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
 import { CoverageAudit } from '@/components/dashboard/coverage-audit'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
@@ -428,7 +429,6 @@ export default async function BrandPage({ params }: Props) {
         {/* Brand Score - Hero Card */}
         <div className="p-5 bg-[#0F172A] text-white relative overflow-hidden" style={{ borderLeft: '8px solid #0EA5E9' }}>
           <div className="flex items-center gap-3 mb-3">
-            <BrandLogo domain={brand.domain} name={brand.name} size={32} />
             <span className="text-xs font-bold tracking-widest text-slate-400">BRAND SCORE</span>
           </div>
           <div className="text-5xl font-bold text-[#0EA5E9]">{brandScore}</div>
@@ -438,8 +438,8 @@ export default async function BrandPage({ params }: Props) {
           <div className="text-[10px] text-slate-500 mt-2">out of 100</div>
         </div>
 
-        {/* Citations This Week */}
-        <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
+        {/* Citations This Week - clicks to CITATIONS tab */}
+        <StatCardLink tabValue="sources" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-bold tracking-widest text-zinc-500">CITATIONS</span>
             {citationsDelta !== 0 && (
@@ -456,10 +456,10 @@ export default async function BrandPage({ params }: Props) {
           </div>
           <div className="text-4xl font-bold text-[#0F172A] mt-1">{citationsThisWeek}</div>
           <div className="text-xs text-zinc-500 mt-1">this week · {allCitedCount} total</div>
-        </div>
+        </StatCardLink>
 
-        {/* Memos This Week */}
-        <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
+        {/* Memos This Week - clicks to MEMOS tab */}
+        <StatCardLink tabValue="memos" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
             {memosDelta !== 0 && (
@@ -476,7 +476,7 @@ export default async function BrandPage({ params }: Props) {
           </div>
           <div className="text-4xl font-bold text-[#0F172A] mt-1">{memosThisWeek}</div>
           <div className="text-xs text-zinc-500 mt-1">new this week · {publishedMemos.length} published</div>
-        </div>
+        </StatCardLink>
 
         {/* Scans This Week */}
         <div className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
