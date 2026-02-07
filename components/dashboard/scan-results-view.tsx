@@ -24,7 +24,9 @@ import {
   Plus,
   X,
   Sparkles,
-  ArrowUpDown
+  ArrowUpDown,
+  FileText,
+  Globe
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ScanResult, Query, PromptPersona, PromptTheme, FunnelStage } from '@/lib/supabase/types'
@@ -32,6 +34,7 @@ import { FUNNEL_STAGE_META } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
 import { calculatePromptScore, getPromptScoreColor } from '@/lib/utils/prompt-score'
+import { formatDistanceToNow } from 'date-fns'
 
 // Prompt Themes Section - Critical keyword clusters for prompt targeting
 interface PromptThemesSectionProps {
@@ -906,7 +909,7 @@ export function ScanResultsView({ scanResults, queries, brandName, brandDomain, 
 // Enhanced prompt analysis - merged scans + prompts view
 type StatusFilter = 'all' | 'cited' | 'gap' | 'lost' | 'opportunities' | 'streaks'
 
-type SortOption = 'default' | 'prompt_score' | 'mention_rate'
+type SortOption = 'default' | 'prompt_score' | 'mention_rate' | 'citation_count' | 'recently_scanned'
 
 interface EnrichedPromptData {
   query: Query
@@ -922,10 +925,25 @@ interface EnrichedPromptData {
   trendChange: number // percentage point change
   // Competitors found in responses for this prompt
   competitorsMentioned: string[]
+  // Top domains cited in AI responses for this prompt
+  topCitedDomains: string[]
+  // Total citation count across all scans
+  totalCitations: number
   // Is this an opportunity (competitors cited, brand not)
   isOpportunity: boolean
   // Prompt score (0-100) - buyer relevance
   promptScore: number
+  // Number of memos linked to this prompt
+  relatedMemoCount: number
+}
+
+// Minimal memo info for prompt-memo linking
+interface PromptMemo {
+  id: string
+  title: string
+  slug: string
+  source_query_id: string | null
+  status: string
 }
 
 interface PromptVisibilityListProps {
@@ -936,12 +954,13 @@ interface PromptVisibilityListProps {
   brandDomain?: string
   competitors?: Array<{ id: string; name: string; domain: string | null; is_active: boolean }>
   themes?: PromptTheme[]
+  memos?: PromptMemo[]
 }
 
 // Keep old name as alias for backward compatibility
 export const QueryVisibilityList = PromptVisibilityList
 
-export function PromptVisibilityList({ queries, scanResults, brandName, brandId, brandDomain, competitors = [], themes = [] }: PromptVisibilityListProps) {
+export function PromptVisibilityList({ queries, scanResults, brandName, brandId, brandDomain, competitors = [], themes = [], memos = [] }: PromptVisibilityListProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [funnelFilter, setFunnelFilter] = useState<FunnelStage | 'all'>('all')
   const [personaFilter, setPersonaFilter] = useState<PromptPersona | 'all'>('all')
@@ -1050,6 +1069,26 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
       const brandEverMentioned = scans.some(s => s.brand_mentioned)
       const isOpportunity = !isBranded && hasCompetitorCitations && !brandEverCited && !brandEverMentioned
 
+      // Top cited domains from citation URLs
+      const domainCounts = new Map<string, number>()
+      let totalCitations = 0
+      scans.forEach(scan => {
+        (scan.citations || []).forEach(url => {
+          totalCitations++
+          try {
+            const domain = new URL(url).hostname.replace('www.', '')
+            domainCounts.set(domain, (domainCounts.get(domain) || 0) + 1)
+          } catch { /* skip invalid URLs */ }
+        })
+      })
+      const topCitedDomains = Array.from(domainCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([domain]) => domain)
+
+      // Related memos count
+      const relatedMemoCount = memos.filter(m => m.source_query_id === q.id).length
+
       // Prompt score: use DB value if available, otherwise compute from scan data
       const avgCitationCount = totalScans > 0
         ? scans.reduce((sum, s) => sum + (s.citations?.length || 0), 0) / totalScans
@@ -1075,8 +1114,11 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
         trendDirection,
         trendChange,
         competitorsMentioned,
+        topCitedDomains,
+        totalCitations,
         isOpportunity,
         promptScore,
+        relatedMemoCount,
       }
     })
 
@@ -1087,12 +1129,18 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
       if (!a.isBranded && b.isBranded) return -1
 
       if (sortOption === 'prompt_score') {
-        // Sort by prompt score descending (highest value first)
         return b.promptScore - a.promptScore
       }
-
       if (sortOption === 'mention_rate') {
         return b.mentionRate - a.mentionRate
+      }
+      if (sortOption === 'citation_count') {
+        return b.totalCitations - a.totalCitations
+      }
+      if (sortOption === 'recently_scanned') {
+        const aTime = a.query.last_scanned_at ? new Date(a.query.last_scanned_at).getTime() : 0
+        const bTime = b.query.last_scanned_at ? new Date(b.query.last_scanned_at).getTime() : 0
+        return bTime - aTime
       }
 
       // Default sort: opportunities first, then status priority, then mention rate
@@ -1125,7 +1173,7 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
     const overallRate = withCitations.length > 0 ? Math.round((brandCited / withCitations.length) * 100) : 0
 
     return { enrichedPrompts: enriched, filterCounts: counts, overallCitationRate: overallRate }
-  }, [queries, scanResults, brandName, competitors, sortOption])
+  }, [queries, scanResults, brandName, competitors, sortOption, memos])
 
   // Apply all filters
   const filteredPrompts = useMemo(() => {
@@ -1374,6 +1422,8 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                 <option value="default">Default</option>
                 <option value="prompt_score">Prompt Score</option>
                 <option value="mention_rate">Mention Rate</option>
+                <option value="citation_count">Citation Count</option>
+                <option value="recently_scanned">Recently Scanned</option>
               </select>
             </div>
 
@@ -1489,6 +1539,13 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                       </Badge>
                     )}
 
+                    {p.relatedMemoCount > 0 && (
+                      <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700">
+                        <FileText className="h-3 w-3 mr-0.5" />
+                        {p.relatedMemoCount} memo{p.relatedMemoCount !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+
                     {p.query.source_type && p.query.source_type !== 'auto' && p.query.source_type !== 'original' && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground capitalize">
                         {p.query.source_type.replace('_', ' ')}
@@ -1501,27 +1558,54 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                       </span>
                     )}
 
-                    {p.query.last_scanned_at && (
+                    {p.totalCitations > 0 && (
                       <span className="text-[10px] text-muted-foreground">
-                        Scanned {new Date(p.query.last_scanned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {p.totalCitations} citation{p.totalCitations !== 1 ? 's' : ''}
+                      </span>
+                    )}
+
+                    {p.query.last_scanned_at && (
+                      <span className="text-[10px] text-muted-foreground" title={new Date(p.query.last_scanned_at).toLocaleString()}>
+                        Scanned {formatDistanceToNow(new Date(p.query.last_scanned_at), { addSuffix: true })}
                       </span>
                     )}
                   </div>
 
-                  {/* Row 3: Competitors (if any) */}
-                  {p.competitorsMentioned.length > 0 && (
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <Users className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <div className="flex flex-wrap gap-1">
-                        {p.competitorsMentioned.slice(0, 5).map((comp, idx) => (
-                          <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">
-                            {comp}
-                          </span>
-                        ))}
-                        {p.competitorsMentioned.length > 5 && (
-                          <span className="text-[10px] text-muted-foreground">+{p.competitorsMentioned.length - 5} more</span>
-                        )}
-                      </div>
+                  {/* Row 3: Entities mentioned + cited domains */}
+                  {(p.competitorsMentioned.length > 0 || p.topCitedDomains.length > 0) && (
+                    <div className="flex flex-col gap-1.5 mt-2">
+                      {/* Competitors/entities mentioned in AI responses */}
+                      {p.competitorsMentioned.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <Users className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <div className="flex flex-wrap gap-1">
+                            {p.competitorsMentioned.slice(0, 5).map((comp, idx) => (
+                              <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">
+                                {comp}
+                              </span>
+                            ))}
+                            {p.competitorsMentioned.length > 5 && (
+                              <span className="text-[10px] text-muted-foreground">+{p.competitorsMentioned.length - 5} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Top domains cited by AI for this prompt */}
+                      {p.topCitedDomains.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <div className="flex flex-wrap gap-1">
+                            {p.topCitedDomains.slice(0, 4).map((domain, idx) => (
+                              <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] bg-sky-50 text-sky-700">
+                                {domain}
+                              </span>
+                            ))}
+                            {p.topCitedDomains.length > 4 && (
+                              <span className="text-[10px] text-muted-foreground">+{p.topCitedDomains.length - 4} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

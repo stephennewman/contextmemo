@@ -491,12 +491,13 @@ export default async function BrandPage({ params }: Props) {
           </div>
           <PromptVisibilityList 
             queries={queries || []} 
-            scanResults={recentScans}
+            scanResults={allScans || []}
             brandName={brand.name}
             brandId={brandId}
             brandDomain={brand.domain}
             competitors={competitors || []}
             themes={context?.prompt_themes || []}
+            memos={(memos || []).map(m => ({ id: m.id, title: m.title, slug: m.slug, source_query_id: m.source_query_id, status: m.status }))}
           />
         </TabsContent>
 
