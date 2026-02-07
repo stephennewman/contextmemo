@@ -6,9 +6,6 @@ import {
   ExternalLink,
   TrendingUp,
   AlertTriangle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
 } from 'lucide-react'
 import { BrandContext } from '@/lib/supabase/types'
 import { ScanButton, GenerateMemoDropdown, FindContentGapsButton, GenerateMemosButton } from '@/components/dashboard/brand-actions'
@@ -23,7 +20,6 @@ import { CompetitorWatch } from '@/components/dashboard/competitor-watch'
 import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { BrandLogo } from '@/components/dashboard/brand-logo'
-import { StatCardLink } from '@/components/dashboard/stat-card-link'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
 import { CoverageAudit } from '@/components/dashboard/coverage-audit'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
@@ -280,38 +276,6 @@ export default async function BrandPage({ params }: Props) {
 
   // SUNSET: queryVisibility and lowVisibilityQueries removed (only used by Strategy Playbook)
 
-  // Published memos only (not drafts)
-  const publishedMemos = (memos || []).filter((m: any) => m.status === 'published')
-
-  // Trending: this week vs last week
-  const now = new Date()
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
-
-  const citationsThisWeek = (allScans || []).filter(s => 
-    s.brand_in_citations === true && new Date(s.scanned_at) >= sevenDaysAgo
-  ).length
-  const citationsLastWeek = (allScans || []).filter(s => 
-    s.brand_in_citations === true && new Date(s.scanned_at) >= fourteenDaysAgo && new Date(s.scanned_at) < sevenDaysAgo
-  ).length
-  const citationsDelta = citationsThisWeek - citationsLastWeek
-
-  const memosThisWeek = publishedMemos.filter((m: any) => new Date(m.published_at || m.created_at) >= sevenDaysAgo).length
-  const memosLastWeek = publishedMemos.filter((m: any) => {
-    const d = new Date(m.published_at || m.created_at)
-    return d >= fourteenDaysAgo && d < sevenDaysAgo
-  }).length
-  const memosDelta = memosThisWeek - memosLastWeek
-
-  const scansThisWeek = (allScans || []).filter(s => new Date(s.scanned_at) >= sevenDaysAgo).length
-  const scansLastWeek = (allScans || []).filter(s => {
-    const d = new Date(s.scanned_at)
-    return d >= fourteenDaysAgo && d < sevenDaysAgo
-  }).length
-  const scansDelta = scansThisWeek - scansLastWeek
-
-  const allScansCount = allScans?.length || 0
-  const allCitedCount = (allScans || []).filter(s => s.brand_in_citations === true).length
 
   const context = brand.context as BrandContext
   const hasContext = context && Object.keys(context).length > 0
@@ -414,57 +378,6 @@ export default async function BrandPage({ params }: Props) {
         </div>
       )}
 
-      {/* Brand Stats Header */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Citations This Week - clicks to CITATIONS tab */}
-        <StatCardLink tabValue="sources" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold tracking-widest text-zinc-500">CITATIONS</span>
-            {citationsDelta !== 0 && (
-              <span className={`flex items-center gap-0.5 text-xs font-bold ${citationsDelta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {citationsDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {citationsDelta > 0 ? '+' : ''}{citationsDelta}
-              </span>
-            )}
-            {citationsDelta === 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-zinc-400">
-                <Minus className="h-3 w-3" />
-              </span>
-            )}
-          </div>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{citationsThisWeek}</div>
-          <div className="text-xs text-zinc-500 mt-1">this week · {allCitedCount} total</div>
-        </StatCardLink>
-
-        {/* Memos This Week - clicks to MEMOS tab */}
-        <StatCardLink tabValue="memos" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #8B5CF6' }}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold tracking-widest text-zinc-500">MEMOS</span>
-            {memosDelta !== 0 && (
-              <span className={`flex items-center gap-0.5 text-xs font-bold ${memosDelta > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {memosDelta > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {memosDelta > 0 ? '+' : ''}{memosDelta}
-              </span>
-            )}
-            {memosDelta === 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-zinc-400">
-                <Minus className="h-3 w-3" />
-              </span>
-            )}
-          </div>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{memosThisWeek}</div>
-          <div className="text-xs text-zinc-500 mt-1">new this week · {publishedMemos.length} published</div>
-        </StatCardLink>
-
-        {/* Entities - clicks to ENTITIES tab */}
-        <StatCardLink tabValue="entities" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #10B981' }}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold tracking-widest text-zinc-500">ENTITIES</span>
-          </div>
-          <div className="text-4xl font-bold text-[#0F172A] mt-1">{competitors?.length || 0}</div>
-          <div className="text-xs text-zinc-500 mt-1">tracked</div>
-        </StatCardLink>
-      </div>
 
       {/* No scans CTA */}
       {!hasAnyScans && (
