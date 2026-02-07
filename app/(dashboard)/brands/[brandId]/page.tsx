@@ -24,6 +24,7 @@ import { ActivityTab } from '@/components/dashboard/activity-feed'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { BrandLogo } from '@/components/dashboard/brand-logo'
 import { StatCardLink } from '@/components/dashboard/stat-card-link'
+import { BrandScoreBreakdown } from '@/components/dashboard/brand-score-breakdown'
 import { CitationInsights } from '@/components/dashboard/citation-insights'
 import { CoverageAudit } from '@/components/dashboard/coverage-audit'
 import { TopicUniverse, CoverageScore, TopicCategory } from '@/lib/supabase/types'
@@ -323,6 +324,39 @@ export default async function BrandPage({ params }: Props) {
   const promptComponent = promptCount >= 30 ? 15 : promptCount >= 15 ? 10 : promptCount > 0 ? 5 : 0
   const brandScore = Math.round(citationComponent + memoComponent + scanActivityComponent + promptComponent)
 
+  // Score breakdown for display
+  const scoreBreakdown = {
+    citation: { score: Math.round(citationComponent), max: 40, label: 'Citation Rate', detail: `${rawCitationRate.toFixed(1)}% of scans cite your brand` },
+    memos: { score: Math.round(memoComponent), max: 25, label: 'Memo Coverage', detail: `${publishedMemos.length} published memos for ${promptCount} prompts` },
+    scans: { score: Math.round(scanActivityComponent), max: 20, label: 'Scan Activity', detail: `${allScansCount} scans in last 90 days` },
+    prompts: { score: Math.round(promptComponent), max: 15, label: 'Prompt Breadth', detail: `${promptCount} active prompts tracked` },
+  }
+
+  // Weekly score trend (last 6 weeks)
+  const weeklyScores: { week: string; score: number }[] = []
+  for (let i = 5; i >= 0; i--) {
+    const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000)
+    const weekStart = new Date(weekEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const weekLabel = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+    // Scans up to that week end
+    const scansUpToWeek = (allScans || []).filter(s => new Date(s.scanned_at) <= weekEnd)
+    const citedUpToWeek = scansUpToWeek.filter(s => s.brand_in_citations === true).length
+    const scanCount = scansUpToWeek.length
+
+    const wCitRate = scanCount > 0 ? (citedUpToWeek / scanCount) * 100 : 0
+    const wCitComp = Math.min(wCitRate * 2.5, 40)
+
+    // Memos published up to that week
+    const memosUpToWeek = publishedMemos.filter((m: any) => new Date(m.published_at || m.created_at) <= weekEnd).length
+    const wMemoComp = Math.min((promptCount > 0 ? memosUpToWeek / promptCount : 0) * 25, 25)
+
+    const wScanComp = scanCount > 100 ? 20 : scanCount > 20 ? 15 : scanCount > 0 ? 10 : 0
+    const wPromptComp = promptComponent // Prompts don't change over this window
+
+    weeklyScores.push({ week: weekLabel, score: Math.round(wCitComp + wMemoComp + wScanComp + wPromptComp) })
+  }
+
   const context = brand.context as BrandContext
   const hasContext = context && Object.keys(context).length > 0
   const hubspotEnabled = !!(context?.hubspot?.enabled && context?.hubspot?.access_token && context?.hubspot?.blog_id)
@@ -426,8 +460,8 @@ export default async function BrandPage({ params }: Props) {
 
       {/* Brand Stats Header */}
       <div className="grid gap-4 md:grid-cols-4">
-        {/* Brand Score - Hero Card */}
-        <div className="p-5 bg-[#0F172A] text-white relative overflow-hidden" style={{ borderLeft: '8px solid #0EA5E9' }}>
+        {/* Brand Score - Hero Card - clicks to PROFILE tab */}
+        <StatCardLink tabValue="profile" className="p-5 bg-[#0F172A] text-white relative overflow-hidden" style={{ borderLeft: '8px solid #0EA5E9' }}>
           <div className="flex items-center gap-3 mb-3">
             <span className="text-xs font-bold tracking-widest text-slate-400">BRAND SCORE</span>
           </div>
@@ -436,7 +470,7 @@ export default async function BrandPage({ params }: Props) {
             <div className="h-2 bg-[#0EA5E9] rounded-full transition-all" style={{ width: `${brandScore}%` }} />
           </div>
           <div className="text-[10px] text-slate-500 mt-2">out of 100</div>
-        </div>
+        </StatCardLink>
 
         {/* Citations This Week - clicks to CITATIONS tab */}
         <StatCardLink tabValue="sources" className="p-5 border-[3px] border-[#0F172A]" style={{ borderLeft: '8px solid #0EA5E9' }}>
@@ -534,8 +568,13 @@ export default async function BrandPage({ params }: Props) {
           {/* SUNSET: Alerts, Search, AI Traffic, Intelligence, QFO, MAP, LAB, Strategy tabs removed (zero usage) */}
         </TabsList>
 
-        {/* Brand Profile Tab - All extracted brand information */}
+        {/* Brand Profile Tab - Score breakdown + brand information */}
         <TabsContent value="profile" className="space-y-6">
+          <BrandScoreBreakdown
+            totalScore={brandScore}
+            breakdown={scoreBreakdown}
+            weeklyScores={weeklyScores}
+          />
           <ProfileSection
             brandId={brandId}
             brandName={brand.name}
