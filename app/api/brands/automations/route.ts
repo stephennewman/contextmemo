@@ -40,6 +40,21 @@ export async function GET() {
 
   const settingsMap = new Map((settings || []).map(s => [s.brand_id, s]))
 
+  // Map DB event_types to UI job keys
+  const EVENT_TYPE_TO_JOB: Record<string, string> = {
+    'scan': 'scan',
+    'discovery_scan': 'discovery',
+    'enrichment': 'prompt_enrich',
+    'prompt_enrichment': 'prompt_enrich',
+    'citation_verify': 'citation_verify',
+    'citation_loop': 'citation_verify',
+    'competitor_content': 'competitor_content',
+    'content_generation': 'content_gen',
+    'gap_to_content': 'content_gen',
+    'prompt_intelligence': 'prompt_intel',
+    'topic_universe': 'discovery',
+  }
+
   // Get recent usage costs per brand (last 7 days)
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
@@ -50,7 +65,7 @@ export async function GET() {
     .in('brand_id', brandIds)
     .gte('created_at', sevenDaysAgo.toISOString())
 
-  // Aggregate costs by brand and event type
+  // Aggregate costs by brand and normalized job key
   const costsByBrand = new Map<string, { total: number; byType: Record<string, number> }>()
   for (const event of usageEvents || []) {
     if (!event.brand_id) continue
@@ -60,7 +75,34 @@ export async function GET() {
     const entry = costsByBrand.get(event.brand_id)!
     const cost = Number(event.total_cost_cents) || 0
     entry.total += cost
-    entry.byType[event.event_type] = (entry.byType[event.event_type] || 0) + cost
+    // Map event_type to UI job key
+    const jobKey = EVENT_TYPE_TO_JOB[event.event_type] || event.event_type
+    entry.byType[jobKey] = (entry.byType[jobKey] || 0) + cost
+  }
+
+  // Get last run timestamps per brand for key jobs
+  const lastRunsByBrand = new Map<string, Record<string, string | null>>()
+  for (const brandId of brandIds) {
+    const [lastScan, lastDiscovery, lastCompContent, lastVerify] = await Promise.all([
+      serviceClient.from('scan_results').select('scanned_at').eq('brand_id', brandId)
+        .order('scanned_at', { ascending: false }).limit(1),
+      serviceClient.from('alerts').select('created_at').eq('brand_id', brandId)
+        .eq('alert_type', 'discovery_complete').order('created_at', { ascending: false }).limit(1),
+      serviceClient.from('competitor_content').select('created_at')
+        .in('competitor_id', 
+          (await serviceClient.from('competitors').select('id').eq('brand_id', brandId)).data?.map(c => c.id) || []
+        )
+        .order('created_at', { ascending: false }).limit(1),
+      serviceClient.from('content_gaps').select('verified_at').eq('brand_id', brandId)
+        .not('verified_at', 'is', null).order('verified_at', { ascending: false }).limit(1),
+    ])
+
+    lastRunsByBrand.set(brandId, {
+      scan: lastScan.data?.[0]?.scanned_at || null,
+      discovery: lastDiscovery.data?.[0]?.created_at || null,
+      competitor_content: lastCompContent.data?.[0]?.created_at || null,
+      citation_verify: lastVerify.data?.[0]?.verified_at || null,
+    })
   }
 
   // Build response
@@ -111,8 +153,11 @@ export async function GET() {
       costs7d: {
         totalCents: costs.total,
         totalDollars: (costs.total / 100).toFixed(2),
+        projectedMonthlyCents: Math.round(costs.total * (30 / 7)),
+        projectedMonthlyDollars: ((costs.total * (30 / 7)) / 100).toFixed(2),
         byType: costs.byType,
       },
+      lastRuns: lastRunsByBrand.get(brand.id) || {},
     }
   })
 

@@ -44,8 +44,10 @@ interface BrandAutomation {
   costs7d: {
     totalCents: number
     totalDollars: string
+    projectedMonthlyDollars: string
     byType: Record<string, number>
   }
+  lastRuns: Record<string, string | null>
 }
 
 // ---- Job definitions ----
@@ -156,6 +158,18 @@ const JOBS: JobDef[] = [
 
 // ---- Helpers ----
 
+function timeAgo(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Never'
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  if (hours < 1) return 'Just now'
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  return `${Math.floor(days / 7)}w ago`
+}
+
 function costBadge(weight: 'high' | 'medium' | 'low') {
   const styles = {
     high: 'bg-red-100 text-red-700',
@@ -254,19 +268,26 @@ export function AutomationsGrid() {
       <div className="flex items-center gap-6 px-4 py-3 bg-slate-50 border border-slate-200 text-sm">
         <div className="flex items-center gap-2">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">7-day tracked spend:</span>
+          <span className="text-muted-foreground">7d spend:</span>
           <span className="font-bold font-mono">
             ${(data.reduce((sum, b) => sum + b.costs7d.totalCents, 0) / 100).toFixed(2)}
           </span>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">~Monthly:</span>
+          <span className="font-bold font-mono text-amber-600">
+            ${(data.reduce((sum, b) => sum + b.costs7d.totalCents, 0) * 30 / 7 / 100).toFixed(2)}
+          </span>
+        </div>
         <div className="text-muted-foreground">
           {data.length} brand{data.length !== 1 ? 's' : ''} &middot;{' '}
-          {data.filter(b => !b.brand.is_paused).length} active
+          {data.filter(b => !b.brand.is_paused).length} active &middot;{' '}
+          {data.filter(b => b.brand.is_paused).length} paused
         </div>
       </div>
 
       {/* Brand cards */}
-      {data.map(({ brand, settings, costs7d }) => {
+      {data.map(({ brand, settings, costs7d, lastRuns }) => {
         const isExpanded = expanded.has(brand.id)
         const isPaused = brand.is_paused
         const isSaving = saving === brand.id
@@ -302,10 +323,17 @@ export function AutomationsGrid() {
               </div>
 
               <div className="flex items-center gap-6">
+                {/* Last scan */}
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs text-muted-foreground">Last scan</p>
+                  <p className="text-xs font-medium">{timeAgo(brand.last_scan_at)}</p>
+                </div>
+                
                 {/* 7-day cost */}
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">7d spend</p>
                   <p className="font-mono font-bold text-sm">${costs7d.totalDollars}</p>
+                  <p className="text-[10px] text-amber-600 font-mono">~${costs7d.projectedMonthlyDollars}/mo</p>
                 </div>
 
                 {/* Quick toggles row */}
@@ -396,12 +424,21 @@ export function AutomationsGrid() {
                           {costBadge(job.costWeight)}
                         </div>
 
-                        {/* Cost for this type in last 7 days */}
-                        {costs7d.byType[job.key] ? (
-                          <p className="text-[10px] text-muted-foreground mt-2 font-mono">
-                            7d: ${(costs7d.byType[job.key] / 100).toFixed(2)}
-                          </p>
-                        ) : null}
+                        {/* Cost + last run */}
+                        <div className="flex items-center justify-between mt-2">
+                          {costs7d.byType[job.key] ? (
+                            <p className="text-[10px] text-muted-foreground font-mono">
+                              7d: ${(costs7d.byType[job.key] / 100).toFixed(2)}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-slate-300 font-mono">7d: --</p>
+                          )}
+                          {lastRuns[job.key] ? (
+                            <p className="text-[10px] text-muted-foreground">
+                              {timeAgo(lastRuns[job.key])}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
                     )
                   })}
