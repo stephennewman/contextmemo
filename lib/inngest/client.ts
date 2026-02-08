@@ -57,6 +57,7 @@ export type InngestEvents = {
       brandId: string
       queryIds?: string[]
       autoGenerateMemos?: boolean // Auto-generate memos after scan
+      isOnboarding?: boolean // Use single model (Grok) for faster/cheaper onboarding
     }
   }
   'scan/completed': {

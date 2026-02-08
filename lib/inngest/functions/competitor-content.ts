@@ -4,7 +4,7 @@ import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
 import { BrandContext, CompetitorFeed } from '@/lib/supabase/types'
-import { generateToneInstructions } from '@/lib/ai/prompts/memo-generation'
+import { generateToneInstructions, formatBrandContextForPrompt } from '@/lib/ai/prompts/memo-generation'
 import { emitCompetitorPublished } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
@@ -1226,7 +1226,7 @@ export const competitorContentRespond = inngest.createFunction(
     })
 
     const brandContext = brand.context as BrandContext
-    const toneInstructions = generateToneInstructions(brandContext?.brand_tone)
+    const toneInstructions = generateToneInstructions(brandContext?.brand_tone, brandContext?.brand_personality)
     const today = new Date().toLocaleDateString('en-US', { 
       month: 'long', 
       day: 'numeric', 
@@ -1268,7 +1268,7 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
         const currentYear = now.getFullYear().toString()
 
         const prompt = RESPONSE_CONTENT_PROMPT
-          .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+          .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
           .replace('{{tone_instructions}}', toneInstructions)
           .replace('{{universal_topic}}', content.universal_topic)
           .replace('{{content_summary}}', contentAnalysis)

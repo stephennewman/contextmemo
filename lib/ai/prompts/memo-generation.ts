@@ -1,4 +1,4 @@
-import { BrandTone, VoiceInsight, formatVoiceInsightCitation } from '@/lib/supabase/types'
+import { BrandTone, BrandPersonality, BrandContext, VoiceInsight, VoiceInsightTopic, formatVoiceInsightCitation } from '@/lib/supabase/types'
 
 // Format voice insights for inclusion in AI prompts
 export function formatVoiceInsightsForPrompt(insights: VoiceInsight[]): string {
@@ -36,20 +36,141 @@ This blockquote format is REQUIRED for all expert insight citations. Place them 
 
 Example of correct formatting:
 
-> "Predictive operations is the ability to take operational data sources and cross-reference it with language models to predict equipment failure risk. This enables operational leaders to get in front of problems versus reacting to problems."
+> "The key advantage of our approach is combining real-time data with predictive models, which lets teams prevent problems instead of just reacting to them."
 >
-> **— Stephen Newman, Head of Marketing, Checkit (February 4, 2026)**
+> **— [Expert Name], [Title] ([Date])**
 `
 }
 
-// Generate tone instructions from brand tone settings
-export function generateToneInstructions(tone?: BrandTone): string {
-  if (!tone) {
-    return 'Use a professional yet conversational tone that is easy to read. Write as if explaining to an intelligent colleague - be informative and thorough, but not stiff or overly formal. Use clear, flowing sentences and avoid terse bullet-point style writing.'
+// Format brand context as structured prompt text instead of raw JSON dump
+// Strips infrastructure config (hubspot, search_console, etc.) and surfaces
+// brand personality + corporate positioning as explicit labeled sections
+export function formatBrandContextForPrompt(ctx: BrandContext): string {
+  const sections: string[] = []
+
+  // Core identity
+  if (ctx.company_name) sections.push(`Company: ${ctx.company_name}`)
+  if (ctx.description) sections.push(`Description: ${ctx.description}`)
+  if (ctx.founded) sections.push(`Founded: ${ctx.founded}`)
+  if (ctx.headquarters) sections.push(`Headquarters: ${ctx.headquarters}`)
+  if (ctx.products?.length) sections.push(`Products: ${ctx.products.join(', ')}`)
+  if (ctx.features?.length) sections.push(`Key Features: ${ctx.features.join(', ')}`)
+  if (ctx.markets?.length) sections.push(`Markets: ${ctx.markets.join(', ')}`)
+  if (ctx.certifications?.length) sections.push(`Certifications: ${ctx.certifications.join(', ')}`)
+  if (ctx.customers?.length) sections.push(`Notable Customers: ${ctx.customers.join(', ')}`)
+
+  // Brand personality (rich diagnostic extracted from website)
+  const bp = ctx.brand_personality
+  if (bp) {
+    sections.push(`\n## BRAND PERSONALITY`)
+    sections.push(`Archetype: ${bp.archetype_primary}${bp.archetype_secondary ? ` / ${bp.archetype_secondary}` : ''}`)
+    sections.push(`Personality: ${bp.personality_summary}`)
+    if (bp.worldview) {
+      sections.push(`Worldview: Believes ${bp.worldview.belief}. Sees the problem as: ${bp.worldview.problem}. Pushes toward: ${bp.worldview.future}.`)
+    }
+    sections.push(`Audience stance: ${bp.audience_stance}`)
+    if (bp.emotional_register) {
+      sections.push(`Emotional register: ${bp.emotional_register.primary}${bp.emotional_register.secondary ? `, ${bp.emotional_register.secondary}` : ''} (${bp.emotional_register.intensity} intensity)`)
+    }
+    if (bp.voice_traits) {
+      const t = bp.voice_traits
+      const traitDesc: string[] = []
+      if (t.formal_casual <= 2) traitDesc.push('formal')
+      else if (t.formal_casual >= 4) traitDesc.push('casual')
+      if (t.warm_cool <= 2) traitDesc.push('warm')
+      else if (t.warm_cool >= 4) traitDesc.push('cool/detached')
+      if (t.assertive_tentative <= 2) traitDesc.push('assertive')
+      else if (t.assertive_tentative >= 4) traitDesc.push('tentative')
+      if (t.playful_serious <= 2) traitDesc.push('playful')
+      else if (t.playful_serious >= 4) traitDesc.push('serious')
+      if (traitDesc.length) sections.push(`Voice traits: ${traitDesc.join(', ')}`)
+    }
   }
 
+  // Corporate positioning (strategic messaging framework)
+  const cp = ctx.corporate_positioning
+  if (cp) {
+    sections.push(`\n## STRATEGIC POSITIONING`)
+    if (cp.mission_statement) sections.push(`Mission: ${cp.mission_statement}`)
+    if (cp.vision_statement) sections.push(`Vision: ${cp.vision_statement}`)
+    if (cp.core_value_promise) sections.push(`Core value promise: ${cp.core_value_promise}`)
+    if (cp.key_benefits?.length) sections.push(`Key benefits: ${cp.key_benefits.join('; ')}`)
+    if (cp.differentiators?.length) {
+      const diffLines = cp.differentiators.map(d => `- ${d.name}: ${d.detail}`).join('\n')
+      sections.push(`Differentiators:\n${diffLines}`)
+    }
+    if (cp.messaging_pillars?.length) {
+      const pillarLines = cp.messaging_pillars.map(p => `- ${p.name}: ${p.supporting_points?.[0] || ''}`).join('\n')
+      sections.push(`Messaging pillars:\n${pillarLines}`)
+    }
+    if (cp.competitive_positioning) sections.push(`Competitive positioning: ${cp.competitive_positioning}`)
+    if (cp.win_themes?.length) sections.push(`Win themes: ${cp.win_themes.join('; ')}`)
+    if (cp.pitch_10_second) sections.push(`Elevator pitch: ${cp.pitch_10_second}`)
+  }
+
+  return sections.join('\n')
+}
+
+// Map memo types to most relevant voice insight topics (ordered by relevance)
+const MEMO_TYPE_TOPIC_RELEVANCE: Record<string, VoiceInsightTopic[]> = {
+  comparison: ['competitive_advantage', 'market_position', 'product_insight'],
+  alternative: ['competitive_advantage', 'market_position', 'product_insight'],
+  industry: ['industry_expertise', 'customer_context', 'market_position'],
+  how_to: ['concept_definition', 'product_insight', 'industry_expertise'],
+  response: ['competitive_advantage', 'industry_expertise', 'market_position'],
+}
+
+// Select the best voice insights for a given memo, scoring by topic relevance,
+// penalizing overuse across existing memos, and favoring freshness.
+export function selectVoiceInsightsForMemo(
+  allInsights: VoiceInsight[],
+  memoType: string,
+  existingMemoIds: string[],
+  maxInsights: number = 3
+): VoiceInsight[] {
+  if (!allInsights.length) return []
+
+  const relevantTopics = MEMO_TYPE_TOPIC_RELEVANCE[memoType] || []
+
+  const scored = allInsights.map(insight => {
+    let score = 0
+
+    // Topic relevance (0-30): first-listed topic is most relevant
+    const topicIdx = relevantTopics.indexOf(insight.topic)
+    if (topicIdx === 0) score += 30
+    else if (topicIdx === 1) score += 20
+    else if (topicIdx === 2) score += 10
+    else if (topicIdx >= 0) score += 5
+    // 'other' topic or unmatched gets 0
+
+    // Overuse penalty: -15 per existing memo that already cites this insight
+    const citedCount = insight.cited_in_memos?.filter(id => existingMemoIds.includes(id)).length || 0
+    score -= citedCount * 15
+
+    // Freshness bonus (newer = better, max 10 points, lose 1 per month)
+    const ageMs = Date.now() - new Date(insight.recorded_at).getTime()
+    const ageDays = ageMs / (1000 * 60 * 60 * 24)
+    score += Math.max(0, 10 - Math.floor(ageDays / 30))
+
+    return { insight, score }
+  })
+
+  // Sort by score descending, take top N
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxInsights)
+    .map(s => s.insight)
+}
+
+// Generate tone instructions from brand tone settings
+export function generateToneInstructions(tone?: BrandTone, personality?: BrandPersonality): string {
   const instructions: string[] = []
 
+  if (!tone) {
+    instructions.push('Use a professional yet conversational tone that is easy to read. Write as if explaining to an intelligent colleague - be informative and thorough, but not stiff or overly formal. Use clear, flowing sentences and avoid terse bullet-point style writing.')
+  }
+
+  if (tone) {
   // Personality
   const personalityGuide: Record<string, string> = {
     friendly: 'Write with warmth and approachability. Use inclusive language.',
@@ -120,6 +241,18 @@ export function generateToneInstructions(tone?: BrandTone): string {
   // Custom notes
   if (tone.custom_notes?.trim()) {
     instructions.push(`Additional guidance: ${tone.custom_notes.trim()}`)
+  }
+  } // end if (tone)
+
+  // Append personality-aware guidance if brand personality diagnostic is available
+  if (personality) {
+    instructions.push(`This brand's archetype is ${personality.archetype_primary} — embody this voice.`)
+    if (personality.worldview?.belief) {
+      instructions.push(`The brand believes: "${personality.worldview.belief}" — let this perspective inform the content naturally.`)
+    }
+    if (personality.audience_stance) {
+      instructions.push(`Relate to the reader as: ${personality.audience_stance}.`)
+    }
   }
 
   if (instructions.length === 0) {

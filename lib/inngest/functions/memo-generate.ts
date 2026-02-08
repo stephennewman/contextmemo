@@ -8,7 +8,9 @@ import {
   HOW_TO_MEMO_PROMPT,
   ALTERNATIVE_MEMO_PROMPT,
   generateToneInstructions,
-  formatVoiceInsightsForPrompt
+  formatVoiceInsightsForPrompt,
+  formatBrandContextForPrompt,
+  selectVoiceInsightsForMemo,
 } from '@/lib/ai/prompts/memo-generation'
 import { BrandContext, VoiceInsight, ExistingPage } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
@@ -165,9 +167,9 @@ export const memoGenerate = inngest.createFunction(
   async ({ event, step }) => {
     const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription } = event.data
 
-    // Step 1: Get brand, query, related data, and voice insights
-    const { brand, query, competitor, competitors, voiceInsights } = await step.run('get-data', async () => {
-      const [brandResult, queryResult, directCompetitorResult, voiceInsightsResult] = await Promise.all([
+    // Step 1: Get brand, query, related data, voice insights, and existing memo IDs
+    const { brand, query, competitor, competitors, voiceInsights, existingMemoIds } = await step.run('get-data', async () => {
+      const [brandResult, queryResult, directCompetitorResult, voiceInsightsResult, existingMemosResult] = await Promise.all([
         supabase
           .from('brands')
           .select('*')
@@ -196,6 +198,11 @@ export const memoGenerate = inngest.createFunction(
           .eq('status', 'active')
           .order('recorded_at', { ascending: false })
           .limit(10),
+        // Fetch existing memo IDs for voice insight deduplication
+        supabase
+          .from('memos')
+          .select('id')
+          .eq('brand_id', brandId),
       ])
 
       if (brandResult.error || !brandResult.data) {
@@ -218,6 +225,7 @@ export const memoGenerate = inngest.createFunction(
         competitor: resolvedCompetitor,
         competitors: allCompetitors || [],
         voiceInsights: (voiceInsightsResult.data || []) as VoiceInsight[],
+        existingMemoIds: (existingMemosResult.data || []).map((m: { id: string }) => m.id),
       }
     })
 
@@ -228,11 +236,12 @@ export const memoGenerate = inngest.createFunction(
       year: 'numeric' 
     })
 
-    // Generate tone instructions from brand settings
-    const toneInstructions = generateToneInstructions(brandContext.brand_tone)
+    // Generate tone instructions from brand settings + personality diagnostic
+    const toneInstructions = generateToneInstructions(brandContext.brand_tone, brandContext.brand_personality)
     
-    // Format voice insights for inclusion in prompts
-    const verifiedInsights = formatVoiceInsightsForPrompt(voiceInsights)
+    // Select the most relevant voice insights for this memo type (topic-matched, deduplicated)
+    const selectedInsights = selectVoiceInsightsForMemo(voiceInsights, memoType, existingMemoIds, 3)
+    const verifiedInsights = formatVoiceInsightsForPrompt(selectedInsights)
 
     // Step 2: Check for redundancy with existing site content
     const redundancyCheck = await step.run('check-redundancy', async () => {
@@ -355,7 +364,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = COMPARISON_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
@@ -378,7 +387,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = ALTERNATIVE_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace(/\{\{competitor_name\}\}/g, competitor.name)
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
             .replace('{{other_alternatives}}', otherCompetitors)
@@ -399,7 +408,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = INDUSTRY_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{industry}}', industry)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
@@ -450,7 +459,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = HOW_TO_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{competitors}}', competitorList)
             .replace('{{topic}}', topic)
             .replace(/\{\{brand_name\}\}/g, brand.name)
@@ -561,8 +570,8 @@ ${memoContent.content.slice(0, 1000)}`,
     // Deduplicate
     const uniqueSameAs = [...new Set(brandSameAs)]
 
-    // Build citations array from voice insights (Schema.org Quotation)
-    const expertCitations = voiceInsights.map(insight => ({
+    // Build citations array from selected voice insights (Schema.org Quotation)
+    const expertCitations = selectedInsights.map(insight => ({
       '@type': 'Quotation',
       text: insight.transcript,
       creator: {
@@ -591,7 +600,7 @@ ${memoContent.content.slice(0, 1000)}`,
     }))
 
     // Build speakable specification for key content
-    const speakableSpec = voiceInsights.length > 0 ? {
+    const speakableSpec = selectedInsights.length > 0 ? {
       '@type': 'SpeakableSpecification',
       cssSelector: ['blockquote', '.expert-insight'],
     } : undefined
@@ -687,6 +696,22 @@ ${memoContent.content.slice(0, 1000)}`,
         change_reason: 'initial',
       })
     })
+
+    // Step 7b: Track which voice insights were cited in this memo
+    if (selectedInsights.length > 0) {
+      await step.run('track-voice-citations', async () => {
+        for (const insight of selectedInsights) {
+          const updatedCitedIn = [...(insight.cited_in_memos || []), memo.id]
+          await supabase
+            .from('voice_insights')
+            .update({
+              cited_in_memos: updatedCitedIn,
+              citation_count: updatedCitedIn.length,
+            })
+            .eq('id', insight.id)
+        }
+      })
+    }
 
     // Step 8: Create alert and feed event
     await step.run('create-alert-and-feed', async () => {

@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch'
 import { 
   Pause, Play, Search, Compass, Newspaper, FileText, 
   ShieldCheck, Brain, Sparkles, Loader2, DollarSign,
-  ChevronDown, ChevronUp, ExternalLink,
+  ChevronDown, ChevronUp, ExternalLink, UserPlus, Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -73,11 +73,12 @@ interface JobDef {
 }
 
 // Available scan models
+// `onboarding` must match the `onboarding` flags in scan-run.ts SCAN_MODELS
 const AVAILABLE_MODELS = [
-  { id: 'perplexity-sonar', label: 'Perplexity Sonar', cost: '$' },
-  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', cost: '$$' },
-  { id: 'claude-3-5-haiku', label: 'Claude 3.5 Haiku', cost: '$$$' },
-  { id: 'grok-4-fast', label: 'Grok 4 Fast', cost: '$$' },
+  { id: 'perplexity-sonar', label: 'Perplexity Sonar', cost: '$', onboarding: false },
+  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', cost: '$$', onboarding: false },
+  { id: 'claude-3-5-haiku', label: 'Claude 3.5 Haiku', cost: '$$$', onboarding: false },
+  { id: 'grok-4-fast', label: 'Grok 4 Fast', cost: '$$', onboarding: true },
 ]
 
 const JOBS: JobDef[] = [
@@ -292,6 +293,41 @@ export function AutomationsGrid() {
           {data.length} brand{data.length !== 1 ? 's' : ''} &middot;{' '}
           {data.filter(b => !b.brand.is_paused).length} active &middot;{' '}
           {data.filter(b => b.brand.is_paused).length} paused
+        </div>
+      </div>
+
+      {/* Onboarding config (read-only, code-level) */}
+      <div className="border border-slate-200 bg-white">
+        <div className="px-5 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <UserPlus className="h-4 w-4 text-[#0EA5E9]" />
+            <span className="font-bold text-sm">Onboarding Scan</span>
+            <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+              <Lock className="h-2.5 w-2.5" />
+              Code-level config
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Models used for the initial scan when a new brand is onboarded. Fewer models = faster + cheaper onboarding.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {AVAILABLE_MODELS.map(model => (
+              <div
+                key={model.id}
+                className={`flex items-center gap-2 px-3 py-1.5 border rounded text-xs font-medium ${
+                  model.onboarding
+                    ? 'border-[#0EA5E9] bg-sky-50 text-[#0EA5E9]'
+                    : 'border-slate-100 bg-slate-50 text-slate-300'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${model.onboarding ? 'bg-[#0EA5E9]' : 'bg-slate-200'}`} />
+                {model.label}
+                <span className={`text-[10px] ${model.onboarding ? 'text-sky-400' : 'text-slate-200'}`}>
+                  {model.cost}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

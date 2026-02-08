@@ -41,6 +41,7 @@ interface ModelConfig {
   provider: 'openrouter' | 'perplexity-direct'
   modelId: string
   enabled: boolean
+  onboarding: boolean // Whether to use this model during onboarding scans
   citationSource: 'perplexity' | 'openrouter-native'
 }
 
@@ -54,19 +55,19 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Perplexity Sonar', 
     provider: 'perplexity-direct', 
     modelId: 'sonar', 
-    enabled: true, // PRIMARY MODEL - cheapest option
+    enabled: true,
+    onboarding: false,
     citationSource: 'perplexity',
   },
   
   // OpenRouter with native search (:online suffix)
-  // These providers have built-in web search: OpenAI, Anthropic, xAI
-  // DISABLED to reduce costs - enable for multi-model comparison when needed
   { 
     id: 'gpt-4o-mini', 
     displayName: 'GPT-4o Mini', 
     provider: 'openrouter', 
     modelId: 'openai/gpt-4o-mini:online', 
-    enabled: true, // ENABLED for before/after citation experiment
+    enabled: true,
+    onboarding: false,
     citationSource: 'openrouter-native',
   },
   { 
@@ -74,7 +75,8 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Claude 3.5 Haiku', 
     provider: 'openrouter', 
     modelId: 'anthropic/claude-3.5-haiku:online', 
-    enabled: true, // ENABLED for before/after citation experiment
+    enabled: true,
+    onboarding: false,
     citationSource: 'openrouter-native',
   },
   { 
@@ -82,7 +84,8 @@ const SCAN_MODELS: ModelConfig[] = [
     displayName: 'Grok 4 Fast', 
     provider: 'openrouter', 
     modelId: 'x-ai/grok-4-fast:online', 
-    enabled: true, // ENABLED for before/after citation experiment
+    enabled: true,
+    onboarding: true, // Best citation data: 12.8 avg citations/scan, 45% mention rate
     citationSource: 'openrouter-native',
   },
 ]
@@ -127,7 +130,7 @@ export const scanRun = inngest.createFunction(
   },
   { event: 'scan/run' },
   async ({ event, step }) => {
-    const { brandId, queryIds, autoGenerateMemos = false } = event.data
+    const { brandId, queryIds, autoGenerateMemos = false, isOnboarding = false } = event.data
 
     // Step 0: Budget check — skip if brand is over its monthly cap
     const budget = await step.run('check-budget', async () => {
@@ -247,11 +250,15 @@ export const scanRun = inngest.createFunction(
       .eq('brand_id', brandId)
       .single()
     
-    const enabledModels = (modelSettings?.scan_models && modelSettings.scan_models.length > 0)
-      ? SCAN_MODELS.filter(m => modelSettings.scan_models.includes(m.id))
-      : SCAN_MODELS.filter(m => m.enabled)
+    // Onboarding uses models with onboarding: true (configurable per model)
+    // Daily scans use all enabled models for cross-model comparison
+    const enabledModels = isOnboarding
+      ? SCAN_MODELS.filter(m => m.onboarding)
+      : (modelSettings?.scan_models && modelSettings.scan_models.length > 0)
+        ? SCAN_MODELS.filter(m => modelSettings.scan_models.includes(m.id))
+        : SCAN_MODELS.filter(m => m.enabled)
     
-    console.log(`[Scan] Brand ${brandId}: using ${enabledModels.length} models: ${enabledModels.map(m => m.id).join(', ')}`)
+    console.log(`[Scan] Brand ${brandId}${isOnboarding ? ' (onboarding)' : ''}: using ${enabledModels.length} models: ${enabledModels.map(m => m.id).join(', ')}`)
     
     // Step 2: Run scans for each query across all enabled models
     const scanResults: ScanResult[] = []
