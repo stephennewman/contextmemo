@@ -135,7 +135,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes that require authentication
-  const protectedPaths = ['/dashboard', '/brands', '/admin']
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
@@ -158,7 +157,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages (but allow verify-email for unverified)
-  const authPaths = ['/login', '/signup']
   const isAuthPath = authPaths.some(path => 
     request.nextUrl.pathname === path
   )
