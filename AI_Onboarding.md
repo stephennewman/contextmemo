@@ -388,6 +388,16 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v6)
+
+**Feature: Google Analytics (GA4) with per-brand custom dimensions** (5769006)
+- Added GA4 tag (`G-4WM1HF6WMS`) to root layout using Next.js `<Script>` with `afterInteractive` strategy.
+- Custom `memo_view` event fires on every memo page with `brand_name`, `brand_subdomain`, `memo_type`, `memo_title`, and `content_source` dimensions — allows filtering/segmenting GA4 reports by brand.
+- `GtagBrandPageView` component added to: subdomain memo pages (`app/memo/`), standard memo pages (`render.tsx MemoPageContent`), and branded memo pages (`render.tsx BrandedMemoPageContent`).
+- **To complete:** Create matching custom dimensions in GA4 Admin → Property → Custom definitions: `brand_name`, `brand_subdomain`, `memo_type`, `content_source` (all event-scoped).
+- **Files created:** `components/tracking/google-analytics.tsx`
+- **Files changed:** `app/layout.tsx`, `app/memo/[subdomain]/[[...slug]]/page.tsx`, `lib/memo/render.tsx`
+
 ### February 8, 2026 (v5)
 
 **Feature: Content Performance Tab + AI Traffic Tracking Fix** (5eb73e1)
