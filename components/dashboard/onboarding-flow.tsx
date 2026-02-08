@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { CheckCircle2, Loader2, Circle, Zap, Terminal, ChevronRight, ArrowRight, X, Minimize2, Maximize2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Circle, Terminal, ChevronRight, ArrowRight, X, Minimize2, Maximize2 } from 'lucide-react'
 
 interface OnboardingFlowProps {
   brandId: string
@@ -12,7 +12,7 @@ interface OnboardingFlowProps {
   queryCount: number
 }
 
-type Phase = 'setup' | 'results' | 'memos' | 'monitoring' | 'tutorial' | 'done'
+type Phase = 'setup' | 'reveal' | 'memos' | 'done'
 type SetupStep = 'extract' | 'queries' | 'scan'
 
 interface ProgressLine {
@@ -26,10 +26,31 @@ interface ScanSummary {
   citationRate: number
   mentioned: number
   brandCited: number
-  gapEstimate: number
+  gapCount: number
   totalCitations: number
   uniqueDomains: number
   topDomains: { domain: string; count: number }[]
+}
+
+interface BrandDetails {
+  companyName: string
+  description: string
+  products: string[]
+  personas: string[]
+  markets: string[]
+}
+
+interface PromptSamples {
+  top_funnel: string[]
+  mid_funnel: string[]
+  bottom_funnel: string[]
+  counts: { top: number; mid: number; bottom: number }
+}
+
+interface GapQuery {
+  id: string
+  text: string
+  funnel: string
 }
 
 interface StatusResponse {
@@ -39,10 +60,14 @@ interface StatusResponse {
   queryCount: number
   scanCount: number
   contextSummary: string
+  brandDetails: BrandDetails | null
+  promptSamples: PromptSamples
   memoCount: number
   competitorCount: number
   competitors: string[]
+  entities: { name: string; domain: string; type: string }[]
   scanSummary: ScanSummary | null
+  gapQueries: GapQuery[]
 }
 
 // Setup step configurations
@@ -91,34 +116,15 @@ const STEP_CONFIGS: Record<SetupStep, {
   },
 }
 
-// Tutorial steps
-const TUTORIAL_STEPS = [
-  {
-    title: 'Prompts',
-    description: 'The queries buyers ask AI. We track which ones mention you.',
-    tab: 'prompts',
-  },
-  {
-    title: 'Citations',
-    description: 'See which domains AI models cite — and where you rank.',
-    tab: 'citations',
-  },
-  {
-    title: 'Memos',
-    description: 'Factual content generated to fill your visibility gaps.',
-    tab: 'memos',
-  },
-  {
-    title: 'Entities',
-    description: 'Competitors and domains discovered from AI responses.',
-    tab: 'entities',
-  },
-  {
-    title: 'Automations',
-    description: 'Control what runs, how often, and your spend.',
-    tab: '/automations',
-  },
-]
+// Narrative steps shown in the terminal after scan
+const REVEAL_STEPS = [
+  'brand',     // 1. Here's your brand
+  'prompts',   // 2. Here's your prompts
+  'citations', // 3. Here's the citations (plus how you did)
+  'entities',  // 4. Here's the entities in those citations
+  'gaps',      // 5. Here's your content gaps
+  'memos',     // 6. Generate memos to fill them
+] as const
 
 export function OnboardingFlow({
   brandId,
@@ -132,11 +138,8 @@ export function OnboardingFlow({
   const [completedSteps, setCompletedSteps] = useState<Set<SetupStep>>(new Set())
   const [progressLines, setProgressLines] = useState<ProgressLine[]>([])
   const [hasError, setHasError] = useState(false)
-  const [scanSummary, setScanSummary] = useState<ScanSummary | null>(null)
-  const [memoCount, setMemoCount] = useState(0)
-  const [competitorCount, setCompetitorCount] = useState(0)
-  const [competitors, setCompetitors] = useState<string[]>([])
-  const [tutorialStep, setTutorialStep] = useState(0)
+  const [statusData, setStatusData] = useState<StatusResponse | null>(null)
+  const [revealStep, setRevealStep] = useState(0)
   const [isMinimized, setIsMinimized] = useState(false)
   const progressRef = useRef<HTMLDivElement>(null)
   const messageIndexRef = useRef(0)
@@ -198,11 +201,8 @@ export function OnboardingFlow({
       // Check if scan data exists
       const status = await pollStatus()
       if (status?.hasScans && status.scanSummary) {
-        setScanSummary(status.scanSummary)
-        setCompetitorCount(status.competitorCount)
-        setCompetitors(status.competitors)
-        setMemoCount(status.memoCount)
-        setPhase('results')
+        setStatusData(status)
+        setPhase('reveal')
         return
       }
       triggerStep = 'scan'
@@ -280,10 +280,7 @@ export function OnboardingFlow({
             complete = true
             summary = `${status.scanCount} scans completed`
             if (status.scanSummary) {
-              setScanSummary(status.scanSummary)
-              setCompetitorCount(status.competitorCount)
-              setCompetitors(status.competitors)
-              setMemoCount(status.memoCount)
+              setStatusData(status)
             }
           }
         }
@@ -303,10 +300,7 @@ export function OnboardingFlow({
           // Try one more status check
           const finalStatus = await pollStatus()
           if (finalStatus?.scanSummary) {
-            setScanSummary(finalStatus.scanSummary)
-            setCompetitorCount(finalStatus.competitorCount)
-            setCompetitors(finalStatus.competitors)
-            setMemoCount(finalStatus.memoCount)
+            setStatusData(finalStatus)
           }
           addLine(`✓ Scan processing...`, 'success')
           setCompletedSteps(prev => new Set([...prev, step]))
@@ -324,7 +318,7 @@ export function OnboardingFlow({
     
     // Small delay then show results
     await new Promise(r => setTimeout(r, 500))
-    setPhase('results')
+    setPhase('reveal')
   }, [brandId, brandName, hasContext, hasQueries, addLine, completeWorkingLines, pollStatus])
 
   // Auto-start setup
@@ -335,150 +329,234 @@ export function OnboardingFlow({
     }
   }, [runSetup])
 
-  // ── Phase 2: Show Results + Transition to Memos ──
-  const showResultsInTerminal = useCallback(() => {
-    if (!scanSummary) return
+  // ── Phase 2: Progressive Reveal (6-step narrative) ──
+  const advanceReveal = useCallback(async () => {
+    if (!statusData) return
+    const step = revealStep
+    const s = statusData.scanSummary
+    const b = statusData.brandDetails
 
-    setProgressLines(prev => [
-      ...prev,
-      { text: '', type: 'info' },
-      { text: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', type: 'header' },
-      { text: '  SCAN RESULTS', type: 'header' },
-      { text: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', type: 'header' },
-      { text: '', type: 'info' },
-      { text: `  Scans completed     ${scanSummary.totalScans}`, type: 'result' },
-      { text: `  Mention rate        ${scanSummary.mentionRate}%`, type: scanSummary.mentionRate >= 30 ? 'success' : 'result' },
-      { text: `  Citation rate       ${scanSummary.citationRate}%`, type: scanSummary.citationRate >= 20 ? 'success' : 'result' },
-      { text: `  Total citations     ${scanSummary.totalCitations}`, type: 'result' },
-      { text: `  Unique domains      ${scanSummary.uniqueDomains}`, type: 'result' },
-      { text: `  Competitors found   ${competitorCount}`, type: 'result' },
-      { text: '', type: 'info' },
-    ])
+    const lines: ProgressLine[] = [{ text: '', type: 'info' }]
 
-    if (scanSummary.topDomains.length > 0) {
-      setProgressLines(prev => [
-        ...prev,
-        { text: '  TOP CITED DOMAINS', type: 'header' },
-        ...scanSummary.topDomains.map(d => ({
-          text: `    ${d.domain.padEnd(30)} ${d.count}x`,
-          type: 'info' as const,
-        })),
-        { text: '', type: 'info' },
-      ])
-    }
-
-    if (competitors.length > 0) {
-      setProgressLines(prev => [
-        ...prev,
-        { text: '  COMPETITORS DISCOVERED', type: 'header' },
-        ...competitors.map(c => ({
-          text: `    → ${c}`,
-          type: 'info' as const,
-        })),
-        { text: '', type: 'info' },
-      ])
-    }
-
-    // Assessment
-    const assessment = scanSummary.mentionRate >= 40
-      ? 'Strong baseline visibility. Memos will strengthen your position.'
-      : scanSummary.mentionRate >= 15
-      ? 'Moderate visibility. Memos will help fill the gaps.'
-      : 'Low visibility — generating memos will help AI models discover you.'
-
-    setProgressLines(prev => [
-      ...prev,
-      { text: `  ${assessment}`, type: scanSummary.mentionRate >= 40 ? 'success' : 'info' },
-      { text: '', type: 'info' },
-      { text: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', type: 'header' },
-    ])
-  }, [scanSummary, competitorCount, competitors])
-
-  useEffect(() => {
-    if (phase === 'results' && scanSummary) {
-      showResultsInTerminal()
-    }
-  }, [phase, scanSummary, showResultsInTerminal])
-
-  // ── Phase 3: Memo Generation ──
-  const startMemoPhase = useCallback(async () => {
-    setPhase('memos')
-    addLine('', 'info')
-    addLine('▶ STEP 2: Generating Memos', 'header')
-    addLine('  Creating factual content for your visibility gaps...', 'info')
-    addLine('  Memos are AI-optimized reference content that helps', 'info')
-    addLine('  AI models cite your brand when answering queries.', 'info')
-    addLine('', 'info')
-
-    // Memos are already being auto-generated by the scan (autoGenerateMemos: true)
-    // We just need to poll and show progress
-    addLine('Generating memos for top gaps...', 'working')
-
-    const pollStart = Date.now()
-    const maxWait = 120000 // 2 minutes
-
-    while (Date.now() - pollStart < maxWait) {
-      await new Promise(r => setTimeout(r, 5000))
-
-      const status = await pollStatus()
-      if (!status) continue
-
-      if (status.memoCount > memoCount) {
-        completeWorkingLines()
-        setMemoCount(status.memoCount)
-        addLine(`  ${status.memoCount} memo${status.memoCount !== 1 ? 's' : ''} generated`, 'success')
-
-        // If we've been waiting a while and memos are appearing, good enough
-        if (status.memoCount >= 2 || Date.now() - pollStart > 30000) {
-          break
+    switch (REVEAL_STEPS[step]) {
+      case 'brand': {
+        lines.push({ text: '━━━ 1. YOUR BRAND ━━━', type: 'header' })
+        lines.push({ text: '', type: 'info' })
+        if (b) {
+          lines.push({ text: `  ${b.companyName}`, type: 'result' })
+          if (b.description) {
+            const desc = b.description.length > 80 ? b.description.slice(0, 77) + '...' : b.description
+            lines.push({ text: `  ${desc}`, type: 'info' })
+          }
+          lines.push({ text: '', type: 'info' })
+          if (b.products.length > 0) {
+            lines.push({ text: `  Products: ${b.products.join(', ')}`, type: 'info' })
+          }
+          if (b.personas.length > 0) {
+            lines.push({ text: `  Personas: ${b.personas.join(', ')}`, type: 'info' })
+          }
+          if (b.markets.length > 0) {
+            lines.push({ text: `  Markets:  ${b.markets.join(', ')}`, type: 'info' })
+          }
+        } else {
+          lines.push({ text: `  ${brandName} — ${brandDomain}`, type: 'result' })
         }
-        addLine('Generating more...', 'working')
+        break
+      }
+
+      case 'prompts': {
+        const ps = statusData.promptSamples
+        lines.push({ text: '━━━ 2. YOUR PROMPTS ━━━', type: 'header' })
+        lines.push({ text: '', type: 'info' })
+        lines.push({ text: `  ${statusData.queryCount} prompts generated`, type: 'result' })
+        lines.push({ text: `    ${ps.counts.top} top-of-funnel (educational)`, type: 'info' })
+        lines.push({ text: `    ${ps.counts.mid} mid-funnel (exploring solutions)`, type: 'info' })
+        lines.push({ text: `    ${ps.counts.bottom} bottom-funnel (ready to buy)`, type: 'info' })
+        lines.push({ text: '', type: 'info' })
+        // Show a few samples
+        const samples = [...ps.top_funnel.slice(0, 1), ...ps.mid_funnel.slice(0, 1), ...ps.bottom_funnel.slice(0, 1)]
+        if (samples.length > 0) {
+          lines.push({ text: '  Sample prompts:', type: 'info' })
+          for (const q of samples) {
+            const text = q.length > 58 ? q.slice(0, 55) + '...' : q
+            lines.push({ text: `    "${text}"`, type: 'info' })
+          }
+        }
+        break
+      }
+
+      case 'citations': {
+        lines.push({ text: '━━━ 3. CITATIONS ━━━', type: 'header' })
+        lines.push({ text: '', type: 'info' })
+        if (s) {
+          lines.push({ text: `  ${s.totalScans} scans across ${statusData.queryCount} prompts`, type: 'result' })
+          lines.push({ text: '', type: 'info' })
+          lines.push({ text: `  Mention rate     ${s.mentionRate}%`, type: s.mentionRate >= 30 ? 'success' : 'result' })
+          lines.push({ text: `  Citation rate    ${s.citationRate}%`, type: s.citationRate >= 20 ? 'success' : 'result' })
+          lines.push({ text: `  Total citations  ${s.totalCitations}`, type: 'result' })
+          lines.push({ text: `  Unique domains   ${s.uniqueDomains}`, type: 'result' })
+          lines.push({ text: '', type: 'info' })
+          if (s.mentionRate >= 40) {
+            lines.push({ text: `  Strong baseline. AI knows about you.`, type: 'success' })
+          } else if (s.mentionRate >= 15) {
+            lines.push({ text: `  Moderate visibility. Room to improve.`, type: 'info' })
+          } else {
+            lines.push({ text: `  Low visibility. Memos will help AI discover you.`, type: 'info' })
+          }
+        } else {
+          lines.push({ text: '  Scan still processing...', type: 'info' })
+        }
+        break
+      }
+
+      case 'entities': {
+        lines.push({ text: '━━━ 4. ENTITIES ━━━', type: 'header' })
+        lines.push({ text: '', type: 'info' })
+        lines.push({ text: `  ${statusData.competitorCount} entities discovered from citations`, type: 'result' })
+        lines.push({ text: '', type: 'info' })
+        if (s && s.topDomains.length > 0) {
+          lines.push({ text: '  Top cited domains:', type: 'info' })
+          for (const d of s.topDomains) {
+            const isBrand = d.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
+            lines.push({
+              text: `    ${d.domain.padEnd(28)} ${d.count}x${isBrand ? ' ← you' : ''}`,
+              type: isBrand ? 'success' : 'info',
+            })
+          }
+        }
+        if (statusData.competitors.length > 0) {
+          lines.push({ text: '', type: 'info' })
+          lines.push({ text: '  Competitors:', type: 'info' })
+          for (const c of statusData.competitors.slice(0, 6)) {
+            lines.push({ text: `    → ${c}`, type: 'info' })
+          }
+          if (statusData.competitors.length > 6) {
+            lines.push({ text: `    + ${statusData.competitors.length - 6} more`, type: 'info' })
+          }
+        }
+        break
+      }
+
+      case 'gaps': {
+        lines.push({ text: '━━━ 5. CONTENT GAPS ━━━', type: 'header' })
+        lines.push({ text: '', type: 'info' })
+        const gapCount = s?.gapCount || statusData.gapQueries.length
+        lines.push({ text: `  ${gapCount} prompts where AI doesn't mention you`, type: 'result' })
+        lines.push({ text: '', type: 'info' })
+        if (statusData.gapQueries.length > 0) {
+          lines.push({ text: '  Top gaps:', type: 'info' })
+          for (const g of statusData.gapQueries) {
+            const funnel = g.funnel === 'top_funnel' ? 'TOF' : g.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
+            const text = g.text.length > 50 ? g.text.slice(0, 47) + '...' : g.text
+            lines.push({ text: `    [${funnel}] "${text}"`, type: 'info' })
+          }
+        }
+        lines.push({ text: '', type: 'info' })
+        lines.push({ text: '  Memos fill these gaps with factual, citable content', type: 'info' })
+        lines.push({ text: '  that AI models can discover and reference.', type: 'info' })
+        break
+      }
+
+      case 'memos': {
+        // This is handled by the action button — no auto-content
+        break
       }
     }
 
-    completeWorkingLines()
-    
-    // Final memo count check
-    const finalStatus = await pollStatus()
-    const finalMemoCount = finalStatus?.memoCount || memoCount
+    setProgressLines(prev => [...prev, ...lines])
+    setRevealStep(step + 1)
+  }, [statusData, revealStep, brandName, brandDomain])
 
-    if (finalMemoCount > 0) {
-      addLine('', 'info')
-      addLine(`✓ ${finalMemoCount} memo${finalMemoCount !== 1 ? 's' : ''} ready`, 'success')
-      addLine('  Published to your subdomain for AI crawling.', 'info')
-    } else {
-      addLine('  Memos are generating in the background.', 'info')
-      addLine('  Check the MEMOS tab shortly.', 'info')
+  // Auto-advance reveal when phase changes to reveal
+  useEffect(() => {
+    if (phase === 'reveal' && statusData && revealStep === 0) {
+      advanceReveal()
+    }
+  }, [phase, statusData, revealStep, advanceReveal])
+
+  // ── Phase 3: Memo Generation (explicit action) ──
+  const startMemoPhase = useCallback(async () => {
+    setPhase('memos')
+    addLine('', 'info')
+    addLine('━━━ 6. GENERATE MEMOS ━━━', 'header')
+    addLine('', 'info')
+
+    addLine('Triggering memo generation for top gaps...', 'working')
+
+    try {
+      const res = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate_gap_memos', limit: 5 }),
+      })
+
+      if (!res.ok) throw new Error('Failed to trigger memo generation')
+      const result = await res.json()
+
+      completeWorkingLines()
+
+      if (result.memosQueued === 0) {
+        addLine('  No gaps found — AI already knows about you!', 'success')
+      } else {
+        addLine(`  ${result.memosQueued} memos queued for generation:`, 'info')
+        addLine('', 'info')
+
+        for (const q of result.gapQueries || []) {
+          const funnel = q.funnel === 'top_funnel' ? 'TOF' : q.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
+          const text = q.text.length > 50 ? q.text.slice(0, 47) + '...' : q.text
+          addLine(`    [${funnel}] "${text}"`, 'info')
+        }
+
+        addLine('', 'info')
+        addLine('Generating content...', 'working')
+
+        // Poll for memo completion
+        const startMemoCount = statusData?.memoCount || 0
+        const pollStart = Date.now()
+        let lastCount = startMemoCount
+
+        while (Date.now() - pollStart < 180000) {
+          await new Promise(r => setTimeout(r, 8000))
+          const status = await pollStatus()
+          if (!status) continue
+
+          if (status.memoCount > lastCount) {
+            const newMemos = status.memoCount - startMemoCount
+            completeWorkingLines()
+            lastCount = status.memoCount
+            addLine(`  ✓ ${newMemos} of ${result.memosQueued} memos generated`, 'success')
+            if (newMemos >= result.memosQueued) break
+            addLine('Generating next memo...', 'working')
+          }
+        }
+
+        completeWorkingLines()
+        const finalStatus = await pollStatus()
+        const totalNew = (finalStatus?.memoCount || 0) - startMemoCount
+
+        if (totalNew > 0) {
+          addLine('', 'info')
+          addLine(`✓ ${totalNew} memo${totalNew !== 1 ? 's' : ''} published`, 'success')
+        } else {
+          addLine('', 'info')
+          addLine('  Memos are generating in the background.', 'info')
+          addLine('  Check the MEMOS tab in a few minutes.', 'info')
+        }
+      }
+    } catch (error) {
+      completeWorkingLines()
+      addLine(`⚠ ${error instanceof Error ? error.message : 'Generation failed'}`, 'info')
+      addLine('  Generate memos manually from the MEMOS tab.', 'info')
     }
 
     addLine('', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
-
-    // Move to monitoring phase
-    setPhase('monitoring')
-  }, [addLine, completeWorkingLines, pollStatus, memoCount])
-
-  // ── Phase 4: Monitoring ──
-  const startMonitoring = useCallback(async () => {
-    addLine('', 'info')
-    addLine('▶ STEP 3: Daily Monitoring Active', 'header')
-    addLine('', 'info')
-    addLine('  Your brand is now being monitored automatically:', 'info')
-    addLine('    • Daily AI visibility scans', 'success')
-    addLine('    • Competitor content monitoring', 'success')
-    addLine('    • Auto-memo generation for new gaps', 'success')
-    addLine('    • Citation verification', 'success')
-    addLine('', 'info')
-    addLine('  Configure frequency and budget in Automations.', 'info')
-    addLine('', 'info')
-    addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
-    addLine('  SETUP COMPLETE', 'success')
+    addLine('  ONBOARDING COMPLETE', 'success')
+    addLine('  Daily monitoring is now active.', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
-    // Small delay then show tutorial
-    await new Promise(r => setTimeout(r, 1000))
-    setPhase('tutorial')
-  }, [addLine])
+    setPhase('done')
+  }, [brandId, addLine, completeWorkingLines, pollStatus, statusData])
 
   // ── Render: Setup Phase Step Indicators ──
   const setupSteps = [
@@ -489,37 +567,41 @@ export function OnboardingFlow({
 
   // ── Render: Action Button for current phase ──
   const renderActionButton = () => {
-    if (phase === 'results') {
+    // During reveal: show "NEXT" to advance through steps 1-5
+    if (phase === 'reveal' && revealStep > 0 && revealStep < REVEAL_STEPS.length - 1) {
+      const nextLabel = ['Brand', 'Prompts', 'Citations', 'Entities', 'Gaps', 'Memos'][revealStep]
+      return (
+        <button
+          onClick={advanceReveal}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0F172A] text-white font-bold text-sm hover:bg-[#1E293B] transition-colors border border-slate-600"
+        >
+          NEXT: {nextLabel?.toUpperCase()}
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )
+    }
+
+    // After step 5 (gaps): show the memo generation CTA
+    if (phase === 'reveal' && revealStep >= REVEAL_STEPS.length - 1) {
+      const gapCount = statusData?.scanSummary?.gapCount || statusData?.gapQueries?.length || 0
+      const memoTarget = Math.min(5, Math.max(1, gapCount))
       return (
         <button
           onClick={startMemoPhase}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#0EA5E9] text-white font-bold text-sm hover:bg-[#0284C7] transition-colors"
         >
-          STEP 2: GENERATE MEMOS
-          <ChevronRight className="h-4 w-4" />
+          GENERATE {memoTarget} MEMOS
+          <ArrowRight className="h-4 w-4" />
         </button>
       )
     }
 
-    if (phase === 'monitoring') {
+    // After memos are done
+    if (phase === 'done') {
       return (
         <button
-          onClick={startMonitoring}
+          onClick={() => { window.location.href = `/brands/${brandId}` }}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#10B981] text-white font-bold text-sm hover:bg-[#059669] transition-colors"
-        >
-          STEP 3: ACTIVATE MONITORING
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      )
-    }
-
-    if (phase === 'tutorial') {
-      return (
-        <button
-          onClick={() => {
-            window.location.href = `/brands/${brandId}`
-          }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#F59E0B] text-white font-bold text-sm hover:bg-[#D97706] transition-colors"
         >
           GO TO DASHBOARD
           <ArrowRight className="h-4 w-4" />
@@ -528,95 +610,6 @@ export function OnboardingFlow({
     }
 
     return null
-  }
-
-  // ── Render: Tutorial Cards ──
-  if (phase === 'tutorial' && !isMinimized) {
-    return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Tutorial */}
-        <div className="border-[3px] border-[#0F172A] overflow-hidden">
-          <div className="bg-[#0F172A] text-white px-5 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#F59E0B] rounded-lg">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-bold tracking-wide">QUICK TOUR</h2>
-                <p className="text-sm text-slate-300">Here&apos;s where to find things</p>
-              </div>
-            </div>
-            <button
-              onClick={() => window.location.href = `/brands/${brandId}`}
-              className="text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="p-5 space-y-3">
-            {TUTORIAL_STEPS.map((step, i) => {
-              const isActive = tutorialStep === i
-              const isComplete = tutorialStep > i
-              return (
-                <button
-                  key={step.tab}
-                  onClick={() => setTutorialStep(i)}
-                  className={`w-full text-left flex items-center gap-4 p-4 border-2 transition-all ${
-                    isActive
-                      ? 'border-[#0EA5E9] bg-sky-50'
-                      : isComplete
-                      ? 'border-[#10B981] bg-emerald-50/50'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    isComplete ? 'bg-[#10B981] text-white' :
-                    isActive ? 'bg-[#0EA5E9] text-white' :
-                    'bg-slate-100 text-slate-400'
-                  }`}>
-                    {isComplete ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <span className="text-sm font-bold">{i + 1}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm ${isActive ? 'text-[#0EA5E9]' : 'text-[#0F172A]'}`}>
-                      {step.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {step.description}
-                    </p>
-                  </div>
-                  <ChevronRight className={`h-4 w-4 shrink-0 ${isActive ? 'text-[#0EA5E9]' : 'text-slate-300'}`} />
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="bg-[#0F172A] px-5 py-3 flex items-center justify-between">
-            <span className="text-sm text-slate-400">
-              {tutorialStep + 1} of {TUTORIAL_STEPS.length}
-            </span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsMinimized(true)}
-                className="text-xs text-slate-400 hover:text-white transition-colors"
-              >
-                Show Terminal
-              </button>
-              <button
-                onClick={() => window.location.href = `/brands/${brandId}`}
-                className="px-4 py-1.5 bg-[#F59E0B] text-white font-bold text-xs hover:bg-[#D97706] transition-colors"
-              >
-                GO TO DASHBOARD →
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   // ── Render: Main Terminal ──
@@ -636,10 +629,8 @@ export function OnboardingFlow({
               <span className="text-xs text-slate-400 font-mono">
                 {brandName} — {
                   phase === 'setup' ? 'Setting up...' :
-                  phase === 'results' ? 'Scan complete' :
+                  phase === 'reveal' ? `Step ${revealStep} of 6` :
                   phase === 'memos' ? 'Generating memos...' :
-                  phase === 'monitoring' ? 'Ready' :
-                  phase === 'tutorial' ? 'Setup complete' :
                   'Complete'
                 }
               </span>
@@ -702,30 +693,28 @@ export function OnboardingFlow({
               </div>
             )}
 
-            {/* Phase indicator (post-setup) */}
+            {/* Step indicator (reveal phase) */}
             {phase !== 'setup' && (
               <div className="px-4 py-2.5 border-b-2 border-[#0F172A] bg-zinc-50">
-                <div className="flex items-center gap-4">
-                  {['Scan', 'Memos', 'Monitor'].map((label, i) => {
-                    const phaseOrder: Phase[] = ['results', 'memos', 'monitoring']
-                    const phaseIndex = phaseOrder.indexOf(phase)
-                    const isComplete = i < phaseIndex || phase === 'tutorial' || phase === 'done'
-                    const isCurrent = i === phaseIndex
+                <div className="flex items-center gap-1">
+                  {['Brand', 'Prompts', 'Citations', 'Entities', 'Gaps', 'Memos'].map((label, i) => {
+                    const isComplete = phase === 'done' || phase === 'memos' ? true : revealStep > i
+                    const isCurrent = phase === 'reveal' && revealStep === i + 1
                     return (
-                      <div key={label} className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      <div key={label} className="flex items-center gap-1">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
                           isComplete ? 'bg-[#10B981] text-white' :
                           isCurrent ? 'bg-[#0EA5E9] text-white' :
                           'bg-zinc-200 text-zinc-400'
                         }`}>
-                          {isComplete ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                          {isComplete ? <CheckCircle2 className="h-3 w-3" /> : i + 1}
                         </div>
-                        <span className={`text-xs font-medium ${
+                        <span className={`text-[10px] font-medium hidden sm:inline ${
                           isComplete ? 'text-[#10B981]' :
                           isCurrent ? 'text-[#0EA5E9]' :
                           'text-zinc-400'
                         }`}>{label}</span>
-                        {i < 2 && <div className="w-6 h-px bg-zinc-200" />}
+                        {i < 5 && <div className="w-3 h-px bg-zinc-200" />}
                       </div>
                     )
                   })}
@@ -771,7 +760,7 @@ export function OnboardingFlow({
               ))}
 
               {/* Blinking cursor */}
-              {(phase === 'setup' || phase === 'memos') && !hasError && (
+              {(phase === 'setup' || phase === 'memos') && !hasError && currentStep && (
                 <div className="flex items-center gap-2 mt-2">
                   <span className="w-2 h-4 bg-[#0EA5E9] animate-pulse" />
                 </div>
@@ -782,15 +771,14 @@ export function OnboardingFlow({
             <div className="bg-[#0F172A] px-4 py-3 border-t border-slate-700">
               <div className="flex items-center justify-between">
                 <span className={`font-mono text-sm ${
-                  phase === 'tutorial' || phase === 'done' ? 'text-[#10B981]' :
+                  phase === 'done' ? 'text-[#10B981]' :
                   hasError ? 'text-[#F59E0B]' :
                   'text-[#0EA5E9]'
                 }`}>
                   {phase === 'setup' ? '● PROCESSING' :
-                   phase === 'results' ? '● SCAN COMPLETE' :
+                   phase === 'reveal' ? `● STEP ${revealStep}/6` :
                    phase === 'memos' ? '● GENERATING' :
-                   phase === 'monitoring' ? '● READY' :
-                   phase === 'tutorial' || phase === 'done' ? '● SETUP COMPLETE' :
+                   phase === 'done' ? '● COMPLETE' :
                    hasError ? '● ERROR' : '● PROCESSING'}
                 </span>
 

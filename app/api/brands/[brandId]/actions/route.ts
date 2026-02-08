@@ -216,6 +216,83 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'generate_gap_memos': {
+        // Generate memos for top gap queries (used by onboarding Step 2)
+        const memoLimit = Math.min(body.limit || 5, 10)
+        
+        // Find queries where brand was NOT mentioned in any scan result
+        const { data: allQueries } = await supabase
+          .from('queries')
+          .select('id, query_text, query_type, funnel_stage, priority, related_competitor_id')
+          .eq('brand_id', brandId)
+          .eq('is_active', true)
+          .order('priority', { ascending: false })
+        
+        if (!allQueries || allQueries.length === 0) {
+          return NextResponse.json({ success: true, memosQueued: 0, reason: 'no_queries' })
+        }
+        
+        // Get scan results to find gaps
+        const { data: scanData } = await supabase
+          .from('scan_results')
+          .select('query_id, brand_mentioned')
+          .eq('brand_id', brandId)
+        
+        // Find queries where brand was never mentioned
+        const mentionedQueryIds = new Set(
+          (scanData || []).filter(s => s.brand_mentioned).map(s => s.query_id)
+        )
+        const gapQueries = allQueries.filter(q => !mentionedQueryIds.has(q.id))
+        
+        if (gapQueries.length === 0) {
+          return NextResponse.json({ success: true, memosQueued: 0, reason: 'no_gaps' })
+        }
+        
+        // Pick top gaps and determine memo types
+        const topGaps = gapQueries.slice(0, memoLimit)
+        const memoEvents: Array<{
+          name: 'memo/generate'
+          data: { brandId: string; queryId: string; memoType: string; competitorId?: string }
+        }> = []
+        
+        for (const query of topGaps) {
+          // Determine best memo type based on funnel stage and query type
+          let memoType = 'industry' // default
+          if (query.funnel_stage === 'bottom_funnel') {
+            memoType = query.related_competitor_id ? 'comparison' : 'how_to'
+          } else if (query.funnel_stage === 'mid_funnel') {
+            memoType = query.related_competitor_id ? 'alternative' : 'industry'
+          } else {
+            memoType = 'industry' // top funnel = educational
+          }
+          
+          memoEvents.push({
+            name: 'memo/generate',
+            data: {
+              brandId,
+              queryId: query.id,
+              memoType,
+              ...(query.related_competitor_id ? { competitorId: query.related_competitor_id } : {}),
+            },
+          })
+        }
+        
+        if (memoEvents.length > 0) {
+          await inngest.send(memoEvents)
+        }
+        
+        return NextResponse.json({
+          success: true,
+          memosQueued: memoEvents.length,
+          totalGaps: gapQueries.length,
+          gapQueries: topGaps.map(q => ({
+            id: q.id,
+            text: q.query_text,
+            funnel: q.funnel_stage,
+          })),
+        })
+      }
+
       case 'discovery_scan':
         // Discovery scan - find where brand IS being mentioned
         await inngest.send({
@@ -674,24 +751,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           (Array.isArray(context.products) && context.products.length > 0)
         )
         
-        // Count queries, scans, memos in parallel
+        // Fetch all data needed for onboarding narrative in parallel
         const ninetyDaysAgo = new Date()
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
         
         const [
-          { count: queryCount },
+          { data: queryData, count: queryCount },
           { data: scanData },
           { count: memoCount },
           { data: competitorData },
         ] = await Promise.all([
           supabase
             .from('queries')
-            .select('*', { count: 'exact', head: true })
+            .select('id, query_text, funnel_stage, priority', { count: 'exact' })
             .eq('brand_id', brandId)
-            .eq('is_active', true),
+            .eq('is_active', true)
+            .order('priority', { ascending: false })
+            .limit(50),
           supabase
             .from('scan_results')
-            .select('brand_mentioned, brand_in_citations, citations, competitors_mentioned')
+            .select('query_id, brand_mentioned, brand_in_citations, citations, competitors_mentioned')
             .eq('brand_id', brandId)
             .gte('scanned_at', ninetyDaysAgo.toISOString()),
           supabase
@@ -700,35 +779,63 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             .eq('brand_id', brandId),
           supabase
             .from('competitors')
-            .select('name, domain')
+            .select('name, domain, entity_type')
             .eq('brand_id', brandId),
         ])
         
         const scanCount = scanData?.length || 0
         
-        // Build context summary if available
+        // ── 1. Brand context details ──
         let contextSummary = ''
+        let brandDetails = null
         if (hasContext) {
-          const products = (context.products as unknown[])?.length || 0
-          const personas = (context.personas as unknown[])?.length || 0
-          contextSummary = `${products} products, ${personas} personas detected`
+          const products = (context.products as Array<{ name?: string }>) || []
+          const personas = (context.personas as Array<{ title?: string }>) || []
+          const markets = (context.target_markets as string[]) || []
+          contextSummary = `${products.length} products, ${personas.length} personas detected`
+          brandDetails = {
+            companyName: context.company_name as string || brand.name,
+            description: context.description as string || '',
+            products: products.slice(0, 5).map(p => typeof p === 'string' ? p : (p.name || '')).filter(Boolean),
+            personas: personas.slice(0, 3).map(p => typeof p === 'string' ? p : (p.title || '')).filter(Boolean),
+            markets: markets.slice(0, 3),
+          }
         }
         
-        // Build scan summary if scans exist
+        // ── 2. Prompts by funnel ──
+        const queries = queryData || []
+        const promptsByFunnel = {
+          top_funnel: queries.filter(q => q.funnel_stage === 'top_funnel'),
+          mid_funnel: queries.filter(q => q.funnel_stage === 'mid_funnel'),
+          bottom_funnel: queries.filter(q => q.funnel_stage === 'bottom_funnel'),
+        }
+        const promptSamples = {
+          top_funnel: promptsByFunnel.top_funnel.slice(0, 3).map(q => q.query_text),
+          mid_funnel: promptsByFunnel.mid_funnel.slice(0, 3).map(q => q.query_text),
+          bottom_funnel: promptsByFunnel.bottom_funnel.slice(0, 3).map(q => q.query_text),
+          counts: {
+            top: promptsByFunnel.top_funnel.length,
+            mid: promptsByFunnel.mid_funnel.length,
+            bottom: promptsByFunnel.bottom_funnel.length,
+          },
+        }
+        
+        // ── 3-4. Scan summary + entities ──
         let scanSummary = null
+        let gapQueries: { id: string; text: string; funnel: string }[] = []
         if (scanData && scanData.length > 0) {
           const mentioned = scanData.filter(s => s.brand_mentioned).length
           const withCitations = scanData.filter(s => s.citations && (s.citations as string[]).length > 0).length
           const brandCited = scanData.filter(s => s.brand_in_citations).length
           
-          // Count unique cited domains
+          // Unique cited domains
           const domainCounts = new Map<string, number>()
           for (const scan of scanData) {
             for (const url of (scan.citations as string[] || [])) {
               try {
                 const domain = new URL(url).hostname.replace(/^www\./, '')
                 domainCounts.set(domain, (domainCounts.get(domain) || 0) + 1)
-              } catch { /* skip bad URLs */ }
+              } catch { /* skip */ }
             }
           }
           const topDomains = [...domainCounts.entries()]
@@ -736,10 +843,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             .slice(0, 5)
             .map(([domain, count]) => ({ domain, count }))
           
-          // Count gaps (queries where brand never mentioned)
-          const queryMentionMap = new Map<string, boolean>()
-          // We don't have query_id in this lightweight query, so estimate from mention rate
-          const gapEstimate = Math.round(scanCount * (1 - mentioned / scanCount))
+          // ── 5. Find actual gap queries (not mentioned in ANY scan) ──
+          const mentionedQueryIds = new Set(
+            scanData.filter(s => s.brand_mentioned).map(s => s.query_id)
+          )
+          const scannedQueryIds = new Set(scanData.map(s => s.query_id))
+          const gaps = queries.filter(q => scannedQueryIds.has(q.id) && !mentionedQueryIds.has(q.id))
+          gapQueries = gaps.slice(0, 5).map(q => ({
+            id: q.id,
+            text: q.query_text,
+            funnel: q.funnel_stage || 'unknown',
+          }))
           
           scanSummary = {
             totalScans: scanCount,
@@ -747,12 +861,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             citationRate: withCitations > 0 ? Math.round((brandCited / withCitations) * 100) : 0,
             mentioned,
             brandCited,
-            gapEstimate,
+            gapCount: gaps.length,
             totalCitations: scanData.reduce((sum, s) => sum + ((s.citations as string[])?.length || 0), 0),
             uniqueDomains: domainCounts.size,
             topDomains,
           }
         }
+        
+        // Entities (split by type)
+        const entities = (competitorData || []).map(c => ({
+          name: c.name,
+          domain: c.domain,
+          type: c.entity_type || 'product_competitor',
+        }))
         
         return NextResponse.json({
           brandName: brand.name,
@@ -763,10 +884,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           queryCount: queryCount || 0,
           scanCount,
           contextSummary,
+          brandDetails,
+          promptSamples,
           memoCount: memoCount || 0,
-          competitorCount: competitorData?.length || 0,
-          competitors: (competitorData || []).slice(0, 5).map(c => c.name),
+          competitorCount: entities.length,
+          competitors: entities.slice(0, 8).map(c => c.name),
+          entities,
           scanSummary,
+          gapQueries,
         })
       }
 

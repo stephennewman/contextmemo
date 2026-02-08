@@ -136,7 +136,7 @@ export const queryGenerate = inngest.createFunction(
     // Step 4: Trigger initial scan (onboarding uses Grok only for speed + best citation data)
     await step.sendEvent('trigger-initial-scan', {
       name: 'scan/run',
-      data: { brandId, autoGenerateMemos: true, isOnboarding: true },
+      data: { brandId, autoGenerateMemos: false, isOnboarding: true },
     })
 
     // Create alert for user

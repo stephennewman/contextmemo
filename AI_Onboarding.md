@@ -388,6 +388,18 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v8)
+
+**Redesign: Guided terminal onboarding with scan results, memos, tutorial** (b0e20d6)
+- Onboarding no longer redirects to dashboard after initial scan — now shows results in terminal.
+- **Phase 1:** Extract + Queries + Scan with real-time progress (same as before).
+- **Phase 2:** Scan results displayed in terminal (mention rate, citation rate, top cited domains, competitors discovered). Then "STEP 2: GENERATE MEMOS" button shows memo generation progress.
+- **Phase 3:** "STEP 3: ACTIVATE MONITORING" confirms daily automation is active with checkmarks.
+- **Phase 4:** Quick tutorial cards walking user through Prompts, Citations, Memos, Entities, Automations.
+- **Terminal Widget:** Persistent floating button on brand pages. Expands to show brand status summary (prompts tracked, scans, memos, mention/citation rates).
+- **Enhanced check_status API:** Now returns scan summary (mention rate, citation rate, top domains, gap estimate), memo count, competitor count/names.
+- **Files changed:** `components/dashboard/onboarding-flow.tsx` (complete rewrite), `app/(dashboard)/brands/[brandId]/layout.tsx` (added TerminalWidget), `app/api/brands/[brandId]/actions/route.ts` (enhanced check_status)
+
 ### February 8, 2026 (v7)
 
 **Optimization: Onboarding scan uses single model (Grok) for speed + cost** (f7c8b05)
