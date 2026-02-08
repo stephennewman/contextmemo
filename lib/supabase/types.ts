@@ -1332,30 +1332,36 @@ export function detectAISource(referrer: string | null, userAgent: string | null
   const ref = referrer?.toLowerCase() || ''
   const ua = userAgent?.toLowerCase() || ''
   
-  // Check referrer first
+  // Filter self-referrals (internal navigation within contextmemo.com)
+  if (ref.includes('contextmemo.com')) return 'direct_nav'
+  
+  // Check referrer first — AI platforms
   if (ref.includes('chat.openai.com') || ref.includes('chatgpt.com')) return 'chatgpt'
   if (ref.includes('perplexity.ai')) return 'perplexity'
-  if (ref.includes('claude.ai')) return 'claude'
+  if (ref.includes('claude.ai') || ref.includes('anthropic.com')) return 'claude'
   if (ref.includes('gemini.google.com') || ref.includes('bard.google.com')) return 'gemini'
   if (ref.includes('copilot.microsoft.com') || ref.includes('bing.com/chat')) return 'copilot'
   if (ref.includes('meta.ai') || ref.includes('facebook.com/ai')) return 'meta_ai'
   if (ref.includes('poe.com')) return 'poe'
   if (ref.includes('you.com')) return 'you'
   if (ref.includes('phind.com')) return 'phind'
+  if (ref.includes('deepseek.com')) return 'unknown_ai'
+  if (ref.includes('groq.com')) return 'unknown_ai'
   
-  // Check user agent for AI bot patterns
-  if (ua.includes('chatgpt') || ua.includes('openai')) return 'chatgpt'
-  if (ua.includes('perplexitybot') || ua.includes('perplexity')) return 'perplexity'
-  if (ua.includes('anthropic') || ua.includes('claude')) return 'claude'
+  // Check user agent for AI bot crawlers (these crawl before citing)
+  if (ua.includes('gptbot') || ua.includes('chatgpt-user') || ua.includes('oai-searchbot')) return 'chatgpt'
+  if (ua.includes('perplexitybot')) return 'perplexity'
+  if (ua.includes('claudebot') || ua.includes('anthropic-ai')) return 'claude'
   if (ua.includes('google-extended') || ua.includes('gemini')) return 'gemini'
   if (ua.includes('bingbot') && ua.includes('ai')) return 'copilot'
+  if (ua.includes('cohere-ai')) return 'unknown_ai'
   
   // Check for AI-like patterns in referrer
   if (ref.includes('ai.') || ref.includes('/ai/') || ref.includes('chat.')) return 'unknown_ai'
   
   // Organic sources
   if (ref.includes('google.') || ref.includes('bing.') || ref.includes('duckduckgo')) return 'organic'
-  if (ref.includes('twitter.') || ref.includes('linkedin.') || ref.includes('facebook.')) return 'organic'
+  if (ref.includes('twitter.') || ref.includes('x.com') || ref.includes('linkedin.') || ref.includes('facebook.')) return 'organic'
   
   // No referrer = direct navigation
   if (!ref || ref === '') return 'direct_nav'
