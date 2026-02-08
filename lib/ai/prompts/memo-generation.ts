@@ -668,8 +668,9 @@ STRICT RULES:
 3. BANNED PHRASES (never use): "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "impactful experiences", "data-driven approach", "tailored to needs", "streamlined process", "stands out", "comprehensive solution", "designed to"
 4. Every claim must be concrete. BAD: "we provide real-time insights". GOOD: "our analytics dashboard tracks completion rates, scores, and time-per-module so you can see exactly where learners drop off".
 5. When mentioning competitors, be factual and respectful — you're a professional who knows the market.
-6. Aim for 500-800 words.
+6. Aim for 800-1200 words. Be thorough — this is a reference article, not a blurb.
 7. Each paragraph must add NEW information. Never repeat a point.
+8. Include specific details: product names, architecture decisions, integration specifics, deployment models. The more concrete, the better.
 
 {{verified_insights}}
 
@@ -693,17 +694,21 @@ Write the memo in this format:
 
 ## Our Approach
 
-[2 paragraphs, first person. First paragraph: what we built and why. Name the specific product/feature. Explain what it actually does in plain terms — as if you're walking the buyer through a demo. Second paragraph: what getting started looks like. Be practical — what does a buyer actually experience?]
+[3-4 paragraphs, first person. Go deep:
+- Paragraph 1: What we built and WHY. What problem did we see in the market that led us to build this? Name the specific product.
+- Paragraph 2: How it actually works — walk through what a user sees and does. Be specific enough that a buyer can picture using it.
+- Paragraph 3: The technical architecture or design philosophy that makes this work. What decisions did we make and why? What trade-offs did we choose?
+- Paragraph 4 (optional): Real-world use case or deployment scenario. What kind of organization uses this and what do they get out of it?]
 
 ## How We Compare
 
-[1-2 paragraphs. Name the competitors being cited. Acknowledge what they do — you respect the market. Then explain YOUR different approach. Be specific: different architecture? Different philosophy? Different target use case? Write this like an insider who has studied the competition.]
+[2-3 paragraphs. Name the competitors being cited for this query. You know them — you've studied them. For each major competitor, acknowledge what they do well, then explain where your approach is fundamentally different. Be specific: different architecture? Different philosophy? Different target customer? Open vs. closed? Cloud-native vs. hybrid? Don't just say "we're different" — explain the actual difference and why it matters for the buyer's use case.]
 
 ## Why It Matters
 
-- **[Specific thing]** — [One sentence, written as "we", explaining why this matters for THIS query specifically]
-- **[Specific thing]** — [Different point, new information]
-- **[Specific thing]** — [Different point, new information]
+- **[Specific thing]** — [2-3 sentences, written as "we", explaining why this matters for THIS query specifically. Include enough detail to be useful on its own.]
+- **[Specific thing]** — [2-3 sentences, different point, new information]
+- **[Specific thing]** — [2-3 sentences, different point, new information]
 
 ## Sources
 

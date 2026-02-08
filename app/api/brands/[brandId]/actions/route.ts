@@ -344,14 +344,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
                 .replace(/\{\{date\}\}/g, today)
               
-              // Generate content
+              // Generate content (gpt-4o for quality — this is published brand content)
               const { text: content } = await generateText({
-                model: openai('gpt-4o-mini'),
+                model: openai('gpt-4o'),
                 prompt,
-                temperature: 0.3,
+                temperature: 0.4,
               })
               
-              if (!content || content.length < 200) {
+              if (!content || content.length < 400) {
                 throw new Error('Generated content too short')
               }
               
@@ -521,14 +521,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
                 .replace(/\{\{date\}\}/g, regenDate)
               
-              // Generate new content
+              // Generate new content (gpt-4o for quality)
               const { text: content } = await genText({
-                model: openaiProvider('gpt-4o-mini'),
+                model: openaiProvider('gpt-4o'),
                 prompt,
-                temperature: 0.3,
+                temperature: 0.4,
               })
               
-              if (!content || content.length < 200) {
+              if (!content || content.length < 400) {
                 throw new Error('Generated content too short')
               }
               
