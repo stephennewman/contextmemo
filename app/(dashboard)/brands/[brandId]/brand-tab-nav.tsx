@@ -22,9 +22,12 @@ export function BrandTabNav({ brandId, tabs }: BrandTabNavProps) {
   const brandIdx = segments.indexOf(brandId)
   const activeTab = (brandIdx >= 0 && segments[brandIdx + 1]) || 'prompts'
 
+  const mainTabs = tabs.filter((tab) => tab.slug !== 'settings')
+  const settingsTab = tabs.find((tab) => tab.slug === 'settings')
+
   return (
     <nav className="w-full flex border-b-[3px] border-[#0F172A] overflow-x-auto">
-      {tabs.map((tab) => {
+      {mainTabs.map((tab) => {
         const isActive = activeTab === tab.slug
         return (
           <Link
@@ -42,6 +45,22 @@ export function BrandTabNav({ brandId, tabs }: BrandTabNavProps) {
           </Link>
         )
       })}
+      {settingsTab && (
+        <>
+          <div className="flex-1" />
+          <Link
+            href={`/brands/${brandId}/${settingsTab.slug}`}
+            prefetch={true}
+            className={`px-4 py-2 font-bold text-xs whitespace-nowrap transition-colors ${
+              activeTab === settingsTab.slug
+                ? 'bg-[#0EA5E9] text-white'
+                : 'text-[#0F172A] hover:bg-slate-100'
+            }`}
+          >
+            {settingsTab.label}
+          </Link>
+        </>
+      )}
     </nav>
   )
 }

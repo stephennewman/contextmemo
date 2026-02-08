@@ -43,6 +43,7 @@ interface Brand {
 
 // Navigation sections
 const NAV_SECTIONS = [
+  { id: 'user-profile', label: 'User Profile', icon: User },
   { id: 'general', label: 'General', icon: Settings },
   { id: 'brand-context', label: 'Brand Context', icon: Building2 },
   { id: 'markets', label: 'Markets & Focus', icon: Percent },
@@ -132,7 +133,12 @@ export default function BrandSettingsPage() {
   const [deleting, setDeleting] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
-  const [activeSection, setActiveSection] = useState('general')
+  const [activeSection, setActiveSection] = useState('user-profile')
+  
+  // User profile state
+  const [userEmail, setUserEmail] = useState('')
+  const [userDisplayName, setUserDisplayName] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
   
   // Section refs for scroll-to behavior
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
@@ -342,6 +348,51 @@ export default function BrandSettingsPage() {
 
     loadBrand()
   }, [brandId, router])
+
+  // Load user profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setUserEmail(user.email || '')
+        }
+        const res = await fetch('/api/user/profile')
+        if (res.ok) {
+          const data = await res.json()
+          setUserDisplayName(data.name || '')
+        }
+      } catch {}
+    }
+    loadProfile()
+  }, [])
+
+  // Save user profile
+  const handleSaveProfile = async () => {
+    if (!userDisplayName.trim()) {
+      toast.error('Name cannot be empty')
+      return
+    }
+    setSavingProfile(true)
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: userDisplayName.trim() }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update profile')
+      }
+      toast.success('Profile updated! Your name will appear as the author on HubSpot posts.')
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
 
   // Check HubSpot connection health
   useEffect(() => {
@@ -970,6 +1021,43 @@ export default function BrandSettingsPage() {
           <h1 className="text-2xl font-bold">Brand Settings</h1>
           <p className="text-muted-foreground">Manage settings for {brand.name}</p>
         </div>
+
+        {/* User Profile Section */}
+        <section id="user-profile" ref={(el) => { sectionRefs.current['user-profile'] = el }} className="scroll-mt-24">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                User Profile
+              </CardTitle>
+              <CardDescription>
+                Update your display name. This will be used as the author name when publishing to HubSpot.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-email">Email</Label>
+                <Input id="user-email" value={userEmail} disabled className="bg-muted" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-display-name">Display Name</Label>
+                <Input
+                  id="user-display-name"
+                  value={userDisplayName}
+                  onChange={(e) => setUserDisplayName(e.target.value)}
+                  placeholder="Your full name (e.g., Stephen Newman)"
+                />
+                <p className="text-xs text-muted-foreground">
+                  This name will appear as the author on HubSpot blog posts you publish.
+                </p>
+              </div>
+              <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                {savingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Profile
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* General Section */}
         <section id="general" ref={(el) => { sectionRefs.current['general'] = el }} className="scroll-mt-24">

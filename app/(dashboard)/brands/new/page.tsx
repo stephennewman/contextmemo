@@ -105,15 +105,8 @@ export default function NewBrandPage() {
       .toLowerCase()
       .trim()
     
-    // Validate domain format
-    const domainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]?(\.[a-z0-9][a-z0-9-]*[a-z0-9]?)*\.[a-z]{2,}$/i
-    if (!domainRegex.test(cleanDomain)) {
-      setError('Please enter a valid domain (e.g., example.com)')
-    } else {
-      setError(null)
-    }
-    
     setDomain(cleanDomain)
+    setError(null) // Clear errors when user types
   }
 
   const handleSubmit = async () => {
@@ -186,9 +179,9 @@ export default function NewBrandPage() {
         .from('brands')
         .select('id')
         .eq('subdomain', sanitizedSubdomain)
-        .single()
+        .maybeSingle()
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('[Subdomain Check Error]', checkError)
         throw new Error('Failed to verify subdomain availability. Please try again.')
       }
@@ -343,7 +336,19 @@ export default function NewBrandPage() {
           </CardContent>
           <CardFooter>
             <Button 
-              onClick={() => setStep(2)} 
+              onClick={() => {
+                const domainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]?(\.[a-z0-9][a-z0-9-]*[a-z0-9]?)*\.[a-z]{2,}$/i
+                if (!domainRegex.test(domain)) {
+                  setError('Please enter a valid domain (e.g., example.com)')
+                  return
+                }
+                if (brandName.length < 2) {
+                  setError('Brand name must be at least 2 characters long')
+                  return
+                }
+                setError(null)
+                setStep(2)
+              }} 
               disabled={!brandName || !domain}
               className="w-full"
             >

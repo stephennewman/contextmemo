@@ -123,6 +123,7 @@ export default async function BrandLayout({ params, children }: Props) {
     { slug: 'entities', label: 'ENTITIES', count: entityCount },
     { slug: 'citations', label: 'CITATIONS' },
     { slug: 'content', label: 'CONTENT' },
+    { slug: 'settings', label: 'SETTINGS' },
   ]
 
   return (

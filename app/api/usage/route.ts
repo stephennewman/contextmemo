@@ -33,26 +33,24 @@ export async function GET() {
     .select('id, name')
     .eq('tenant_id', tenant.id)
 
-  const brandIds = (brands || []).map(b => b.id)
   const brandMap = new Map((brands || []).map(b => [b.id, b.name]))
 
-  // Get all-time usage from our database (for balance calculation)
-  const { data: usageEvents } = await supabase
-    .from('usage_events')
-    .select('total_cost_cents, brand_id')
-    .eq('tenant_id', tenant.id)
+  // Aggregate costs server-side via DB function to avoid PostgREST 1000-row limit
+  const { data: costSummary, error: costError } = await supabase
+    .rpc('get_brand_cost_summary', { p_tenant_id: tenant.id })
 
-  // Calculate per-brand costs (actual cost from OpenRouter)
+  if (costError) {
+    console.error('Failed to get cost summary:', costError)
+  }
+
+  // Build a map of brand_id -> actual cost cents from the DB aggregation
   const brandActualCosts = new Map<string, number>()
-
-  for (const event of usageEvents || []) {
-    const cost = event.total_cost_cents || 0
-    if (event.brand_id) {
-      brandActualCosts.set(event.brand_id, (brandActualCosts.get(event.brand_id) || 0) + cost)
-    }
+  for (const row of costSummary || []) {
+    brandActualCosts.set(row.brand_id, Number(row.actual_cost_cents) || 0)
   }
 
   // Build per-brand breakdown with margin applied
+  const brandIds = (brands || []).map(b => b.id)
   const byBrand = brandIds.map((brandId) => {
     const actualCostCents = brandActualCosts.get(brandId) || 0
     // Apply margin: displayed cost = actual cost * multiplier
