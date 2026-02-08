@@ -5,7 +5,7 @@ import { useState } from 'react'
 export function BrandLogo({ domain, name, size = 32 }: { domain?: string | null; name: string; size?: number }) {
   const [imgLoaded, setImgLoaded] = useState(false)
   const [imgError, setImgError] = useState(false)
-  const logoUrl = domain ? `https://logo.clearbit.com/${domain}` : null
+  const logoUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=${Math.max(size * 2, 64)}` : null
   const showImg = logoUrl && !imgError
 
   return (
