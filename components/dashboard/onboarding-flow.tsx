@@ -138,6 +138,7 @@ export function OnboardingFlow({
   const [hasError, setHasError] = useState(false)
   const [statusData, setStatusData] = useState<StatusResponse | null>(null)
   const [revealStep, setRevealStep] = useState(0)
+  const [revealAnimating, setRevealAnimating] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const progressRef = useRef<HTMLDivElement>(null)
   const messageIndexRef = useRef(0)
@@ -151,6 +152,12 @@ export function OnboardingFlow({
   }, [progressLines])
 
   const addLine = useCallback((text: string, type: ProgressLine['type'] = 'info') => {
+    setProgressLines(prev => [...prev, { text, type }])
+  }, [])
+
+  // Add a line with a delay (for streaming effect in async flows)
+  const addLineDelayed = useCallback(async (text: string, type: ProgressLine['type'] = 'info', ms = 80) => {
+    await new Promise(r => setTimeout(r, ms))
     setProgressLines(prev => [...prev, { text, type }])
   }, [])
 
@@ -434,7 +441,13 @@ export function OnboardingFlow({
       }
     }
 
-    setProgressLines(prev => [...prev, ...lines])
+    // Animate lines one at a time
+    setRevealAnimating(true)
+    for (let i = 0; i < lines.length; i++) {
+      await new Promise(r => setTimeout(r, i === 0 ? 0 : 80))
+      setProgressLines(prev => [...prev, lines[i]])
+    }
+    setRevealAnimating(false)
     setRevealStep(step + 1)
   }, [statusData, revealStep, brandName, brandDomain])
 
@@ -464,32 +477,32 @@ export function OnboardingFlow({
       completeWorkingLines()
 
       if (result.memosGenerated === 0 && result.totalGaps === 0) {
-        addLine('No gaps found — AI already mentions you!', 'success')
+        await addLineDelayed('No gaps found — AI already mentions you!', 'success')
       } else if (result.memosGenerated === 0) {
-        addLine('Memo generation failed. Try from the Memos tab.', 'info')
+        await addLineDelayed('Memo generation failed. Try from the Memos tab.', 'info')
       } else {
         const q = result.gapQueries?.[0]
         if (q) {
           const funnel = q.funnel === 'top_funnel' ? 'TOF' : q.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
-          addLine(`✓ Memo published`, 'success')
-          addLine(`  [${funnel}] "${q.text.length > 52 ? q.text.slice(0, 49) + '...' : q.text}"`, 'info')
+          await addLineDelayed(`✓ Memo published`, 'success')
+          await addLineDelayed(`  [${funnel}] "${q.text.length > 52 ? q.text.slice(0, 49) + '...' : q.text}"`, 'info')
           if (q.citationsFound > 0) {
-            addLine(`  Based on ${q.citationsFound} sources AI currently cites`, 'info')
+            await addLineDelayed(`  Based on ${q.citationsFound} sources AI currently cites`, 'info')
           }
-          addLine(`  ${result.totalGaps - 1} more gaps → generate from Memos tab`, 'info')
+          await addLineDelayed(`  ${result.totalGaps - 1} more gaps → generate from Memos tab`, 'info')
         } else {
-          addLine(`✓ 1 memo published`, 'success')
+          await addLineDelayed(`✓ 1 memo published`, 'success')
         }
       }
     } catch (error) {
       completeWorkingLines()
-      addLine(`⚠ ${error instanceof Error ? error.message : 'Generation failed'}`, 'info')
+      await addLineDelayed(`⚠ ${error instanceof Error ? error.message : 'Generation failed'}`, 'info')
     }
 
-    addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
-    addLine('ONBOARDING COMPLETE', 'success')
-    addLine('  View your memo, then generate more from Memos tab.', 'info')
-    addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
+    await addLineDelayed('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header', 120)
+    await addLineDelayed('ONBOARDING COMPLETE', 'success')
+    await addLineDelayed('  View your memo, then generate more from Memos tab.', 'info')
+    await addLineDelayed('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
     setPhase('done')
   }, [brandId, addLine, completeWorkingLines])
@@ -509,7 +522,8 @@ export function OnboardingFlow({
       return (
         <button
           onClick={advanceReveal}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#0F172A] text-white font-bold text-sm hover:bg-[#1E293B] transition-colors border border-slate-600"
+          disabled={revealAnimating}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0F172A] text-white font-bold text-sm hover:bg-[#1E293B] transition-colors border border-slate-600 disabled:opacity-50"
         >
           NEXT: {nextLabel?.toUpperCase()}
           <ChevronRight className="h-4 w-4" />
