@@ -414,6 +414,160 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'regenerate_memos': {
+        // Regenerate all existing gap_fill memos through the updated prompt
+        const { generateText: genText } = await import('ai')
+        const { openai: openaiProvider } = await import('@ai-sdk/openai')
+        const { GAP_FILL_MEMO_PROMPT: regenPromptTemplate, formatBrandContextForPrompt: formatCtx, generateToneInstructions: genTone } = await import('@/lib/ai/prompts/memo-generation')
+        
+        // Fetch all gap_fill memos for this brand
+        const { data: existingMemos } = await supabase
+          .from('memos')
+          .select('id, slug, title, source_query_id, memo_type, status, version')
+          .eq('brand_id', brandId)
+          .eq('memo_type', 'gap_fill')
+        
+        if (!existingMemos || existingMemos.length === 0) {
+          return NextResponse.json({ success: true, regenerated: 0, reason: 'no_gap_fill_memos' })
+        }
+        
+        // Fetch source queries for these memos
+        const queryIds = existingMemos.map(m => m.source_query_id).filter(Boolean)
+        const { data: sourceQueries } = await supabase
+          .from('queries')
+          .select('id, query_text, funnel_stage')
+          .in('id', queryIds)
+        const queryMap = new Map((sourceQueries || []).map(q => [q.id, q]))
+        
+        // Fetch scan data for citations
+        const { data: regenScanData } = await supabase
+          .from('scan_results')
+          .select('query_id, brand_mentioned, citations')
+          .eq('brand_id', brandId)
+        
+        // Build citation map per query
+        const regenCitationMap = new Map<string, string[]>()
+        for (const scan of (regenScanData || [])) {
+          if (!scan.citations) continue
+          const existing = regenCitationMap.get(scan.query_id) || []
+          regenCitationMap.set(scan.query_id, [...existing, ...(scan.citations as string[])])
+        }
+        
+        // Prepare brand context
+        const regenBrandCtx = brand.context as Record<string, unknown> & { brand_tone?: unknown; brand_personality?: unknown }
+        const regenTone = genTone(
+          regenBrandCtx.brand_tone as Parameters<typeof genTone>[0],
+          regenBrandCtx.brand_personality as Parameters<typeof genTone>[1]
+        )
+        const regenCtxText = formatCtx(regenBrandCtx as Parameters<typeof formatCtx>[0])
+        const regenDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        
+        // Fetch entities for domain → name mapping
+        const { data: regenEntities } = await supabase
+          .from('competitors')
+          .select('name, domain, entity_type')
+          .eq('brand_id', brandId)
+        const regenDomainMap = new Map<string, { name: string; type: string }>()
+        for (const e of (regenEntities || [])) {
+          if (e.domain) regenDomainMap.set(e.domain.replace(/^www\./, '').toLowerCase(), { name: e.name, type: e.entity_type || 'other' })
+        }
+        
+        // Regenerate in batches of 3
+        const regenResults: Array<{ memoId: string; title: string; success: boolean }> = []
+        
+        for (let i = 0; i < existingMemos.length; i += 3) {
+          const batch = existingMemos.slice(i, i + 3)
+          
+          const batchResults = await Promise.allSettled(
+            batch.map(async (memo) => {
+              const query = queryMap.get(memo.source_query_id)
+              if (!query) throw new Error(`No source query for memo ${memo.id}`)
+              
+              // Build cited content with entity names
+              const citedUrls = regenCitationMap.get(query.id) || []
+              const uniqueUrls = [...new Set(citedUrls)]
+              const citedDomains = new Map<string, number>()
+              for (const url of uniqueUrls) {
+                try {
+                  const domain = new URL(url).hostname.replace(/^www\./, '')
+                  citedDomains.set(domain, (citedDomains.get(domain) || 0) + 1)
+                } catch { /* skip */ }
+              }
+              const citedContent = [...citedDomains.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([domain, count]) => {
+                  const entity = regenDomainMap.get(domain)
+                  if (entity) {
+                    const typeLabel = entity.type === 'product_competitor' ? 'competitor'
+                      : entity.type === 'publisher' ? 'publisher/blog'
+                      : entity.type === 'analyst' ? 'analyst firm'
+                      : entity.type === 'marketplace' ? 'review site'
+                      : 'other'
+                    return `- ${entity.name} (${domain}) — ${typeLabel}, cited ${count}x`
+                  }
+                  return `- ${domain} — cited ${count}x`
+                })
+                .join('\n')
+              
+              // Build prompt
+              const prompt = regenPromptTemplate
+                .replace('{{query_text}}', query.query_text)
+                .replace('{{cited_content}}', citedContent || 'No specific citations found for this query.')
+                .replace('{{tone_instructions}}', regenTone)
+                .replace('{{verified_insights}}', '')
+                .replace('{{brand_context}}', regenCtxText)
+                .replace(/\{\{brand_name\}\}/g, brand.name)
+                .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
+                .replace(/\{\{date\}\}/g, regenDate)
+              
+              // Generate new content
+              const { text: content } = await genText({
+                model: openaiProvider('gpt-4o-mini'),
+                prompt,
+                temperature: 0.3,
+              })
+              
+              if (!content || content.length < 200) {
+                throw new Error('Generated content too short')
+              }
+              
+              // Update memo in-place
+              const { error } = await supabase
+                .from('memos')
+                .update({
+                  content_markdown: content,
+                  last_verified_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  version: (memo.version || 1) + 1,
+                })
+                .eq('id', memo.id)
+              
+              if (error) throw error
+              
+              return { memoId: memo.id, title: memo.title, success: true }
+            })
+          )
+          
+          for (const result of batchResults) {
+            if (result.status === 'fulfilled') {
+              regenResults.push(result.value)
+            } else {
+              regenResults.push({ memoId: '', title: '', success: false })
+            }
+          }
+        }
+        
+        const regenSuccess = regenResults.filter(r => r.success).length
+        
+        return NextResponse.json({
+          success: true,
+          regenerated: regenSuccess,
+          total: existingMemos.length,
+          results: regenResults,
+        })
+      }
+
       case 'discovery_scan':
         // Discovery scan - find where brand IS being mentioned
         await inngest.send({

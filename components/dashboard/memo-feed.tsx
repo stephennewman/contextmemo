@@ -145,6 +145,40 @@ export function MemoFeed({
 
   const publishedCount = memos.filter(m => m.status === 'published').length
   const draftCount = memos.filter(m => m.status === 'draft').length
+  const gapFillCount = memos.filter(m => m.memo_type === 'gap_fill').length
+
+  // Regenerate all gap_fill memos
+  const [regeneratingAll, setRegeneratingAll] = useState(false)
+  const handleRegenerateAll = async () => {
+    if (!gapFillCount) return
+    if (!confirm(`Regenerate all ${gapFillCount} gap fill memos with the latest prompt? This will overwrite existing content.`)) return
+    setRegeneratingAll(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate_memos' }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(`Regenerated ${data.regenerated}/${data.total} memos`)
+        // Refresh memos from DB
+        const supabase = createClient()
+        const { data: freshMemos } = await supabase
+          .from('memos')
+          .select('*')
+          .eq('brand_id', brandId)
+          .order('updated_at', { ascending: false })
+        if (freshMemos) setMemos(freshMemos)
+      } else {
+        toast.error(data.error || 'Failed to regenerate memos')
+      }
+    } catch (err) {
+      toast.error('Failed to regenerate memos')
+    } finally {
+      setRegeneratingAll(false)
+    }
+  }
 
   // Context Memo brand ID for URL routing
   const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
@@ -942,6 +976,16 @@ export function MemoFeed({
         >
           Drafts ({draftCount})
         </button>
+        {gapFillCount > 0 && (
+          <button
+            onClick={handleRegenerateAll}
+            disabled={regeneratingAll}
+            className="ml-auto px-3 py-1.5 rounded-full text-sm font-medium transition-colors bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50 flex items-center gap-1.5"
+          >
+            {regeneratingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {regeneratingAll ? 'Regenerating...' : `Regenerate All (${gapFillCount})`}
+          </button>
+        )}
       </div>
 
       {/* Scrolling Feed */}
