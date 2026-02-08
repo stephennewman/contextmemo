@@ -90,36 +90,26 @@ const STEP_CONFIGS: Record<SetupStep, {
     title: 'Scanning Brand Website',
     shortTitle: 'Brand Scan',
     progressMessages: [
-      'Connecting to website...',
-      'Crawling site pages...',
-      'Extracting products & services...',
-      'Identifying target personas...',
-      'Analyzing brand positioning...',
-      'Processing with AI...',
+      'Crawling site and extracting brand context...',
+      'Processing products, personas, positioning...',
     ],
   },
   queries: {
     action: 'generate_queries',
-    title: 'Reverse-Engineering Prompts',
+    title: 'Generating Prompts',
     shortTitle: 'Prompts',
     progressMessages: [
-      'Analyzing buyer intent patterns...',
-      'Generating top-of-funnel queries...',
-      'Generating mid-funnel queries...',
-      'Generating bottom-funnel queries...',
-      'Prioritizing by relevance...',
+      'Building buyer queries across funnel stages...',
+      'Prioritizing by intent...',
     ],
   },
   scan: {
     action: 'run_scan',
-    title: 'Running First AI Scan',
+    title: 'Running AI Scan',
     shortTitle: 'AI Scan',
     progressMessages: [
-      'Querying AI models...',
-      'Analyzing responses for mentions...',
-      'Extracting citations...',
-      'Identifying competitors from citations...',
-      'Calculating visibility scores...',
+      'Querying AI models and extracting citations...',
+      'Classifying entities and scoring visibility...',
     ],
   },
 }
@@ -344,28 +334,20 @@ export function OnboardingFlow({
     const s = statusData.scanSummary
     const b = statusData.brandDetails
 
-    const lines: ProgressLine[] = [{ text: '', type: 'info' }]
+    const lines: ProgressLine[] = []
 
     switch (REVEAL_STEPS[step]) {
       case 'brand': {
         lines.push({ text: '━━━ 1. YOUR BRAND ━━━', type: 'header' })
-        lines.push({ text: '', type: 'info' })
         if (b) {
           lines.push({ text: `  ${b.companyName}`, type: 'result' })
           if (b.description) {
             const desc = b.description.length > 80 ? b.description.slice(0, 77) + '...' : b.description
             lines.push({ text: `  ${desc}`, type: 'info' })
           }
-          lines.push({ text: '', type: 'info' })
-          if (b.products.length > 0) {
-            lines.push({ text: `  Products: ${b.products.join(', ')}`, type: 'info' })
-          }
-          if (b.personas.length > 0) {
-            lines.push({ text: `  Personas: ${b.personas.join(', ')}`, type: 'info' })
-          }
-          if (b.markets.length > 0) {
-            lines.push({ text: `  Markets:  ${b.markets.join(', ')}`, type: 'info' })
-          }
+          if (b.products.length > 0) lines.push({ text: `  Products: ${b.products.join(', ')}`, type: 'info' })
+          if (b.personas.length > 0) lines.push({ text: `  Personas: ${b.personas.join(', ')}`, type: 'info' })
+          if (b.markets.length > 0) lines.push({ text: `  Markets:  ${b.markets.join(', ')}`, type: 'info' })
         } else {
           lines.push({ text: `  ${brandName} — ${brandDomain}`, type: 'result' })
         }
@@ -375,41 +357,26 @@ export function OnboardingFlow({
       case 'prompts': {
         const ps = statusData.promptSamples
         lines.push({ text: '━━━ 2. YOUR PROMPTS ━━━', type: 'header' })
-        lines.push({ text: '', type: 'info' })
-        lines.push({ text: `  ${statusData.queryCount} prompts generated`, type: 'result' })
-        lines.push({ text: `    ${ps.counts.top} top-of-funnel (educational)`, type: 'info' })
-        lines.push({ text: `    ${ps.counts.mid} mid-funnel (exploring solutions)`, type: 'info' })
-        lines.push({ text: `    ${ps.counts.bottom} bottom-funnel (ready to buy)`, type: 'info' })
-        lines.push({ text: '', type: 'info' })
-        // Show a few samples
+        lines.push({ text: `  ${statusData.queryCount} prompts: ${ps.counts.top} TOFU · ${ps.counts.mid} MOFU · ${ps.counts.bottom} BOFU`, type: 'result' })
         const samples = [...ps.top_funnel.slice(0, 1), ...ps.mid_funnel.slice(0, 1), ...ps.bottom_funnel.slice(0, 1)]
-        if (samples.length > 0) {
-          lines.push({ text: '  Sample prompts:', type: 'info' })
-          for (const q of samples) {
-            const text = q.length > 58 ? q.slice(0, 55) + '...' : q
-            lines.push({ text: `    "${text}"`, type: 'info' })
-          }
+        for (const q of samples) {
+          const text = q.length > 58 ? q.slice(0, 55) + '...' : q
+          lines.push({ text: `    "${text}"`, type: 'info' })
         }
         break
       }
 
       case 'citations': {
         lines.push({ text: '━━━ 3. CITATIONS ━━━', type: 'header' })
-        lines.push({ text: '', type: 'info' })
         if (s) {
-          lines.push({ text: `  ${s.totalScans} scans across ${statusData.queryCount} prompts`, type: 'result' })
-          lines.push({ text: '', type: 'info' })
-          lines.push({ text: `  Mention rate     ${s.mentionRate}%`, type: s.mentionRate >= 30 ? 'success' : 'result' })
-          lines.push({ text: `  Citation rate    ${s.citationRate}%`, type: s.citationRate >= 20 ? 'success' : 'result' })
-          lines.push({ text: `  Total citations  ${s.totalCitations}`, type: 'result' })
-          lines.push({ text: `  Unique domains   ${s.uniqueDomains}`, type: 'result' })
-          lines.push({ text: '', type: 'info' })
+          lines.push({ text: `  ${s.totalScans} scans · ${s.totalCitations} citations · ${s.uniqueDomains} domains`, type: 'result' })
+          lines.push({ text: `  Mention rate ${s.mentionRate}% · Citation rate ${s.citationRate}%`, type: s.mentionRate >= 30 ? 'success' : 'result' })
           if (s.mentionRate >= 40) {
-            lines.push({ text: `  Strong baseline. AI knows about you.`, type: 'success' })
+            lines.push({ text: `  Strong baseline — AI knows about you.`, type: 'success' })
           } else if (s.mentionRate >= 15) {
-            lines.push({ text: `  Moderate visibility. Room to improve.`, type: 'info' })
+            lines.push({ text: `  Moderate visibility — room to improve.`, type: 'info' })
           } else {
-            lines.push({ text: `  Low visibility. Memos will help AI discover you.`, type: 'info' })
+            lines.push({ text: `  Low visibility — memos will help AI discover you.`, type: 'info' })
           }
         } else {
           lines.push({ text: '  Scan still processing...', type: 'info' })
@@ -419,34 +386,22 @@ export function OnboardingFlow({
 
       case 'entities': {
         lines.push({ text: '━━━ 4. ENTITIES ━━━', type: 'header' })
-        lines.push({ text: '', type: 'info' })
         
-        // Use domain count from citations as the primary metric (more reliable than competitors table)
-        const domainCount = s?.uniqueDomains || statusData.competitorCount
-        lines.push({ text: `  ${domainCount} domains cited across AI responses`, type: 'result' })
-        
-        // Show classified entities if we have them
+        // Show classified entities
         const groups = statusData.entityGroups || {}
         const hasGroups = Object.values(groups).some(names => names.length > 0)
         if (hasGroups) {
           for (const [label, names] of Object.entries(groups)) {
             if (names.length === 0) continue
-            lines.push({ text: '', type: 'info' })
-            lines.push({ text: `  ${label}:`, type: 'info' })
-            for (const name of names.slice(0, 4)) {
-              lines.push({ text: `    → ${name}`, type: label === 'Competitors' ? 'result' : 'info' })
-            }
-            if (names.length > 4) {
-              lines.push({ text: `    + ${names.length - 4} more`, type: 'info' })
-            }
+            const preview = names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3}` : '')
+            lines.push({ text: `  ${label}: ${preview}`, type: label === 'Competitors' ? 'result' : 'info' })
           }
         }
         
-        // Top cited domains (always show — derived from scan results, not competitors table)
+        // Top cited domains
         if (s && s.topDomains.length > 0) {
-          lines.push({ text: '', type: 'info' })
-          lines.push({ text: '  Top cited domains:', type: 'info' })
-          for (const d of s.topDomains) {
+          lines.push({ text: '  Top cited:', type: 'info' })
+          for (const d of s.topDomains.slice(0, 5)) {
             const isBrand = d.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
             lines.push({
               text: `    ${d.domain.padEnd(26)} ${d.count}x${isBrand ? ' ← you' : ''}`,
@@ -454,51 +409,27 @@ export function OnboardingFlow({
             })
           }
         }
-        
-        // Also show top cited URLs if available
-        if (statusData.topCitedUrls && statusData.topCitedUrls.length > 0) {
-          lines.push({ text: '', type: 'info' })
-          lines.push({ text: '  Most cited pages:', type: 'info' })
-          for (const u of statusData.topCitedUrls.slice(0, 4)) {
-            const isBrand = u.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
-            // Show truncated URL path
-            try {
-              const path = new URL(u.url).pathname
-              const display = u.domain + (path.length > 1 ? path.slice(0, 30) + (path.length > 30 ? '...' : '') : '')
-              lines.push({
-                text: `    ${display.padEnd(40)} ${u.count}x`,
-                type: isBrand ? 'success' : 'info',
-              })
-            } catch {
-              lines.push({ text: `    ${u.domain.padEnd(40)} ${u.count}x`, type: 'info' })
-            }
-          }
-        }
         break
       }
 
       case 'gaps': {
         lines.push({ text: '━━━ 5. CONTENT GAPS ━━━', type: 'header' })
-        lines.push({ text: '', type: 'info' })
         const gapCount = s?.gapCount || statusData.gapQueries.length
         lines.push({ text: `  ${gapCount} prompts where AI doesn't mention you`, type: 'result' })
-        lines.push({ text: '', type: 'info' })
         if (statusData.gapQueries.length > 0) {
-          lines.push({ text: '  Top gaps:', type: 'info' })
-          for (const g of statusData.gapQueries) {
+          for (const g of statusData.gapQueries.slice(0, 3)) {
             const funnel = g.funnel === 'top_funnel' ? 'TOF' : g.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
             const text = g.text.length > 50 ? g.text.slice(0, 47) + '...' : g.text
             lines.push({ text: `    [${funnel}] "${text}"`, type: 'info' })
           }
+          if (statusData.gapQueries.length > 3) {
+            lines.push({ text: `    + ${statusData.gapQueries.length - 3} more`, type: 'info' })
+          }
         }
-        lines.push({ text: '', type: 'info' })
-        lines.push({ text: '  These are queries where AI cites other content', type: 'info' })
-        lines.push({ text: '  but not yours. Memos fill these gaps.', type: 'info' })
         break
       }
 
       case 'memos': {
-        // This is handled by the action button — no auto-content
         break
       }
     }
@@ -517,14 +448,8 @@ export function OnboardingFlow({
   // ── Phase 3: Memo Generation (single best memo) ──
   const startMemoPhase = useCallback(async () => {
     setPhase('memos')
-    addLine('', 'info')
     addLine('━━━ 6. SAMPLE MEMO ━━━', 'header')
-    addLine('', 'info')
-    addLine('  Picking your biggest gap with the most cited content...', 'info')
-    addLine('  Generating a competitive memo using your brand context...', 'info')
-    addLine('', 'info')
-
-    addLine('Writing memo...', 'working')
+    addLine('Writing memo for your #1 gap...', 'working')
 
     try {
       const res = await fetch(`/api/brands/${brandId}/actions`, {
@@ -539,21 +464,19 @@ export function OnboardingFlow({
       completeWorkingLines()
 
       if (result.memosGenerated === 0 && result.totalGaps === 0) {
-        addLine('  No gaps found — AI already mentions you!', 'success')
+        addLine('No gaps found — AI already mentions you!', 'success')
       } else if (result.memosGenerated === 0) {
-        addLine('  Memo generation failed. Try again from the MEMOS tab.', 'info')
+        addLine('Memo generation failed. Try from the Memos tab.', 'info')
       } else {
         const q = result.gapQueries?.[0]
         if (q) {
           const funnel = q.funnel === 'top_funnel' ? 'TOF' : q.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
-          addLine(`✓ Memo published for your #1 gap`, 'success')
-          addLine('', 'info')
+          addLine(`✓ Memo published`, 'success')
           addLine(`  [${funnel}] "${q.text.length > 52 ? q.text.slice(0, 49) + '...' : q.text}"`, 'info')
           if (q.citationsFound > 0) {
-            addLine(`  Built from ${q.citationsFound} sources AI currently cites`, 'info')
+            addLine(`  Based on ${q.citationsFound} sources AI currently cites`, 'info')
           }
-          addLine('', 'info')
-          addLine(`  ${result.totalGaps - 1} more gaps ready — generate from the Memos tab.`, 'info')
+          addLine(`  ${result.totalGaps - 1} more gaps → generate from Memos tab`, 'info')
         } else {
           addLine(`✓ 1 memo published`, 'success')
         }
@@ -561,14 +484,11 @@ export function OnboardingFlow({
     } catch (error) {
       completeWorkingLines()
       addLine(`⚠ ${error instanceof Error ? error.message : 'Generation failed'}`, 'info')
-      addLine('  Generate memos from the MEMOS tab.', 'info')
     }
 
-    addLine('', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
-    addLine('  ONBOARDING COMPLETE', 'success')
-    addLine('  View your memo, then generate more from the Memos tab.', 'info')
-    addLine('  Configure daily scans in Automations.', 'info')
+    addLine('ONBOARDING COMPLETE', 'success')
+    addLine('  View your memo, then generate more from Memos tab.', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
     setPhase('done')
