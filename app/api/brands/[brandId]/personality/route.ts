@@ -3,9 +3,19 @@ import { createClient } from '@/lib/supabase/server'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 
-const PERSONALITY_PROMPT = `You are a brand strategist and linguist. Analyze the provided brand website content and reverse-engineer the brand's personality, worldview, and voice.
+const PERSONALITY_PROMPT = `You are reverse-engineering a brand's identity to produce an internal brand personality profile. This profile will be used BY the brand team and fed TO AI systems to generate on-brand content.
 
-Use only evidence from the text. If something cannot be inferred, mark it as "unclear."
+CRITICAL: Write everything from the BRAND'S OWN PERSPECTIVE — first-person, authoritative, declarative. This is NOT an external analysis. This is the brand defining itself.
+
+Examples of the voice to use:
+- WRONG: "The brand believes AI visibility is important for B2B success."
+- RIGHT: "We believe AI visibility is the new competitive moat. If buyers can't find you in ChatGPT, you don't exist."
+- WRONG: "The brand positions itself as an expert partner guiding teams."
+- RIGHT: "We are the authority on AI search visibility. We don't advise from the sidelines — we give you the tools and the data."
+- WRONG: "If the brand were a person, they would be a knowledgeable consultant."
+- RIGHT: "We're the sharp, no-BS operator who shows up with the data, cuts through the noise, and tells you exactly where you stand."
+
+Use evidence from the website content. Be specific, not generic. Avoid soft hedging language.
 
 Return a JSON object with this exact structure:
 {
@@ -19,18 +29,18 @@ Return a JSON object with this exact structure:
   "archetype_primary": "The Sage|The Hero|The Creator|The Explorer|The Ruler|The Caregiver|The Magician|The Outlaw|The Everyman|The Lover|The Jester|The Innocent",
   "archetype_secondary": "Optional secondary archetype or null",
   "worldview": {
-    "belief": "What the brand believes about the world",
-    "problem": "The problem it sees as broken",
-    "future": "The future it is pushing toward",
-    "tension": "The implied villain or tension"
+    "belief": "First-person: We believe... (the core conviction that drives everything)",
+    "problem": "First-person: The problem we see... (what's broken that we're fixing)",
+    "future": "First-person: We're building toward... (the future state we're creating)",
+    "tension": "First-person: What we're up against... (the obstacle, enemy, or status quo we fight)"
   },
-  "audience_stance": "How the brand positions itself relative to the reader",
+  "audience_stance": "First-person declaration of relationship to the audience. e.g. 'We are your competitive intelligence team for the AI era.'",
   "emotional_register": {
-    "primary": "Primary emotion the brand wants the reader to feel",
-    "secondary": "Secondary emotion",
+    "primary": "The feeling we want people to walk away with (e.g. urgency, confidence, clarity)",
+    "secondary": "Secondary feeling",
     "intensity": "low|medium|high"
   },
-  "personality_summary": "One paragraph describing the brand as if it were a person, without marketing jargon"
+  "personality_summary": "A first-person paragraph: 'We are...' — written as if the brand is introducing itself to a new employee or AI system. Authoritative, specific, no fluff."
 }
 
 Voice trait scale: 1 = strongly left trait, 5 = strongly right trait, 3 = neutral.

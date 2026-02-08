@@ -60,18 +60,18 @@ Analyze the provided website content and extract the following information in JS
     "archetype_primary": "The Sage|The Hero|The Creator|The Explorer|The Ruler|The Caregiver|The Magician|The Outlaw|The Everyman|The Lover|The Jester|The Innocent",
     "archetype_secondary": "Optional secondary archetype",
     "worldview": {
-      "belief": "What the brand believes about the world",
-      "problem": "The problem it sees as broken",
-      "future": "The future it is pushing toward",
-      "tension": "The implied villain or tension"
+      "belief": "First-person: We believe... (the core conviction driving the brand)",
+      "problem": "First-person: The problem we see... (what's broken that we fix)",
+      "future": "First-person: We're building toward... (the future state we create)",
+      "tension": "First-person: What we're up against... (the obstacle or status quo we fight)"
     },
-    "audience_stance": "How the brand positions itself relative to the reader (e.g., 'Authority guiding practitioners')",
+    "audience_stance": "First-person declaration: e.g. 'We are your competitive intelligence team for the AI era.'",
     "emotional_register": {
-      "primary": "Primary emotion the brand wants the reader to feel",
-      "secondary": "Secondary emotion",
+      "primary": "The feeling we want people to walk away with (e.g. urgency, confidence, clarity)",
+      "secondary": "Secondary feeling",
       "intensity": "low|medium|high"
     },
-    "personality_summary": "One paragraph describing the brand as if it were a person, without marketing jargon"
+    "personality_summary": "A first-person paragraph: 'We are...' — written as the brand introducing itself. Authoritative, specific, no fluff. NOT a third-party description."
   },
   "corporate_positioning": {
     "mission_statement": "The company's mission - why they exist, what problem they solve (1-2 sentences)",

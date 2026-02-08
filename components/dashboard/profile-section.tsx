@@ -776,16 +776,16 @@ function BrandPersonalityCard({ brandId, personality: initialPersonality }: { br
               <div className="space-y-3 pt-1">
                 {personality.audience_stance && (
                   <div>
-                    <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-0.5">Stance</label>
+                    <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-0.5">Who We Are</label>
                     <p className="text-xs">{personality.audience_stance}</p>
                   </div>
                 )}
                 {personality.worldview && (
                   <div className="space-y-1 text-xs">
-                    {personality.worldview.belief && <div><span className="font-medium text-muted-foreground">BELIEVES: </span>{personality.worldview.belief}</div>}
-                    {personality.worldview.problem && <div><span className="font-medium text-muted-foreground">PROBLEM: </span>{personality.worldview.problem}</div>}
-                    {personality.worldview.future && <div><span className="font-medium text-muted-foreground">FUTURE: </span>{personality.worldview.future}</div>}
-                    {personality.worldview.tension && <div><span className="font-medium text-muted-foreground">TENSION: </span>{personality.worldview.tension}</div>}
+                    {personality.worldview.belief && <div><span className="font-medium text-muted-foreground">WE BELIEVE: </span>{personality.worldview.belief}</div>}
+                    {personality.worldview.problem && <div><span className="font-medium text-muted-foreground">WE SEE: </span>{personality.worldview.problem}</div>}
+                    {personality.worldview.future && <div><span className="font-medium text-muted-foreground">WE BUILD: </span>{personality.worldview.future}</div>}
+                    {personality.worldview.tension && <div><span className="font-medium text-muted-foreground">WE FIGHT: </span>{personality.worldview.tension}</div>}
                   </div>
                 )}
                 {personality.personality_summary && (
