@@ -10,13 +10,11 @@ interface OnboardingFlowProps {
   brandName: string
   brandDomain: string
   hasContext: boolean
-  hasCompetitors: boolean
   hasQueries: boolean
-  competitorCount: number
   queryCount: number
 }
 
-type OnboardingStep = 'extract' | 'competitors' | 'queries' | 'scan'
+type OnboardingStep = 'extract' | 'queries' | 'scan'
 
 interface ProgressLine {
   text: string
@@ -32,37 +30,27 @@ const STEP_CONFIGS: Record<OnboardingStep, {
 }> = {
   extract: {
     action: 'extract_context',
-    title: 'Extracting Brand Context',
-    shortTitle: 'Brand Profile',
+    title: 'Scanning Brand Website',
+    shortTitle: 'Brand Scan',
     progressMessages: [
       'Connecting to website...',
-      'Scanning homepage content...',
+      'Crawling site pages...',
+      'Searching for additional brand info...',
       'Extracting products & services...',
       'Identifying target personas...',
       'Analyzing brand positioning...',
       'Processing with AI...',
     ],
   },
-  competitors: {
-    action: 'discover_competitors',
-    title: 'Discovering Competitors',
-    shortTitle: 'Competitors',
-    progressMessages: [
-      'Analyzing market positioning...',
-      'Identifying key competitors...',
-      'Cross-referencing industry data...',
-      'Validating competitor profiles...',
-    ],
-  },
   queries: {
     action: 'generate_queries',
-    title: 'Generating Search Prompts',
+    title: 'Reverse-Engineering Prompts',
     shortTitle: 'Prompts',
     progressMessages: [
       'Analyzing buyer intent patterns...',
+      'Identifying solution categories...',
       'Generating non-branded queries...',
       'Creating persona-based prompts...',
-      'Building comparison queries...',
       'Prioritizing by relevance...',
     ],
   },
@@ -76,7 +64,7 @@ const STEP_CONFIGS: Record<OnboardingStep, {
       'Querying Gemini...',
       'Querying Perplexity...',
       'Analyzing visibility...',
-      'Generating content recommendations...',
+      'Extracting cited entities...',
     ],
   },
 }
@@ -86,9 +74,7 @@ export function OnboardingFlow({
   brandName,
   brandDomain,
   hasContext,
-  hasCompetitors,
   hasQueries,
-  competitorCount,
   queryCount,
 }: OnboardingFlowProps) {
   const router = useRouter()
@@ -106,15 +92,14 @@ export function OnboardingFlow({
   useEffect(() => {
     const completed = new Set<OnboardingStep>()
     if (hasContext) completed.add('extract')
-    if (hasCompetitors) completed.add('competitors')
     if (hasQueries) completed.add('queries')
     setCompletedSteps(completed)
     
-    // If all steps are complete, mark as complete
-    if (hasContext && hasCompetitors && hasQueries) {
+    // If all critical steps are complete, mark as complete
+    if (hasContext && hasQueries) {
       setIsComplete(true)
     }
-  }, [hasContext, hasCompetitors, hasQueries])
+  }, [hasContext, hasQueries])
 
   // Auto-scroll progress
   useEffect(() => {
@@ -124,10 +109,9 @@ export function OnboardingFlow({
   }, [progressLines])
 
   // Auto-start the pipeline when component mounts
-  // Start if missing any required data (context, competitors, or queries)
+  // Start if missing context or queries (competitors are discovered post-scan)
   useEffect(() => {
-    // Only run once on mount - check all conditions needed for complete onboarding
-    const needsOnboarding = !hasContext || !hasCompetitors || !hasQueries
+    const needsOnboarding = !hasContext || !hasQueries
     if (needsOnboarding) {
       startPipeline()
     }
@@ -149,10 +133,10 @@ export function OnboardingFlow({
     setHasStarted(true)
     addProgressLine(`Starting setup for ${brandName}...`, 'info')
     
-    // The Inngest pipeline is fully chained: extract → competitors → queries → scan.
+    // The Inngest pipeline is fully chained: extract → queries → scan.
     // We only need to trigger the FIRST incomplete step. The rest chain automatically.
     // The UI's job is just to poll and show progress as each step completes.
-    const steps: OnboardingStep[] = ['extract', 'competitors', 'queries', 'scan']
+    const steps: OnboardingStep[] = ['extract', 'queries', 'scan']
     
     // Find the first incomplete step to trigger
     let triggerStep: OnboardingStep | null = null
@@ -250,10 +234,7 @@ export function OnboardingFlow({
 
             if (step === 'extract' && status.hasContext) {
               complete = true
-              summary = status.contextSummary || 'Profile extracted'
-            } else if (step === 'competitors' && status.hasCompetitors) {
-              complete = true
-              summary = `Found ${status.competitorCount || 0} competitors`
+              summary = status.contextSummary || 'Brand profile extracted'
             } else if (step === 'queries' && status.hasQueries) {
               complete = true
               summary = `Generated ${status.queryCount || 0} prompts`
@@ -310,7 +291,7 @@ export function OnboardingFlow({
       
       if (finalStatus.ok) {
         const status = await finalStatus.json()
-        const hasRequiredData = status.hasContext && status.hasCompetitors && status.hasQueries
+        const hasRequiredData = status.hasContext && status.hasQueries
         
         if (hasRequiredData) {
           setIsComplete(true)
@@ -328,8 +309,7 @@ export function OnboardingFlow({
           addProgressLine(``, 'info')
           addProgressLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
           addProgressLine(`⚠ Setup incomplete - some steps are still processing`, 'info')
-          addProgressLine(`   Context: ${status.hasContext ? '✓' : '⏳'}`, 'info')
-          addProgressLine(`   Competitors: ${status.hasCompetitors ? '✓' : '⏳'}`, 'info')
+          addProgressLine(`   Brand Scan: ${status.hasContext ? '✓' : '⏳'}`, 'info')
           addProgressLine(`   Prompts: ${status.hasQueries ? '✓' : '⏳'}`, 'info')
           addProgressLine(``, 'info')
           addProgressLine(`Click "Retry" below or refresh the page in a minute.`, 'info')
@@ -342,10 +322,9 @@ export function OnboardingFlow({
   }
 
   const steps: { id: OnboardingStep; label: string }[] = [
-    { id: 'extract', label: 'Profile' },
-    { id: 'competitors', label: 'Competitors' },
+    { id: 'extract', label: 'Brand Scan' },
     { id: 'queries', label: 'Prompts' },
-    { id: 'scan', label: 'Scan' },
+    { id: 'scan', label: 'AI Scan' },
   ]
 
   return (
@@ -494,7 +473,7 @@ export function OnboardingFlow({
       {/* Info */}
       <div className="mt-6 p-4 bg-zinc-50 border-2 border-zinc-200 rounded-lg">
         <p className="text-sm text-zinc-600">
-          <strong>What&apos;s happening?</strong> We&apos;re scanning your website, identifying competitors, generating search prompts, and running your first visibility scan across 6 AI models. This typically takes 2-3 minutes.
+          <strong>What&apos;s happening?</strong> We&apos;re deep-scanning your website, reverse-engineering the prompts your buyers ask AI, and running your first visibility scan across multiple AI models. Competitors are discovered from what AI actually cites. This typically takes 2-3 minutes.
         </p>
       </div>
     </div>

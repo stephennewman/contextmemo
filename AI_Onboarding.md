@@ -1,6 +1,6 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 6, 2026  
+> **Last Updated:** February 8, 2026  
 > **Version:** 0.20.0  
 > **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit
 
@@ -387,6 +387,17 @@ When the AI assistant deploys changes, it should:
 ## Deploy Log
 
 _Most recent deploys first_
+
+### February 8, 2026
+
+**Fix: Brand creation broken — RLS policy + form validation UX** (81ea13a)
+- **Root cause:** `brand_settings` table had RLS enabled but zero policies were ever applied to the live Supabase database. The migration SQL existed in `scripts/sql/` but was never run against production.
+- **Compounding factor:** In Supabase v17, the `postgres` role is NOT a superuser, so the `SECURITY DEFINER` trigger function couldn't bypass RLS as intended.
+- **Database fix:** Applied migration adding 5 RLS policies to `brand_settings`: postgres role full access (for triggers), service_role full access, and authenticated user SELECT/UPDATE/INSERT scoped to owned brands.
+- **Form UX fix:** Removed aggressive inline domain regex validation that flashed red error alerts while user was still typing. Validation now runs on "Continue" button click instead.
+- **Console cleanup:** Changed subdomain availability check from `.single()` to `.maybeSingle()` to eliminate 406 (Not Acceptable) console errors when no match exists.
+- **Files changed:** `app/(dashboard)/brands/new/page.tsx`
+- **Migration applied:** `add_brand_settings_rls_policies` on Supabase project `ncrclfpiremxmqpvmavx`
 
 ### February 7, 2026 (v5)
 

@@ -54,10 +54,11 @@ export default async function BrandLayout({ params, children }: Props) {
   }
 
   const context = brand.context as BrandContext
-  const hasContext = context && Object.keys(context).length > 0
+  // Check for actual extracted context (not just the search_console config set at creation)
+  const hasContext = context && !!(context.company_name || context.description || context.products?.length)
 
-  // Check for competitors and queries to determine onboarding state
-  const hasCompletedOnboarding = hasContext && (entityCount ?? 0) > 0 && (queryCount ?? 0) > 0
+  // Check for queries to determine onboarding state (competitors come later from scan results)
+  const hasCompletedOnboarding = hasContext && (queryCount ?? 0) > 0
 
   // Show onboarding flow for new brands
   if (!hasCompletedOnboarding) {
@@ -97,9 +98,7 @@ export default async function BrandLayout({ params, children }: Props) {
           brandName={brand.name}
           brandDomain={brand.domain}
           hasContext={hasContext}
-          hasCompetitors={(entityCount ?? 0) > 0}
           hasQueries={(queryCount ?? 0) > 0}
-          competitorCount={entityCount ?? 0}
           queryCount={queryCount ?? 0}
         />
       </div>

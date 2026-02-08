@@ -668,14 +668,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       case 'check_status': {
         // Check onboarding status - used by terminal to poll for completion
         const context = brand.context as Record<string, unknown> | null
-        const hasContext = context && Object.keys(context).length > 0
-        
-        // Count competitors
-        const { count: competitorCount } = await supabase
-          .from('competitors')
-          .select('*', { count: 'exact', head: true })
-          .eq('brand_id', brandId)
-          .eq('is_active', true)
+        // Check for actual extracted context (not just the search_console config set at creation)
+        const hasContext = context && !!(
+          context.company_name || context.description || 
+          (Array.isArray(context.products) && context.products.length > 0)
+        )
         
         // Count queries
         const { count: queryCount } = await supabase
@@ -705,10 +702,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           brandName: brand.name,
           isPaused: brand.is_paused || false,
           hasContext,
-          hasCompetitors: (competitorCount || 0) > 0,
           hasQueries: (queryCount || 0) > 0,
           hasScans: (scanCount || 0) > 0,
-          competitorCount: competitorCount || 0,
           queryCount: queryCount || 0,
           scanCount: scanCount || 0,
           contextSummary,

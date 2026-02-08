@@ -348,9 +348,10 @@ Respond ONLY with valid JSON array, no explanations.`,
       }
     })
 
-    // Step 5: Trigger competitor discovery
-    await step.sendEvent('trigger-competitor-discovery', {
-      name: 'competitor/discover',
+    // Step 5: Trigger query generation directly (skip competitor discovery during onboarding)
+    // Competitors/entities will be discovered later from scan results
+    await step.sendEvent('trigger-query-generation', {
+      name: 'query/generate',
       data: { brandId },
     })
 

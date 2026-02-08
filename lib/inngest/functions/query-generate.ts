@@ -29,7 +29,7 @@ export const queryGenerate = inngest.createFunction(
   async ({ event, step }) => {
     const { brandId } = event.data
 
-    // Step 1: Get brand and competitors
+    // Step 1: Get brand and competitors (competitors may not exist yet during onboarding)
     const { brand, competitors } = await step.run('get-brand-data', async () => {
       const [brandResult, competitorsResult] = await Promise.all([
         supabase
@@ -53,6 +53,8 @@ export const queryGenerate = inngest.createFunction(
         competitors: competitorsResult.data || [],
       }
     })
+
+    const hasCompetitors = competitors.length > 0
 
     const context = brand.context as BrandContext
 
@@ -97,9 +99,11 @@ export const queryGenerate = inngest.createFunction(
       }
     })
 
-    // Step 3: Generate category-based queries (existing approach)
+    // Step 3: Generate category-based queries (skip competitor-dependent queries if no competitors yet)
     const categoryQueries = await step.run('generate-category-queries', async () => {
-      const competitorNames = competitors.map(c => c.name).join(', ') || 'Unknown competitors'
+      const competitorNames = hasCompetitors 
+        ? competitors.map(c => c.name).join(', ')
+        : 'Not yet discovered'
       
       // Use description if available, otherwise use homepage content summary
       const descriptionText = context.description || 
@@ -177,7 +181,7 @@ export const queryGenerate = inngest.createFunction(
     // Step 5: Generate persona-based prompts for the brand's target personas
     const personaQueries = await step.run('generate-persona-prompts', async () => {
       const allPersonaQueries: GeneratedQuery[] = []
-      const competitorNames = competitors.map(c => c.name).join(', ')
+      const competitorNames = hasCompetitors ? competitors.map(c => c.name).join(', ') : ''
 
       // Get personas from the new flexible structure
       const personas = context.personas || []
