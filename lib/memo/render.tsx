@@ -7,6 +7,7 @@ renderer.link = ({ href, title, text }) => {
   return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`
 }
 import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
+import { GtagBrandPageView } from '@/components/tracking/google-analytics'
 
 // Context Memo brand ID - used for main domain content
 export const CONTEXT_MEMO_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
@@ -429,6 +430,12 @@ export function MemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
       
       {/* AI Traffic Tracking */}
       <AITrafficTracker brandId={brand.id} memoId={memo.id} />
+      <GtagBrandPageView
+        brandName={brand.name}
+        brandSubdomain={brand.domain || brand.name}
+        memoType={memo.memo_type}
+        memoTitle={memo.title}
+      />
     </div>
   )
 }
@@ -600,6 +607,12 @@ export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPagePro
       
       {/* AI Traffic Tracking */}
       <AITrafficTracker brandId={brand.id} memoId={memo.id} />
+      <GtagBrandPageView
+        brandName={brand.name}
+        brandSubdomain={brand.domain || brand.name}
+        memoType={memo.memo_type}
+        memoTitle={memo.title}
+      />
     </div>
   )
 }

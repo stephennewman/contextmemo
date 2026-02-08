@@ -11,6 +11,7 @@ renderer.link = ({ href, title, text }) => {
 }
 import { headers } from 'next/headers'
 import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
+import { GtagBrandPageView } from '@/components/tracking/google-analytics'
 
 // Use service role client for public access
 const supabase = createClient(
@@ -568,6 +569,12 @@ export default async function MemoPage({ params }: Props) {
       
       {/* AI Traffic Tracking */}
       <AITrafficTracker brandId={brand.id} memoId={memo.id} />
+      <GtagBrandPageView
+        brandName={brand.name}
+        brandSubdomain={brand.subdomain}
+        memoType={memo.memo_type}
+        memoTitle={memo.title}
+      />
     </div>
   )
 }
