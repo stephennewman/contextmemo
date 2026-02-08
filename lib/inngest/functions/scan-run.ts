@@ -1049,10 +1049,14 @@ Only return the JSON array, nothing else.`
         }
       }
       
-      // Insert classified entities
+      // Insert classified entities (filter out any with missing names)
+      const validEntities = classifiedEntities.filter(c => c.name && c.domain)
+      if (validEntities.length === 0) {
+        return { discovered: 0, competitors: [] }
+      }
       const { data: inserted, error } = await supabase
         .from('competitors')
-        .insert(classifiedEntities.map(c => ({
+        .insert(validEntities.map(c => ({
           brand_id: brandId,
           name: c.name,
           domain: c.domain,
