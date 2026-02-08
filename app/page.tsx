@@ -58,14 +58,26 @@ export const dynamic = 'force-dynamic'
 
 export default async function Home() {
   // Fetch featured memos for popular content section
-  const { data: featuredMemos } = await supabase
-    .from('memos')
-    .select('id, title, slug, memo_type, meta_description')
-    .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
-    .eq('status', 'published')
-    .eq('featured', true)
-    .order('sort_order', { ascending: true })
-    .limit(6);
+  // Wrapped in try-catch with timeout so homepage still renders if DB is down
+  let featuredMemos: { id: string; title: string; slug: string; memo_type: string; meta_description: string | null }[] | null = null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const { data } = await supabase
+      .from('memos')
+      .select('id, title, slug, memo_type, meta_description')
+      .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
+      .eq('status', 'published')
+      .eq('featured', true)
+      .order('sort_order', { ascending: true })
+      .limit(6)
+      .abortSignal(controller.signal);
+    clearTimeout(timeout);
+    featuredMemos = data;
+  } catch {
+    // DB unavailable — render page without featured memos
+    featuredMemos = null;
+  }
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
