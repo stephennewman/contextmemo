@@ -388,6 +388,18 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v5)
+
+**Feature: Content Performance Tab + AI Traffic Tracking Fix** (5eb73e1)
+- New **PERFORMANCE** tab on brand dashboard showing content output stats (published, drafts, HubSpot synced, contextmemo-only), traffic by source (AI vs organic), per-memo view counts table, and recent traffic event log.
+- **Fixed self-referral pollution:** `detectAISource()` now filters contextmemo.com→contextmemo.com navigation as internal (was being classified as "organic," inflating numbers with 13 false rows). Cleaned up the bad data.
+- **Updated AI bot detection:** Added DeepSeek, Groq, and newer user-agent patterns: GPTBot, ChatGPT-User, OAI-SearchBot, ClaudeBot, Anthropic-AI, Cohere-AI. Added x.com to organic referrer list.
+- New `/api/brands/[brandId]/performance` endpoint aggregating content output + traffic data.
+- Distribution card shows visual bar of content split between contextmemo.com, HubSpot, and drafts.
+- Tracking note at bottom explains what's tracked where (contextmemo.com pages via AITrafficTracker, HubSpot via HubSpot analytics).
+- **Files created:** `app/(dashboard)/brands/[brandId]/performance/page.tsx`, `app/(dashboard)/brands/[brandId]/performance/loading.tsx`, `app/api/brands/[brandId]/performance/route.ts`, `components/dashboard/content-performance.tsx`
+- **Files changed:** `lib/supabase/types.ts` (detectAISource fix), `app/(dashboard)/brands/[brandId]/layout.tsx` (added tab)
+
 ### February 8, 2026 (v4)
 
 **Feature: Brand Personality extraction + voice trait sliders on profile** (e21288a)
