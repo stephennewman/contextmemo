@@ -200,8 +200,16 @@ export const contextExtract = inngest.createFunction(
   "products": ["product/service 1", "product/service 2"],
   "markets": ["target market 1", "target market 2"],
   "features": ["key feature 1", "key feature 2"],
+  "personas": [{"title": "role title", "pain_points": ["pain 1"]}],
+  "certifications": ["cert 1"],
+  "customers": ["notable customer 1"],
   "brand_voice": "professional" | "casual" | "technical",
-  "customers": ["notable customer 1", "notable customer 2"]
+  "corporate_positioning": {
+    "mission_statement": "company mission",
+    "core_value_promise": "main value proposition",
+    "key_benefits": ["benefit 1", "benefit 2"],
+    "differentiators": [{"name": "differentiator", "detail": "explanation"}]
+  }
 }
 
 Be thorough but respond ONLY with JSON.`,
