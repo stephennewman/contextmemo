@@ -281,6 +281,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const brandContextText = formatBrandContextForPrompt(brandContext as Parameters<typeof formatBrandContextForPrompt>[0])
         const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         
+        // Fetch entities for domain → name mapping
+        const { data: entityData } = await supabase
+          .from('competitors')
+          .select('name, domain, entity_type')
+          .eq('brand_id', brandId)
+        const domainToEntity = new Map<string, { name: string; type: string }>()
+        for (const e of (entityData || [])) {
+          if (e.domain) domainToEntity.set(e.domain.replace(/^www\./, '').toLowerCase(), { name: e.name, type: e.entity_type || 'other' })
+        }
+        
         // Generate memos directly (parallel, up to 3 at a time)
         const results: Array<{ queryId: string; queryText: string; success: boolean; memoId?: string }> = []
         
@@ -297,7 +307,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           
           const batchResults = await Promise.allSettled(
             batch.map(async (gap) => {
-              // Build cited content summary for this gap
+              // Build cited content summary with entity names + types
               const uniqueUrls = [...new Set(gap.citedUrls)]
               const citedDomains = new Map<string, number>()
               for (const url of uniqueUrls) {
@@ -308,8 +318,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               }
               const citedContent = [...citedDomains.entries()]
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .map(([domain, count]) => `- ${domain} (cited ${count}x)`)
+                .slice(0, 6)
+                .map(([domain, count]) => {
+                  const entity = domainToEntity.get(domain)
+                  if (entity) {
+                    const typeLabel = entity.type === 'product_competitor' ? 'competitor'
+                      : entity.type === 'publisher' ? 'publisher/blog'
+                      : entity.type === 'analyst' ? 'analyst firm'
+                      : entity.type === 'marketplace' ? 'review site'
+                      : 'other'
+                    return `- ${entity.name} (${domain}) — ${typeLabel}, cited ${count}x`
+                  }
+                  return `- ${domain} — cited ${count}x`
+                })
                 .join('\n')
               
               // Build prompt

@@ -68,6 +68,7 @@ const MEMO_FUNNEL_MAP: Record<string, FunnelStage> = {
   how_to: 'top_funnel',
   response: 'mid_funnel',
   guide: 'top_funnel',
+  gap_fill: 'mid_funnel',
 }
 
 type TimeRange = '7d' | '30d' | '90d'

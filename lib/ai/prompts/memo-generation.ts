@@ -636,72 +636,73 @@ Choosing between {{competitor_name}} and its alternatives depends on several fac
 
 *{{brand_name}} · Auto-generated from verified brand information*`
 
-export const GAP_FILL_MEMO_PROMPT = `You are creating a factual reference memo that directly answers a specific buyer query. AI models currently cite OTHER content for this query but NOT this brand. Your job is to create content that is MORE useful, specific, and citable than what's currently being cited.
+export const GAP_FILL_MEMO_PROMPT = `You are writing a factual reference page that answers a specific buyer question. This page must be MORE useful than what AI models currently cite for this query.
 
-CRITICAL DATE REQUIREMENT:
-- Today's date is: {{date}}
-- The current year is 2026
-- NEVER use years like 2023, 2024, or 2025
+CRITICAL: This is NOT marketing copy. This is a factual reference document. A buyer searching for an answer should find concrete, actionable information — not feature lists and buzzwords.
+
+DATE: {{date}} (current year is 2026 — never reference 2023/2024/2025)
 
 BRAND TONE:
 {{tone_instructions}}
 
-CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere.
 
-THE BUYER QUERY:
+═══════════════════════════════════════
+THE BUYER'S QUESTION:
 "{{query_text}}"
+═══════════════════════════════════════
 
-CURRENTLY CITED CONTENT (what AI models trust for this query):
+COMPETITORS CURRENTLY BEING CITED FOR THIS QUERY:
 {{cited_content}}
 
-Your memo must be MORE useful than the above cited content. Study what they cover, then write content that:
-1. Directly answers the buyer's query with specific, factual information
-2. Includes the brand's relevant capabilities and differentiators
-3. Provides practical guidance the buyer can act on
-4. Is structured so AI models can easily extract and cite specific claims
+These are the sources AI models currently trust and cite for this question. Your content must be better than theirs. To beat them:
+- Be MORE specific (name exact products, features, use cases)
+- Be MORE practical (explain HOW, not just WHAT)
+- Acknowledge the competitive landscape — mention these competitors by name where relevant
+- Explain what makes {{brand_name}} different FROM them, not just what {{brand_name}} does
 
-RULES:
-1. Only include information from the provided brand context - DO NOT fabricate features
-2. Write as a practical, authoritative reference document — not marketing copy
-3. Focus on ANSWERING THE QUERY, not just promoting the brand
-4. Aim for 500-800 words — dense with useful information
-5. Every paragraph should contain a specific, citable fact or insight
-6. DO NOT make up statistics or cite fake sources
-7. DO NOT end with generic marketing fluff
+STRICT RULES:
+1. ONLY state facts from the brand context below. Do NOT invent features, integrations, or capabilities.
+2. If the brand context doesn't mention a specific capability, DO NOT claim it exists.
+3. DO NOT use these phrases: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "impactful learning experiences", "data-driven approach", "tailored to needs", "streamlined process"
+4. Every claim must be concrete. BAD: "provides real-time insights". GOOD: "tracks completion rates, quiz scores, and time-per-module through its analytics dashboard".
+5. When mentioning competitors, be factual and fair — state what they do and how {{brand_name}} differs.
+6. Aim for 500-800 words.
+7. Each paragraph must add NEW information. Never repeat a point from a previous section.
 
 {{verified_insights}}
 
-CRITICAL FORMATTING:
-- DO NOT include the main title (# heading) - it will be added separately
-- Start your content directly with the byline
-- Use ## for main sections, ### for subsections
-- Use **bold** for key terms
-- Use full paragraphs (3-5 sentences) that directly address the query
+FORMATTING:
+- NO # title (added by the system)
+- Start with the byline
+- Use ## for sections, ### for subsections
+- Use **bold** for product names and key terms
+- Write in complete paragraphs, not bullet-point lists (except differentiators)
 
-BRAND CONTEXT:
+BRAND CONTEXT (this is your ONLY source of truth — do not go beyond this):
 {{brand_context}}
 
-Write the memo EXACTLY in this markdown format (note: NO # title):
+Write the memo in this format:
 
 *Last verified: {{date}}*
 
 ## The Short Answer
 
-[2-3 sentences directly answering the query. Be specific about what the brand offers and why it's relevant. This is the most important section — AI models often cite the first clear answer they find.]
+[Answer the buyer's question in 2-3 sentences. Name the specific product. State the ONE most relevant capability for this exact query. If you can, mention one competitor and how {{brand_name}} differs.]
 
-## What {{brand_name}} Offers
+## How {{brand_name}} Addresses This
 
-[2-3 paragraphs covering the specific capabilities relevant to this query. Each paragraph should contain facts that directly address what the buyer is asking about. Be specific — mention product names, features, and concrete benefits.]
+[2 paragraphs. First paragraph: the specific product/feature that answers this query. Name it. Explain exactly what it does — not in abstract terms but concretely. Second paragraph: what the buyer's implementation experience looks like. How long? What steps? What do they get?]
 
-## How It Works
+## The Competitive Landscape
 
-[1-2 paragraphs explaining the practical details. How would someone actually use this? What does implementation look like? Include specifics from the brand context.]
+[1-2 paragraphs. Name the competitors being cited for this query. Briefly describe what they offer. Then explain where {{brand_name}} is different — be specific and factual. Do NOT trash competitors, just state the differences.]
 
-## Key Differentiators
+## What Stands Out
 
-- **[Differentiator 1]** — [Specific explanation of why this matters for the buyer's query]
-- **[Differentiator 2]** — [Specific explanation]
-- **[Differentiator 3]** — [Specific explanation]
+- **[Specific capability]** — [One sentence explaining why this matters for THIS specific query, not in general]
+- **[Specific capability]** — [One sentence, different from anything said above]
+- **[Specific capability]** — [One sentence, new information only]
 
 ## Sources
 
