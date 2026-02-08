@@ -514,26 +514,26 @@ export function OnboardingFlow({
     }
   }, [phase, statusData, revealStep, advanceReveal])
 
-  // ── Phase 3: Memo Generation (direct, not queued) ──
+  // ── Phase 3: Memo Generation (single best memo) ──
   const startMemoPhase = useCallback(async () => {
     setPhase('memos')
     addLine('', 'info')
-    addLine('━━━ 6. GENERATE MEMOS ━━━', 'header')
+    addLine('━━━ 6. SAMPLE MEMO ━━━', 'header')
     addLine('', 'info')
-    addLine('  Analyzing top-cited content for your gaps...', 'info')
-    addLine('  Generating content to compete with what AI trusts...', 'info')
+    addLine('  Picking your biggest gap with the most cited content...', 'info')
+    addLine('  Generating a competitive memo using your brand context...', 'info')
     addLine('', 'info')
 
-    addLine('Generating memos (this takes ~30 seconds)...', 'working')
+    addLine('Writing memo...', 'working')
 
     try {
       const res = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_gap_memos', limit: 5 }),
+        body: JSON.stringify({ action: 'generate_gap_memos', limit: 1 }),
       })
 
-      if (!res.ok) throw new Error('Failed to generate memos')
+      if (!res.ok) throw new Error('Failed to generate memo')
       const result = await res.json()
 
       completeWorkingLines()
@@ -543,30 +543,31 @@ export function OnboardingFlow({
       } else if (result.memosGenerated === 0) {
         addLine('  Memo generation failed. Try again from the MEMOS tab.', 'info')
       } else {
-        addLine(`✓ ${result.memosGenerated} memo${result.memosGenerated !== 1 ? 's' : ''} generated from ${result.totalGaps} gaps`, 'success')
-        addLine('', 'info')
-
-        // Show which queries got memos
-        for (const q of result.gapQueries || []) {
+        const q = result.gapQueries?.[0]
+        if (q) {
           const funnel = q.funnel === 'top_funnel' ? 'TOF' : q.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
-          const text = q.text.length > 48 ? q.text.slice(0, 45) + '...' : q.text
-          addLine(`  [${funnel}] "${text}"`, 'info')
+          addLine(`✓ Memo published for your #1 gap`, 'success')
+          addLine('', 'info')
+          addLine(`  [${funnel}] "${q.text.length > 52 ? q.text.slice(0, 49) + '...' : q.text}"`, 'info')
           if (q.citationsFound > 0) {
-            addLine(`         based on ${q.citationsFound} cited sources`, 'info')
+            addLine(`  Built from ${q.citationsFound} sources AI currently cites`, 'info')
           }
+          addLine('', 'info')
+          addLine(`  ${result.totalGaps - 1} more gaps ready — generate from the Memos tab.`, 'info')
+        } else {
+          addLine(`✓ 1 memo published`, 'success')
         }
       }
     } catch (error) {
       completeWorkingLines()
       addLine(`⚠ ${error instanceof Error ? error.message : 'Generation failed'}`, 'info')
-      addLine('  Generate memos manually from the MEMOS tab.', 'info')
+      addLine('  Generate memos from the MEMOS tab.', 'info')
     }
 
     addLine('', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
     addLine('  ONBOARDING COMPLETE', 'success')
-    addLine('  Your visibility gaps have been identified and', 'info')
-    addLine('  memos published to fill them.', 'info')
+    addLine('  View your memo, then generate more from the Memos tab.', 'info')
     addLine('  Configure daily scans in Automations.', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
@@ -598,14 +599,12 @@ export function OnboardingFlow({
 
     // After step 5 (gaps): show the memo generation CTA
     if (phase === 'reveal' && revealStep >= REVEAL_STEPS.length - 1) {
-      const gapCount = statusData?.scanSummary?.gapCount || statusData?.gapQueries?.length || 0
-      const memoTarget = Math.min(5, Math.max(1, gapCount))
       return (
         <button
           onClick={startMemoPhase}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#0EA5E9] text-white font-bold text-sm hover:bg-[#0284C7] transition-colors"
         >
-          GENERATE {memoTarget} MEMOS
+          GENERATE SAMPLE MEMO
           <ArrowRight className="h-4 w-4" />
         </button>
       )
