@@ -388,6 +388,20 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v11)
+
+**Memo Quality Overhaul: GPT-4o, first-person voice, comprehensive format, regeneration** (45968b3)
+- Upgraded memo generation model from `gpt-4o-mini` → `gpt-4o` for significantly better writing quality
+- Rewrote `GAP_FILL_MEMO_PROMPT`: AI now writes as "head of content" in first-person ("we built", "our approach") instead of third-person marketing copy
+- Comprehensive format: 800-1200 words with 3-4 paragraph "Our Approach", competitor-by-competitor "How We Compare", detailed "Why It Matters"
+- Banned 12+ marketing buzzwords ("seamless integration", "robust platform", "empowers organizations", etc.)
+- Cited content now includes entity names + types (e.g. "Docebo — competitor, cited 10x")
+- Onboarding generates 1 high-quality sample memo (highest-cited gap) instead of 5 generic ones
+- Added "Regenerate All" button in Memos tab to re-run existing memos through improved prompt
+- Trimmed terminal onboarding: ~50% fewer lines, 2 progress messages per step instead of 5-6
+- Memo titles no longer truncate at 80 chars — full query text preserved
+- Files changed: `lib/ai/prompts/memo-generation.ts`, `app/api/brands/[brandId]/actions/route.ts`, `components/dashboard/onboarding-flow.tsx`, `components/dashboard/memo-feed.tsx`, `components/dashboard/citation-insights.tsx`
+
 ### February 8, 2026 (v10)
 
 **Onboarding: Perplexity citations, AI entity classification, fixed memo gen** (cd82cc4)
