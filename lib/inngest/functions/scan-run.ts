@@ -57,7 +57,7 @@ const SCAN_MODELS: ModelConfig[] = [
     provider: 'perplexity-direct', 
     modelId: 'sonar', 
     enabled: true,
-    onboarding: true, // Best for onboarding: clean, authoritative citations
+    onboarding: false,
     citationSource: 'perplexity',
   },
   
@@ -68,7 +68,7 @@ const SCAN_MODELS: ModelConfig[] = [
     provider: 'openrouter', 
     modelId: 'openai/gpt-4o-mini:online', 
     enabled: true,
-    onboarding: false,
+    onboarding: true, // Testing for onboarding
     citationSource: 'openrouter-native',
   },
   { 

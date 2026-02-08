@@ -492,8 +492,8 @@ export function OnboardingFlow({
           }
         }
         lines.push({ text: '', type: 'info' })
-        lines.push({ text: '  Memos fill these gaps with factual, citable content', type: 'info' })
-        lines.push({ text: '  that AI models can discover and reference.', type: 'info' })
+        lines.push({ text: '  These are queries where AI cites other content', type: 'info' })
+        lines.push({ text: '  but not yours. Memos fill these gaps.', type: 'info' })
         break
       }
 
@@ -573,12 +573,15 @@ export function OnboardingFlow({
         completeWorkingLines()
         const finalStatus = await pollStatus()
         const totalNew = (finalStatus?.memoCount || 0) - startMemoCount
+        const remaining = result.memosQueued - totalNew
 
-        if (totalNew > 0) {
-          addLine('', 'info')
+        addLine('', 'info')
+        if (totalNew >= result.memosQueued) {
           addLine(`✓ ${totalNew} memo${totalNew !== 1 ? 's' : ''} published`, 'success')
+        } else if (totalNew > 0) {
+          addLine(`✓ ${totalNew} memo${totalNew !== 1 ? 's' : ''} published`, 'success')
+          addLine(`  ${remaining} more still generating — check MEMOS tab shortly.`, 'info')
         } else {
-          addLine('', 'info')
           addLine('  Memos are generating in the background.', 'info')
           addLine('  Check the MEMOS tab in a few minutes.', 'info')
         }
@@ -592,7 +595,9 @@ export function OnboardingFlow({
     addLine('', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
     addLine('  ONBOARDING COMPLETE', 'success')
-    addLine('  Daily monitoring is now active.', 'info')
+    addLine('  Your visibility gaps have been identified and', 'info')
+    addLine('  memos are being published to fill them.', 'info')
+    addLine('  Configure daily scans in Automations.', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
     setPhase('done')
@@ -768,33 +773,30 @@ export function OnboardingFlow({
               className="h-72 overflow-y-auto bg-[#1a1b26] p-4 font-mono text-sm"
             >
               {progressLines.map((line, i) => (
-                <div key={i} className="flex items-start gap-2 py-0.5">
+                <div key={i} className="py-0.5 font-mono text-sm whitespace-pre">
                   {line.type === 'working' && (
-                    <Loader2 className="h-4 w-4 text-[#0EA5E9] animate-spin shrink-0 mt-0.5" />
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 text-[#0EA5E9] animate-spin inline" />
+                      <span className="text-slate-300">{line.text}</span>
+                    </span>
                   )}
                   {line.type === 'success' && (
-                    <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
+                    <span className="text-[#10B981]">{line.text}</span>
                   )}
                   {line.type === 'header' && line.text && (
-                    <span className="text-[#7aa2f7] font-bold whitespace-pre">{line.text}</span>
+                    <span className="text-[#7aa2f7] font-bold">{line.text}</span>
                   )}
                   {line.type === 'result' && (
-                    <span className="text-[#0EA5E9] whitespace-pre">{line.text}</span>
+                    <span className="text-[#0EA5E9]">{line.text}</span>
                   )}
                   {line.type === 'action' && (
                     <span className="text-[#F59E0B] font-bold">{line.text}</span>
                   )}
                   {line.type === 'info' && line.text && (
-                    <>
-                      <span className="text-slate-500 shrink-0">→</span>
-                      <span className="text-slate-400 whitespace-pre">{line.text}</span>
-                    </>
+                    <span className="text-slate-400">{line.text}</span>
                   )}
-                  {line.type === 'working' && (
-                    <span className="text-slate-300">{line.text}</span>
-                  )}
-                  {line.type === 'success' && (
-                    <span className="text-[#10B981]">{line.text}</span>
+                  {line.type === 'info' && !line.text && (
+                    <span>&nbsp;</span>
                   )}
                 </div>
               ))}
