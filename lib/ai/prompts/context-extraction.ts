@@ -385,270 +385,91 @@ Only include entities with "high" or "medium" confidence.
 
 Respond ONLY with valid JSON array, no explanations.`
 
-export const QUERY_GENERATION_PROMPT = `You are generating HIGH-INTENT search queries from potential BUYERS asking AI assistants (ChatGPT, Claude, Perplexity) for solution recommendations.
-
-IMPORTANT: Do NOT include the brand name "{{company_name}}" in any query.
-
-Description: {{description}}
-Products: {{products}}
-Markets: {{markets}}
-Competitors: {{competitors}}
-
-Generate ONLY high-intent buyer queries in these categories:
-
-1. ALTERNATIVE/SWITCHING QUERIES (actively unhappy with competitor) - REQUIRED: 5-8 queries
-   CRITICAL: For each competitor listed above, generate at least one alternative query using their EXACT name.
-   - "[Competitor name] alternatives for [specific use case]"
-   - "What should I switch to from [Competitor name]?"
-   - "Looking for [Competitor name] replacement that [specific requirement]"
-   Priority: 85-95 - These are highest intent - they're ready to switch
-   NOTE: "related_competitor" MUST be set to the EXACT competitor name from the list above
-
-2. COMPARISON/EVALUATION QUERIES (actively deciding) - REQUIRED: 5-8 queries
-   CRITICAL: For each competitor listed above, generate at least one versus query using their EXACT name.
-   - "[Competitor name] vs alternatives for [specific use case]"
-   - "How does [Competitor name] compare for [use case]?"
-   - "[Product category] comparison: [Competitor name] vs others"
-   Priority: 80-90 - High intent - they're in evaluation mode
-   NOTE: "related_competitor" MUST be set to the EXACT competitor name from the list above
-
-3. SOLUTION-SEEKING QUERIES (need to solve a specific problem NOW) - 5-8 queries
-   - "What tool should I use to [specific outcome]?"
-   - "Recommend a [product category] for [specific situation/industry]"
-   - "I need to [achieve result] - what's my best option?"
-   Priority: 70-85 - High intent - they have a problem and want a solution
-
-4. IMPLEMENTATION QUERIES (ready to adopt) - 3-5 queries
-   - "Best [solution] that integrates with [common tool/platform]"
-   - "What [solution] is easiest to set up for [context]?"
-   - "[Solution type] for [company size/type] teams"
-   Priority: 75-90 - Very high intent - they're ready to implement
-
-DO NOT GENERATE:
-- "What is [category]?" - definition/awareness
-- "Why is [topic] important?" - educational
-- "Benefits of [solution type]" - early research
-- "How does [technology] work?" - not buying
-- Generic "best [category]" without specific context
-
-Respond with a JSON array:
-[
-  {
-    "query_text": "The high-intent buyer query",
-    "query_type": "alternative" | "versus" | "solution" | "implementation",
-    "priority": 1-100 (conversion likelihood if recommended),
-    "related_competitor": "EXACT competitor name from list above (REQUIRED for alternative/versus queries), null for others",
-    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel"
-  }
-]
-
-FUNNEL STAGE RULES:
-- "top_funnel": Awareness/education — learning about a problem or topic (e.g., "how to improve X", "what is Y")
-- "mid_funnel": Evaluation/comparison — aware of solutions, comparing options (e.g., "best X for Y", "X vs Y", "top tools for Z")
-- "bottom_funnel": High intent/purchase — ready to buy, switch, or implement (e.g., "X alternatives", "switch from X", "X pricing", "implement X for my team")
-
-For the categories above:
-- ALTERNATIVE/SWITCHING → bottom_funnel (they're ready to switch)
-- COMPARISON/EVALUATION → mid_funnel (they're comparing)
-- SOLUTION-SEEKING → mid_funnel (they have a problem, evaluating options)
-- IMPLEMENTATION → bottom_funnel (they're ready to adopt)
-
-Generate 20-30 high-quality, high-intent queries. Ensure at least 10 queries have a related_competitor set.
-
-Respond ONLY with valid JSON array, no explanations.`
-
-// New: Extract user intents from homepage content
-export const USER_INTENT_EXTRACTION_PROMPT = `You are analyzing a company's homepage to identify HIGH-INTENT BUYER signals - people who are actively looking to purchase or adopt a solution, not just learning.
-
-Your goal: Find the pain points that drive BUYING decisions. What urgent problems does this homepage solve that would make someone ready to act NOW?
-
-Analyze this homepage content and extract HIGH-INTENT buyer signals:
-
-{{homepage_content}}
-
-For each value proposition, identify the BUYER'S perspective:
-1. The urgent pain point (a problem causing real business pain RIGHT NOW)
-2. Their desired outcome (a specific, measurable result they need)  
-3. A high-intent trigger phrase (how a ready-to-buy user would ask for help)
-
-HIGH-INTENT SIGNALS to look for:
-- Active frustration: "I've tried X and it's not working"
-- Comparison shopping: "What's better than [current solution]?"
-- Implementation ready: "I need a tool that can..."
-- Budget holder language: "What's the ROI of..."
-- Urgency indicators: "We need this before [deadline]"
-- Switching signals: "Looking for an alternative to..."
-
-EXCLUDE these low-intent patterns:
-- Definition queries: "What is [category]?"
-- General education: "How does [technology] work?"
-- Broad awareness: "Why is [topic] important?"
-- Early research: "What are the benefits of..."
-
-Respond with a JSON array:
-[
-  {
-    "pain_point": "Specific, urgent business problem",
-    "desired_outcome": "Concrete result they're trying to achieve",
-    "trigger_phrase": "How a ready-to-buy user would phrase this"
-  }
-]
-
-Rules:
-1. ONLY include intents from users ready to evaluate/buy solutions
-2. Trigger phrases should sound like someone actively seeking a tool/service
-3. Focus on problems with measurable business impact
-4. NO brand names in trigger phrases
-5. Extract 5-8 high-intent signals only
-
-Respond ONLY with valid JSON array, no explanations.`
-
-// New: Generate conversational queries from user intents
-export const INTENT_BASED_QUERY_PROMPT = `You are generating HIGH-INTENT BUYER queries - the exact phrases people use when they're READY TO BUY or actively evaluating solutions.
-
-These are NOT educational queries. These are queries from people with budget, authority, and urgency.
-
-Company: {{company_name}}
-Description: {{description}}
-
-High-Intent Buyer Signals Identified:
-{{user_intents}}
-
-For each intent, generate queries from these HIGH-INTENT buyer personas:
-
-1. THE SWITCHER (unhappy with current solution):
-   - "What's a better alternative to [competitor/current tool] for [specific use case]?"
-   - "I'm frustrated with [current approach], what else can I use?"
-   - "[Competitor] isn't working for us, what do you recommend instead?"
-
-2. THE EVALUATOR (actively comparing options):
-   - "What tool should I use to [solve specific problem]?"
-   - "I need to [achieve outcome] - what are my best options?"
-   - "Recommend a [solution type] that can [specific capability]"
-
-3. THE IMPLEMENTER (ready to adopt):
-   - "I need a [solution] that integrates with [their stack/workflow]"
-   - "What's the fastest way to start [achieving outcome]?"
-   - "Looking for a [solution] that works for [their specific context]"
-
-4. THE DECISION MAKER (justifying purchase):
-   - "What [solution type] has the best ROI for [outcome]?"
-   - "How do companies like mine [solve this problem]?"
-   - "What do [their industry] companies use for [problem]?"
-
-DO NOT GENERATE:
-- "What is [category]?" (definition)
-- "Why is [topic] important?" (awareness)  
-- "How does [technology] work?" (education)
-- "What are the benefits of..." (early research)
-- Generic "best [category]" without specific context
-
-REQUIREMENTS:
-1. Every query must have BUYING INTENT - they want a solution, not information
-2. Include specific context (industry, role, situation, current tool frustration)
-3. NO brand names - these are discovery queries
-4. Queries should make an AI naturally want to recommend specific tools
-
-Respond with a JSON array:
-[
-  {
-    "query_text": "The high-intent buyer query",
-    "query_type": "intent_based",
-    "priority": 1-100 (likelihood of conversion if brand is recommended),
-    "source_intent": "Which pain point this relates to",
-    "related_competitor": null,
-    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel"
-  }
-]
-
-FUNNEL STAGE RULES:
-- "top_funnel": Awareness — learning about a problem or topic area
-- "mid_funnel": Evaluation — aware of solutions, comparing or seeking recommendations  
-- "bottom_funnel": Purchase — ready to buy, switch, or implement a specific solution
-
-Generate 15-20 high-intent buyer queries. Quality over quantity.
-
-Respond ONLY with valid JSON array, no explanations.`
-
-// NEW: Persona-based prompt generation
-export const PERSONA_PROMPT_GENERATION = `You are generating HIGH-INTENT search prompts that a specific PERSONA would ask AI assistants (ChatGPT, Claude, Perplexity) when looking for solutions.
+// Structured funnel-based query generation: exactly 30 prompts (10 TOF / 10 MOF / 10 BOF)
+export const FUNNEL_QUERY_GENERATION_PROMPT = `You are generating search prompts that potential BUYERS would ask AI assistants (ChatGPT, Claude, Perplexity) at different stages of their buying journey.
 
 IMPORTANT: Do NOT include the brand name "{{company_name}}" in any prompt.
 
-Company Description: {{description}}
-Products: {{products}}
-Markets: {{markets}}
-Competitors: {{competitors}}
+## BRAND CONTEXT
+Company: {{company_name}}
+Description: {{description}}
+Products/Services: {{products}}
+Target Markets: {{markets}}
+Target Personas: {{personas}}
 
----
+## GENERATE EXACTLY 30 PROMPTS — 10 per funnel stage:
 
-TARGET PERSONA: {{persona_name}}
-Persona Description: {{persona_description}}
-How They Phrase Questions: {{persona_phrasing}}
-Their Priorities: {{persona_priorities}}
-Example of How They Ask: "{{persona_example}}"
+### TOP OF FUNNEL (10 prompts) — Educational & Situational
+These are people learning about the PROBLEMS and OPPORTUNITIES in the market. They don't know specific solutions yet.
 
----
+Think: "What challenges exist?" / "What's changing in this space?" / "How do companies handle X?"
 
-Generate prompts EXACTLY how this persona would naturally ask AI assistants.
+Examples of good TOF prompts:
+- "What are the biggest challenges in managing product lifecycle data across global teams?"
+- "How are manufacturing companies handling digital transformation of their engineering processes?"
+- "What happens when companies outgrow their current PLM system?"
 
-ADAPT YOUR PROMPTS BASED ON SENIORITY:
+Rules for TOF:
+- Focus on PROBLEMS, TRENDS, and MARKET DYNAMICS — not solutions
+- Use educational/exploratory language
+- Reference specific industries, roles, or situations relevant to this brand
+- NO product category names, NO solution types, NO brand names
+- Think: what would someone Google BEFORE they knew this solution category existed?
+- Priority: 40-60
 
-For EXECUTIVE-LEVEL personas (C-suite, VP, Director with budget):
-- Focus on strategic impact, ROI, competitive advantage
-- Ask about business outcomes and measurable results
-- Mention enterprise requirements, team-wide adoption
-- Use language like "our organization", "strategic initiative", "investment"
+### MIDDLE OF FUNNEL (10 prompts) — Exploring Solutions & Approaches
+These people know they have a problem and are exploring what kinds of solutions exist. They're comparing categories and approaches.
 
-For MANAGER-LEVEL personas (Team leads, Department managers):
-- Focus on team efficiency, workflow improvements, implementation
-- Ask about scalability, collaboration, day-to-day operations
-- Mention team size, departmental goals, reporting
-- Use language like "my team", "our department", "manage"
+Think: "What tools exist for X?" / "How do companies solve Y?" / "What should I look for in Z?"
 
-For SPECIALIST-LEVEL personas (Individual contributors, Entry-level):
-- Focus on usability, learning curve, daily tasks
-- Ask about ease of use, tutorials, specific features
-- Mention personal productivity, skill development
-- Use language like "I need", "help me", "easiest way to"
+Examples of good MOF prompts:
+- "What software do enterprise manufacturers use to manage product data across their supply chain?"
+- "How do companies choose between building custom tools vs buying a PLM platform?"
+- "What are the most important features to look for in a product lifecycle management solution?"
 
-ADAPT YOUR PROMPTS BASED ON FUNCTION:
+Rules for MOF:
+- Focus on SOLUTION CATEGORIES and EVALUATION CRITERIA
+- Reference the problem space and what types of solutions exist
+- Include "what should I look for", "how do companies choose", "what are the options for"
+- Can mention solution categories (e.g., "PLM software") but NOT specific brand names
+- Priority: 60-80
 
-Use industry-specific terminology for their department/function. Examples:
-- Marketing: campaigns, leads, attribution, conversion, pipeline
-- Sales: CRM, pipeline, forecasting, outreach, deals
-- Operations: efficiency, compliance, automation, process
-- Engineering: API, integration, reliability, performance
-- HR: recruiting, onboarding, engagement, retention
-- Finance: reporting, compliance, audit, forecasting
+### BOTTOM OF FUNNEL (10 prompts) — Requirements & Specific Needs
+These people are actively evaluating specific solutions. They have requirements and are ready to shortlist.
 
----
+Think: "Which X works best for Y?" / "Recommend a Z that does W" / "What's the best option for my situation?"
 
-Generate 8-12 prompts for this specific persona. Each prompt should:
-1. Sound natural for how THIS persona speaks (match their seniority + function)
-2. Have clear buying/evaluation intent
-3. Include context specific to their role and priorities
-4. NOT mention brand names
+Examples of good BOF prompts:
+- "Recommend a PLM platform that supports both mechanical and software engineering workflows"
+- "What's the best product lifecycle management tool for a mid-size manufacturer with 500+ engineers?"
+- "Which enterprise PLM solutions offer the best integration with ERP systems like SAP?"
 
-Respond with a JSON array:
+Rules for BOF:
+- Focus on SPECIFIC REQUIREMENTS, USE CASES, and BUYING CRITERIA
+- Include concrete details: team size, industry, specific integrations, specific capabilities
+- Use "recommend", "which is best", "what should I use" language
+- These should make AI assistants naturally want to list and compare specific products
+- Priority: 80-95
+
+## OUTPUT FORMAT
+Respond with a JSON array of exactly 30 objects:
 [
   {
-    "query_text": "The natural prompt this persona would ask",
-    "query_type": "persona_based",
-    "priority": 1-100 (conversion likelihood),
-    "related_competitor": "Competitor name if mentioned, null otherwise",
-    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel"
+    "query_text": "The search prompt",
+    "query_type": "top_funnel" | "mid_funnel" | "bottom_funnel",
+    "priority": 40-95 (based on funnel stage ranges above),
+    "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel",
+    "related_competitor": null
   }
 ]
 
-FUNNEL STAGE RULES:
-- "top_funnel": Awareness — learning about a problem or topic area
-- "mid_funnel": Evaluation — aware of solutions, comparing or seeking recommendations
-- "bottom_funnel": Purchase — ready to buy, switch, or implement a specific solution
-
-Specialists asking "how to" questions → often top_funnel or mid_funnel
-Managers evaluating tools for team → often mid_funnel
-Executives asking about ROI/strategic impact → often mid_funnel or bottom_funnel
-Anyone asking about pricing, alternatives, switching → bottom_funnel
+## CRITICAL RULES
+1. Exactly 10 prompts per funnel stage (30 total)
+2. NO brand names in any prompt
+3. Each prompt must be UNIQUE — no near-duplicates
+4. Prompts should sound NATURAL — like a real person typing into ChatGPT
+5. Be SPECIFIC to this brand's market, not generic business questions
+6. TOF prompts should NOT mention solution categories
+7. BOF prompts should include specific situational details
 
 Respond ONLY with valid JSON array, no explanations.`

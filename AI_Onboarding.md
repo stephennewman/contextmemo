@@ -388,6 +388,16 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v2)
+
+**Redesign: Onboarding pipeline — remove competitor step, fix context detection, fix CSP** (d00a05b)
+- **Onboarding pipeline redesign:** Removed competitor discovery from the onboarding chain. Context extract now chains directly to query generation. Competitors/entities are discovered later from scan results (cited entities), not guessed upfront.
+- **New onboarding flow:** Brand Scan → Reverse-Engineer Prompts → AI Scan (3 steps, was 4).
+- **Fixed "0 products, 0 personas" bug:** `hasContext` check was looking for any keys in brand context, but brand creation sets `search_console` config immediately — making `hasContext` true before extraction actually ran. Now checks for `company_name`, `description`, or `products` (actual extraction output).
+- **CSP fix:** Added `font-src 'self' https://fonts.gstatic.com data:` and `https://fonts.googleapis.com` to `style-src`. Fixes blocked fonts/stylesheets on mockup and memo pages.
+- **Query generation:** Now works gracefully without competitors (skips comparison queries when no competitors exist yet).
+- **Files changed:** `next.config.ts`, `components/dashboard/onboarding-flow.tsx`, `app/(dashboard)/brands/[brandId]/layout.tsx`, `app/api/brands/[brandId]/actions/route.ts`, `lib/inngest/functions/context-extract.ts`, `lib/inngest/functions/query-generate.ts`
+
 ### February 8, 2026
 
 **Fix: Brand creation broken — RLS policy + form validation UX** (81ea13a)
