@@ -4,7 +4,7 @@ import { ExternalLink, AlertTriangle } from 'lucide-react'
 import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { BrandLogo } from '@/components/dashboard/brand-logo'
 import { ScanButton } from '@/components/dashboard/brand-actions'
-import { OnboardingFlow } from '@/components/dashboard/onboarding-flow'
+import { OnboardingFlow, TerminalWidget } from '@/components/dashboard/onboarding-flow'
 import { BrandContext } from '@/lib/supabase/types'
 import { BrandTabNav } from './brand-tab-nav'
 
@@ -192,6 +192,9 @@ export default async function BrandLayout({ params, children }: Props) {
 
       {/* Tab Content */}
       <div>{children}</div>
+
+      {/* Persistent Terminal Widget */}
+      <TerminalWidget brandId={brandId} brandName={brand.name} />
     </div>
   )
 }

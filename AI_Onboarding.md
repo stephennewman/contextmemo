@@ -388,6 +388,16 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v7)
+
+**Optimization: Onboarding scan uses single model (Grok) for speed + cost** (f7c8b05)
+- Onboarding scan now uses only Grok-4-fast instead of all 4 models (~75% cost reduction on first scan).
+- Grok had best citation data across all metrics: 12.8 avg citations/scan, 45% mention rate, 31.5% citation rate.
+- Added `onboarding` flag to each model config in `scan-run.ts` — flip to `true`/`false` to control which models run during onboarding.
+- Daily scans still use all enabled models for cross-model comparison.
+- Added read-only **Onboarding Scan** section to Automations page showing active onboarding model config with "Code-level config" badge.
+- **Files changed:** `lib/inngest/functions/scan-run.ts`, `lib/inngest/functions/query-generate.ts`, `lib/inngest/client.ts`, `components/dashboard/automations-grid.tsx`
+
 ### February 8, 2026 (v6)
 
 **Feature: Google Analytics (GA4) with per-brand custom dimensions** (5769006)

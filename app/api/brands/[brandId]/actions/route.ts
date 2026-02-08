@@ -674,21 +674,37 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           (Array.isArray(context.products) && context.products.length > 0)
         )
         
-        // Count queries
-        const { count: queryCount } = await supabase
-          .from('queries')
-          .select('*', { count: 'exact', head: true })
-          .eq('brand_id', brandId)
-          .eq('is_active', true)
-        
-        // Count scans (last 90 days)
+        // Count queries, scans, memos in parallel
         const ninetyDaysAgo = new Date()
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
-        const { count: scanCount } = await supabase
-          .from('scan_results')
-          .select('*', { count: 'exact', head: true })
-          .eq('brand_id', brandId)
-          .gte('scanned_at', ninetyDaysAgo.toISOString())
+        
+        const [
+          { count: queryCount },
+          { data: scanData },
+          { count: memoCount },
+          { data: competitorData },
+        ] = await Promise.all([
+          supabase
+            .from('queries')
+            .select('*', { count: 'exact', head: true })
+            .eq('brand_id', brandId)
+            .eq('is_active', true),
+          supabase
+            .from('scan_results')
+            .select('brand_mentioned, brand_in_citations, citations, competitors_mentioned')
+            .eq('brand_id', brandId)
+            .gte('scanned_at', ninetyDaysAgo.toISOString()),
+          supabase
+            .from('memos')
+            .select('*', { count: 'exact', head: true })
+            .eq('brand_id', brandId),
+          supabase
+            .from('competitors')
+            .select('name, domain')
+            .eq('brand_id', brandId),
+        ])
+        
+        const scanCount = scanData?.length || 0
         
         // Build context summary if available
         let contextSummary = ''
@@ -698,15 +714,59 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           contextSummary = `${products} products, ${personas} personas detected`
         }
         
+        // Build scan summary if scans exist
+        let scanSummary = null
+        if (scanData && scanData.length > 0) {
+          const mentioned = scanData.filter(s => s.brand_mentioned).length
+          const withCitations = scanData.filter(s => s.citations && (s.citations as string[]).length > 0).length
+          const brandCited = scanData.filter(s => s.brand_in_citations).length
+          
+          // Count unique cited domains
+          const domainCounts = new Map<string, number>()
+          for (const scan of scanData) {
+            for (const url of (scan.citations as string[] || [])) {
+              try {
+                const domain = new URL(url).hostname.replace(/^www\./, '')
+                domainCounts.set(domain, (domainCounts.get(domain) || 0) + 1)
+              } catch { /* skip bad URLs */ }
+            }
+          }
+          const topDomains = [...domainCounts.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([domain, count]) => ({ domain, count }))
+          
+          // Count gaps (queries where brand never mentioned)
+          const queryMentionMap = new Map<string, boolean>()
+          // We don't have query_id in this lightweight query, so estimate from mention rate
+          const gapEstimate = Math.round(scanCount * (1 - mentioned / scanCount))
+          
+          scanSummary = {
+            totalScans: scanCount,
+            mentionRate: Math.round((mentioned / scanCount) * 100),
+            citationRate: withCitations > 0 ? Math.round((brandCited / withCitations) * 100) : 0,
+            mentioned,
+            brandCited,
+            gapEstimate,
+            totalCitations: scanData.reduce((sum, s) => sum + ((s.citations as string[])?.length || 0), 0),
+            uniqueDomains: domainCounts.size,
+            topDomains,
+          }
+        }
+        
         return NextResponse.json({
           brandName: brand.name,
           isPaused: brand.is_paused || false,
           hasContext,
           hasQueries: (queryCount || 0) > 0,
-          hasScans: (scanCount || 0) > 0,
+          hasScans: scanCount > 0,
           queryCount: queryCount || 0,
-          scanCount: scanCount || 0,
+          scanCount,
           contextSummary,
+          memoCount: memoCount || 0,
+          competitorCount: competitorData?.length || 0,
+          competitors: (competitorData || []).slice(0, 5).map(c => c.name),
+          scanSummary,
         })
       }
 
