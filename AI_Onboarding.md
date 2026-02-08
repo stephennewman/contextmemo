@@ -388,6 +388,14 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v4)
+
+**Feature: Brand Personality extraction + voice trait sliders on profile** (e21288a)
+- New `BrandPersonality` type with voice traits (1-5 scale), Jungian archetype, worldview, audience stance, emotional register, and personality summary.
+- Updated context extraction prompt with detailed instructions for evidence-based personality diagnosis — worldview, archetype, voice characteristics, audience relationship.
+- Replaced "Key Themes" card on profile page with Brand Personality card featuring visual dot-scale indicators, worldview panel, archetype display, and emotional register badges.
+- **Files changed:** `lib/supabase/types.ts`, `lib/ai/prompts/context-extraction.ts`, `components/dashboard/profile-section.tsx`
+
 ### February 8, 2026 (v3)
 
 **Restructure: Prompt generation — 30 clean funnel-based prompts** (e579063)

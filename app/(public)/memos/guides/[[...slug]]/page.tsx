@@ -9,7 +9,7 @@ import {
   markdownToHtml
 } from '@/lib/memo/render'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR: regenerate at most once per hour
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

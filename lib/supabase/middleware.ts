@@ -35,9 +35,18 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Only call auth.getUser() when needed — skip for public pages to save egress
+  const protectedPaths = ['/dashboard', '/brands', '/admin']
+  const authPaths = ['/login', '/signup', '/verify-email']
+  const needsAuth = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p)) ||
+    authPaths.some(p => request.nextUrl.pathname === p) ||
+    request.nextUrl.pathname.startsWith('/api')
+
+  let user: import('@supabase/supabase-js').User | null = null
+  if (needsAuth) {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  }
 
   const csrfBypassPaths = ['/api/billing/webhook', '/api/inngest', '/api/track']
   const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)

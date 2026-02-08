@@ -4,7 +4,7 @@ import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
 import { CONTEXT_MEMO_BRAND_ID } from '@/lib/memo/render'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR: regenerate at most once per hour
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

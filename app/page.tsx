@@ -54,7 +54,7 @@ function getNextTranche(userCount: number) {
   return null;
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // ISR: regenerate at most once per hour
 
 export default async function Home() {
   // Fetch featured memos for popular content section

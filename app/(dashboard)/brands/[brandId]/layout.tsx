@@ -31,7 +31,7 @@ export default async function BrandLayout({ params, children }: Props) {
   ] = await Promise.all([
     supabase
       .from('brands')
-      .select('*, is_paused')
+      .select('id, name, domain, subdomain, verified, is_paused, last_scan_at, context')
       .eq('id', brandId)
       .single(),
     supabase

@@ -1,7 +1,6 @@
 import { MetadataRoute } from 'next'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
-export const dynamic = 'force-dynamic'
 // Revalidate sitemap every hour to pick up new memos
 export const revalidate = 3600
 
