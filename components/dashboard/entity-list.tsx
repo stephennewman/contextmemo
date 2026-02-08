@@ -197,7 +197,7 @@ export function EntityList({
         break
       case 'name':
         sorted = sorted.sort((a, b) => 
-          a.name.localeCompare(b.name)
+          (a.name || '').localeCompare(b.name || '')
         )
         break
       case 'type':
@@ -220,7 +220,7 @@ export function EntityList({
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        return e.name.toLowerCase().includes(query) ||
+        return (e.name || '').toLowerCase().includes(query) ||
           e.domain?.toLowerCase().includes(query) ||
           e.entity_type?.toLowerCase().includes(query)
       }
@@ -242,7 +242,7 @@ export function EntityList({
         break
       case 'name':
         filtered = [...filtered].sort((a, b) => 
-          a.name.localeCompare(b.name)
+          (a.name || '').localeCompare(b.name || '')
         )
         break
       case 'type':

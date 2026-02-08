@@ -186,7 +186,7 @@ export function CompetitorsListClient({
         break
       case 'name':
         sorted = sorted.sort((a, b) => 
-          a.name.localeCompare(b.name)
+          (a.name || '').localeCompare(b.name || '')
         )
         break
       case 'type':
@@ -211,7 +211,7 @@ export function CompetitorsListClient({
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        return c.name.toLowerCase().includes(query) ||
+        return (c.name || '').toLowerCase().includes(query) ||
           c.domain?.toLowerCase().includes(query) ||
           c.entity_type?.toLowerCase().includes(query)
       }
@@ -227,7 +227,7 @@ export function CompetitorsListClient({
         break
       case 'name':
         filtered = [...filtered].sort((a, b) => 
-          a.name.localeCompare(b.name)
+          (a.name || '').localeCompare(b.name || '')
         )
         break
       case 'type':
