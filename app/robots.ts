@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next'
 
+const AI_CONTENT_PATHS = ['/memo/', '/resources/', '/memos/', '/compare/', '/alternatives/', '/guides/', '/for/', '/how-to/', '/how/', '/vs/', '/gap/', '/alternatives-to/', '/llms.txt']
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
@@ -16,43 +18,93 @@ export default function robots(): MetadataRoute.Robots {
           '/mockups/',
         ],
       },
-      // Explicitly allow AI crawlers to index memo content
+
+      // --- OpenAI ---
       {
         userAgent: 'GPTBot',
-        allow: ['/memo/', '/llms.txt'],
+        allow: AI_CONTENT_PATHS,
+      },
+      {
+        userAgent: 'OAI-SearchBot',
+        allow: AI_CONTENT_PATHS,
       },
       {
         userAgent: 'ChatGPT-User',
-        allow: ['/memo/', '/llms.txt'],
+        allow: AI_CONTENT_PATHS,
+      },
+
+      // --- Anthropic ---
+      {
+        userAgent: 'ClaudeBot',
+        allow: AI_CONTENT_PATHS,
       },
       {
         userAgent: 'Claude-Web',
-        allow: ['/memo/', '/llms.txt'],
+        allow: AI_CONTENT_PATHS,
       },
       {
-        userAgent: 'ClaudeBot',
-        allow: ['/memo/', '/llms.txt'],
+        userAgent: 'Claude-SearchBot',
+        allow: AI_CONTENT_PATHS,
+      },
+      {
+        userAgent: 'Claude-User',
+        allow: AI_CONTENT_PATHS,
       },
       {
         userAgent: 'anthropic-ai',
-        allow: ['/memo/', '/llms.txt'],
+        allow: AI_CONTENT_PATHS,
       },
+
+      // --- Perplexity ---
       {
         userAgent: 'PerplexityBot',
-        allow: ['/memo/', '/llms.txt'],
+        allow: AI_CONTENT_PATHS,
       },
       {
-        userAgent: 'cohere-ai',
-        allow: ['/memo/', '/llms.txt'],
+        userAgent: 'Perplexity-User',
+        allow: AI_CONTENT_PATHS,
       },
+
+      // --- Google AI ---
       {
         userAgent: 'Google-Extended',
-        allow: ['/memo/', '/llms.txt'],
+        allow: AI_CONTENT_PATHS,
+      },
+
+      // --- Apple ---
+      {
+        userAgent: 'Applebot-Extended',
+        allow: AI_CONTENT_PATHS,
+      },
+
+      // --- Meta ---
+      {
+        userAgent: 'meta-externalagent',
+        allow: AI_CONTENT_PATHS,
+      },
+
+      // --- Amazon ---
+      {
+        userAgent: 'Amazonbot',
+        allow: AI_CONTENT_PATHS,
+      },
+
+      // --- ByteDance ---
+      {
+        userAgent: 'Bytespider',
+        allow: AI_CONTENT_PATHS,
+      },
+
+      // --- Cohere ---
+      {
+        userAgent: 'cohere-ai',
+        allow: AI_CONTENT_PATHS,
       },
     ],
     sitemap: 'https://contextmemo.com/sitemap.xml',
   }
 }
 
-// Note: /memo/ routes are intentionally public and crawlable
-// They contain published brand memos designed for AI citation
+// Note: Content paths are intentionally public and crawlable.
+// They contain published brand memos designed for AI citation.
+// All AI crawlers are explicitly allowed on content routes.
