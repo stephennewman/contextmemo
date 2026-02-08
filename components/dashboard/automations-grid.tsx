@@ -75,10 +75,10 @@ interface JobDef {
 // Available scan models
 // `onboarding` must match the `onboarding` flags in scan-run.ts SCAN_MODELS
 const AVAILABLE_MODELS = [
-  { id: 'perplexity-sonar', label: 'Perplexity Sonar', cost: '$', onboarding: false },
+  { id: 'perplexity-sonar', label: 'Perplexity Sonar', cost: '$', onboarding: true },
   { id: 'gpt-4o-mini', label: 'GPT-4o Mini', cost: '$$', onboarding: false },
   { id: 'claude-3-5-haiku', label: 'Claude 3.5 Haiku', cost: '$$$', onboarding: false },
-  { id: 'grok-4-fast', label: 'Grok 4 Fast', cost: '$$', onboarding: true },
+  { id: 'grok-4-fast', label: 'Grok 4 Fast', cost: '$$', onboarding: false },
 ]
 
 const JOBS: JobDef[] = [

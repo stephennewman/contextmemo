@@ -10,7 +10,8 @@ import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { reportUsageToStripe, calculateCredits } from '@/lib/stripe/usage'
 import { classifySentiment } from '@/lib/utils/sentiment'
 import { checkBrandBudget } from '@/lib/utils/budget-guard'
-import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
+import { isBlockedCompetitorName, getEntityTypeForDomain } from '@/lib/config/competitor-blocklist'
+import { openai } from '@ai-sdk/openai'
 import { calculatePromptScore } from '@/lib/utils/prompt-score'
 
 const supabase = createClient(
@@ -56,7 +57,7 @@ const SCAN_MODELS: ModelConfig[] = [
     provider: 'perplexity-direct', 
     modelId: 'sonar', 
     enabled: true,
-    onboarding: false,
+    onboarding: true, // Best for onboarding: clean, authoritative citations
     citationSource: 'perplexity',
   },
   
@@ -85,7 +86,7 @@ const SCAN_MODELS: ModelConfig[] = [
     provider: 'openrouter', 
     modelId: 'x-ai/grok-4-fast:online', 
     enabled: true,
-    onboarding: true, // Best citation data: 12.8 avg citations/scan, 45% mention rate
+    onboarding: false,
     citationSource: 'openrouter-native',
   },
 ]
@@ -871,60 +872,54 @@ export const scanRun = inngest.createFunction(
       })
     }
 
-    // Step 7: Auto-discover competitors from citations
+    // Step 7: Auto-discover and classify entities from citations
     const discoveredCompetitors = await step.run('auto-discover-competitors', async () => {
-      // Collect all unique domains from citations
+      // Collect all citations with their query context
       const allCitations = scanResults
         .filter(r => r.citations && r.citations.length > 0)
-        .flatMap(r => r.citations || [])
+        .flatMap(r => (r.citations || []).map(url => ({ url, queryId: r.queryId })))
       
-      // Extract domains from citation URLs
+      // Extract domains from citation URLs, track per-query frequency
       const domainCounts = new Map<string, number>()
-      const domainToUrl = new Map<string, string>() // Keep one example URL per domain
+      const domainToUrls = new Map<string, Set<string>>()
+      const domainToQueries = new Map<string, Set<string>>()
       
-      for (const url of allCitations) {
+      // Skip well-known non-entity domains
+      const skipDomains = new Set([
+        'wikipedia.org', 'wikimedia.org', 'wikidata.org',
+        'youtube.com', 'twitter.com', 'x.com', 'facebook.com', 'linkedin.com', 'instagram.com',
+        'medium.com', 'substack.com', 'reddit.com', 'quora.com',
+        'github.com', 'stackoverflow.com', 'stackexchange.com',
+        'google.com', 'bing.com', 'yahoo.com', 'duckduckgo.com',
+        'amazon.com', 'amazon.co.uk', 'aws.amazon.com',
+        'apple.com',
+      ])
+      
+      const brandDomainNorm = brand.domain?.replace('www.', '').toLowerCase() || ''
+      
+      for (const { url, queryId } of allCitations) {
         try {
           const urlObj = new URL(url)
-          let domain = urlObj.hostname.replace('www.', '').toLowerCase()
+          const domain = urlObj.hostname.replace('www.', '').toLowerCase()
           
-          // Skip generic/non-competitor domains
-          const skipDomains = [
-            'wikipedia.org', 'wikimedia.org', 'wikidata.org',
-            'youtube.com', 'twitter.com', 'x.com', 'facebook.com', 'linkedin.com', 'instagram.com',
-            'medium.com', 'substack.com', 'reddit.com',
-            'github.com', 'stackoverflow.com', 'stackexchange.com',
-            'google.com', 'bing.com', 'yahoo.com',
-            'amazon.com', 'amazon.co.uk', 'aws.amazon.com',
-            'apple.com', 'microsoft.com',
-            'nytimes.com', 'wsj.com', 'forbes.com', 'businessinsider.com', 'techcrunch.com',
-            'reuters.com', 'bbc.com', 'bbc.co.uk', 'cnn.com',
-            'gov', 'edu', // TLDs to skip
-            brand.domain?.replace('www.', '').toLowerCase() || '', // Skip brand's own domain
-          ]
+          // Skip social, wiki, search engine domains
+          const shouldSkip = skipDomains.has(domain) ||
+            [...skipDomains].some(s => domain.endsWith('.' + s)) ||
+            domain.endsWith('.gov') || domain.endsWith('.edu') ||
+            domain === brandDomainNorm ||
+            domain.includes(brandName.replace(/\s+/g, '').toLowerCase())
           
-          // Check if domain should be skipped
-          const shouldSkip = skipDomains.some(skip => 
-            domain === skip || 
-            domain.endsWith('.' + skip) ||
-            (skip.startsWith('.') && domain.endsWith(skip))
-          )
+          if (shouldSkip) continue
           
-          // Also skip if domain matches brand name
-          if (shouldSkip || domain.includes(brandName.replace(/\s+/g, ''))) {
-            continue
-          }
-          
-          // Count occurrences
           domainCounts.set(domain, (domainCounts.get(domain) || 0) + 1)
-          if (!domainToUrl.has(domain)) {
-            domainToUrl.set(domain, url)
-          }
-        } catch {
-          // Invalid URL, skip
-        }
+          if (!domainToUrls.has(domain)) domainToUrls.set(domain, new Set())
+          domainToUrls.get(domain)!.add(url)
+          if (!domainToQueries.has(domain)) domainToQueries.set(domain, new Set())
+          domainToQueries.get(domain)!.add(queryId)
+        } catch { /* skip invalid URLs */ }
       }
       
-      // Get existing competitors for this brand
+      // Get existing entities for this brand
       const { data: existingCompetitors } = await supabase
         .from('competitors')
         .select('domain, name')
@@ -935,57 +930,141 @@ export const scanRun = inngest.createFunction(
           .map(c => c.domain?.replace('www.', '').toLowerCase())
           .filter(Boolean)
       )
-      const existingNames = new Set(
-        (existingCompetitors || []).map(c => c.name.toLowerCase())
-      )
       
-      // Find new domains (cited at least once, not already in competitors)
-      const newCompetitors: Array<{ name: string; domain: string; citations: number }> = []
+      // Build candidate list with classification
+      const candidates: Array<{
+        name: string
+        domain: string
+        citations: number
+        queryCount: number
+        entityType: string
+        sampleUrls: string[]
+      }> = []
       
       for (const [domain, count] of domainCounts) {
         if (existingDomains.has(domain)) continue
         
-        // Extract company name from domain
-        // e.g., "sensitech.com" -> "Sensitech", "smart-sense.io" -> "Smart Sense"
-        const domainParts = domain.split('.')
-        const baseName = domainParts[0]
+        // Extract name from domain
+        const baseName = domain.split('.')[0]
           .split('-')
           .map(part => part.charAt(0).toUpperCase() + part.slice(1))
           .join(' ')
         
-        // Skip if name already exists (case-insensitive)
-        if (existingNames.has(baseName.toLowerCase())) continue
+        // Classify using known domain lists first
+        const knownType = getEntityTypeForDomain(domain)
         
-        newCompetitors.push({
+        // Heuristic classification for unknown domains
+        let entityType = knownType || 'product_competitor'
+        if (!knownType) {
+          // Blog/content indicators
+          const blogIndicators = ['blog', 'news', 'magazine', 'journal', 'review', 'digest', 'post', 'daily', 'weekly']
+          const isBloggy = blogIndicators.some(b => domain.includes(b))
+          
+          // Publisher/media indicators 
+          const pubIndicators = ['media', 'press', 'wire', 'times', 'herald', 'gazette', 'chronicle']
+          const isPublisher = pubIndicators.some(p => domain.includes(p))
+          
+          // TLD-based hints
+          const isOrgOrInfo = domain.endsWith('.org') || domain.endsWith('.info')
+          
+          if (isPublisher || isBloggy) {
+            entityType = 'publisher'
+          } else if (isOrgOrInfo) {
+            entityType = 'association'
+          }
+        }
+        
+        candidates.push({
           name: baseName,
-          domain: domain,
+          domain,
           citations: count,
+          queryCount: domainToQueries.get(domain)?.size || 0,
+          entityType,
+          sampleUrls: [...(domainToUrls.get(domain) || [])].slice(0, 3),
         })
       }
       
-      // Sort by citation count (most cited first) and take top 10
-      const topNew = newCompetitors
+      // Sort by citation count and take top 15
+      const topCandidates = candidates
         .sort((a, b) => b.citations - a.citations)
-        .slice(0, 10)
+        .slice(0, 15)
       
-      if (topNew.length === 0) {
+      if (topCandidates.length === 0) {
         return { discovered: 0, competitors: [] }
       }
       
-      // Insert new competitors with is_active: false (discovered but not tracked)
-      // User can toggle them ON to start tracking
+      // Use AI to classify entities if we have brand context
+      let classifiedEntities = topCandidates
+      const brandContext = brand.context as Record<string, unknown> | null
+      if (brandContext?.description || brandContext?.products) {
+        try {
+          const entityList = topCandidates.map(c => 
+            `${c.name} (${c.domain}) - cited ${c.citations}x across ${c.queryCount} prompts`
+          ).join('\n')
+          
+          const classifyPrompt = `You are classifying entities discovered from AI search citations for "${brand.name}" (${brand.domain || 'no domain'}).
+
+Brand description: ${(brandContext.description as string) || 'Not available'}
+Brand products: ${(brandContext.products as string[])?.join(', ') || 'Not available'}
+
+These domains were cited when AI models answered buyer questions about this brand's industry. Classify each one:
+
+${entityList}
+
+For each entity, return a JSON array with objects containing:
+- "domain": the domain
+- "name": the proper company/site name (fix capitalization, e.g., "hubspot.com" → "HubSpot")
+- "entity_type": one of: "product_competitor", "publisher", "analyst", "marketplace", "association", "news_outlet", "research_institution", "other"
+- "reasoning": one sentence why
+
+Only return the JSON array, nothing else.`
+
+          const { text } = await generateText({
+            model: openai('gpt-4o-mini'),
+            prompt: classifyPrompt,
+            temperature: 0.1,
+          })
+
+          const jsonMatch = text.match(/\[[\s\S]*\]/)
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]) as Array<{
+              domain: string; name: string; entity_type: string; reasoning?: string
+            }>
+            // Merge AI classifications back
+            classifiedEntities = topCandidates.map(c => {
+              const aiResult = parsed.find(p => p.domain === c.domain)
+              if (aiResult) {
+                return {
+                  ...c,
+                  name: aiResult.name || c.name,
+                  entityType: aiResult.entity_type || c.entityType,
+                }
+              }
+              return c
+            })
+          }
+        } catch (e) {
+          console.log('Entity classification AI call failed (non-critical):', (e as Error).message)
+          // Fall back to heuristic classification
+        }
+      }
+      
+      // Insert classified entities
       const { data: inserted, error } = await supabase
         .from('competitors')
-        .insert(topNew.map(c => ({
+        .insert(classifiedEntities.map(c => ({
           brand_id: brandId,
           name: c.name,
           domain: c.domain,
           auto_discovered: true,
-          is_active: false, // Default OFF - user must enable to track
-          description: `Auto-discovered from AI citations (cited ${c.citations}x)`,
+          is_active: c.entityType === 'product_competitor', // Only auto-activate actual competitors
+          entity_type: c.entityType,
+          description: `Cited ${c.citations}x across ${c.queryCount} prompts`,
           context: {
             discovered_from: 'citations',
             citation_count: c.citations,
+            query_count: c.queryCount,
+            sample_urls: c.sampleUrls,
             discovered_at: new Date().toISOString(),
           },
         })))

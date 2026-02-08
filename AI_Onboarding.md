@@ -388,6 +388,22 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v9)
+
+**Onboarding: 6-step narrative reveal** (c47a739)
+- Replaced 3-phase post-scan flow (scan results → memos → monitoring → tutorial) with a coherent 6-step progressive reveal:
+  1. **Your Brand** — extracted context (products, personas, markets)
+  2. **Your Prompts** — query count by funnel, sample prompts
+  3. **Citations** — mention/citation rates, total citations, domains, visibility assessment
+  4. **Entities** — top cited domains, competitors discovered
+  5. **Content Gaps** — queries where AI doesn't mention you, top gap queries
+  6. **Generate Memos** — explicit CTA to fill gaps with citable content
+- Each step advances on user click (NEXT button), building a story from brand → gaps → action.
+- Enhanced `check_status` API: now returns `brandDetails`, `promptSamples` (by funnel), `entities`, and `gapQueries`.
+- Removed tutorial cards phase — the 6-step reveal IS the tutorial.
+- Step indicator bar shows 6 dots with progress.
+- Files changed: `components/dashboard/onboarding-flow.tsx`, `app/api/brands/[brandId]/actions/route.ts`
+
 ### February 8, 2026 (v8)
 
 **Redesign: Guided terminal onboarding with scan results, memos, tutorial** (b0e20d6)

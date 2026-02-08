@@ -53,6 +53,12 @@ interface GapQuery {
   funnel: string
 }
 
+interface TopCitedUrl {
+  url: string
+  domain: string
+  count: number
+}
+
 interface StatusResponse {
   hasContext: boolean
   hasQueries: boolean
@@ -66,6 +72,8 @@ interface StatusResponse {
   competitorCount: number
   competitors: string[]
   entities: { name: string; domain: string; type: string }[]
+  entityGroups: Record<string, string[]>
+  topCitedUrls: TopCitedUrl[]
   scanSummary: ScanSummary | null
   gapQueries: GapQuery[]
 }
@@ -412,26 +420,32 @@ export function OnboardingFlow({
       case 'entities': {
         lines.push({ text: '━━━ 4. ENTITIES ━━━', type: 'header' })
         lines.push({ text: '', type: 'info' })
-        lines.push({ text: `  ${statusData.competitorCount} entities discovered from citations`, type: 'result' })
-        lines.push({ text: '', type: 'info' })
-        if (s && s.topDomains.length > 0) {
-          lines.push({ text: '  Top cited domains:', type: 'info' })
-          for (const d of s.topDomains) {
-            const isBrand = d.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
-            lines.push({
-              text: `    ${d.domain.padEnd(28)} ${d.count}x${isBrand ? ' ← you' : ''}`,
-              type: isBrand ? 'success' : 'info',
-            })
+        lines.push({ text: `  ${statusData.competitorCount} entities classified from citations`, type: 'result' })
+        
+        // Show entities grouped by type
+        const groups = statusData.entityGroups || {}
+        for (const [label, names] of Object.entries(groups)) {
+          if (names.length === 0) continue
+          lines.push({ text: '', type: 'info' })
+          lines.push({ text: `  ${label}:`, type: 'info' })
+          for (const name of names.slice(0, 4)) {
+            lines.push({ text: `    → ${name}`, type: label === 'Competitors' ? 'result' : 'info' })
+          }
+          if (names.length > 4) {
+            lines.push({ text: `    + ${names.length - 4} more`, type: 'info' })
           }
         }
-        if (statusData.competitors.length > 0) {
+        
+        // Show top cited URLs (what AI trusts)
+        if (statusData.topCitedUrls && statusData.topCitedUrls.length > 0) {
           lines.push({ text: '', type: 'info' })
-          lines.push({ text: '  Competitors:', type: 'info' })
-          for (const c of statusData.competitors.slice(0, 6)) {
-            lines.push({ text: `    → ${c}`, type: 'info' })
-          }
-          if (statusData.competitors.length > 6) {
-            lines.push({ text: `    + ${statusData.competitors.length - 6} more`, type: 'info' })
+          lines.push({ text: '  Most cited content:', type: 'info' })
+          for (const u of statusData.topCitedUrls.slice(0, 5)) {
+            const isBrand = u.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
+            lines.push({
+              text: `    ${u.domain.padEnd(26)} ${u.count}x${isBrand ? ' ← you' : ''}`,
+              type: isBrand ? 'success' : 'info',
+            })
           }
         }
         break
