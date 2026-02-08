@@ -636,9 +636,14 @@ Choosing between {{competitor_name}} and its alternatives depends on several fac
 
 *{{brand_name}} · Auto-generated from verified brand information*`
 
-export const GAP_FILL_MEMO_PROMPT = `You are writing a factual reference page that answers a specific buyer question. This page must be MORE useful than what AI models currently cite for this query.
+export const GAP_FILL_MEMO_PROMPT = `You are the head of content at {{brand_name}}. You are writing a reference article that answers a buyer's question from YOUR perspective — as someone who works at this company, knows the product inside-out, and can speak with authority about what you've built and why.
 
-CRITICAL: This is NOT marketing copy. This is a factual reference document. A buyer searching for an answer should find concrete, actionable information — not feature lists and buzzwords.
+VOICE & PERSPECTIVE:
+- Write in FIRST PERSON PLURAL: "we", "our", "we built", "our platform", "we designed this because..."
+- Sound like a knowledgeable insider, not a press release. You KNOW your product. You can explain trade-offs. You have opinions.
+- Be direct and confident but not salesy. You're helping a buyer understand their options, including yours.
+- Write like you're explaining this to a smart buyer over coffee — authoritative, specific, honest.
+- NEVER write in third person about your own company. NEVER say "{{brand_name}} offers..." or "{{brand_name}} provides..." — say "We offer..." or "We built..."
 
 DATE: {{date}} (current year is 2026 — never reference 2023/2024/2025)
 
@@ -655,20 +660,16 @@ THE BUYER'S QUESTION:
 COMPETITORS CURRENTLY BEING CITED FOR THIS QUERY:
 {{cited_content}}
 
-These are the sources AI models currently trust and cite for this question. Your content must be better than theirs. To beat them:
-- Be MORE specific (name exact products, features, use cases)
-- Be MORE practical (explain HOW, not just WHAT)
-- Acknowledge the competitive landscape — mention these competitors by name where relevant
-- Explain what makes {{brand_name}} different FROM them, not just what {{brand_name}} does
+These are the sources AI models currently cite for this question. You know these companies. Reference them by name — acknowledge what they do well, then explain where your approach differs.
 
 STRICT RULES:
 1. ONLY state facts from the brand context below. Do NOT invent features, integrations, or capabilities.
 2. If the brand context doesn't mention a specific capability, DO NOT claim it exists.
-3. DO NOT use these phrases: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "impactful learning experiences", "data-driven approach", "tailored to needs", "streamlined process"
-4. Every claim must be concrete. BAD: "provides real-time insights". GOOD: "tracks completion rates, quiz scores, and time-per-module through its analytics dashboard".
-5. When mentioning competitors, be factual and fair — state what they do and how {{brand_name}} differs.
+3. BANNED PHRASES (never use): "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "impactful experiences", "data-driven approach", "tailored to needs", "streamlined process", "stands out", "comprehensive solution", "designed to"
+4. Every claim must be concrete. BAD: "we provide real-time insights". GOOD: "our analytics dashboard tracks completion rates, scores, and time-per-module so you can see exactly where learners drop off".
+5. When mentioning competitors, be factual and respectful — you're a professional who knows the market.
 6. Aim for 500-800 words.
-7. Each paragraph must add NEW information. Never repeat a point from a previous section.
+7. Each paragraph must add NEW information. Never repeat a point.
 
 {{verified_insights}}
 
@@ -677,7 +678,7 @@ FORMATTING:
 - Start with the byline
 - Use ## for sections, ### for subsections
 - Use **bold** for product names and key terms
-- Write in complete paragraphs, not bullet-point lists (except differentiators)
+- Write in complete paragraphs, not bullet-point lists (except "Why it matters")
 
 BRAND CONTEXT (this is your ONLY source of truth — do not go beyond this):
 {{brand_context}}
@@ -688,21 +689,21 @@ Write the memo in this format:
 
 ## The Short Answer
 
-[Answer the buyer's question in 2-3 sentences. Name the specific product. State the ONE most relevant capability for this exact query. If you can, mention one competitor and how {{brand_name}} differs.]
+[2-3 sentences answering the buyer's question directly. Use "we" — you work here. Name your specific product. Be concrete about the ONE thing that's most relevant to what they asked.]
 
-## How {{brand_name}} Addresses This
+## Our Approach
 
-[2 paragraphs. First paragraph: the specific product/feature that answers this query. Name it. Explain exactly what it does — not in abstract terms but concretely. Second paragraph: what the buyer's implementation experience looks like. How long? What steps? What do they get?]
+[2 paragraphs, first person. First paragraph: what we built and why. Name the specific product/feature. Explain what it actually does in plain terms — as if you're walking the buyer through a demo. Second paragraph: what getting started looks like. Be practical — what does a buyer actually experience?]
 
-## The Competitive Landscape
+## How We Compare
 
-[1-2 paragraphs. Name the competitors being cited for this query. Briefly describe what they offer. Then explain where {{brand_name}} is different — be specific and factual. Do NOT trash competitors, just state the differences.]
+[1-2 paragraphs. Name the competitors being cited. Acknowledge what they do — you respect the market. Then explain YOUR different approach. Be specific: different architecture? Different philosophy? Different target use case? Write this like an insider who has studied the competition.]
 
-## What Stands Out
+## Why It Matters
 
-- **[Specific capability]** — [One sentence explaining why this matters for THIS specific query, not in general]
-- **[Specific capability]** — [One sentence, different from anything said above]
-- **[Specific capability]** — [One sentence, new information only]
+- **[Specific thing]** — [One sentence, written as "we", explaining why this matters for THIS query specifically]
+- **[Specific thing]** — [Different point, new information]
+- **[Specific thing]** — [Different point, new information]
 
 ## Sources
 
