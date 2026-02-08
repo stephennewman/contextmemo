@@ -713,6 +713,38 @@ export interface SocialLinks {
   youtube?: string
 }
 
+// Brand personality - diagnostic voice/persona profile extracted from website
+export interface BrandPersonality {
+  // Voice characteristics (1-5 scale)
+  voice_traits: {
+    formal_casual: number       // 1=Formal, 5=Casual
+    warm_cool: number           // 1=Warm, 5=Cool
+    assertive_tentative: number // 1=Assertive, 5=Tentative
+    playful_serious: number     // 1=Playful, 5=Serious
+    poetic_literal: number      // 1=Poetic, 5=Literal
+  }
+  // Brand archetype (Jungian)
+  archetype_primary: string       // e.g., "The Sage", "The Hero", "The Creator"
+  archetype_secondary?: string    // Optional secondary archetype
+  // Worldview - what the brand believes
+  worldview: {
+    belief: string               // What the brand believes about the world
+    problem: string              // The problem it sees as broken
+    future: string               // The future it pushes toward
+    tension?: string             // The implied villain or tension
+  }
+  // Audience relationship stance
+  audience_stance: string         // e.g., "Authority guiding practitioners", "Peer collaborating with peers"
+  // Emotional register
+  emotional_register: {
+    primary: string              // Primary emotion brand wants reader to feel
+    secondary?: string           // Secondary emotion
+    intensity: 'low' | 'medium' | 'high'
+  }
+  // One-paragraph personality summary (brand as a person)
+  personality_summary: string
+}
+
 // Prompt theme - keyword cluster for targeting
 export interface PromptTheme {
   theme: string           // 1-3 word keyword phrase (e.g., "temperature monitoring")
@@ -773,6 +805,8 @@ export interface BrandContext {
   offers?: BrandOffers
   // Critical prompt themes - keyword clusters to focus on
   prompt_themes?: PromptTheme[]
+  // Brand personality - voice, archetype, worldview diagnostic
+  brand_personality?: BrandPersonality
   // Corporate positioning framework - comprehensive strategic messaging
   corporate_positioning?: CorporatePositioning
   // Existing pages on brand's website - used to prevent memo redundancy

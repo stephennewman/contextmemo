@@ -49,6 +49,30 @@ Analyze the provided website content and extract the following information in JS
       "category": "product|use_case|industry|feature"
     }
   ],
+  "brand_personality": {
+    "voice_traits": {
+      "formal_casual": 1-5,
+      "warm_cool": 1-5,
+      "assertive_tentative": 1-5,
+      "playful_serious": 1-5,
+      "poetic_literal": 1-5
+    },
+    "archetype_primary": "The Sage|The Hero|The Creator|The Explorer|The Ruler|The Caregiver|The Magician|The Outlaw|The Everyman|The Lover|The Jester|The Innocent",
+    "archetype_secondary": "Optional secondary archetype",
+    "worldview": {
+      "belief": "What the brand believes about the world",
+      "problem": "The problem it sees as broken",
+      "future": "The future it is pushing toward",
+      "tension": "The implied villain or tension"
+    },
+    "audience_stance": "How the brand positions itself relative to the reader (e.g., 'Authority guiding practitioners')",
+    "emotional_register": {
+      "primary": "Primary emotion the brand wants the reader to feel",
+      "secondary": "Secondary emotion",
+      "intensity": "low|medium|high"
+    },
+    "personality_summary": "One paragraph describing the brand as if it were a person, without marketing jargon"
+  },
   "corporate_positioning": {
     "mission_statement": "The company's mission - why they exist, what problem they solve (1-2 sentences)",
     "vision_statement": "Where the company is headed - the future state they're creating (1-2 sentences)",
@@ -198,6 +222,40 @@ Categories:
 - "use_case" - Specific problem solved
 - "industry" - Target vertical
 - "feature" - Key capability or functionality
+
+---
+
+BRAND PERSONALITY - Reverse-engineer the brand's voice and persona from website copy:
+
+This is a DIAGNOSTIC profile, not creative writing. Use only evidence from the text.
+
+**Voice Traits** - Rate each on a 1-5 scale:
+- formal_casual: 1=Very Formal (e.g., "We provide enterprise solutions"), 5=Very Casual (e.g., "Hey, let's fix that")
+- warm_cool: 1=Very Warm (empathetic, personal), 5=Very Cool (detached, analytical)
+- assertive_tentative: 1=Very Assertive ("The best solution"), 5=Very Tentative ("One option to consider")
+- playful_serious: 1=Very Playful (humor, creativity), 5=Very Serious (gravitas, no-nonsense)
+- poetic_literal: 1=Very Poetic (metaphorical, evocative), 5=Very Literal (direct, factual)
+
+**Brand Archetype** - Map to the dominant Jungian archetype:
+- The Sage (knowledge, truth) - The Hero (mastery, achievement) - The Creator (innovation, vision)
+- The Explorer (freedom, discovery) - The Ruler (control, stability) - The Caregiver (service, protection)
+- The Magician (transformation) - The Outlaw (revolution, disruption) - The Everyman (belonging, trust)
+- The Lover (passion, connection) - The Jester (joy, levity) - The Innocent (optimism, simplicity)
+
+**Worldview** - What the brand believes:
+- belief: The brand's core conviction about the world
+- problem: What the brand sees as broken or inadequate
+- future: The better world the brand is pushing toward
+- tension: Who or what stands in the way
+
+**Audience Stance** - How the brand relates to the reader:
+- e.g., "Authority guiding practitioners", "Challenger pushing executives to think differently", "Peer collaborating with equals"
+
+**Emotional Register** - What the reader should feel:
+- primary: The dominant emotion (e.g., "confidence", "urgency", "empowerment")
+- intensity: How strongly the brand pushes this emotion
+
+**Personality Summary** - One paragraph describing the brand as if it were a person. No jargon.
 
 ---
 
