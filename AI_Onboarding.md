@@ -388,6 +388,15 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v3)
+
+**Restructure: Prompt generation — 30 clean funnel-based prompts** (e579063)
+- Replaced 4 overlapping prompt generation steps (category queries, intent extraction, intent queries, persona queries) with a single structured funnel-based approach.
+- Now generates exactly 30 prompts: 10 TOF (educational/situational), 10 MOF (exploring solutions), 10 BOF (requirements/products).
+- Single AI call instead of 4+ separate calls. Lower cost, cleaner output.
+- Removed 360+ lines of dead prompt templates.
+- **Files changed:** `lib/ai/prompts/context-extraction.ts`, `lib/inngest/functions/query-generate.ts`
+
 ### February 8, 2026 (v2)
 
 **Redesign: Onboarding pipeline — remove competitor step, fix context detection, fix CSP** (d00a05b)

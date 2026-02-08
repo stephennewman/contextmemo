@@ -473,7 +473,7 @@ export function OnboardingFlow({
       {/* Info */}
       <div className="mt-6 p-4 bg-zinc-50 border-2 border-zinc-200 rounded-lg">
         <p className="text-sm text-zinc-600">
-          <strong>What&apos;s happening?</strong> We&apos;re deep-scanning your website, reverse-engineering the prompts your buyers ask AI, and running your first visibility scan across multiple AI models. Competitors are discovered from what AI actually cites. This typically takes 2-3 minutes.
+          <strong>What&apos;s happening?</strong> We&apos;re scanning your website, understanding your products, solutions, positioning, then identifying relevant prompts, and running your first visibility scan across AI to baseline your visibility. This typically takes 2-3 minutes - hang tight!
         </p>
       </div>
     </div>
