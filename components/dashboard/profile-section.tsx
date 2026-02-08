@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Plus, X, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, Plus, X, Pencil, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { PersonaManager } from '@/components/dashboard/persona-manager'
 import { CorporatePositioningSection } from '@/components/dashboard/corporate-positioning'
@@ -263,132 +263,8 @@ export function ProfileSection({
             </CardContent>
           </Card>
 
-          {/* Brand Personality - Voice and persona diagnostic */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Brand Personality</CardTitle>
-              <CardDescription>
-                Voice, archetype, and worldview extracted from website copy
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {(() => {
-                const personality: BrandPersonality | undefined = context?.brand_personality
-                if (!personality) {
-                  return <p className="text-sm text-muted-foreground">No personality profile yet. Run a context refresh to extract.</p>
-                }
-
-                const VOICE_TRAITS: { key: keyof BrandPersonality['voice_traits']; left: string; right: string }[] = [
-                  { key: 'formal_casual', left: 'Formal', right: 'Casual' },
-                  { key: 'warm_cool', left: 'Warm', right: 'Cool' },
-                  { key: 'assertive_tentative', left: 'Assertive', right: 'Tentative' },
-                  { key: 'playful_serious', left: 'Playful', right: 'Serious' },
-                  { key: 'poetic_literal', left: 'Poetic', right: 'Literal' },
-                ]
-
-                return (
-                  <div className="space-y-5">
-                    {/* Voice Traits Sliders */}
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-3">Voice Characteristics</label>
-                      <div className="space-y-3">
-                        {VOICE_TRAITS.map(({ key, left, right }) => {
-                          const value = personality.voice_traits?.[key] || 3
-                          return (
-                            <div key={key} className="flex items-center gap-3">
-                              <span className={`text-xs font-medium w-20 text-right ${value <= 2 ? 'text-[#0EA5E9]' : 'text-muted-foreground'}`}>{left}</span>
-                              <div className="flex-1 relative">
-                                <div className="flex justify-between mb-1">
-                                  {[1, 2, 3, 4, 5].map(n => (
-                                    <div
-                                      key={n}
-                                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
-                                        n === value
-                                          ? 'bg-[#0F172A] text-white'
-                                          : 'bg-zinc-100 text-zinc-400'
-                                      }`}
-                                    >
-                                      {n}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <span className={`text-xs font-medium w-20 ${value >= 4 ? 'text-[#0EA5E9]' : 'text-muted-foreground'}`}>{right}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Archetype + Worldview */}
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="p-3 border rounded-lg">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-1">Archetype</label>
-                        <p className="font-semibold">{personality.archetype_primary}</p>
-                        {personality.archetype_secondary && (
-                          <p className="text-sm text-muted-foreground">+ {personality.archetype_secondary}</p>
-                        )}
-                      </div>
-                      <div className="p-3 border rounded-lg">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-1">Audience Stance</label>
-                        <p className="text-sm">{personality.audience_stance}</p>
-                      </div>
-                    </div>
-
-                    {/* Worldview */}
-                    {personality.worldview && (
-                      <div className="p-3 border rounded-lg space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">Worldview</label>
-                        <div className="grid gap-2 text-sm">
-                          {personality.worldview.belief && (
-                            <div><span className="font-medium text-xs text-muted-foreground">BELIEVES: </span>{personality.worldview.belief}</div>
-                          )}
-                          {personality.worldview.problem && (
-                            <div><span className="font-medium text-xs text-muted-foreground">PROBLEM: </span>{personality.worldview.problem}</div>
-                          )}
-                          {personality.worldview.future && (
-                            <div><span className="font-medium text-xs text-muted-foreground">FUTURE: </span>{personality.worldview.future}</div>
-                          )}
-                          {personality.worldview.tension && (
-                            <div><span className="font-medium text-xs text-muted-foreground">TENSION: </span>{personality.worldview.tension}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Emotional Register */}
-                    {personality.emotional_register && (
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="capitalize">
-                          {personality.emotional_register.primary}
-                        </Badge>
-                        {personality.emotional_register.secondary && (
-                          <Badge variant="outline" className="capitalize text-muted-foreground">
-                            {personality.emotional_register.secondary}
-                          </Badge>
-                        )}
-                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                          personality.emotional_register.intensity === 'high' ? 'bg-red-100 text-red-700' :
-                          personality.emotional_register.intensity === 'medium' ? 'bg-amber-100 text-amber-700' :
-                          'bg-zinc-100 text-zinc-600'
-                        }`}>
-                          {personality.emotional_register.intensity} intensity
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Personality Summary */}
-                    {personality.personality_summary && (
-                      <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg border">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-1">Personality Summary</label>
-                        <p className="text-sm italic leading-relaxed">{personality.personality_summary}</p>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-            </CardContent>
-          </Card>
+          {/* Brand Personality - compact 1x1 widget with independent refresh */}
+          <BrandPersonalityCard brandId={brandId} personality={context?.brand_personality} />
 
           {/* Markets & Customers */}
           <Card>
@@ -797,5 +673,129 @@ export function ProfileSection({
         </Card>
       )}
     </div>
+  )
+}
+
+// Compact Brand Personality widget — 1x1 card with independent refresh
+function BrandPersonalityCard({ brandId, personality: initialPersonality }: { brandId: string; personality?: BrandPersonality }) {
+  const router = useRouter()
+  const [personality, setPersonality] = useState(initialPersonality)
+  const [refreshing, setRefreshing] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => { setPersonality(initialPersonality) }, [initialPersonality])
+
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/personality`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      const { personality: updated } = await res.json()
+      setPersonality(updated)
+      toast.success('Personality refreshed')
+      router.refresh()
+    } catch {
+      toast.error('Failed to refresh personality')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const VOICE_TRAITS: { key: keyof BrandPersonality['voice_traits']; left: string; right: string }[] = [
+    { key: 'formal_casual', left: 'Formal', right: 'Casual' },
+    { key: 'warm_cool', left: 'Warm', right: 'Cool' },
+    { key: 'assertive_tentative', left: 'Assertive', right: 'Tentative' },
+    { key: 'playful_serious', left: 'Playful', right: 'Serious' },
+    { key: 'poetic_literal', left: 'Poetic', right: 'Literal' },
+  ]
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Brand Personality</CardTitle>
+          <Button variant="ghost" size="sm" onClick={refresh} disabled={refreshing} className="h-7 w-7 p-0">
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 pt-0">
+        {!personality ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground mb-2">No personality profile yet</p>
+            <Button variant="outline" size="sm" onClick={refresh} disabled={refreshing} className="gap-1.5">
+              {refreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Extract
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Voice traits — always visible */}
+            <div className="space-y-1.5">
+              {VOICE_TRAITS.map(({ key, left, right }) => {
+                const value = personality.voice_traits?.[key] || 3
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className={`text-[10px] font-medium w-16 text-right ${value <= 2 ? 'text-[#0EA5E9]' : 'text-muted-foreground'}`}>{left}</span>
+                    <div className="flex gap-0.5 flex-1 justify-center">
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <div
+                          key={n}
+                          className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                            n === value ? 'bg-[#0F172A] text-white' : 'bg-zinc-100 text-zinc-400'
+                          }`}
+                        >
+                          {n}
+                        </div>
+                      ))}
+                    </div>
+                    <span className={`text-[10px] font-medium w-16 ${value >= 4 ? 'text-[#0EA5E9]' : 'text-muted-foreground'}`}>{right}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Archetype + emotion — always visible */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="text-xs">{personality.archetype_primary}</Badge>
+              {personality.emotional_register && (
+                <Badge variant="outline" className="text-xs capitalize">{personality.emotional_register.primary}</Badge>
+              )}
+            </div>
+
+            {/* Expandable detail section */}
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-full"
+            >
+              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              {expanded ? 'Less' : 'More details'}
+            </button>
+
+            {expanded && (
+              <div className="space-y-3 pt-1">
+                {personality.audience_stance && (
+                  <div>
+                    <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-0.5">Stance</label>
+                    <p className="text-xs">{personality.audience_stance}</p>
+                  </div>
+                )}
+                {personality.worldview && (
+                  <div className="space-y-1 text-xs">
+                    {personality.worldview.belief && <div><span className="font-medium text-muted-foreground">BELIEVES: </span>{personality.worldview.belief}</div>}
+                    {personality.worldview.problem && <div><span className="font-medium text-muted-foreground">PROBLEM: </span>{personality.worldview.problem}</div>}
+                    {personality.worldview.future && <div><span className="font-medium text-muted-foreground">FUTURE: </span>{personality.worldview.future}</div>}
+                    {personality.worldview.tension && <div><span className="font-medium text-muted-foreground">TENSION: </span>{personality.worldview.tension}</div>}
+                  </div>
+                )}
+                {personality.personality_summary && (
+                  <p className="text-xs italic text-muted-foreground leading-relaxed">{personality.personality_summary}</p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
