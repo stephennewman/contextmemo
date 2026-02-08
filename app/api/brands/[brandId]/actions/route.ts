@@ -358,9 +358,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               // Build slug and title from query
               const querySlug = sanitizeSlug(gap.query_text.slice(0, 50))
               const slug = `gap/${querySlug}`
-              const title = gap.query_text.length > 80 
-                ? gap.query_text.slice(0, 77) + '...'
-                : gap.query_text
+              const title = gap.query_text
               
               // Save memo directly
               const { data: memo, error } = await supabase
