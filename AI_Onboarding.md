@@ -388,6 +388,18 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 8, 2026 (v10)
+
+**Onboarding: Perplexity citations, AI entity classification, fixed memo gen** (cd82cc4)
+- Switched onboarding model from Grok to **Perplexity Sonar** — cleaner, more authoritative citations vs blog/Twitter noise.
+- Entity auto-discovery now uses **GPT-4o-mini to classify entities** by type (competitor, publisher, analyst, marketplace, association) instead of treating all cited domains as generic competitors.
+- Heuristic pre-classification via domain patterns (blog, news, .org) before AI call.
+- Only `product_competitor` entities are auto-activated; publishers/analysts/etc start inactive.
+- **Fixed memo generation**: gap queries now ranked by citation count (most reference material = best memos), uses discovered competitors for comparison/alternative memos, passes `topicTitle` for context.
+- `check_status` API now returns `entityGroups` (entities by type) and `topCitedUrls` (most-cited content AI trusts).
+- Onboarding step 4 (Entities) shows classified groups and most-cited URLs.
+- Files changed: `lib/inngest/functions/scan-run.ts`, `app/api/brands/[brandId]/actions/route.ts`, `components/dashboard/onboarding-flow.tsx`, `components/dashboard/automations-grid.tsx`
+
 ### February 8, 2026 (v9)
 
 **Onboarding: 6-step narrative reveal** (c47a739)

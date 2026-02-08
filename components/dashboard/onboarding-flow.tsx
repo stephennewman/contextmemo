@@ -420,32 +420,58 @@ export function OnboardingFlow({
       case 'entities': {
         lines.push({ text: '━━━ 4. ENTITIES ━━━', type: 'header' })
         lines.push({ text: '', type: 'info' })
-        lines.push({ text: `  ${statusData.competitorCount} entities classified from citations`, type: 'result' })
         
-        // Show entities grouped by type
+        // Use domain count from citations as the primary metric (more reliable than competitors table)
+        const domainCount = s?.uniqueDomains || statusData.competitorCount
+        lines.push({ text: `  ${domainCount} domains cited across AI responses`, type: 'result' })
+        
+        // Show classified entities if we have them
         const groups = statusData.entityGroups || {}
-        for (const [label, names] of Object.entries(groups)) {
-          if (names.length === 0) continue
-          lines.push({ text: '', type: 'info' })
-          lines.push({ text: `  ${label}:`, type: 'info' })
-          for (const name of names.slice(0, 4)) {
-            lines.push({ text: `    → ${name}`, type: label === 'Competitors' ? 'result' : 'info' })
-          }
-          if (names.length > 4) {
-            lines.push({ text: `    + ${names.length - 4} more`, type: 'info' })
+        const hasGroups = Object.values(groups).some(names => names.length > 0)
+        if (hasGroups) {
+          for (const [label, names] of Object.entries(groups)) {
+            if (names.length === 0) continue
+            lines.push({ text: '', type: 'info' })
+            lines.push({ text: `  ${label}:`, type: 'info' })
+            for (const name of names.slice(0, 4)) {
+              lines.push({ text: `    → ${name}`, type: label === 'Competitors' ? 'result' : 'info' })
+            }
+            if (names.length > 4) {
+              lines.push({ text: `    + ${names.length - 4} more`, type: 'info' })
+            }
           }
         }
         
-        // Show top cited URLs (what AI trusts)
-        if (statusData.topCitedUrls && statusData.topCitedUrls.length > 0) {
+        // Top cited domains (always show — derived from scan results, not competitors table)
+        if (s && s.topDomains.length > 0) {
           lines.push({ text: '', type: 'info' })
-          lines.push({ text: '  Most cited content:', type: 'info' })
-          for (const u of statusData.topCitedUrls.slice(0, 5)) {
-            const isBrand = u.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
+          lines.push({ text: '  Top cited domains:', type: 'info' })
+          for (const d of s.topDomains) {
+            const isBrand = d.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
             lines.push({
-              text: `    ${u.domain.padEnd(26)} ${u.count}x${isBrand ? ' ← you' : ''}`,
+              text: `    ${d.domain.padEnd(26)} ${d.count}x${isBrand ? ' ← you' : ''}`,
               type: isBrand ? 'success' : 'info',
             })
+          }
+        }
+        
+        // Also show top cited URLs if available
+        if (statusData.topCitedUrls && statusData.topCitedUrls.length > 0) {
+          lines.push({ text: '', type: 'info' })
+          lines.push({ text: '  Most cited pages:', type: 'info' })
+          for (const u of statusData.topCitedUrls.slice(0, 4)) {
+            const isBrand = u.domain.includes(brandDomain.replace(/^www\./, '').split('.')[0])
+            // Show truncated URL path
+            try {
+              const path = new URL(u.url).pathname
+              const display = u.domain + (path.length > 1 ? path.slice(0, 30) + (path.length > 30 ? '...' : '') : '')
+              lines.push({
+                text: `    ${display.padEnd(40)} ${u.count}x`,
+                type: isBrand ? 'success' : 'info',
+              })
+            } catch {
+              lines.push({ text: `    ${u.domain.padEnd(40)} ${u.count}x`, type: 'info' })
+            }
           }
         }
         break
