@@ -20,7 +20,7 @@ export function BrandTabNav({ brandId, tabs }: BrandTabNavProps) {
   // Find the segment right after the brandId
   const segments = pathname.split('/')
   const brandIdx = segments.indexOf(brandId)
-  const activeTab = (brandIdx >= 0 && segments[brandIdx + 1]) || 'prompts'
+  const activeTab = (brandIdx >= 0 && segments[brandIdx + 1]) || 'profile'
 
   const mainTabs = tabs.filter((tab) => tab.slug !== 'settings')
   const settingsTab = tabs.find((tab) => tab.slug === 'settings')
