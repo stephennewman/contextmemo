@@ -514,14 +514,17 @@ export function OnboardingFlow({
     }
   }, [phase, statusData, revealStep, advanceReveal])
 
-  // ── Phase 3: Memo Generation (explicit action) ──
+  // ── Phase 3: Memo Generation (direct, not queued) ──
   const startMemoPhase = useCallback(async () => {
     setPhase('memos')
     addLine('', 'info')
     addLine('━━━ 6. GENERATE MEMOS ━━━', 'header')
     addLine('', 'info')
+    addLine('  Analyzing top-cited content for your gaps...', 'info')
+    addLine('  Generating content to compete with what AI trusts...', 'info')
+    addLine('', 'info')
 
-    addLine('Triggering memo generation for top gaps...', 'working')
+    addLine('Generating memos (this takes ~30 seconds)...', 'working')
 
     try {
       const res = await fetch(`/api/brands/${brandId}/actions`, {
@@ -530,60 +533,27 @@ export function OnboardingFlow({
         body: JSON.stringify({ action: 'generate_gap_memos', limit: 5 }),
       })
 
-      if (!res.ok) throw new Error('Failed to trigger memo generation')
+      if (!res.ok) throw new Error('Failed to generate memos')
       const result = await res.json()
 
       completeWorkingLines()
 
-      if (result.memosQueued === 0) {
-        addLine('  No gaps found — AI already knows about you!', 'success')
+      if (result.memosGenerated === 0 && result.totalGaps === 0) {
+        addLine('  No gaps found — AI already mentions you!', 'success')
+      } else if (result.memosGenerated === 0) {
+        addLine('  Memo generation failed. Try again from the MEMOS tab.', 'info')
       } else {
-        addLine(`  ${result.memosQueued} memos queued for generation:`, 'info')
+        addLine(`✓ ${result.memosGenerated} memo${result.memosGenerated !== 1 ? 's' : ''} generated from ${result.totalGaps} gaps`, 'success')
         addLine('', 'info')
 
+        // Show which queries got memos
         for (const q of result.gapQueries || []) {
           const funnel = q.funnel === 'top_funnel' ? 'TOF' : q.funnel === 'mid_funnel' ? 'MOF' : 'BOF'
-          const text = q.text.length > 50 ? q.text.slice(0, 47) + '...' : q.text
-          addLine(`    [${funnel}] "${text}"`, 'info')
-        }
-
-        addLine('', 'info')
-        addLine('Generating content...', 'working')
-
-        // Poll for memo completion
-        const startMemoCount = statusData?.memoCount || 0
-        const pollStart = Date.now()
-        let lastCount = startMemoCount
-
-        while (Date.now() - pollStart < 180000) {
-          await new Promise(r => setTimeout(r, 8000))
-          const status = await pollStatus()
-          if (!status) continue
-
-          if (status.memoCount > lastCount) {
-            const newMemos = status.memoCount - startMemoCount
-            completeWorkingLines()
-            lastCount = status.memoCount
-            addLine(`  ✓ ${newMemos} of ${result.memosQueued} memos generated`, 'success')
-            if (newMemos >= result.memosQueued) break
-            addLine('Generating next memo...', 'working')
+          const text = q.text.length > 48 ? q.text.slice(0, 45) + '...' : q.text
+          addLine(`  [${funnel}] "${text}"`, 'info')
+          if (q.citationsFound > 0) {
+            addLine(`         based on ${q.citationsFound} cited sources`, 'info')
           }
-        }
-
-        completeWorkingLines()
-        const finalStatus = await pollStatus()
-        const totalNew = (finalStatus?.memoCount || 0) - startMemoCount
-        const remaining = result.memosQueued - totalNew
-
-        addLine('', 'info')
-        if (totalNew >= result.memosQueued) {
-          addLine(`✓ ${totalNew} memo${totalNew !== 1 ? 's' : ''} published`, 'success')
-        } else if (totalNew > 0) {
-          addLine(`✓ ${totalNew} memo${totalNew !== 1 ? 's' : ''} published`, 'success')
-          addLine(`  ${remaining} more still generating — check MEMOS tab shortly.`, 'info')
-        } else {
-          addLine('  Memos are generating in the background.', 'info')
-          addLine('  Check the MEMOS tab in a few minutes.', 'info')
         }
       }
     } catch (error) {
@@ -596,12 +566,12 @@ export function OnboardingFlow({
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
     addLine('  ONBOARDING COMPLETE', 'success')
     addLine('  Your visibility gaps have been identified and', 'info')
-    addLine('  memos are being published to fill them.', 'info')
+    addLine('  memos published to fill them.', 'info')
     addLine('  Configure daily scans in Automations.', 'info')
     addLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
     setPhase('done')
-  }, [brandId, addLine, completeWorkingLines, pollStatus, statusData])
+  }, [brandId, addLine, completeWorkingLines])
 
   // ── Render: Setup Phase Step Indicators ──
   const setupSteps = [

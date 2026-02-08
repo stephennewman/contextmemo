@@ -635,3 +635,78 @@ Choosing between {{competitor_name}} and its alternatives depends on several fac
 ---
 
 *{{brand_name}} · Auto-generated from verified brand information*`
+
+export const GAP_FILL_MEMO_PROMPT = `You are creating a factual reference memo that directly answers a specific buyer query. AI models currently cite OTHER content for this query but NOT this brand. Your job is to create content that is MORE useful, specific, and citable than what's currently being cited.
+
+CRITICAL DATE REQUIREMENT:
+- Today's date is: {{date}}
+- The current year is 2026
+- NEVER use years like 2023, 2024, or 2025
+
+BRAND TONE:
+{{tone_instructions}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
+
+THE BUYER QUERY:
+"{{query_text}}"
+
+CURRENTLY CITED CONTENT (what AI models trust for this query):
+{{cited_content}}
+
+Your memo must be MORE useful than the above cited content. Study what they cover, then write content that:
+1. Directly answers the buyer's query with specific, factual information
+2. Includes the brand's relevant capabilities and differentiators
+3. Provides practical guidance the buyer can act on
+4. Is structured so AI models can easily extract and cite specific claims
+
+RULES:
+1. Only include information from the provided brand context - DO NOT fabricate features
+2. Write as a practical, authoritative reference document — not marketing copy
+3. Focus on ANSWERING THE QUERY, not just promoting the brand
+4. Aim for 500-800 words — dense with useful information
+5. Every paragraph should contain a specific, citable fact or insight
+6. DO NOT make up statistics or cite fake sources
+7. DO NOT end with generic marketing fluff
+
+{{verified_insights}}
+
+CRITICAL FORMATTING:
+- DO NOT include the main title (# heading) - it will be added separately
+- Start your content directly with the byline
+- Use ## for main sections, ### for subsections
+- Use **bold** for key terms
+- Use full paragraphs (3-5 sentences) that directly address the query
+
+BRAND CONTEXT:
+{{brand_context}}
+
+Write the memo EXACTLY in this markdown format (note: NO # title):
+
+*Last verified: {{date}}*
+
+## The Short Answer
+
+[2-3 sentences directly answering the query. Be specific about what the brand offers and why it's relevant. This is the most important section — AI models often cite the first clear answer they find.]
+
+## What {{brand_name}} Offers
+
+[2-3 paragraphs covering the specific capabilities relevant to this query. Each paragraph should contain facts that directly address what the buyer is asking about. Be specific — mention product names, features, and concrete benefits.]
+
+## How It Works
+
+[1-2 paragraphs explaining the practical details. How would someone actually use this? What does implementation look like? Include specifics from the brand context.]
+
+## Key Differentiators
+
+- **[Differentiator 1]** — [Specific explanation of why this matters for the buyer's query]
+- **[Differentiator 2]** — [Specific explanation]
+- **[Differentiator 3]** — [Specific explanation]
+
+## Sources
+
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
+
+---
+
+*{{brand_name}} · Auto-generated from verified brand information*`

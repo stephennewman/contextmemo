@@ -217,20 +217,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       case 'generate_gap_memos': {
-        // Generate memos for top gap queries, informed by what IS cited
+        // Generate memos directly for top gap queries using cited content as reference
+        // Direct generation (not Inngest) for speed during onboarding
+        const { generateText } = await import('ai')
+        const { openai } = await import('@ai-sdk/openai')
+        const { GAP_FILL_MEMO_PROMPT, formatBrandContextForPrompt, generateToneInstructions } = await import('@/lib/ai/prompts/memo-generation')
+        
         const memoLimit = Math.min(body.limit || 5, 10)
         
-        // Fetch queries and scan results in parallel
+        // Fetch queries, scan results, and brand context in parallel
         const [{ data: allQueries }, { data: scanData }] = await Promise.all([
           supabase
             .from('queries')
-            .select('id, query_text, query_type, funnel_stage, priority, related_competitor_id')
+            .select('id, query_text, funnel_stage, priority')
             .eq('brand_id', brandId)
             .eq('is_active', true)
             .order('priority', { ascending: false }),
           supabase
             .from('scan_results')
-            .select('query_id, brand_mentioned, citations, competitors_mentioned')
+            .select('query_id, brand_mentioned, citations')
             .eq('brand_id', brandId),
         ])
         
@@ -249,7 +254,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ success: true, memosQueued: 0, reason: 'no_gaps' })
         }
         
-        // For each gap query, find what IS cited (the content AI trusts)
+        // Build citation map: for each gap query, what IS cited?
         const gapCitationMap = new Map<string, string[]>()
         for (const scan of (scanData || [])) {
           if (!scan.citations || scan.brand_mentioned) continue
@@ -257,7 +262,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           gapCitationMap.set(scan.query_id, [...existing, ...(scan.citations as string[])])
         }
         
-        // Rank gap queries by how many citations exist (more = richer reference material)
+        // Rank gaps by citation count (most reference material = best memos)
         const rankedGaps = gapQueries
           .map(q => ({
             ...q,
@@ -267,62 +272,116 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           .sort((a, b) => b.citationCount - a.citationCount)
           .slice(0, memoLimit)
         
-        // Get any discovered competitors to use for comparison memos
-        const { data: competitors } = await supabase
-          .from('competitors')
-          .select('id, name, entity_type')
-          .eq('brand_id', brandId)
-          .eq('entity_type', 'product_competitor')
-          .limit(5)
+        // Prepare brand context for prompts
+        const brandContext = brand.context as Record<string, unknown> & { brand_tone?: unknown; brand_personality?: unknown }
+        const toneInstructions = generateToneInstructions(
+          brandContext.brand_tone as Parameters<typeof generateToneInstructions>[0],
+          brandContext.brand_personality as Parameters<typeof generateToneInstructions>[1]
+        )
+        const brandContextText = formatBrandContextForPrompt(brandContext as Parameters<typeof formatBrandContextForPrompt>[0])
+        const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         
-        const topCompetitor = competitors?.[0] || null
+        // Generate memos directly (parallel, up to 3 at a time)
+        const results: Array<{ queryId: string; queryText: string; success: boolean; memoId?: string }> = []
         
-        // Build memo events
-        const memoEvents: Array<{
-          name: 'memo/generate'
-          data: { 
-            brandId: string; queryId: string; memoType: string
-            competitorId?: string; topicTitle?: string; topicDescription?: string
-          }
-        }> = []
+        // Helper to sanitize slug
+        const sanitizeSlug = (text: string) => text
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .slice(0, 60)
         
-        for (const query of rankedGaps) {
-          // Determine memo type based on funnel + available data
-          let memoType = 'industry'
-          let competitorId: string | undefined
+        // Process in batches of 3
+        for (let i = 0; i < rankedGaps.length; i += 3) {
+          const batch = rankedGaps.slice(i, i + 3)
           
-          if (query.funnel_stage === 'bottom_funnel' && topCompetitor) {
-            memoType = 'comparison'
-            competitorId = topCompetitor.id
-          } else if (query.funnel_stage === 'mid_funnel' && topCompetitor) {
-            memoType = 'alternative'
-            competitorId = topCompetitor.id
-          } else if (query.funnel_stage === 'bottom_funnel') {
-            memoType = 'how_to'
-          } else {
-            memoType = 'industry'
-          }
+          const batchResults = await Promise.allSettled(
+            batch.map(async (gap) => {
+              // Build cited content summary for this gap
+              const uniqueUrls = [...new Set(gap.citedUrls)]
+              const citedDomains = new Map<string, number>()
+              for (const url of uniqueUrls) {
+                try {
+                  const domain = new URL(url).hostname.replace(/^www\./, '')
+                  citedDomains.set(domain, (citedDomains.get(domain) || 0) + 1)
+                } catch { /* skip */ }
+              }
+              const citedContent = [...citedDomains.entries()]
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([domain, count]) => `- ${domain} (cited ${count}x)`)
+                .join('\n')
+              
+              // Build prompt
+              const prompt = GAP_FILL_MEMO_PROMPT
+                .replace('{{query_text}}', gap.query_text)
+                .replace('{{cited_content}}', citedContent || 'No specific citations found for this query.')
+                .replace('{{tone_instructions}}', toneInstructions)
+                .replace('{{verified_insights}}', '')
+                .replace('{{brand_context}}', brandContextText)
+                .replace(/\{\{brand_name\}\}/g, brand.name)
+                .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
+                .replace(/\{\{date\}\}/g, today)
+              
+              // Generate content
+              const { text: content } = await generateText({
+                model: openai('gpt-4o-mini'),
+                prompt,
+                temperature: 0.3,
+              })
+              
+              if (!content || content.length < 200) {
+                throw new Error('Generated content too short')
+              }
+              
+              // Build slug and title from query
+              const querySlug = sanitizeSlug(gap.query_text.slice(0, 50))
+              const slug = `gap/${querySlug}`
+              const title = gap.query_text.length > 80 
+                ? gap.query_text.slice(0, 77) + '...'
+                : gap.query_text
+              
+              // Save memo directly
+              const { data: memo, error } = await supabase
+                .from('memos')
+                .upsert({
+                  brand_id: brandId,
+                  source_query_id: gap.id,
+                  memo_type: 'gap_fill',
+                  slug,
+                  title,
+                  content_markdown: content,
+                  meta_description: `${brand.name} — ${gap.query_text.slice(0, 120)}`,
+                  sources: [{ url: `https://${brand.domain}`, title: brand.name, accessed_at: today }],
+                  status: brand.auto_publish ? 'published' : 'draft',
+                  published_at: brand.auto_publish ? new Date().toISOString() : null,
+                  last_verified_at: new Date().toISOString(),
+                  version: 1,
+                }, { onConflict: 'brand_id,slug' })
+                .select('id')
+                .single()
+              
+              if (error) throw error
+              
+              return { queryId: gap.id, queryText: gap.query_text, success: true, memoId: memo?.id }
+            })
+          )
           
-          // Use the query text as topic context
-          memoEvents.push({
-            name: 'memo/generate',
-            data: {
-              brandId,
-              queryId: query.id,
-              memoType,
-              ...(competitorId ? { competitorId } : {}),
-              topicTitle: query.query_text,
-            },
-          })
+          for (const result of batchResults) {
+            if (result.status === 'fulfilled') {
+              results.push(result.value)
+            } else {
+              results.push({ queryId: '', queryText: '', success: false })
+            }
+          }
         }
         
-        if (memoEvents.length > 0) {
-          await inngest.send(memoEvents)
-        }
+        const successCount = results.filter(r => r.success).length
         
         return NextResponse.json({
           success: true,
-          memosQueued: memoEvents.length,
+          memosGenerated: successCount,
+          memosQueued: 0, // Direct generation, not queued
           totalGaps: gapQueries.length,
           gapQueries: rankedGaps.map(q => ({
             id: q.id,
@@ -330,6 +389,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             funnel: q.funnel_stage,
             citationsFound: q.citationCount,
           })),
+          results,
         })
       }
 
