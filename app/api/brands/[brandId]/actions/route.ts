@@ -146,27 +146,48 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           })
         }
 
-        // Check which of these top-cited URLs already have a memo responding to them
+        // Check which queries already have a memo
         const { data: existingMemos } = await supabase
           .from('memos')
-          .select('title, slug')
+          .select('source_query_id, title')
           .eq('brand_id', brandId)
           .eq('status', 'published')
         
-        const existingTitles = (existingMemos || []).map(m => m.title.toLowerCase())
+        const coveredQueryIds = new Set(
+          (existingMemos || []).map(m => m.source_query_id).filter(Boolean)
+        )
 
-        // Find the top-cited URL that doesn't already have a response memo
-        let selectedCitation = topCitations[0] // Default to top
-        
-        // Get the queries that triggered these citations to build context
-        const queryIds = selectedCitation.queryIds.slice(0, 5) // Top 5 queries
-        const { data: relatedQueries } = await supabase
-          .from('queries')
-          .select('id, query_text, query_type, funnel_stage, prompt_score')
-          .in('id', queryIds)
-          .order('prompt_score', { ascending: false })
+        // Walk through top citations and find one whose queries are NOT already covered
+        let selectedCitation = topCitations[0]
+        let topQuery: { id: string; query_text: string; query_type?: string; funnel_stage?: string; prompt_score?: number } | null = null
 
-        const topQuery = relatedQueries?.[0]
+        for (const citation of topCitations) {
+          // Get the queries associated with this citation
+          const queryIds = citation.queryIds.slice(0, 5)
+          const { data: relatedQueries } = await supabase
+            .from('queries')
+            .select('id, query_text, query_type, funnel_stage, prompt_score')
+            .in('id', queryIds)
+            .order('prompt_score', { ascending: false })
+
+          // Find a query that doesn't already have a memo
+          const uncoveredQuery = (relatedQueries || []).find(q => !coveredQueryIds.has(q.id))
+          
+          if (uncoveredQuery) {
+            selectedCitation = citation
+            topQuery = uncoveredQuery
+            break
+          }
+        }
+
+        // If everything is covered, tell the user
+        if (!topQuery) {
+          return NextResponse.json({
+            success: true,
+            suggestion: null,
+            message: 'All top-cited queries already have response memos. Run a new scan to discover fresh opportunities.',
+          })
+        }
         
         // Build a descriptive title from the top-cited URL
         let citedDomain = ''
