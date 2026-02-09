@@ -37,7 +37,22 @@ import {
   Filter,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatDistanceToNow, format } from 'date-fns'
+import { formatDistanceToNow, format, differenceInHours, isToday, isYesterday } from 'date-fns'
+
+// Smart timestamp: shows actual time for recent memos so you can tell them apart
+function smartTimestamp(date: Date): string {
+  const hoursAgo = differenceInHours(new Date(), date)
+  if (isToday(date)) {
+    return `today at ${format(date, 'h:mm a')}`
+  }
+  if (isYesterday(date)) {
+    return `yesterday at ${format(date, 'h:mm a')}`
+  }
+  if (hoursAgo < 168) { // within 7 days
+    return formatDistanceToNow(date, { addSuffix: true })
+  }
+  return format(date, 'MMM d, yyyy')
+}
 
 interface Memo {
   id: string
@@ -1064,7 +1079,7 @@ export function MemoFeed({
                         </Badge>
                         <span className="text-[11px] text-zinc-400">{wordCount} words · {sourcesCount} sources</span>
                         <span className="text-[11px] text-zinc-400" title={format(new Date(memo.updated_at), 'PPpp')}>
-                          · {formatDistanceToNow(new Date(memo.updated_at), { addSuffix: true })}
+                          · {smartTimestamp(new Date(memo.updated_at))}
                         </span>
                         {schemaJson?.hubspot_synced_at && (
                           <span className="text-[10px] text-[#0EA5E9] font-bold">· HS SYNCED</span>
