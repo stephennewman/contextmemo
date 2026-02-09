@@ -1052,7 +1052,8 @@ export function MemoFeed({
             return (
               <div
                 key={memo.id}
-                className={`border-[3px] transition-all ${
+                onClick={() => openEditor(memo)}
+                className={`border-[3px] transition-all cursor-pointer hover:bg-slate-50/50 ${
                   isNew 
                     ? 'border-emerald-400 ring-2 ring-emerald-300/50 animate-[memo-glow_2s_ease-in-out]' 
                     : memo.status === 'published' ? 'border-[#0F172A]' : 'border-slate-300'
@@ -1086,7 +1087,8 @@ export function MemoFeed({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    {/* Action buttons — stopPropagation so they don't trigger the card's editor click */}
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                       {memo.status === 'published' ? (
                         <>
                           <Button size="sm" className="h-7 px-2 text-xs" asChild>
@@ -1120,14 +1122,7 @@ export function MemoFeed({
                   </p>
                 </div>
 
-                {/* Edit button — opens full-screen editor */}
-                <button
-                  onClick={() => openEditor(memo)}
-                  className="w-full px-4 py-2 border-t-2 border-slate-200 text-[10px] font-bold tracking-wider text-zinc-500 hover:bg-slate-50 hover:text-[#0F172A] transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <Pencil className="h-3 w-3" />
-                  EDIT MEMO
-                </button>
+                {/* Removed separate EDIT MEMO button — entire card is now clickable */}
               </div>
             )
           })
