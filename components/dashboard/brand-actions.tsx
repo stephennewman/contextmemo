@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2, Globe, Plus, ChevronDown, Sparkles, SkipForward, ArrowRight } from 'lucide-react'
@@ -287,13 +287,23 @@ export function GenerateMemoDropdown({
   const [generating, setGenerating] = useState(false)
   const [generatingTitle, setGeneratingTitle] = useState('')
   const [memoCountAtGenStart, setMemoCountAtGenStart] = useState(0)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [suggesting, setSuggesting] = useState(false)
 
-  // When memoCount increases after generation starts, clear the generating state
+  // Clean up polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
+
+  // When memoCount increases after generation starts, clear generating state + stop polling
   useEffect(() => {
     if (generating && memoCount > memoCountAtGenStart) {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       setGenerating(false)
       setGeneratingTitle('')
+      toast.success('Memo generated')
     }
   }, [memoCount, memoCountAtGenStart, generating])
   const [suggestion, setSuggestion] = useState<{
@@ -375,23 +385,23 @@ export function GenerateMemoDropdown({
       setMemoCountAtGenStart(memoCount)
       setLoading(false)
 
-      // Poll by refreshing the page data every 5s, up to 90s
-      // Each router.refresh() causes the server to re-fetch memos,
-      // so the new memo appears in the list as soon as it's in the DB
+      // Poll by refreshing the page data every 5s, up to 60s
+      // Each router.refresh() re-fetches server data, so the new memo
+      // appears in the feed as soon as it's in the DB. The useEffect above
+      // will auto-dismiss the skeleton when memoCount increases.
+      if (pollRef.current) clearInterval(pollRef.current)
       let elapsed = 0
-      const interval = setInterval(() => {
+      pollRef.current = setInterval(() => {
         elapsed += 5000
         router.refresh()
-        if (elapsed >= 90000) {
-          clearInterval(interval)
+        if (elapsed >= 60000) {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
           setGenerating(false)
           setGeneratingTitle('')
+          router.refresh()
+          toast.info('Memo may still be generating. Refresh to check.')
         }
       }, 5000)
-
-      // Also store interval so we can clear it if component unmounts
-      const cleanup = () => clearInterval(interval)
-      window.addEventListener('beforeunload', cleanup, { once: true })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Generation failed')
       setLoading(false)
