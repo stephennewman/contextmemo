@@ -98,27 +98,38 @@ export default async function AdminDashboardPage() {
   const recentScans = recentScansResult.data || []
   const allMemos = memoCountResult.data || []
 
-  // Aggregate per-brand: 7d spend, 24h scans, total memos
+  // Aggregate per-brand: all-time spend, 7d spend, 24h scans, total memos
   const brandStats = allBrands.map(brand => {
-    const spend7d = usageEvents
-      .filter(e => e.brand_id === brand.id)
-      .reduce((sum, e) => sum + (Number(e.actual_cost_cents) || 0), 0) / 100
+    const brandEvents = usageEvents.filter(e => e.brand_id === brand.id)
+    const spendAllTime = brandEvents
+      .reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
+    const spend7d = brandEvents
+      .filter(e => new Date(e.created_at) >= new Date(last7d))
+      .reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
     const scans24h = recentScans.filter(s => s.brand_id === brand.id).length
     const memos = allMemos.filter((m: { brand_id: string; status: string }) => m.brand_id === brand.id)
     const publishedMemos = memos.filter((m: { status: string }) => m.status === 'published').length
     const totalMemos = memos.length
+    const lastActivity = brandEvents.length > 0
+      ? brandEvents.reduce((latest, e) => new Date(e.created_at) > new Date(latest) ? e.created_at : latest, brandEvents[0].created_at)
+      : null
 
     return {
       ...brand,
+      spendAllTime,
       spend7d,
       scans24h,
       totalMemos,
       publishedMemos,
+      lastActivity,
     }
-  })
+  }).sort((a, b) => b.spendAllTime - a.spendAllTime)
 
-  // Total 7d spend across all brands (actual cost)
-  const totalSpend7d = usageEvents.reduce((sum, e) => sum + (Number(e.actual_cost_cents) || 0), 0) / 100
+  // Totals
+  const totalSpendAllTime = usageEvents.reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
+  const totalSpend7d = usageEvents
+    .filter(e => new Date(e.created_at) >= new Date(last7d))
+    .reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
 
   // Get tenant names for brand ownership display
   const tenantIds = Array.from(new Set(allBrands.map(b => b.tenant_id)))
@@ -195,8 +206,10 @@ export default async function AdminDashboardPage() {
               )}
             </div>
             <div className="text-right text-xs text-slate-400">
-              <div>7d platform spend</div>
-              <div className="mt-1 text-lg font-semibold text-slate-700">${totalSpend7d.toFixed(2)}</div>
+              <div>Tracked spend (all time)</div>
+              <div className="mt-1 text-lg font-semibold text-slate-700">${totalSpendAllTime.toFixed(2)}</div>
+              <div className="mt-2">Last 7 days</div>
+              <div className="mt-1 text-base font-medium text-slate-600">${totalSpend7d.toFixed(2)}</div>
             </div>
           </div>
         </div>
@@ -238,12 +251,12 @@ export default async function AdminDashboardPage() {
             <thead>
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
                 <th className="pb-3 pr-4 font-medium">Brand</th>
-                <th className="pb-3 pr-4 font-medium">Domain</th>
                 <th className="pb-3 pr-4 font-medium">Owner</th>
+                <th className="pb-3 pr-4 text-right font-medium">All-Time</th>
                 <th className="pb-3 pr-4 text-right font-medium">7d Spend</th>
                 <th className="pb-3 pr-4 text-right font-medium">Scans (24h)</th>
                 <th className="pb-3 pr-4 text-right font-medium">Memos</th>
-                <th className="pb-3 text-right font-medium">Created</th>
+                <th className="pb-3 text-right font-medium">Last Active</th>
               </tr>
             </thead>
             <tbody>
@@ -251,15 +264,21 @@ export default async function AdminDashboardPage() {
                 <tr key={brand.id} className="border-b border-slate-50 hover:bg-slate-50">
                   <td className="py-3 pr-4">
                     <div className="font-medium text-[#0F172A]">{brand.name}</div>
-                    {brand.subdomain && (
-                      <div className="text-[10px] text-slate-400">{brand.subdomain}.contextmemo.com</div>
-                    )}
+                    <div className="text-[10px] text-slate-400">{brand.domain || '—'}</div>
                   </td>
-                  <td className="py-3 pr-4 text-slate-600">{brand.domain || '—'}</td>
                   <td className="py-3 pr-4 text-xs text-slate-500">{tenantMap.get(brand.tenant_id) || '—'}</td>
                   <td className="py-3 pr-4 text-right font-mono text-xs">
+                    {brand.spendAllTime > 0 ? (
+                      <span className={brand.spendAllTime > 5 ? 'font-semibold text-red-600' : brand.spendAllTime > 2 ? 'text-amber-600' : 'text-slate-600'}>
+                        ${brand.spendAllTime.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">$0.00</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-right font-mono text-xs">
                     {brand.spend7d > 0 ? (
-                      <span className={brand.spend7d > 1 ? 'text-amber-600' : 'text-slate-600'}>
+                      <span className={brand.spend7d > 2 ? 'text-amber-600' : 'text-slate-600'}>
                         ${brand.spend7d.toFixed(2)}
                       </span>
                     ) : (
@@ -274,7 +293,10 @@ export default async function AdminDashboardPage() {
                     <span className="text-slate-300">/{brand.totalMemos}</span>
                   </td>
                   <td className="py-3 text-right text-xs text-slate-400">
-                    {new Date(brand.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {brand.lastActivity
+                      ? new Date(brand.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : <span className="text-slate-300">never</span>
+                    }
                   </td>
                 </tr>
               ))}
