@@ -35,10 +35,12 @@ async function getOpenRouterBalance(): Promise<{
     })
     if (!res.ok) return null
     const data = await res.json()
+    const totalCredits = data.data?.total_credits ?? 0
+    const totalUsage = data.data?.total_usage ?? 0
     return {
-      balance: data.data?.balance ?? data.balance ?? 0,
-      usage: data.data?.usage ?? data.usage ?? 0,
-      limit: data.data?.limit ?? data.limit ?? null,
+      balance: totalCredits - totalUsage,
+      usage: totalUsage,
+      limit: totalCredits > 0 ? totalCredits : null,
     }
   } catch (err) {
     console.error('[admin] Failed to fetch OpenRouter balance:', err)

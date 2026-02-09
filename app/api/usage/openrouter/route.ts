@@ -122,12 +122,15 @@ export async function GET(request: Request) {
       .map(([date, data]) => ({ date, ...data }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
+    const totalCredits = credits.data?.total_credits ?? 0
+    const totalUsage = credits.data?.total_usage ?? 0
+
     return NextResponse.json({
       // Current balance info
       credits: {
-        balance: credits.data?.balance || credits.balance || 0,
-        usage: credits.data?.usage || credits.usage || 0,
-        limit: credits.data?.limit || credits.limit || null,
+        balance: totalCredits - totalUsage,
+        usage: totalUsage,
+        limit: totalCredits > 0 ? totalCredits : null,
       },
       
       // Usage in the specified period

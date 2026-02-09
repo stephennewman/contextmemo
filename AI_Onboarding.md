@@ -390,6 +390,14 @@ _Most recent deploys first_
 
 ### February 9, 2026
 
+**Logging: Fix silent catch blocks, remove deprecated Sentry config** (a28b3f8)
+- Added error logging to 10 previously silent catch blocks that were swallowing failures across the codebase
+- Critical fixes: scan-run credit increment, activity/track data inserts, billing/security event logging, Redis connection checks
+- Secondary fixes: admin dashboard queries, settings profile load, onboarding status polling
+- Removed deprecated `disableLogger` option from Sentry config (build warning cleanup)
+- Note: Sentry SDK and config files were already in place from prior session — DSN still needs to be populated in .env.local and Vercel env vars to activate error tracking
+- Files changed: `lib/inngest/functions/scan-run.ts`, `app/api/activity/route.ts`, `app/api/track/route.ts`, `lib/stripe/billing-events.ts`, `lib/security/security-events.ts`, `lib/redis/client.ts`, `app/admin/page.tsx`, `app/(dashboard)/brands/[brandId]/settings/page.tsx`, `components/dashboard/onboarding-flow.tsx`, `next.config.ts`
+
 **Fix: localeCompare crash on undefined persona fields** (e2a7b6b)
 - Fixed client-side crash when clicking on brands (e.g., Benchprep) whose personas have missing `function` or `seniority` fields
 - Root cause: `PersonaManager` sort called `.localeCompare()` on `persona.function` without null-checking — `undefined.localeCompare()` throws TypeError
