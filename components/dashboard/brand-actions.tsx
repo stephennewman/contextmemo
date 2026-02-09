@@ -275,6 +275,15 @@ const MEMO_TYPE_LABELS: Record<string, string> = {
   guide: 'Guide',
 }
 
+// Progress phases shown during memo generation for a fluid feel
+const GENERATION_PHASES = [
+  { label: 'Analyzing topic…', duration: 3000 },
+  { label: 'Researching competitors…', duration: 5000 },
+  { label: 'Writing content…', duration: 8000 },
+  { label: 'Polishing & formatting…', duration: 6000 },
+  { label: 'Almost done…', duration: 10000 },
+]
+
 // Suggestion-based memo generation: queries existing gaps and suggests the next best memo
 export function GenerateMemoDropdown({ 
   brandId,
@@ -287,15 +296,32 @@ export function GenerateMemoDropdown({
   const [generating, setGenerating] = useState(false)
   const [generatingTitle, setGeneratingTitle] = useState('')
   const [memoCountAtGenStart, setMemoCountAtGenStart] = useState(0)
+  const [progressPhase, setProgressPhase] = useState(0)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [suggesting, setSuggesting] = useState(false)
 
-  // Clean up polling interval on unmount
+  // Clean up polling interval + phase timer on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
+      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current)
     }
   }, [])
+
+  // Advance through progress phases
+  useEffect(() => {
+    if (!generating) return
+    if (progressPhase >= GENERATION_PHASES.length - 1) return
+
+    phaseTimerRef.current = setTimeout(() => {
+      setProgressPhase(prev => Math.min(prev + 1, GENERATION_PHASES.length - 1))
+    }, GENERATION_PHASES[progressPhase].duration)
+
+    return () => {
+      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current)
+    }
+  }, [generating, progressPhase])
 
   // When memoCount increases after generation starts, clear generating state + stop polling
   useEffect(() => {
@@ -303,6 +329,7 @@ export function GenerateMemoDropdown({
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       setGenerating(false)
       setGeneratingTitle('')
+      setProgressPhase(0)
       toast.success('Memo generated')
     }
   }, [memoCount, memoCountAtGenStart, generating])
@@ -376,32 +403,54 @@ export function GenerateMemoDropdown({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Generation failed')
 
-      // Switch to generating state with skeleton
+      // Switch to generating state with animated progress
       const title = suggestion.title
       setShowSuggestion(false)
       setSuggestion(null)
       setGenerating(true)
       setGeneratingTitle(title)
+      setProgressPhase(0)
       setMemoCountAtGenStart(memoCount)
       setLoading(false)
 
-      // Poll by refreshing the page data every 5s, up to 60s
-      // Each router.refresh() re-fetches server data, so the new memo
-      // appears in the feed as soon as it's in the DB. The useEffect above
-      // will auto-dismiss the skeleton when memoCount increases.
+      // Lightweight polling: check memo count every 2s via dedicated endpoint
+      // Only do a full router.refresh() when the memo is actually ready
       if (pollRef.current) clearInterval(pollRef.current)
       let elapsed = 0
-      pollRef.current = setInterval(() => {
-        elapsed += 5000
-        router.refresh()
-        if (elapsed >= 60000) {
+      const baselineCount = memoCount
+      pollRef.current = setInterval(async () => {
+        elapsed += 2000
+        try {
+          const res = await fetch(`/api/brands/${brandId}/memo-count`)
+          if (res.ok) {
+            const { count } = await res.json()
+            if (count > baselineCount) {
+              // Memo is ready — refresh page data to bring it into the feed
+              if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+              router.refresh()
+              // The useEffect watching memoCount will handle clearing state + toast
+              // But also clear directly in case the prop update is slow
+              setTimeout(() => {
+                setGenerating(false)
+                setGeneratingTitle('')
+                setProgressPhase(0)
+                toast.success('Memo generated')
+              }, 1000)
+              return
+            }
+          }
+        } catch {
+          // Silently retry on network errors
+        }
+        if (elapsed >= 90000) {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
           setGenerating(false)
           setGeneratingTitle('')
+          setProgressPhase(0)
           router.refresh()
           toast.info('Memo may still be generating. Refresh to check.')
         }
-      }, 5000)
+      }, 2000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Generation failed')
       setLoading(false)
@@ -416,20 +465,28 @@ export function GenerateMemoDropdown({
     await fetchSuggestion()
   }
 
-  // Generating state — show skeleton loader
+  // Generating state — animated progress indicator
   if (generating) {
+    const phase = GENERATION_PHASES[progressPhase]
+    const progress = Math.min(((progressPhase + 1) / GENERATION_PHASES.length) * 100, 95)
     return (
       <div className="flex items-center gap-3">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 max-w-md">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 max-w-md min-w-[260px]">
           <div className="flex items-center gap-2">
             <Loader2 className="h-3.5 w-3.5 text-amber-600 animate-spin shrink-0" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-amber-900 leading-tight truncate">
-                Generating: {generatingTitle || 'New memo'}
+                {generatingTitle || 'New memo'}
               </p>
-              <p className="text-[10px] text-amber-600 mt-0.5">
-                This usually takes 15–30 seconds
+              <p className="text-[10px] text-amber-600 mt-0.5 transition-all duration-500">
+                {phase.label}
               </p>
+              <div className="mt-1.5 h-1 bg-amber-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-amber-500 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
