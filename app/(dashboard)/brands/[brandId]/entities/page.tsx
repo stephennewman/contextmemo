@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { EntityList } from '@/components/dashboard/entity-list'
-import { CompetitiveIntelligence } from '@/components/dashboard/competitive-intelligence'
-import { CompetitorContentFeed } from '@/components/dashboard/competitor-content-feed'
 import { AutomationStatusBar } from '@/components/dashboard/automation-status-bar'
 
 interface Props {
@@ -19,7 +17,6 @@ export default async function EntitiesPage({ params }: Props) {
   const [
     { data: brand, error },
     { data: allCompetitors },
-    { data: queries },
     { data: allScans },
     { data: brandSettings },
   ] = await Promise.all([
@@ -32,12 +29,6 @@ export default async function EntitiesPage({ params }: Props) {
       .from('competitors')
       .select('*')
       .eq('brand_id', brandId),
-    supabase
-      .from('queries')
-      .select('*')
-      .eq('brand_id', brandId)
-      .eq('is_active', true)
-      .order('priority', { ascending: false }),
     supabase
       .from('scan_results')
       .select('id, brand_id, query_id, model, response_text, brand_mentioned, brand_position, brand_context, brand_in_citations, competitors_mentioned, citations, search_results, scanned_at, is_first_citation, citation_status_changed, previous_cited, new_competitors_found, position_change, brand_sentiment, sentiment_reason')
@@ -54,16 +45,15 @@ export default async function EntitiesPage({ params }: Props) {
 
   if (error || !brand) notFound()
 
-  const competitors = allCompetitors?.filter(c => c.is_active) || []
-  const recentScans = allScans?.slice(0, 100) || []
-
   // Build citation counts per entity
   const entityDomains = (allCompetitors || [])
     .filter(c => c.domain)
     .map(c => ({ id: c.id, domain: c.domain!.toLowerCase(), isActive: c.is_active }))
     .sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0))
 
+  // Track both citation URLs and query IDs per entity from citation domain matching
   const citationsByEntity: Record<string, string[]> = {}
+  const queryIdsByEntity: Record<string, Set<string>> = {}
   for (const scan of (allScans || [])) {
     if (!scan.citations) continue
     for (const citation of scan.citations as string[]) {
@@ -74,6 +64,11 @@ export default async function EntitiesPage({ params }: Props) {
         if (entity) {
           if (!citationsByEntity[entity.id]) citationsByEntity[entity.id] = []
           if (!citationsByEntity[entity.id].includes(citation)) citationsByEntity[entity.id].push(citation)
+          // Track which queries cited this entity
+          if (scan.query_id) {
+            if (!queryIdsByEntity[entity.id]) queryIdsByEntity[entity.id] = new Set()
+            queryIdsByEntity[entity.id].add(scan.query_id)
+          }
         }
       } catch { /* skip invalid URLs */ }
     }
@@ -84,14 +79,13 @@ export default async function EntitiesPage({ params }: Props) {
     citationCountsByEntity[id] = urls.length
   }
 
-  // Build mention counts per entity
+  // Also count mentions by name from competitors_mentioned field
   const entityNameToId = new Map<string, string>()
   for (const entity of (allCompetitors || []).sort((a, b) => (a.is_active ? 1 : 0) - (b.is_active ? 1 : 0))) {
     entityNameToId.set(entity.name.toLowerCase(), entity.id)
   }
 
   const mentionCountsByEntity: Record<string, number> = {}
-  const mentionQueryIdsByEntity: Record<string, Set<string>> = {}
   for (const scan of (allScans || [])) {
     const mentioned = scan.competitors_mentioned as string[] | null
     if (!mentioned) continue
@@ -99,40 +93,20 @@ export default async function EntitiesPage({ params }: Props) {
       const entityId = entityNameToId.get(name.toLowerCase())
       if (entityId) {
         mentionCountsByEntity[entityId] = (mentionCountsByEntity[entityId] || 0) + 1
-        if (!mentionQueryIdsByEntity[entityId]) mentionQueryIdsByEntity[entityId] = new Set()
-        if (scan.query_id) mentionQueryIdsByEntity[entityId].add(scan.query_id)
+        // Merge name-based mentions into the same query tracking
+        if (scan.query_id) {
+          if (!queryIdsByEntity[entityId]) queryIdsByEntity[entityId] = new Set()
+          queryIdsByEntity[entityId].add(scan.query_id)
+        }
       }
     }
   }
 
+  // Unique prompts = union of queries where entity was cited by URL OR mentioned by name
   const uniqueQueryCountsByEntity: Record<string, number> = {}
-  for (const [id, queryIds] of Object.entries(mentionQueryIdsByEntity)) {
+  for (const [id, queryIds] of Object.entries(queryIdsByEntity)) {
     uniqueQueryCountsByEntity[id] = queryIds.size
   }
-
-  // Get competitor content and feeds
-  const competitorIds = competitors.map(c => c.id)
-  const [
-    { data: competitorContent },
-    { data: competitorFeeds },
-  ] = await Promise.all([
-    competitorIds.length > 0
-      ? supabase
-          .from('competitor_content')
-          .select('*, competitor:competitor_id(id, name, domain), response_memo:response_memo_id(id, title, slug, status)')
-          .in('competitor_id', competitorIds)
-          .order('first_seen_at', { ascending: false })
-          .limit(100)
-      : Promise.resolve({ data: [] as any[] }),
-    competitorIds.length > 0
-      ? supabase
-          .from('competitor_feeds')
-          .select('*')
-          .in('competitor_id', competitorIds)
-          .eq('is_active', true)
-          .order('discovered_at', { ascending: false })
-      : Promise.resolve({ data: [] as any[] }),
-  ])
 
   return (
     <div className="space-y-4">
@@ -147,18 +121,6 @@ export default async function EntitiesPage({ params }: Props) {
         citationUrls={citationsByEntity}
         mentionCounts={mentionCountsByEntity}
         uniqueQueryCounts={uniqueQueryCountsByEntity}
-      />
-      <CompetitiveIntelligence
-        brandName={brand.name}
-        competitors={competitors}
-        scanResults={recentScans}
-        queries={queries || []}
-      />
-      <CompetitorContentFeed
-        brandId={brandId}
-        content={competitorContent || []}
-        competitors={competitors}
-        feeds={competitorFeeds || []}
       />
     </div>
   )

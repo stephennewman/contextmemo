@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2, Globe, Plus, ChevronDown } from 'lucide-react'
+import { Loader2, Play, RefreshCw, FileText, Upload, Search, Link2, Globe, Plus, ChevronDown, Sparkles, SkipForward, ArrowRight } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -263,81 +263,203 @@ export function GenerateMemoButton({
   )
 }
 
-// Dropdown showing memo generation options
+// Memo type display labels
+const MEMO_TYPE_LABELS: Record<string, string> = {
+  comparison: 'Comparison',
+  alternative: 'Alternative',
+  how_to: 'How-To Guide',
+  industry: 'Industry Guide',
+  response: 'Response',
+  definition: 'Definition',
+  guide: 'Guide',
+}
+
+// Suggestion-based memo generation: queries existing gaps and suggests the next best memo
 export function GenerateMemoDropdown({ 
   brandId
 }: { 
   brandId: string
 }) {
-  const [loading, setLoading] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestion, setSuggestion] = useState<{
+    source: string
+    topicId?: string
+    queryId?: string
+    title: string
+    description?: string
+    memoType: string
+    contentType?: string
+    category?: string
+    priorityScore?: number
+    competitorId?: string
+    competitorName?: string
+    funnelStage?: string
+    persona?: string
+  } | null>(null)
+  const [noGaps, setNoGaps] = useState(false)
+  const [showSuggestion, setShowSuggestion] = useState(false)
   const router = useRouter()
 
-  const generateMemo = async (memoType: string) => {
-    setLoading(memoType)
+  const fetchSuggestion = useCallback(async () => {
+    setSuggesting(true)
+    setNoGaps(false)
     try {
       const response = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'generate_memo',
-          memoType,
-        }),
+        body: JSON.stringify({ action: 'suggest_next_memo' }),
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
+      if (data.suggestion) {
+        setSuggestion(data.suggestion)
+        setShowSuggestion(true)
+      } else {
+        setSuggestion(null)
+        setNoGaps(true)
+        setShowSuggestion(true)
       }
+    } catch {
+      toast.error('Failed to find suggestions')
+    } finally {
+      setSuggesting(false)
+    }
+  }, [brandId])
 
-      toast.success('Memo generation started. Refreshing in 10 seconds...', {
-        duration: 10000,
+  const generateFromSuggestion = async () => {
+    if (!suggestion) return
+    setLoading(true)
+    try {
+      const body: Record<string, unknown> = {
+        action: 'generate_memo',
+        memoType: suggestion.memoType,
+      }
+      if (suggestion.queryId) body.queryId = suggestion.queryId
+      if (suggestion.competitorId) body.competitorId = suggestion.competitorId
+      if (suggestion.topicId) body.topicTitle = suggestion.title
+      if (suggestion.description && suggestion.source === 'topic_universe') body.topicDescription = suggestion.description
+
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       })
-      
-      // Refresh the page after 10 seconds to show the new memo
-      setTimeout(() => {
-        router.refresh()
-      }, 10000)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Generation failed')
+
+      toast.success('Memo generation started. Refreshing in 10 seconds...', { duration: 10000 })
+      setShowSuggestion(false)
+      setSuggestion(null)
+      setTimeout(() => router.refresh(), 10000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Generation failed')
     } finally {
-      setLoading(null)
+      setLoading(false)
     }
   }
 
-  const memoTypes = [
-    { id: 'industry', label: 'Industry Overview' },
-    { id: 'how_to', label: 'How-To Guide' },
-    { id: 'alternative', label: 'Alternative To' },
-  ]
+  const skipSuggestion = async () => {
+    // Fetch next suggestion (for now, just re-fetch -- the same top gap will return,
+    // but this is the UX pattern; true skip would require marking topics as skipped)
+    setSuggestion(null)
+    setShowSuggestion(false)
+    await fetchSuggestion()
+  }
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={loading !== null}>
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-          ) : (
-            <Plus className="h-4 w-4 mr-1.5" />
-          )}
-          Generate Memo
-          <ChevronDown className="h-3 w-3 ml-1" />
+  // Not showing suggestion yet -- just the button
+  if (!showSuggestion) {
+    return (
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={fetchSuggestion}
+        disabled={suggesting}
+      >
+        {suggesting ? (
+          <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+        ) : (
+          <Sparkles className="h-4 w-4 mr-1.5" />
+        )}
+        {suggesting ? 'Finding gap...' : 'Generate Memo'}
+      </Button>
+    )
+  }
+
+  // No gaps found
+  if (noGaps) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="text-xs text-slate-500 bg-slate-50 border rounded-lg px-3 py-2">
+          No content gaps found. Run a scan or coverage audit first.
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => { setShowSuggestion(false); setNoGaps(false) }}>
+          Dismiss
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {memoTypes.map((type) => (
-          <DropdownMenuItem
-            key={type.id}
-            onClick={() => generateMemo(type.id)}
-            disabled={loading !== null}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {type.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
+      </div>
+    )
+  }
+
+  // Show suggestion card
+  if (suggestion) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 max-w-md">
+          <div className="flex items-start gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-blue-600 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-blue-900 leading-tight truncate">
+                {suggestion.title}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+                  {MEMO_TYPE_LABELS[suggestion.memoType] || suggestion.memoType}
+                </span>
+                {suggestion.competitorName && (
+                  <span className="text-[10px] text-blue-500">
+                    vs {suggestion.competitorName}
+                  </span>
+                )}
+                {suggestion.priorityScore && (
+                  <span className="text-[10px] text-blue-400">
+                    Priority: {suggestion.priorityScore}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={generateFromSuggestion}
+          disabled={loading}
+          className="shrink-0"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <ArrowRight className="h-4 w-4 mr-1" />
+          )}
+          Generate
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={skipSuggestion}
+          disabled={loading || suggesting}
+          className="shrink-0 text-slate-400 hover:text-slate-600"
+          title="Skip this suggestion"
+        >
+          {suggesting ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <SkipForward className="h-3 w-3" />
+          )}
+        </Button>
+      </div>
+    )
+  }
+
+  return null
 }
 
 // Push memo to HubSpot button

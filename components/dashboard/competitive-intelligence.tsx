@@ -7,22 +7,13 @@ import {
   TrendingUp, 
   TrendingDown, 
   Minus,
-  Trophy,
-  Target,
   Users,
   BarChart3,
   ChevronRight,
 } from 'lucide-react'
-import { CompetitorDetail } from './competitor-detail'
 import { QueryDetail } from './query-detail'
 import { QueriesListDrawer } from './queries-list-drawer'
 import { isBlockedCompetitorName } from '@/lib/config/competitor-blocklist'
-
-interface Competitor {
-  id: string
-  name: string
-  domain: string | null
-}
 
 interface ScanResult {
   id: string
@@ -42,21 +33,8 @@ interface Query {
 
 interface CompetitiveIntelligenceProps {
   brandName: string
-  competitors: Competitor[]
   scanResults: ScanResult[]
   queries: Query[]
-}
-
-interface CompetitorStats {
-  name: string
-  mentionCount: number
-  mentionRate: number
-  winsAgainstBrand: number  // Queries where competitor is mentioned but brand isn't
-  headToHead: number        // Both mentioned
-  lossesToBrand: number     // Brand mentioned, competitor isn't
-  domain?: string | null
-  description?: string | null
-  auto_discovered?: boolean
 }
 
 interface QueryBattle {
@@ -70,30 +48,17 @@ interface QueryBattle {
 
 export function CompetitiveIntelligence({ 
   brandName, 
-  competitors, 
   scanResults,
   queries 
 }: CompetitiveIntelligenceProps) {
-  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorStats | null>(null)
   const [selectedQuery, setSelectedQuery] = useState<Query | null>(null)
   const [queriesListType, setQueriesListType] = useState<'wins' | 'ties' | 'losses' | null>(null)
 
   // Build query lookup
   const queryLookup = new Map(queries.map(q => [q.id, q]))
   
-  // Calculate competitor stats
-  const competitorStats = calculateCompetitorStats(brandName, competitors, scanResults)
-  
-  // Calculate share of voice
-  const shareOfVoice = calculateShareOfVoice(brandName, competitorStats, scanResults)
-  
   // Find query battles (where competitors beat brand)
   const queryBattles = analyzeQueryBattles(brandName, scanResults, queryLookup)
-  
-  // Get top competitor threats (highest mention rate competitors)
-  const topThreats = [...competitorStats]
-    .sort((a, b) => b.winsAgainstBrand - a.winsAgainstBrand)
-    .slice(0, 5)
 
   if (scanResults.length === 0) {
     return (
@@ -108,117 +73,6 @@ export function CompetitiveIntelligence({
 
   return (
     <div className="space-y-4">
-      {/* Share of Voice */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
-            <CardTitle className="text-base">Share of Voice</CardTitle>
-          </div>
-          <CardDescription>
-            Who gets mentioned most in AI responses to your prompts
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {shareOfVoice.map((item, index) => (
-              <div key={item.name} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    {index === 0 && <Trophy className="h-3 w-3 text-amber-500" />}
-                    <span className={item.name === brandName ? 'font-semibold' : ''}>
-                      {item.name}
-                      {item.name === brandName && (
-                        <Badge variant="outline" className="ml-2 text-[10px] py-0">You</Badge>
-                      )}
-                    </span>
-                  </div>
-                  <span className="font-medium">{item.percentage}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all ${
-                      item.name === brandName 
-                        ? 'bg-primary' 
-                        : 'bg-slate-400'
-                    }`}
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Based on {scanResults.length} scans across {queries.length} prompts
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Competitor Threat Analysis */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-red-500" />
-            <CardTitle className="text-base">Competitive Threats</CardTitle>
-          </div>
-          <CardDescription>
-            Competitors winning prompts where you&apos;re not mentioned
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {topThreats.length > 0 ? (
-            <div className="space-y-3">
-              {topThreats.map((competitor) => {
-                // Find the full competitor data for additional info
-                const fullCompetitor = competitors.find(c => c.name.toLowerCase() === competitor.name.toLowerCase())
-                return (
-                  <div 
-                    key={competitor.name} 
-                    className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
-                    onClick={() => setSelectedCompetitor({
-                      ...competitor,
-                      domain: fullCompetitor?.domain,
-                      description: null,
-                      auto_discovered: false,
-                    })}
-                  >
-                    <div>
-                      <p className="font-medium">{competitor.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Mentioned in {competitor.mentionRate}% of scans
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="text-center">
-                            <p className="font-semibold text-red-600">{competitor.winsAgainstBrand}</p>
-                            <p className="text-[10px] text-muted-foreground">Wins</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="font-semibold text-amber-600">{competitor.headToHead}</p>
-                            <p className="text-[10px] text-muted-foreground">Ties</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="font-semibold text-green-600">{competitor.lossesToBrand}</p>
-                            <p className="text-[10px] text-muted-foreground">Losses</p>
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No competitor data available yet
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Prompt Battles - Where Competitors Beat You */}
       <Card>
         <CardHeader className="pb-3">
@@ -314,16 +168,6 @@ export function CompetitiveIntelligence({
         </Card>
       </div>
 
-      {/* Competitor Detail Drawer */}
-      <CompetitorDetail
-        competitor={selectedCompetitor}
-        isOpen={!!selectedCompetitor}
-        onClose={() => setSelectedCompetitor(null)}
-        brandName={brandName}
-        scanResults={scanResults}
-        queries={queries}
-      />
-
       {/* Query Detail Drawer */}
       <QueryDetail
         query={selectedQuery}
@@ -359,107 +203,6 @@ export function CompetitiveIntelligence({
       />
     </div>
   )
-}
-
-// Calculate stats for each competitor
-function calculateCompetitorStats(
-  brandName: string,
-  competitors: Competitor[],
-  scanResults: ScanResult[]
-): CompetitorStats[] {
-  const brandNameLower = brandName.toLowerCase()
-  const stats = new Map<string, CompetitorStats>()
-  
-  // Initialize stats for known competitors
-  competitors.forEach(c => {
-    stats.set(c.name.toLowerCase(), {
-      name: c.name,
-      mentionCount: 0,
-      mentionRate: 0,
-      winsAgainstBrand: 0,
-      headToHead: 0,
-      lossesToBrand: 0,
-    })
-  })
-  
-  // Process each scan
-  scanResults.forEach(scan => {
-    const brandMentioned = scan.brand_mentioned
-    // Filter out blocked/generic terms from competitor mentions
-    const competitorsMentioned = (scan.competitors_mentioned || [])
-      .map(c => c.toLowerCase())
-      .filter(c => !isBlockedCompetitorName(c))
-    
-    competitorsMentioned.forEach(compName => {
-      // Get or create stats entry
-      let compStats = stats.get(compName)
-      if (!compStats) {
-        // Competitor mentioned but not in our known list
-        compStats = {
-          name: compName,
-          mentionCount: 0,
-          mentionRate: 0,
-          winsAgainstBrand: 0,
-          headToHead: 0,
-          lossesToBrand: 0,
-        }
-        stats.set(compName, compStats)
-      }
-      
-      compStats.mentionCount++
-      
-      if (brandMentioned) {
-        compStats.headToHead++
-      } else {
-        compStats.winsAgainstBrand++
-      }
-    })
-    
-    // Track brand wins (brand mentioned, competitor not)
-    if (brandMentioned) {
-      stats.forEach((compStats, compNameLower) => {
-        if (!competitorsMentioned.includes(compNameLower)) {
-          compStats.lossesToBrand++
-        }
-      })
-    }
-  })
-  
-  // Calculate mention rates
-  const totalScans = scanResults.length
-  stats.forEach(compStats => {
-    compStats.mentionRate = totalScans > 0 
-      ? Math.round((compStats.mentionCount / totalScans) * 100)
-      : 0
-  })
-  
-  return Array.from(stats.values())
-}
-
-// Calculate share of voice (percentage of total mentions)
-function calculateShareOfVoice(
-  brandName: string,
-  competitorStats: CompetitorStats[],
-  scanResults: ScanResult[]
-): { name: string; mentions: number; percentage: number }[] {
-  const brandMentions = scanResults.filter(s => s.brand_mentioned).length
-  
-  const allMentions = [
-    { name: brandName, mentions: brandMentions },
-    ...competitorStats.map(c => ({ name: c.name, mentions: c.mentionCount }))
-  ]
-  
-  const totalMentions = allMentions.reduce((sum, item) => sum + item.mentions, 0)
-  
-  return allMentions
-    .map(item => ({
-      ...item,
-      percentage: totalMentions > 0 
-        ? Math.round((item.mentions / totalMentions) * 100)
-        : 0
-    }))
-    .sort((a, b) => b.percentage - a.percentage)
-    .slice(0, 6) // Top 6
 }
 
 // Analyze which queries brand wins/loses vs competitors

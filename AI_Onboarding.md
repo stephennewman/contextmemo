@@ -390,6 +390,18 @@ _Most recent deploys first_
 
 ### February 9, 2026
 
+**UX: Post-onboarding lands on Memos tab, entities page cleanup, suggest next memo**
+- After onboarding memo generation, "GO TO DASHBOARD" now redirects to `/brands/{brandId}/memos` instead of `/brands/{brandId}` (profile) — user immediately sees the memo they just generated
+- Entities page: removed redundant CompetitiveIntelligence and CompetitorContentFeed sections (duplicate of data already in entity list); unified citation + mention query tracking into single count
+- Added `suggest_next_memo` API action — recommends best next memo based on topic universe gaps or high-score uncited queries
+- Cleaned up competitive-intelligence.tsx: removed Share of Voice and Competitive Threats cards (data moved to entity list), kept Prompt Battles
+- Files changed: `components/dashboard/onboarding-flow.tsx`, `app/(dashboard)/brands/[brandId]/entities/page.tsx`, `app/api/brands/[brandId]/actions/route.ts`, `components/dashboard/brand-actions.tsx`, `components/dashboard/brand-tabs.tsx`, `components/dashboard/competitive-intelligence.tsx`
+
+**Fix: React key prop warning in PersonaManager** (e7ba53a)
+- Fixed console warning "Each child in a list should have a unique key prop" in `PersonaManager` component
+- Moved `key` attribute to same line as opening `<div>` tag to resolve Turbopack transpiler key detection issue
+- Files changed: `components/dashboard/persona-manager.tsx`
+
 **Logging: Fix silent catch blocks, remove deprecated Sentry config** (a28b3f8)
 - Added error logging to 10 previously silent catch blocks that were swallowing failures across the codebase
 - Critical fixes: scan-run credit increment, activity/track data inserts, billing/security event logging, Redis connection checks

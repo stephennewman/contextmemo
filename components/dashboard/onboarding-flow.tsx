@@ -550,7 +550,7 @@ export function OnboardingFlow({
     if (phase === 'done') {
       return (
         <button
-          onClick={() => { window.location.href = `/brands/${brandId}` }}
+          onClick={() => { window.location.href = `/brands/${brandId}/memos` }}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#10B981] text-white font-bold text-sm hover:bg-[#059669] transition-colors"
         >
           GO TO DASHBOARD

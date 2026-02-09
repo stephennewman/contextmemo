@@ -11,8 +11,6 @@ import Link from 'next/link'
 import { BrandContext, ScanResult, Query } from '@/lib/supabase/types'
 import { ProfileSection } from './profile-section'
 import { ScanResultsView, PromptVisibilityList } from './scan-results-view'
-import { CompetitiveIntelligence } from './competitive-intelligence'
-import { CompetitorContentFeed } from './competitor-content-feed'
 import { CompetitorList } from './competitor-list'
 import { SearchConsoleView } from './search-console-view'
 import { AITrafficView } from './ai-traffic-view'
@@ -298,23 +296,7 @@ export function BrandTabs({
       {/* Competitors Tab */}
       <TabsContent value="competitors" className="space-y-4">
         {loading === 'competitors' ? <TabLoader /> : (
-          <>
-            <CompetitiveIntelligence
-              brandName={brandName}
-              competitors={activeCompetitors}
-              scanResults={(tabData.scans || []) as ScanResult[]}
-              queries={(tabData.queries || []) as Query[]}
-            />
-            <CompetitorContentFeed
-              brandId={brandId}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              content={(tabData.competitorContent || []) as any}
-              competitors={activeCompetitors}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              feeds={(tabData.competitorFeeds || []) as any}
-            />
-            <CompetitorList brandId={brandId} competitors={competitors} />
-          </>
+          <CompetitorList brandId={brandId} competitors={competitors} />
         )}
       </TabsContent>
 

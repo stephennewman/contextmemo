@@ -87,6 +87,114 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'suggest_next_memo': {
+        // Find the best next memo to generate based on existing data:
+        // 1. Topic universe gaps (highest priority first)
+        // 2. Falling back to high-score queries where brand isn't cited
+        
+        // Check topic universe for gap topics not yet covered by a memo
+        const { data: gapTopics } = await supabase
+          .from('topic_universe')
+          .select('id, title, description, content_type, category, priority_score, competitor_relevance, funnel_stage, target_persona')
+          .eq('brand_id', brandId)
+          .eq('status', 'gap')
+          .order('priority_score', { ascending: false })
+          .limit(5)
+
+        if (gapTopics && gapTopics.length > 0) {
+          // Pick the top gap topic
+          const topic = gapTopics[0]
+          
+          // Map content_type to memo_type
+          const typeMap: Record<string, string> = {
+            comparison: 'comparison',
+            alternative: 'alternative',
+            how_to: 'how_to',
+            industry: 'industry',
+            definition: 'how_to',
+            guide: 'industry',
+          }
+          const memoType = typeMap[topic.content_type] || 'industry'
+
+          // Find competitor ID if needed
+          let suggestedCompetitorId: string | undefined
+          let suggestedCompetitorName: string | undefined
+          if (['comparison', 'alternative'].includes(topic.content_type) && topic.competitor_relevance?.length > 0) {
+            const compName = (topic.competitor_relevance as string[])[0]
+            const { data: comp } = await supabase
+              .from('competitors')
+              .select('id, name')
+              .eq('brand_id', brandId)
+              .eq('is_active', true)
+              .ilike('name', compName)
+              .limit(1)
+              .maybeSingle()
+            if (comp) {
+              suggestedCompetitorId = comp.id
+              suggestedCompetitorName = comp.name
+            }
+          }
+
+          return NextResponse.json({
+            success: true,
+            suggestion: {
+              source: 'topic_universe',
+              topicId: topic.id,
+              title: topic.title,
+              description: topic.description,
+              memoType,
+              contentType: topic.content_type,
+              category: topic.category,
+              priorityScore: topic.priority_score,
+              competitorId: suggestedCompetitorId,
+              competitorName: suggestedCompetitorName,
+              funnelStage: topic.funnel_stage,
+              persona: topic.target_persona,
+            },
+          })
+        }
+
+        // Fallback: find high-score queries where brand isn't cited and no memo exists
+        const { data: gapQueries } = await supabase
+          .from('queries')
+          .select('id, query_text, query_type, funnel_stage, prompt_score, related_competitor_id')
+          .eq('brand_id', brandId)
+          .eq('current_status', 'gap')
+          .not('source_type', 'eq', 'manual')
+          .order('prompt_score', { ascending: false })
+          .limit(5)
+
+        if (gapQueries && gapQueries.length > 0) {
+          const query = gapQueries[0]
+          // Infer memo type from query type
+          let inferredMemoType = 'how_to'
+          if (query.query_type === 'comparison' || query.query_type === 'vs') inferredMemoType = 'comparison'
+          else if (query.query_type === 'alternative') inferredMemoType = 'alternative'
+          else if (query.query_type === 'best_of' || query.query_type === 'industry') inferredMemoType = 'industry'
+          else if (query.query_type === 'how_to') inferredMemoType = 'how_to'
+
+          return NextResponse.json({
+            success: true,
+            suggestion: {
+              source: 'query_gap',
+              queryId: query.id,
+              title: query.query_text,
+              description: `AI models don't cite your brand for this query (prompt score: ${query.prompt_score || 0})`,
+              memoType: inferredMemoType,
+              funnelStage: query.funnel_stage,
+              competitorId: query.related_competitor_id || undefined,
+            },
+          })
+        }
+
+        // No gaps found
+        return NextResponse.json({
+          success: true,
+          suggestion: null,
+          message: 'No content gaps found. Run a scan or coverage audit to discover opportunities.',
+        })
+      }
+
       case 'generate_memo': {
         if (!body.memoType) {
           return NextResponse.json({ error: 'memoType required' }, { status: 400 })
@@ -100,12 +208,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         if (body.queryId && !isValidUUID(body.queryId)) {
           return NextResponse.json({ error: 'Invalid queryId format' }, { status: 400 })
         }
+        // Validate competitorId if provided
+        if (body.competitorId && !isValidUUID(body.competitorId)) {
+          return NextResponse.json({ error: 'Invalid competitorId format' }, { status: 400 })
+        }
         await inngest.send({
           name: 'memo/generate',
           data: { 
             brandId, 
             queryId: body.queryId,
             memoType: body.memoType,
+            ...(body.competitorId && { competitorId: body.competitorId }),
+            ...(body.topicTitle && { topicTitle: body.topicTitle }),
+            ...(body.topicDescription && { topicDescription: body.topicDescription }),
           },
         })
         return NextResponse.json({ 
