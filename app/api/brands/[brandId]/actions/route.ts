@@ -194,6 +194,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
+      case 'check_recent_memo': {
+        // Lightweight poll: check if a new memo was created in the last 2 minutes
+        const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+        const { data: recentMemo } = await supabase
+          .from('memos')
+          .select('id, title, created_at')
+          .eq('brand_id', brandId)
+          .gte('created_at', twoMinAgo)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        return NextResponse.json({
+          success: true,
+          found: !!recentMemo,
+          memo: recentMemo || null,
+        })
+      }
+
       case 'generate_memo': {
         if (!body.memoType) {
           return NextResponse.json({ error: 'memoType required' }, { status: 400 })

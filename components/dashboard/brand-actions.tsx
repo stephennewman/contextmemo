@@ -282,6 +282,8 @@ export function GenerateMemoDropdown({
   brandId: string
 }) {
   const [loading, setLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generatingTitle, setGeneratingTitle] = useState('')
   const [suggesting, setSuggesting] = useState(false)
   const [suggestion, setSuggestion] = useState<{
     source: string
@@ -353,13 +355,48 @@ export function GenerateMemoDropdown({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Generation failed')
 
-      toast.success('Memo generation started. Refreshing in 10 seconds...', { duration: 10000 })
+      // Switch to generating state with skeleton
+      const title = suggestion.title
       setShowSuggestion(false)
       setSuggestion(null)
-      setTimeout(() => router.refresh(), 10000)
+      setGenerating(true)
+      setGeneratingTitle(title)
+      setLoading(false)
+
+      // Poll for new memo every 5s, up to 90s
+      const pollStart = Date.now()
+      const maxPollMs = 90000
+      const pollInterval = 5000
+      
+      const poll = async () => {
+        while (Date.now() - pollStart < maxPollMs) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval))
+          try {
+            // Check if a new memo was just created (last 2 minutes)
+            const checkRes = await fetch(`/api/brands/${brandId}/actions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'check_recent_memo' }),
+            })
+            const checkData = await checkRes.json()
+            if (checkData.found) {
+              setGenerating(false)
+              setGeneratingTitle('')
+              router.refresh()
+              return
+            }
+          } catch {
+            // Continue polling on error
+          }
+        }
+        // Timeout — refresh anyway
+        setGenerating(false)
+        setGeneratingTitle('')
+        router.refresh()
+      }
+      poll()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Generation failed')
-    } finally {
       setLoading(false)
     }
   }
@@ -370,6 +407,27 @@ export function GenerateMemoDropdown({
     setSuggestion(null)
     setShowSuggestion(false)
     await fetchSuggestion()
+  }
+
+  // Generating state — show skeleton loader
+  if (generating) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 max-w-md">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 text-amber-600 animate-spin shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-amber-900 leading-tight truncate">
+                Generating: {generatingTitle || 'New memo'}
+              </p>
+              <p className="text-[10px] text-amber-600 mt-0.5">
+                This usually takes 15–30 seconds
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Not showing suggestion yet -- just the button
