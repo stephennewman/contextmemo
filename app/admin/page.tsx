@@ -88,7 +88,7 @@ export default async function AdminDashboardPage() {
     getCount(serviceClient, 'ai_traffic', { column: 'timestamp', operator: 'gte', value: last24h }),
     getOpenRouterBalance(),
     serviceClient.from('brands').select('id, name, domain, subdomain, tenant_id, created_at').order('created_at', { ascending: false }),
-    serviceClient.from('usage_events').select('brand_id, actual_cost_cents, created_at').gte('created_at', last7d),
+    serviceClient.from('usage_events').select('brand_id, total_cost_cents, created_at'),
     serviceClient.from('scan_results').select('brand_id, scanned_at').gte('scanned_at', last24h),
     serviceClient.from('memos').select('brand_id, status', { count: 'exact' }),
   ])
