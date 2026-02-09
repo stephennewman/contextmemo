@@ -271,7 +271,7 @@ export interface Database {
           competitors_mentioned: string[] | null
           // Perplexity citation fields
           citations: string[] | null
-          search_results: PerplexitySearchResultJson[] | null
+          search_results?: PerplexitySearchResultJson[] | null
           brand_in_citations: boolean | null
           scanned_at: string
           // Delta tracking fields
