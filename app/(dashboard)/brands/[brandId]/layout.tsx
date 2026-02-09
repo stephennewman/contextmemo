@@ -116,13 +116,10 @@ export default async function BrandLayout({ params, children }: Props) {
 
   const tabs = [
     { slug: 'profile', label: 'PROFILE' },
-    { slug: 'activity', label: 'ACTIVITY' },
     { slug: 'prompts', label: 'PROMPTS', count: queryCount },
     { slug: 'memos', label: 'MEMOS', count: memoCount },
     { slug: 'entities', label: 'ENTITIES', count: entityCount },
     { slug: 'citations', label: 'CITATIONS' },
-    { slug: 'content', label: 'CONTENT' },
-    { slug: 'performance', label: 'PERFORMANCE' },
     { slug: 'settings', label: 'SETTINGS' },
   ]
 
