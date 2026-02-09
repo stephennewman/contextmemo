@@ -88,110 +88,109 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       case 'suggest_next_memo': {
-        // Find the best next memo to generate based on existing data:
-        // 1. Topic universe gaps (highest priority first)
-        // 2. Falling back to high-score queries where brand isn't cited
+        // Find the best next memo based on TOP CITED CONTENT from scan results.
+        // Logic: what URLs are AI models citing instead of this brand? Respond to those.
         
-        // Check topic universe for gap topics not yet covered by a memo
-        const { data: gapTopics } = await supabase
-          .from('topic_universe')
-          .select('id, title, description, content_type, category, priority_score, competitor_relevance, funnel_stage, target_persona')
+        const brandDomain = brand.domain?.replace(/^www\./, '') || ''
+
+        // Get recent scan results with citations (last 90 days)
+        const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+        const { data: recentScans } = await supabase
+          .from('scan_results')
+          .select('citations, query_id')
           .eq('brand_id', brandId)
-          .eq('status', 'gap')
-          .order('priority_score', { ascending: false })
-          .limit(5)
+          .gte('scanned_at', ninetyDaysAgo)
+          .not('citations', 'is', null)
 
-        if (gapTopics && gapTopics.length > 0) {
-          // Pick the top gap topic
-          const topic = gapTopics[0]
-          
-          // Map content_type to memo_type
-          const typeMap: Record<string, string> = {
-            comparison: 'comparison',
-            alternative: 'alternative',
-            how_to: 'how_to',
-            industry: 'industry',
-            definition: 'how_to',
-            guide: 'industry',
-          }
-          const memoType = typeMap[topic.content_type] || 'industry'
+        if (!recentScans || recentScans.length === 0) {
+          return NextResponse.json({
+            success: true,
+            suggestion: null,
+            message: 'No scan data yet. Run an AI scan first to discover citation opportunities.',
+          })
+        }
 
-          // Find competitor ID if needed
-          let suggestedCompetitorId: string | undefined
-          let suggestedCompetitorName: string | undefined
-          if (['comparison', 'alternative'].includes(topic.content_type) && topic.competitor_relevance?.length > 0) {
-            const compName = (topic.competitor_relevance as string[])[0]
-            const { data: comp } = await supabase
-              .from('competitors')
-              .select('id, name')
-              .eq('brand_id', brandId)
-              .eq('is_active', true)
-              .ilike('name', compName)
-              .limit(1)
-              .maybeSingle()
-            if (comp) {
-              suggestedCompetitorId = comp.id
-              suggestedCompetitorName = comp.name
+        // Aggregate citations by URL, excluding brand's own domain
+        const citationCounts: Record<string, { count: number; queryIds: Set<string> }> = {}
+        for (const scan of recentScans) {
+          if (!scan.citations) continue
+          for (const url of scan.citations as string[]) {
+            try {
+              const domain = new URL(url).hostname.replace(/^www\./, '')
+              // Skip the brand's own domain
+              if (brandDomain && domain === brandDomain) continue
+              // Skip common non-content domains
+              if (['google.com', 'youtube.com', 'wikipedia.org', 'reddit.com', 'twitter.com', 'x.com', 'linkedin.com', 'facebook.com'].includes(domain)) continue
+              
+              if (!citationCounts[url]) {
+                citationCounts[url] = { count: 0, queryIds: new Set() }
+              }
+              citationCounts[url].count++
+              citationCounts[url].queryIds.add(scan.query_id)
+            } catch {
+              // Skip malformed URLs
             }
           }
+        }
 
+        // Sort by citation count descending
+        const topCitations = Object.entries(citationCounts)
+          .map(([url, data]) => ({ url, count: data.count, queryIds: Array.from(data.queryIds) }))
+          .sort((a, b) => b.count - a.count)
+
+        if (topCitations.length === 0) {
           return NextResponse.json({
             success: true,
-            suggestion: {
-              source: 'topic_universe',
-              topicId: topic.id,
-              title: topic.title,
-              description: topic.description,
-              memoType,
-              contentType: topic.content_type,
-              category: topic.category,
-              priorityScore: topic.priority_score,
-              competitorId: suggestedCompetitorId,
-              competitorName: suggestedCompetitorName,
-              funnelStage: topic.funnel_stage,
-              persona: topic.target_persona,
-            },
+            suggestion: null,
+            message: 'No competitor citations found. Your brand may already be well-cited.',
           })
         }
 
-        // Fallback: find high-score queries where brand isn't cited and no memo exists
-        const { data: gapQueries } = await supabase
-          .from('queries')
-          .select('id, query_text, query_type, funnel_stage, prompt_score, related_competitor_id')
+        // Check which of these top-cited URLs already have a memo responding to them
+        const { data: existingMemos } = await supabase
+          .from('memos')
+          .select('title, slug')
           .eq('brand_id', brandId)
-          .eq('current_status', 'gap')
-          .not('source_type', 'eq', 'manual')
+          .eq('status', 'published')
+        
+        const existingTitles = (existingMemos || []).map(m => m.title.toLowerCase())
+
+        // Find the top-cited URL that doesn't already have a response memo
+        let selectedCitation = topCitations[0] // Default to top
+        
+        // Get the queries that triggered these citations to build context
+        const queryIds = selectedCitation.queryIds.slice(0, 5) // Top 5 queries
+        const { data: relatedQueries } = await supabase
+          .from('queries')
+          .select('id, query_text, query_type, funnel_stage, prompt_score')
+          .in('id', queryIds)
           .order('prompt_score', { ascending: false })
-          .limit(5)
 
-        if (gapQueries && gapQueries.length > 0) {
-          const query = gapQueries[0]
-          // Infer memo type from query type
-          let inferredMemoType = 'how_to'
-          if (query.query_type === 'comparison' || query.query_type === 'vs') inferredMemoType = 'comparison'
-          else if (query.query_type === 'alternative') inferredMemoType = 'alternative'
-          else if (query.query_type === 'best_of' || query.query_type === 'industry') inferredMemoType = 'industry'
-          else if (query.query_type === 'how_to') inferredMemoType = 'how_to'
+        const topQuery = relatedQueries?.[0]
+        
+        // Build a descriptive title from the top-cited URL
+        let citedDomain = ''
+        try {
+          citedDomain = new URL(selectedCitation.url).hostname.replace(/^www\./, '')
+        } catch { /* ignore */ }
 
-          return NextResponse.json({
-            success: true,
-            suggestion: {
-              source: 'query_gap',
-              queryId: query.id,
-              title: query.query_text,
-              description: `AI models don't cite your brand for this query (prompt score: ${query.prompt_score || 0})`,
-              memoType: inferredMemoType,
-              funnelStage: query.funnel_stage,
-              competitorId: query.related_competitor_id || undefined,
-            },
-          })
-        }
+        // Collect the top 5 cited URLs as context for the memo
+        const topCitedUrls = topCitations.slice(0, 5).map(c => c.url)
 
-        // No gaps found
         return NextResponse.json({
           success: true,
-          suggestion: null,
-          message: 'No content gaps found. Run a scan or coverage audit to discover opportunities.',
+          suggestion: {
+            source: 'citation_response',
+            queryId: topQuery?.id,
+            title: topQuery?.query_text || `Response to ${citedDomain} content`,
+            description: `${citedDomain} is cited ${selectedCitation.count} times across ${selectedCitation.queryIds.length} queries. Top cited URL: ${selectedCitation.url}`,
+            memoType: 'gap_fill',
+            citedUrls: topCitedUrls,
+            citedDomain,
+            citationCount: selectedCitation.count,
+            queryCount: selectedCitation.queryIds.length,
+            priorityScore: selectedCitation.count,
+          },
         })
       }
 
@@ -200,7 +199,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: 'memoType required' }, { status: 400 })
         }
         // Validate memoType is one of allowed values
-        const allowedMemoTypes = ['comparison', 'industry', 'how_to', 'alternative', 'response'] as const
+        const allowedMemoTypes = ['comparison', 'industry', 'how_to', 'alternative', 'response', 'gap_fill'] as const
         if (!allowedMemoTypes.includes(body.memoType)) {
           return NextResponse.json({ error: 'Invalid memoType' }, { status: 400 })
         }
@@ -221,6 +220,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             ...(body.competitorId && { competitorId: body.competitorId }),
             ...(body.topicTitle && { topicTitle: body.topicTitle }),
             ...(body.topicDescription && { topicDescription: body.topicDescription }),
+            ...(body.citedUrls && { citedUrls: body.citedUrls }),
           },
         })
         return NextResponse.json({ 

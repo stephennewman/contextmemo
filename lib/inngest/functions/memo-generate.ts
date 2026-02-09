@@ -7,6 +7,7 @@ import {
   INDUSTRY_MEMO_PROMPT, 
   HOW_TO_MEMO_PROMPT,
   ALTERNATIVE_MEMO_PROMPT,
+  GAP_FILL_MEMO_PROMPT,
   generateToneInstructions,
   formatVoiceInsightsForPrompt,
   formatBrandContextForPrompt,
@@ -165,7 +166,7 @@ export const memoGenerate = inngest.createFunction(
   },
   { event: 'memo/generate' },
   async ({ event, step }) => {
-    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription } = event.data
+    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription, citedUrls } = event.data
 
     // Step 1: Get brand, query, related data, voice insights, and existing memo IDs
     const { brand, query, competitor, competitors, voiceInsights, existingMemoIds } = await step.run('get-data', async () => {
@@ -295,6 +296,16 @@ export const memoGenerate = inngest.createFunction(
             `how to ${topic}`,
             ...(brandContext.products || []),
             ...(brandContext.features || []),
+          ].filter(Boolean)
+          break
+        }
+
+        case 'gap_fill': {
+          const queryText = query?.query_text || topicTitle || ''
+          memoTopics = [
+            queryText,
+            ...(brandContext.products || []),
+            ...(brandContext.markets || []),
           ].filter(Boolean)
           break
         }
@@ -468,6 +479,48 @@ export const memoGenerate = inngest.createFunction(
           slug = `how/${sanitizeSlug(topic)}`
           // Capitalize first letter of action word after "How to"
           title = `How to ${topic.charAt(0).toUpperCase() + topic.slice(1)}`
+          break
+        }
+
+        case 'gap_fill': {
+          // Response memo: answers a buyer's question where competitors are being cited
+          const queryText = query?.query_text || topicTitle || 'industry solutions'
+          
+          // Build cited content summary from citedUrls or competitor data
+          let citedContentSummary = ''
+          if (citedUrls && Array.isArray(citedUrls) && citedUrls.length > 0) {
+            citedContentSummary = citedUrls.map((url: string) => {
+              try {
+                const domain = new URL(url).hostname.replace(/^www\./, '')
+                return `- ${domain}: ${url}`
+              } catch {
+                return `- ${url}`
+              }
+            }).join('\n')
+          } else if (competitors.length > 0) {
+            citedContentSummary = competitors.slice(0, 5).map(c => 
+              `- ${c.name} (${c.domain || 'no domain'})`
+            ).join('\n')
+          }
+
+          prompt = GAP_FILL_MEMO_PROMPT
+            .replace('{{tone_instructions}}', toneInstructions)
+            .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
+            .replace('{{query_text}}', queryText)
+            .replace('{{cited_content}}', citedContentSummary || 'No specific competitor citations available.')
+            .replace(/\{\{brand_name\}\}/g, brand.name)
+            .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
+            .replace(/\{\{date\}\}/g, today)
+          
+          // Create a clean slug from the query text
+          const gapSlug = sanitizeSlug(queryText)
+          slug = `gap/${gapSlug}`
+          
+          // Use the query as the title, cleaned up
+          title = queryText
+            .replace(/^\w/, (c: string) => c.toUpperCase()) // Capitalize first letter
+            .replace(/\?$/, '') // Remove trailing question mark
           break
         }
 

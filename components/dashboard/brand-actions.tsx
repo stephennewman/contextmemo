@@ -270,6 +270,7 @@ const MEMO_TYPE_LABELS: Record<string, string> = {
   how_to: 'How-To Guide',
   industry: 'Industry Guide',
   response: 'Response',
+  gap_fill: 'Response',
   definition: 'Definition',
   guide: 'Guide',
 }
@@ -294,6 +295,10 @@ export function GenerateMemoDropdown({
     priorityScore?: number
     competitorId?: string
     competitorName?: string
+    citedUrls?: string[]
+    citedDomain?: string
+    citationCount?: number
+    queryCount?: number
     funnelStage?: string
     persona?: string
   } | null>(null)
@@ -338,6 +343,7 @@ export function GenerateMemoDropdown({
       if (suggestion.competitorId) body.competitorId = suggestion.competitorId
       if (suggestion.topicId) body.topicTitle = suggestion.title
       if (suggestion.description && suggestion.source === 'topic_universe') body.topicDescription = suggestion.description
+      if (suggestion.citedUrls) body.citedUrls = suggestion.citedUrls
 
       const response = await fetch(`/api/brands/${brandId}/actions`, {
         method: 'POST',
@@ -412,14 +418,19 @@ export function GenerateMemoDropdown({
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[10px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
-                  {MEMO_TYPE_LABELS[suggestion.memoType] || suggestion.memoType}
+                  {suggestion.source === 'citation_response' ? 'Response' : (MEMO_TYPE_LABELS[suggestion.memoType] || suggestion.memoType)}
                 </span>
-                {suggestion.competitorName && (
+                {suggestion.citedDomain && (
+                  <span className="text-[10px] text-blue-500">
+                    {suggestion.citationCount} citations · {suggestion.citedDomain}
+                  </span>
+                )}
+                {!suggestion.citedDomain && suggestion.competitorName && (
                   <span className="text-[10px] text-blue-500">
                     vs {suggestion.competitorName}
                   </span>
                 )}
-                {suggestion.priorityScore && (
+                {suggestion.priorityScore && !suggestion.citedDomain && (
                   <span className="text-[10px] text-blue-400">
                     Priority: {suggestion.priorityScore}
                   </span>
