@@ -175,7 +175,9 @@ export function OnboardingFlow({
         body: JSON.stringify({ action: 'check_status' }),
       })
       if (res.ok) return await res.json()
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[onboarding] Failed to poll status:', err)
+    }
     return null
   }, [brandId])
 
@@ -817,7 +819,9 @@ export function TerminalWidget({
           }
           setLines(newLines)
         }
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error('[onboarding] Failed to load activity:', err)
+      }
     }
     loadActivity()
   }, [isOpen, brandId, brandName, lines.length])

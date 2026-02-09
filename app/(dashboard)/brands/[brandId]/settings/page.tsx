@@ -363,7 +363,9 @@ export default function BrandSettingsPage() {
           const data = await res.json()
           setUserDisplayName(data.name || '')
         }
-      } catch {}
+      } catch (err) {
+        console.error('[settings] Failed to load user profile:', err)
+      }
     }
     loadProfile()
   }, [])

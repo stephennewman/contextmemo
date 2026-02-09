@@ -438,8 +438,8 @@ export const scanRun = inngest.createFunction(
             p_brand_id: brandId,
             p_credits: credits,
           })
-        } catch {
-          // RPC might not exist yet, that's ok
+        } catch (err) {
+          console.error(`[scan-run] Failed to increment brand credits for ${brandId}:`, err)
         }
       } else {
         console.error(`[Stripe] Failed to report usage: ${result.error}`)

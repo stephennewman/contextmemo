@@ -24,7 +24,7 @@ export async function logSecurityEvent(params: {
       details: params.details || {},
       created_at: new Date().toISOString(),
     })
-  } catch {
-    // Avoid throwing from logging
+  } catch (err) {
+    console.error('[security-events] Failed to log security event:', params.type, err)
   }
 }

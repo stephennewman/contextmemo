@@ -14,7 +14,8 @@ async function getCount(
     }
     const { count } = await query
     return count || 0
-  } catch {
+  } catch (err) {
+    console.error(`[admin] Failed to get count for ${table}:`, err)
     return 0
   }
 }
@@ -39,7 +40,8 @@ async function getOpenRouterBalance(): Promise<{
       usage: data.data?.usage ?? data.usage ?? 0,
       limit: data.data?.limit ?? data.limit ?? null,
     }
-  } catch {
+  } catch (err) {
+    console.error('[admin] Failed to fetch OpenRouter balance:', err)
     return null
   }
 }

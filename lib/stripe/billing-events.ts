@@ -21,7 +21,7 @@ export async function logBillingEvent(params: {
       metadata: params.metadata || {},
       created_at: new Date().toISOString(),
     })
-  } catch {
-    // Avoid throwing from logging
+  } catch (err) {
+    console.error('[billing-events] Failed to log billing event:', params.eventType, err)
   }
 }

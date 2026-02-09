@@ -475,8 +475,8 @@ export async function GET(request: NextRequest) {
           }
         }
     }
-    } catch {
-      // ai_traffic table may not exist yet
+    } catch (err) {
+      console.error('[activity] Failed to query ai_traffic:', err)
     }
 
     // Sort all activities by date descending

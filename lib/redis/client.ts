@@ -40,7 +40,8 @@ export async function redisEnabled(): Promise<boolean> {
   try {
     const redis = await getRedisClient()
     return !!redis
-  } catch {
+  } catch (err) {
+    console.error('[redis] Redis connection check failed:', err)
     return false
   }
 }

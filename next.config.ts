@@ -30,7 +30,4 @@ export default withSentryConfig(nextConfig, {
 
   // Suppress Sentry CLI logs during build
   silent: !process.env.CI,
-
-  // Automatically tree-shake unused Sentry code
-  disableLogger: true,
 });

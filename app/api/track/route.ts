@@ -165,8 +165,8 @@ export async function GET(request: NextRequest) {
             country,
             timestamp: new Date().toISOString(),
           })
-        } catch {
-          // Silently fail for pixel tracking
+        } catch (err) {
+          console.error('[track] Failed to insert ai_traffic:', err)
         }
       }
     }
