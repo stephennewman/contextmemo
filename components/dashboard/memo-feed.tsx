@@ -1088,19 +1088,21 @@ export function MemoFeed({
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {memo.status === 'published' ? (
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => handleUnpublish(memo.id)} disabled={isSaving}>
-                          {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <EyeOff className="h-3 w-3" />}
-                          <span className="ml-1 hidden sm:inline">Unpublish</span>
-                        </Button>
+                        <>
+                          <Button size="sm" className="h-7 px-2 text-xs" asChild>
+                            <a href={liveUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              <span>View</span>
+                            </a>
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-600" onClick={() => handleUnpublish(memo.id)} disabled={isSaving} title="Unpublish">
+                            {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <EyeOff className="h-3 w-3" />}
+                          </Button>
+                        </>
                       ) : (
                         <Button size="sm" className="h-7 px-2 text-xs bg-[#10B981] hover:bg-[#059669] text-white" onClick={() => handlePublish(memo.id)} disabled={isSaving}>
                           {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}
                           <span className="ml-1">Publish</span>
-                        </Button>
-                      )}
-                      {memo.status === 'published' && (
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
-                          <a href={liveUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-3 w-3" /></a>
                         </Button>
                       )}
                       {hubspotEnabled && (
