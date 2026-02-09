@@ -89,13 +89,12 @@ export interface MemoPathInfo {
 }
 
 // Content paths that bots may crawl (these serve published memos)
-const CONTENT_PATH_PREFIXES = [
-  '/memo/',
+// Some are "slug prefixes" where the route prefix IS part of the memo slug.
+// Others are "wrapper routes" where the route prefix is NOT part of the slug.
+const SLUG_PREFIX_ROUTES = [
   '/resources/',
-  '/memos/',
   '/compare/',
   '/alternatives/',
-  '/guides/',
   '/for/',
   '/how-to/',
   '/how/',
@@ -103,6 +102,15 @@ const CONTENT_PATH_PREFIXES = [
   '/gap/',
   '/alternatives-to/',
 ]
+
+// Wrapper routes that group content but their prefix is NOT part of the memo slug
+const WRAPPER_ROUTES = [
+  '/memos/',
+  '/guides/',
+  '/memo/',
+]
+
+const CONTENT_PATH_PREFIXES = [...SLUG_PREFIX_ROUTES, ...WRAPPER_ROUTES]
 
 /**
  * Resolve a request to a memo path with brand subdomain and slug.
@@ -142,13 +150,27 @@ export function resolveMemoPath(request: NextRequest): MemoPathInfo | null {
     }
   }
 
-  // Check other content paths — these serve contextmemo.com's own brand memos
-  for (const prefix of CONTENT_PATH_PREFIXES) {
-    if (prefix !== '/memo/' && pathname.startsWith(prefix)) {
-      const slug = pathname.slice(prefix.length) || null
+  // Check slug-prefix routes — these serve contextmemo.com's own brand memos
+  // where the route prefix IS part of the memo slug (e.g. /vs/therma → slug "vs/therma")
+  for (const prefix of SLUG_PREFIX_ROUTES) {
+    if (pathname.startsWith(prefix)) {
+      const rest = pathname.slice(prefix.length) || null
       return {
-        brandSubdomain: 'contextmemo', // own brand content
-        memoSlug: slug ? `${prefix.slice(1, -1)}/${slug}` : prefix.slice(1, -1),
+        brandSubdomain: 'contextmemo',
+        memoSlug: rest ? `${prefix.slice(1, -1)}/${rest}` : null,
+        pagePath: pathname,
+      }
+    }
+  }
+
+  // Check wrapper routes — prefix is NOT part of the memo slug
+  // (e.g. /memos/how-to/sales-strategies → slug "how-to/sales-strategies")
+  for (const prefix of WRAPPER_ROUTES) {
+    if (prefix !== '/memo/' && pathname.startsWith(prefix)) {
+      const rest = pathname.slice(prefix.length) || null
+      return {
+        brandSubdomain: 'contextmemo',
+        memoSlug: rest || null,
         pagePath: pathname,
       }
     }

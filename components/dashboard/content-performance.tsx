@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -11,6 +12,11 @@ import {
   Radar,
   Search,
   Scan,
+  ChevronDown,
+  ChevronUp,
+  MousePointerClick,
+  MessageSquare,
+  Database,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { AI_SOURCE_LABELS, type AIReferrerSource } from '@/lib/supabase/types'
@@ -62,7 +68,9 @@ interface ContentPerformanceProps {
 const TYPE_LABELS: Record<string, string> = {
   comparison: 'Comparison',
   industry: 'Guide',
+  guide: 'Guide',
   how_to: 'How-To',
+  how: 'How-To',
   alternative: 'Alternative',
   response: 'Response',
   resource: 'Resource',
@@ -100,8 +108,11 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
   const onHubSpot = memos.filter(m => m.schema_json?.hubspot_post_id)
   const onContextMemo = published.filter(m => !m.schema_json?.hubspot_post_id)
 
+  // Normalize type aliases so they group together
+  const TYPE_ALIASES: Record<string, string> = { industry: 'guide', how: 'how_to' }
   const byType = memos.reduce((acc, m) => {
-    const t = m.memo_type || 'other'
+    let t = (m.memo_type || 'other').toLowerCase()
+    t = TYPE_ALIASES[t] || t
     acc[t] = (acc[t] || 0) + 1
     return acc
   }, {} as Record<string, number>)
@@ -165,13 +176,82 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
     if (idx !== -1 && sparklineByBot[e.bot_name]) sparklineByBot[e.bot_name][idx]++
   }
 
-  // Per-memo last AI crawl
+  // Per-memo last AI crawl — index by exact slug AND by base name (after prefix)
+  // so "resources/sales-strategies" matches both the exact slug and just "sales-strategies"
   const lastAICrawlBySlug: Record<string, { botDisplayName: string; botCategory: string; timestamp: string }> = {}
   for (const event of aiCrawlEvents) {
     if (event.memo_slug && !lastAICrawlBySlug[event.memo_slug]) {
       lastAICrawlBySlug[event.memo_slug] = { botDisplayName: event.bot_display_name, botCategory: event.bot_category, timestamp: event.created_at }
     }
   }
+
+  // Helper to find last crawl for a memo — tries exact slug, then base name match
+  function findLastCrawl(memoSlug: string) {
+    if (lastAICrawlBySlug[memoSlug]) return lastAICrawlBySlug[memoSlug]
+    // Try matching on base name (everything after first /)
+    const baseName = memoSlug.includes('/') ? memoSlug.split('/').slice(1).join('/') : memoSlug
+    for (const [crawlSlug, data] of Object.entries(lastAICrawlBySlug)) {
+      const crawlBase = crawlSlug.includes('/') ? crawlSlug.split('/').slice(1).join('/') : crawlSlug
+      if (crawlBase === baseName) return data
+    }
+    return null
+  }
+
+  // Helper to match crawl slug → memo slug (base name fallback)
+  function slugMatchesMemo(crawlSlug: string, memoSlug: string): boolean {
+    if (crawlSlug === memoSlug) return true
+    const crawlBase = crawlSlug.includes('/') ? crawlSlug.split('/').slice(1).join('/') : crawlSlug
+    const memoBase = memoSlug.includes('/') ? memoSlug.split('/').slice(1).join('/') : memoSlug
+    return crawlBase === memoBase
+  }
+
+  // Precompute crawl count per memo
+  const crawlCountByMemoId: Record<string, number> = {}
+  for (const memo of published) {
+    let count = 0
+    for (const event of crawlEvents) {
+      if (event.memo_slug && slugMatchesMemo(event.memo_slug, memo.slug)) count++
+    }
+    crawlCountByMemoId[memo.id] = count
+  }
+
+  // ── Sort state ──
+  type SortColumn = 'title' | 'type' | 'where' | 'views' | 'ai' | 'crawls' | 'lastCrawled' | 'created'
+  type SortDirection = 'asc' | 'desc'
+  const [sortColumn, setSortColumn] = useState<SortColumn>('created')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+
+  function handleSort(col: SortColumn) {
+    if (sortColumn === col) {
+      setSortDirection(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(col)
+      // Default direction: text columns → asc, numeric/date → desc
+      setSortDirection(col === 'title' || col === 'type' ? 'asc' : 'desc')
+    }
+  }
+
+  function getSortValue(memo: Memo) {
+    const views = viewsByMemo[memo.id] || { total: 0, ai: 0, organic: 0 }
+    const crawl = findLastCrawl(memo.slug)
+    switch (sortColumn) {
+      case 'title': return memo.title.toLowerCase()
+      case 'type': return (TYPE_LABELS[(TYPE_ALIASES[(memo.memo_type || 'other').toLowerCase()] || (memo.memo_type || 'other').toLowerCase())] || memo.memo_type || 'other').toLowerCase()
+      case 'where': return memo.schema_json?.hubspot_post_id ? 1 : 0
+      case 'views': return views.total
+      case 'ai': return views.ai
+      case 'crawls': return crawlCountByMemoId[memo.id] || 0
+      case 'lastCrawled': return crawl ? new Date(crawl.timestamp).getTime() : 0
+      case 'created': return new Date(memo.created_at).getTime()
+    }
+  }
+
+  const sortedMemos = [...published].sort((a, b) => {
+    const va = getSortValue(a)
+    const vb = getSortValue(b)
+    const cmp = typeof va === 'string' ? va.localeCompare(vb as string) : (va as number) - (vb as number)
+    return sortDirection === 'asc' ? cmp : -cmp
+  })
 
   return (
     <Card className="gap-4">
@@ -194,36 +274,38 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
         <InlineStat label="Organic" value={organicTraffic.length} color="#F59E0B" sub={hasTraffic && traffic.length > 0 ? `${Math.round((organicTraffic.length / traffic.length) * 100)}%` : undefined} />
       </div>
 
+      {/* ── AI Visibility Funnel ── */}
+      <div className="mx-6 border-t border-zinc-200" />
+      <div className="px-6">
+        <SectionHeader icon={<Radar className="h-4 w-4 text-emerald-500" />} title="AI Visibility Funnel" sub="How AI platforms interact with your content" />
+        <AIFunnel crawlEvents={crawlEvents} publishedCount={published.length} publishedSlugs={new Set(published.map(m => m.slug))} />
+      </div>
+
       {/* ── Memo Performance ── */}
       <div className="mx-6 border-t border-zinc-200" />
       <div className="px-6">
-        <SectionHeader icon={<FileText className="h-4 w-4 text-[#0EA5E9]" />} title="Memo Performance" sub={`${published.length} published · sorted by views`} />
+        <SectionHeader icon={<FileText className="h-4 w-4 text-[#0EA5E9]" />} title="Memo Performance" sub={`${published.length} published`} />
         {published.length > 0 ? (
           <div className="overflow-x-auto mt-3">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs">MEMO</th>
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs text-center w-16">TYPE</th>
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs text-center w-16">WHERE</th>
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs text-right w-16">VIEWS</th>
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs text-right w-12">AI</th>
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs text-right w-32">LAST CRAWLED</th>
-                  <th className="pb-2 font-semibold text-zinc-500 text-xs text-right w-20">CREATED</th>
+                  <SortableTH column="title" label="MEMO" active={sortColumn} direction={sortDirection} onSort={handleSort} />
+                  <SortableTH column="type" label="TYPE" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-center" className="w-20" />
+                  <SortableTH column="where" label="WHERE" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-center" className="w-16" />
+                  <SortableTH column="views" label="VIEWS" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-right" className="w-16" />
+                  <SortableTH column="ai" label="AI" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-right" className="w-12" />
+                  <SortableTH column="crawls" label="CRAWLS" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-right" className="w-16" />
+                  <SortableTH column="lastCrawled" label="LAST CRAWLED" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-right" className="w-32" />
+                  <SortableTH column="created" label="CREATED" active={sortColumn} direction={sortDirection} onSort={handleSort} align="text-right" className="w-20" />
                 </tr>
               </thead>
               <tbody>
-                {published
-                  .sort((a, b) => {
-                    const va = viewsByMemo[a.id]?.total || 0
-                    const vb = viewsByMemo[b.id]?.total || 0
-                    if (vb !== va) return vb - va
-                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                  })
-                  .map(memo => {
+                {sortedMemos.map(memo => {
                     const views = viewsByMemo[memo.id] || { total: 0, ai: 0, organic: 0 }
                     const isOnHubSpot = !!memo.schema_json?.hubspot_post_id
                     const memoUrl = `/memo/${brandSubdomain}/${memo.slug}`
+                    const crawlCount = crawlCountByMemoId[memo.id] || 0
                     return (
                       <tr key={memo.id} className="border-b border-zinc-50 hover:bg-zinc-50/50 group">
                         <td className="py-2 pr-3">
@@ -233,7 +315,7 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
                           </a>
                         </td>
                         <td className="py-2 text-center">
-                          <Badge variant="outline" className="text-[10px] font-medium">{TYPE_LABELS[memo.memo_type] || memo.memo_type}</Badge>
+                          <Badge variant="outline" className="text-[10px] font-medium">{TYPE_LABELS[(TYPE_ALIASES[(memo.memo_type || '').toLowerCase()] || (memo.memo_type || '').toLowerCase())] || memo.memo_type}</Badge>
                         </td>
                         <td className="py-2 text-center">
                           {isOnHubSpot ? (
@@ -244,9 +326,10 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
                         </td>
                         <td className="py-2 text-right font-medium tabular-nums">{views.total > 0 ? views.total : <span className="text-zinc-300">—</span>}</td>
                         <td className="py-2 text-right tabular-nums">{views.ai > 0 ? <span className="text-emerald-600 font-medium">{views.ai}</span> : <span className="text-zinc-300">—</span>}</td>
+                        <td className="py-2 text-right tabular-nums">{crawlCount > 0 ? <span className="text-indigo-600 font-medium">{crawlCount}</span> : <span className="text-zinc-300">—</span>}</td>
                         <td className="py-2 text-right">
                           {(() => {
-                            const crawl = lastAICrawlBySlug[memo.slug]
+                            const crawl = findLastCrawl(memo.slug)
                             if (!crawl) return <span className="text-zinc-300 text-xs">—</span>
                             return (
                               <div className="text-right">
@@ -382,6 +465,33 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
 
 /* ── Inner Components ── */
 
+function SortableTH({ column, label, active, direction, onSort, align, className }: {
+  column: string
+  label: string
+  active: string
+  direction: 'asc' | 'desc'
+  onSort: (col: any) => void
+  align?: string
+  className?: string
+}) {
+  const isActive = active === column
+  return (
+    <th
+      className={`pb-2 font-semibold text-xs cursor-pointer select-none hover:text-zinc-700 transition-colors ${isActive ? 'text-zinc-700' : 'text-zinc-400'} ${align || ''} ${className || ''}`}
+      onClick={() => onSort(column)}
+    >
+      <span className={`inline-flex items-center gap-0.5 ${align === 'text-right' ? 'justify-end' : align === 'text-center' ? 'justify-center' : ''}`}>
+        {label}
+        {isActive ? (
+          direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-30" />
+        )}
+      </span>
+    </th>
+  )
+}
+
 function SectionHeader({ icon, title, sub }: { icon: React.ReactNode; title: string; sub?: string }) {
   return (
     <div className="flex items-center gap-2">
@@ -398,6 +508,106 @@ function InlineStat({ label, value, color, sub }: { label: string; value: number
       <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</p>
       <p className="text-xl font-bold tabular-nums" style={{ color }}>{value}</p>
       {sub && <p className="text-[10px] text-zinc-400">{sub}</p>}
+    </div>
+  )
+}
+
+function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents: CrawlEvent[]; publishedCount: number; publishedSlugs: Set<string> }) {
+  // Helper: resolve a crawl slug to a published memo slug (exact match or base-name match)
+  function resolveToPublished(crawlSlug: string): string | null {
+    if (publishedSlugs.has(crawlSlug)) return crawlSlug
+    // Try base-name match (strip prefix, e.g. "how-to/xyz" → "xyz" matches "resources/xyz")
+    const baseName = crawlSlug.includes('/') ? crawlSlug.split('/').slice(1).join('/') : crawlSlug
+    for (const slug of publishedSlugs) {
+      const memoBase = slug.includes('/') ? slug.split('/').slice(1).join('/') : slug
+      if (memoBase === baseName) return slug
+    }
+    return null
+  }
+
+  // All stages count UNIQUE PUBLISHED MEMOS — deduped against real memo slugs
+  // so multiple URLs pointing to the same memo count as 1
+  const aiEvents = crawlEvents.filter(e => ['ai_training', 'ai_search', 'ai_user_browse'].includes(e.bot_category))
+  const discoveredMemos = new Set(
+    aiEvents.filter(e => e.memo_slug).map(e => resolveToPublished(e.memo_slug!)).filter(Boolean)
+  ).size
+  const referencedMemos = new Set(
+    crawlEvents.filter(e => e.bot_category === 'ai_search' && e.memo_slug)
+      .map(e => resolveToPublished(e.memo_slug!)).filter(Boolean)
+  ).size
+  const clickedMemos = new Set(
+    crawlEvents.filter(e => e.bot_category === 'ai_user_browse' && e.memo_slug)
+      .map(e => resolveToPublished(e.memo_slug!)).filter(Boolean)
+  ).size
+
+  // Event counts for supplementary info
+  const totalSearchEvents = crawlEvents.filter(e => e.bot_category === 'ai_search').length
+  const totalClickEvents = crawlEvents.filter(e => e.bot_category === 'ai_user_browse').length
+  const trainingCrawls = crawlEvents.filter(e => e.bot_category === 'ai_training').length
+
+  const stages = [
+    { label: 'Published', value: publishedCount, color: '#0EA5E9', extra: 'total pages' },
+    { label: 'AI Discovered', value: discoveredMemos, color: '#6366F1', extra: trainingCrawls > 0 ? `incl. ${trainingCrawls} training crawls` : 'unique memos' },
+    { label: 'Query Referenced', value: referencedMemos, color: '#10B981', extra: totalSearchEvents > referencedMemos ? `${totalSearchEvents} total queries` : 'unique memos' },
+    { label: 'Click-through', value: clickedMemos, color: '#F59E0B', extra: totalClickEvents > clickedMemos ? `${totalClickEvents} total clicks` : 'unique memos' },
+  ]
+
+  const maxVal = Math.max(1, publishedCount)
+
+  return (
+    <div className="mt-4 space-y-2">
+      {stages.map((stage, i) => {
+        const barPct = maxVal > 0 ? Math.max(2, (stage.value / maxVal) * 100) : 0
+        const prevValue = i > 0 ? stages[i - 1].value : null
+        const convPct = prevValue && prevValue > 0 ? Math.round((stage.value / prevValue) * 100) : null
+
+        return (
+          <div key={stage.label} className="flex items-center gap-3">
+            {/* Label */}
+            <div className="w-28 shrink-0 text-right">
+              <p className="text-xs font-medium text-zinc-700">{stage.label}</p>
+            </div>
+
+            {/* Bar */}
+            <div className="flex-1 relative h-7 bg-zinc-50 rounded overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded transition-all flex items-center px-2"
+                style={{ width: `${barPct}%`, backgroundColor: `${stage.color}18`, minWidth: stage.value > 0 ? '24px' : '0px' }}
+              >
+                {barPct > 15 && (
+                  <span className="text-xs font-bold tabular-nums" style={{ color: stage.color }}>{stage.value}</span>
+                )}
+              </div>
+              {barPct <= 15 && stage.value > 0 && (
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold tabular-nums" style={{ color: stage.color, marginLeft: `${barPct}%` }}>{stage.value}</span>
+              )}
+              {stage.value === 0 && (
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-zinc-300">0</span>
+              )}
+            </div>
+
+            {/* Conversion % */}
+            <div className="w-14 shrink-0 text-right">
+              {convPct !== null ? (
+                <span className="text-[10px] tabular-nums text-zinc-400">{convPct}%</span>
+              ) : (
+                <span className="text-[10px] text-zinc-300">—</span>
+              )}
+            </div>
+          </div>
+        )
+      })}
+
+      {/* Extra context line */}
+      <div className="flex items-center gap-3 pt-1">
+        <div className="w-28 shrink-0" />
+        <p className="text-[10px] text-zinc-400">
+          Unique pages at each stage
+          {trainingCrawls > 0 && ` · ${trainingCrawls} training crawl${trainingCrawls !== 1 ? 's' : ''} from GPTBot/Google AI`}
+          {totalSearchEvents > 0 && ` · ${totalSearchEvents} search quer${totalSearchEvents !== 1 ? 'ies' : 'y'}`}
+          {totalClickEvents > 0 && ` · ${totalClickEvents} click${totalClickEvents !== 1 ? 's' : ''}`}
+        </p>
+      </div>
     </div>
   )
 }

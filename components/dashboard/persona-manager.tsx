@@ -211,8 +211,7 @@ export function PersonaManager({
       ) : sortedPersonas.length > 0 ? (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {sortedPersonas.map(persona => (
-            <div 
-              key={persona.id}
+            <div key={persona.id}
               className={`p-4 border rounded-lg transition-opacity ${
                 persona.isEnabled 
                   ? 'bg-card'
