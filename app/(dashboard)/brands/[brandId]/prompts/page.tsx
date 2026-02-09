@@ -36,7 +36,7 @@ export default async function PromptsPage({ params }: Props) {
       .order('priority', { ascending: false }),
     supabase
       .from('scan_results')
-      .select('id, brand_id, query_id, model, response_text, brand_mentioned, brand_position, brand_context, brand_in_citations, competitors_mentioned, citations, search_results, scanned_at, is_first_citation, citation_status_changed, previous_cited, new_competitors_found, position_change, brand_sentiment, sentiment_reason')
+      .select('id, brand_id, query_id, model, response_text, brand_mentioned, brand_position, brand_context, brand_in_citations, competitors_mentioned, citations, scanned_at, is_first_citation, citation_status_changed, previous_cited, new_competitors_found, position_change, brand_sentiment, sentiment_reason')
       .eq('brand_id', brandId)
       .gte('scanned_at', ninetyDaysAgo.toISOString())
       .order('scanned_at', { ascending: false })
