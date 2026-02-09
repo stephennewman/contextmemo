@@ -5,6 +5,7 @@ import { BrandPauseToggle } from '@/components/v2/brand-pause-toggle'
 import { BrandLogo } from '@/components/dashboard/brand-logo'
 import { ScanButton } from '@/components/dashboard/brand-actions'
 import { OnboardingFlow, TerminalWidget } from '@/components/dashboard/onboarding-flow'
+import { ActivityBell } from '@/components/dashboard/activity-bell'
 import { BrandContext } from '@/lib/supabase/types'
 import { BrandTabNav } from './brand-tab-nav'
 
@@ -154,7 +155,10 @@ export default async function BrandLayout({ params, children }: Props) {
             </div>
           </div>
         </div>
-        <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} lastScanAt={brand.last_scan_at} />
+        <div className="flex items-center gap-2">
+          <ActivityBell brandId={brandId} brandName={brand.name} />
+          <BrandPauseToggle brandId={brandId} initialPaused={brand.is_paused || false} lastScanAt={brand.last_scan_at} />
+        </div>
       </div>
 
       {/* Paused Warning Banner */}

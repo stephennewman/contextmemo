@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   compress: true,
@@ -21,4 +22,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Upload source maps for readable stack traces
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+
+  // Suppress Sentry CLI logs during build
+  silent: !process.env.CI,
+
+  // Automatically tree-shake unused Sentry code
+  disableLogger: true,
+});
