@@ -390,6 +390,14 @@ _Most recent deploys first_
 
 ### February 9, 2026
 
+**Generate Memo now responds to top-cited competitor content** (74972f5)
+- Rewrote `suggest_next_memo` to query `scan_results.citations`, aggregate by URL (excluding brand's own domain and social sites), and suggest a `gap_fill` memo responding to the most-cited competitor content
+- Added `gap_fill` to `allowedMemoTypes` in the `generate_memo` API handler (was missing -- previous gap_fill attempts would silently fail with "Invalid memoType")
+- Added `case 'gap_fill'` to the memo generation switch in `memo-generate.ts`, using `GAP_FILL_MEMO_PROMPT` with cited URLs and query context
+- Updated `GenerateMemoDropdown` to pass `citedUrls` array and show citation context (domain + count) in the suggestion card
+- Flow: user clicks "Generate Memo" → sees top-cited URL, domain, citation count → clicks "Generate" → creates a response article addressing that buyer question
+- Files changed: `app/api/brands/[brandId]/actions/route.ts`, `lib/inngest/functions/memo-generate.ts`, `components/dashboard/brand-actions.tsx`
+
 **Memo quality: Third-person authoritative voice, persona targeting, remove self-promotional UI** (88d9ad7)
 - Rewrote all 5 memo prompts (comparison, industry, how_to, alternative, gap_fill) to use third-person authoritative voice instead of first-person "we/our"
 - Added persona-targeting instructions — AI now identifies the buyer persona from brand context and writes for their concerns and vocabulary

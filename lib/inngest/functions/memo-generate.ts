@@ -319,7 +319,9 @@ export const memoGenerate = inngest.createFunction(
 
       const overlap = checkTopicOverlap(memoType, memoTopics, competitorName, existingPages)
 
-      if (overlap.hasOverlap && overlap.matchingPage) {
+      // Skip redundancy check for gap_fill memos — these respond to cited competitor content
+      // and should always be generated even if the brand's website covers the same broad topic
+      if (memoType !== 'gap_fill' && overlap.hasOverlap && overlap.matchingPage) {
         console.log(`Redundancy detected: memo type "${memoType}" overlaps with existing page "${overlap.matchingPage.url}" (score: ${overlap.overlapScore})`)
         return {
           shouldSkip: true,
