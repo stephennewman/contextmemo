@@ -277,14 +277,25 @@ const MEMO_TYPE_LABELS: Record<string, string> = {
 
 // Suggestion-based memo generation: queries existing gaps and suggests the next best memo
 export function GenerateMemoDropdown({ 
-  brandId
+  brandId,
+  memoCount = 0,
 }: { 
   brandId: string
+  memoCount?: number
 }) {
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generatingTitle, setGeneratingTitle] = useState('')
+  const [memoCountAtGenStart, setMemoCountAtGenStart] = useState(0)
   const [suggesting, setSuggesting] = useState(false)
+
+  // When memoCount increases after generation starts, clear the generating state
+  useEffect(() => {
+    if (generating && memoCount > memoCountAtGenStart) {
+      setGenerating(false)
+      setGeneratingTitle('')
+    }
+  }, [memoCount, memoCountAtGenStart, generating])
   const [suggestion, setSuggestion] = useState<{
     source: string
     topicId?: string
@@ -361,40 +372,26 @@ export function GenerateMemoDropdown({
       setSuggestion(null)
       setGenerating(true)
       setGeneratingTitle(title)
+      setMemoCountAtGenStart(memoCount)
       setLoading(false)
 
-      // Poll for new memo every 5s, up to 90s
-      const pollStart = Date.now()
-      const maxPollMs = 90000
-      const pollInterval = 5000
-      
-      const poll = async () => {
-        while (Date.now() - pollStart < maxPollMs) {
-          await new Promise(resolve => setTimeout(resolve, pollInterval))
-          try {
-            // Check if a new memo was just created (last 2 minutes)
-            const checkRes = await fetch(`/api/brands/${brandId}/actions`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'check_recent_memo' }),
-            })
-            const checkData = await checkRes.json()
-            if (checkData.found) {
-              setGenerating(false)
-              setGeneratingTitle('')
-              router.refresh()
-              return
-            }
-          } catch {
-            // Continue polling on error
-          }
-        }
-        // Timeout — refresh anyway
-        setGenerating(false)
-        setGeneratingTitle('')
+      // Poll by refreshing the page data every 5s, up to 90s
+      // Each router.refresh() causes the server to re-fetch memos,
+      // so the new memo appears in the list as soon as it's in the DB
+      let elapsed = 0
+      const interval = setInterval(() => {
+        elapsed += 5000
         router.refresh()
-      }
-      poll()
+        if (elapsed >= 90000) {
+          clearInterval(interval)
+          setGenerating(false)
+          setGeneratingTitle('')
+        }
+      }, 5000)
+
+      // Also store interval so we can clear it if component unmounts
+      const cleanup = () => clearInterval(interval)
+      window.addEventListener('beforeunload', cleanup, { once: true })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Generation failed')
       setLoading(false)

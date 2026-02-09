@@ -62,7 +62,7 @@ export default async function MemosPage({ params }: Props) {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <GenerateMemoDropdown brandId={brandId} />
+              <GenerateMemoDropdown brandId={brandId} memoCount={(memos || []).length} />
             </div>
           </div>
         </CardHeader>
