@@ -178,7 +178,7 @@ export function CoverageAudit({
         filtered.sort((a, b) => b.priority_score - a.priority_score)
         break
       case 'category':
-        filtered.sort((a, b) => a.category.localeCompare(b.category))
+        filtered.sort((a, b) => (a.category || '').localeCompare(b.category || ''))
         break
       case 'status': {
         const statusOrder = { gap: 0, partial: 1, covered: 2 }

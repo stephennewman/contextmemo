@@ -174,11 +174,13 @@ export function PersonaManager({
 
   // Sort by seniority (executive first) then by function
   const sortedPersonas = [...personasWithState].sort((a, b) => {
-    const seniorityOrder = { executive: 0, manager: 1, specialist: 2 }
-    if (seniorityOrder[a.seniority] !== seniorityOrder[b.seniority]) {
-      return seniorityOrder[a.seniority] - seniorityOrder[b.seniority]
+    const seniorityOrder: Record<string, number> = { executive: 0, manager: 1, specialist: 2 }
+    const aSeniority = seniorityOrder[a.seniority] ?? 99
+    const bSeniority = seniorityOrder[b.seniority] ?? 99
+    if (aSeniority !== bSeniority) {
+      return aSeniority - bSeniority
     }
-    return a.function.localeCompare(b.function)
+    return (a.function || '').localeCompare(b.function || '')
   })
 
   // Skeleton card for loading state

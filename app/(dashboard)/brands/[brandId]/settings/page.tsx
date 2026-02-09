@@ -966,8 +966,11 @@ export default function BrandSettingsPage() {
 
   const personasWithState = personas.map(p => ({ ...p, isEnabled: !disabledPersonas.includes(p.id) }))
   const sortedPersonas = [...personasWithState].sort((a, b) => {
-    const order = { executive: 0, manager: 1, specialist: 2 }
-    return order[a.seniority] - order[b.seniority] || a.function.localeCompare(b.function)
+    const order: Record<string, number> = { executive: 0, manager: 1, specialist: 2 }
+    const aOrder = order[a.seniority] ?? 99
+    const bOrder = order[b.seniority] ?? 99
+    if (aOrder !== bOrder) return aOrder - bOrder
+    return (a.function || '').localeCompare(b.function || '')
   })
 
   return (
