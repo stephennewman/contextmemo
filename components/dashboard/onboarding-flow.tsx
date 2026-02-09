@@ -90,29 +90,90 @@ const STEP_CONFIGS: Record<SetupStep, {
     title: 'Scanning Brand Website',
     shortTitle: 'Brand Scan',
     progressMessages: [
-      'Crawling site and extracting brand context...',
-      'Processing products, personas, positioning...',
+      'Connecting to site...',
+      'Fetching homepage content...',
+      'Parsing page structure and metadata...',
+      'Extracting product names and descriptions...',
+      'Identifying target buyer personas...',
+      'Analyzing competitive positioning claims...',
+      'Detecting market segments from copy...',
+      'Reading feature descriptions...',
+      'Analyzing pricing model signals...',
+      'Extracting customer success stories...',
+      'Processing brand voice and tone...',
+      'Mapping product capabilities...',
+      'Identifying key differentiators...',
+      'Analyzing site navigation structure...',
+      'Extracting company metadata...',
+      'Building brand context profile...',
+      'Validating extracted data...',
+      'Finalizing brand profile...',
     ],
   },
   queries: {
     action: 'generate_queries',
-    title: 'Generating Prompts',
+    title: 'Reverse-Engineering Buyer Prompts',
     shortTitle: 'Prompts',
     progressMessages: [
-      'Building buyer queries across funnel stages...',
-      'Prioritizing by intent...',
+      'Analyzing buyer intent patterns...',
+      'Generating top-of-funnel educational queries...',
+      'Mapping "what is" and "how does" questions...',
+      'Building mid-funnel comparison prompts...',
+      'Crafting "best X for Y" evaluation queries...',
+      'Generating bottom-of-funnel purchase queries...',
+      'Adding alternative/competitor comparison prompts...',
+      'Scoring prompts by buyer intent strength...',
+      'Mapping each prompt to funnel stage...',
+      'Deduplicating similar query patterns...',
+      'Assigning priority scores...',
+      'Validating prompt relevance...',
+      'Finalizing prompt set...',
     ],
   },
   scan: {
     action: 'run_scan',
-    title: 'Running AI Scan',
+    title: 'Running AI Visibility Scan',
     shortTitle: 'AI Scan',
     progressMessages: [
-      'Querying AI models and extracting citations...',
-      'Classifying entities and scoring visibility...',
+      'Initializing AI model connections...',
+      'Submitting prompts to Perplexity Sonar...',
+      'Waiting for AI responses...',
+      'Parsing citation URLs from responses...',
+      'Extracting competitor mentions...',
+      'Checking if your brand appears in answers...',
+      'Recording brand position in each response...',
+      'Mapping citation domains...',
+      'Classifying entities — competitors, publishers, analysts...',
+      'Scoring citation relevance...',
+      'Calculating mention rate across all prompts...',
+      'Calculating citation rate...',
+      'Cross-referencing brand mentions with citations...',
+      'Identifying content gaps — prompts where AI skips you...',
+      'Ranking gap queries by opportunity...',
+      'Counting unique cited domains...',
+      'Building entity relationship map...',
+      'Processing sentiment of brand mentions...',
+      'Aggregating visibility scores...',
+      'Finalizing scan results...',
     ],
   },
 }
+
+// Messages shown while memo generation runs
+const MEMO_PROGRESS_MESSAGES = [
+  'Selecting highest-priority content gap...',
+  'Gathering citation sources AI currently trusts...',
+  'Analyzing competitor content on this topic...',
+  'Building memo outline...',
+  'Writing comprehensive comparison section...',
+  'Adding specific product details and facts...',
+  'Applying brand voice and tone...',
+  'Generating "How We Compare" section...',
+  'Adding source citations and references...',
+  'Writing meta description for AI discoverability...',
+  'Generating URL slug...',
+  'Publishing to your brand subdomain...',
+]
 
 // Narrative steps shown in the terminal after scan
 const REVEAL_STEPS = [
@@ -141,7 +202,6 @@ export function OnboardingFlow({
   const [revealAnimating, setRevealAnimating] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const progressRef = useRef<HTMLDivElement>(null)
-  const messageIndexRef = useRef(0)
   const hasStartedRef = useRef(false)
 
   // Auto-scroll progress
@@ -180,6 +240,41 @@ export function OnboardingFlow({
     }
     return null
   }, [brandId])
+
+  // Start a message drip that feeds lines from a message array with randomized timing
+  const startMessageDrip = useCallback((messages: string[]) => {
+    let idx = 0
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    const cancelled = { current: false }
+
+    // Show first message immediately
+    if (idx < messages.length) {
+      setProgressLines(prev => [...prev, { text: messages[idx], type: 'working' }])
+      idx++
+    }
+
+    // Schedule next messages with randomized delays (3-6s each)
+    const scheduleNext = () => {
+      if (cancelled.current || idx >= messages.length) return
+      const delay = 3000 + Math.random() * 3000
+      timeoutId = setTimeout(() => {
+        if (cancelled.current) return
+        // Complete previous working line, add new one
+        setProgressLines(prev => {
+          const updated = prev.map(line =>
+            line.type === 'working' ? { ...line, type: 'info' as const } : line
+          )
+          return [...updated, { text: messages[idx], type: 'working' as const }]
+        })
+        idx++
+        scheduleNext()
+      }, delay)
+    }
+    scheduleNext()
+
+    // Return a cleanup handle that works like clearInterval
+    return { cancel: () => { cancelled.current = true; if (timeoutId) clearTimeout(timeoutId) } }
+  }, [])
 
   // ── Phase 1: Setup Pipeline ──
   const runSetup = useCallback(async () => {
@@ -251,14 +346,8 @@ export function OnboardingFlow({
         addLine(`▶ ${config.title}`, 'header')
       }
 
-      messageIndexRef.current = 0
-      const showNextMessage = () => {
-        if (messageIndexRef.current < config.progressMessages.length) {
-          addLine(config.progressMessages[messageIndexRef.current], 'working')
-          messageIndexRef.current++
-        }
-      }
-      showNextMessage()
+      // Start dripping progress messages on their own timer
+      const dripInterval = startMessageDrip(config.progressMessages)
 
       const pollStart = Date.now()
       const maxPollTime = step === 'extract' ? 120000 : step === 'scan' ? 120000 : 90000
@@ -266,7 +355,6 @@ export function OnboardingFlow({
       let stepCompleted = false
       while (Date.now() - pollStart < maxPollTime) {
         await new Promise(r => setTimeout(r, 3000))
-        showNextMessage()
 
         const status = await pollStatus()
         if (!status) continue
@@ -293,6 +381,7 @@ export function OnboardingFlow({
         }
 
         if (complete) {
+          dripInterval.cancel()
           completeWorkingLines()
           addLine(`✓ ${summary}`, 'success')
           setCompletedSteps(prev => new Set([...prev, step]))
@@ -302,6 +391,7 @@ export function OnboardingFlow({
       }
 
       if (!stepCompleted) {
+        dripInterval.cancel()
         completeWorkingLines()
         if (step === 'scan') {
           // Try one more status check
@@ -326,7 +416,7 @@ export function OnboardingFlow({
     // Small delay then show results
     await new Promise(r => setTimeout(r, 500))
     setPhase('reveal')
-  }, [brandId, brandName, hasContext, hasQueries, addLine, completeWorkingLines, pollStatus])
+  }, [brandId, brandName, hasContext, hasQueries, addLine, completeWorkingLines, pollStatus, startMessageDrip])
 
   // Auto-start setup
   useEffect(() => {
@@ -464,7 +554,9 @@ export function OnboardingFlow({
   const startMemoPhase = useCallback(async () => {
     setPhase('memos')
     addLine('━━━ 6. SAMPLE MEMO ━━━', 'header')
-    addLine('Writing memo for your #1 gap...', 'working')
+
+    // Start dripping memo progress messages
+    const dripInterval = startMessageDrip(MEMO_PROGRESS_MESSAGES)
 
     try {
       const res = await fetch(`/api/brands/${brandId}/actions`, {
@@ -476,6 +568,7 @@ export function OnboardingFlow({
       if (!res.ok) throw new Error('Failed to generate memo')
       const result = await res.json()
 
+      dripInterval.cancel()
       completeWorkingLines()
 
       if (result.memosGenerated === 0 && result.totalGaps === 0) {
@@ -497,6 +590,7 @@ export function OnboardingFlow({
         }
       }
     } catch (error) {
+      dripInterval.cancel()
       completeWorkingLines()
       await addLineDelayed(`⚠ ${error instanceof Error ? error.message : 'Generation failed'}`, 'info')
     }
@@ -507,7 +601,7 @@ export function OnboardingFlow({
     await addLineDelayed('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'header')
 
     setPhase('done')
-  }, [brandId, addLine, completeWorkingLines])
+  }, [brandId, addLine, completeWorkingLines, startMessageDrip, addLineDelayed])
 
   // ── Render: Setup Phase Step Indicators ──
   const setupSteps = [

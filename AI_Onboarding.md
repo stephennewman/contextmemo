@@ -390,6 +390,19 @@ _Most recent deploys first_
 
 ### February 9, 2026
 
+**Memo quality: Third-person authoritative voice, persona targeting, remove self-promotional UI** (88d9ad7)
+- Rewrote all 5 memo prompts (comparison, industry, how_to, alternative, gap_fill) to use third-person authoritative voice instead of first-person "we/our"
+- Added persona-targeting instructions — AI now identifies the buyer persona from brand context and writes for their concerns and vocabulary
+- Added educate-first structure — content leads with the problem/context before vendor specifics
+- Renamed prompt sections: "How We Compare" → "How Tools Compare", "Why It Matters" → "What to Consider When Choosing"
+- Removed "Auto-generated from verified brand information" footer from all prompt templates
+- Removed redundant meta description line from memo hero section (was repeating the title)
+- Removed "About This Article" transparency/provenance block from public memo pages
+- Removed "Source Attribution" card with self-referential platform text from public memo pages
+- Added MEMO_TYPE_LABELS map so breadcrumb displays "Guides" instead of "gap fill"
+- Added new section names (The Short Answer, Understanding the Problem, How Tools Compare, What to Consider) to markdown header pattern detection
+- Files changed: `lib/ai/prompts/memo-generation.ts`, `lib/memo/render.tsx`, `app/memo/[subdomain]/[[...slug]]/page.tsx`
+
 **UX: Post-onboarding lands on Memos tab, entities page cleanup, suggest next memo**
 - After onboarding memo generation, "GO TO DASHBOARD" now redirects to `/brands/{brandId}/memos` instead of `/brands/{brandId}` (profile) — user immediately sees the memo they just generated
 - Entities page: removed redundant CompetitiveIntelligence and CompetitorContentFeed sections (duplicate of data already in entity list); unified citation + mention query tracking into single count
