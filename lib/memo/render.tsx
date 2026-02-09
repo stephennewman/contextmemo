@@ -23,6 +23,17 @@ export const MEMO_TYPE_TO_ROUTE: Record<string, string> = {
   response: '/resources',
 }
 
+// Human-readable labels for memo types (used in breadcrumbs)
+export const MEMO_TYPE_LABELS: Record<string, string> = {
+  comparison: 'Compare',
+  alternative: 'Alternatives',
+  how_to: 'Guides',
+  gap_fill: 'Guides',
+  industry: 'Industry',
+  resource: 'Resources',
+  response: 'Resources',
+}
+
 // Map old slug prefixes to new routes
 export const OLD_SLUG_PREFIX_MAP: Record<string, string> = {
   'vs/': '/compare/',
@@ -61,7 +72,9 @@ export function processMarkdownContent(content: string): string {
       'Overview', 'Key Capabilities', 'Customer Examples', 'Getting Started', 
       'Sources', 'Key Difference', 'Key Differences', 'How to Choose',
       'What is', 'Why', 'Steps to', 'Tools for', 'About', 'Top Alternatives',
-      'Quick Comparison', 'IoT Temperature Monitoring', 'Digital Checklists',
+      'Quick Comparison', 'The Short Answer', 'Understanding the Problem',
+      'How Tools Compare', 'What to Consider', 'Key Considerations',
+      'IoT Temperature Monitoring', 'Digital Checklists',
       'Workflow Management', 'Predictive Analytics', 'Mobile-First', 'Mobile-first',
       'Real-time Monitoring', 'Implementation', 'Benefits', 'Features', 'Pricing',
       'Use Cases', 'Integration', 'Security', 'Support', 'Conclusion'
@@ -85,7 +98,9 @@ export function processMarkdownContent(content: string): string {
         if (trimmed === pattern || trimmed.startsWith(`${pattern}:`)) {
           const isMainSection = ['Overview', 'Key Capabilities', 'Customer Examples', 
             'Getting Started', 'Sources', 'How to Choose', 'About', 'Top Alternatives',
-            'Quick Comparison', 'Key Difference', 'Key Differences'].includes(pattern)
+            'Quick Comparison', 'Key Difference', 'Key Differences', 'The Short Answer',
+            'Understanding the Problem', 'How Tools Compare', 'What to Consider',
+            'Key Considerations'].includes(pattern)
           return isMainSection ? `\n## ${trimmed}\n` : `\n### ${trimmed}\n`
         }
       }
@@ -173,7 +188,7 @@ export function MemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
     day: 'numeric'
   })
 
-  const memoTypeLabel = memo.memo_type.replace('_', ' ')
+  const memoTypeLabel = MEMO_TYPE_LABELS[memo.memo_type] || memo.memo_type.replace('_', ' ')
   const route = MEMO_TYPE_TO_ROUTE[memo.memo_type] || '/tools'
 
   return (
@@ -213,11 +228,6 @@ export function MemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-6">
             {memo.title}
           </h1>
-          {memo.meta_description && (
-            <p className="text-lg text-slate-600 leading-relaxed mb-6">
-              {memo.meta_description}
-            </p>
-          )}
           
           {/* Author and verification byline */}
           <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
@@ -284,83 +294,6 @@ export function MemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
               </div>
             )}
             
-            {/* Transparency statement */}
-            {memo.generation_model && (
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-800 mb-1">About This Article</p>
-                    <p className="text-sm text-slate-600 leading-relaxed">
-                      {memo.provenance?.source_competitor ? (
-                        <>
-                          This article was inspired by content from <strong>{memo.provenance.source_competitor}</strong> and 
-                          generated using <strong>{brand.name}&apos;s</strong> verified brand profile to create authentic, 
-                          accurate content that reflects our expertise and perspective.
-                        </>
-                      ) : (
-                        <>
-                          This article was generated using <strong>{brand.name}&apos;s</strong> verified brand profile 
-                          to create authentic, accurate content that reflects our expertise and perspective.
-                        </>
-                      )}
-                    </p>
-                    
-                    <details className="mt-3 text-xs text-slate-500">
-                      <summary className="cursor-pointer hover:text-slate-700 font-medium">View full provenance</summary>
-                      <div className="mt-2 p-3 bg-white rounded border border-slate-100 space-y-1.5">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">AI Model</span>
-                          <span className="font-mono">{memo.generation_model}</span>
-                        </div>
-                        {memo.generation_duration_ms && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Generation time</span>
-                            <span>{(memo.generation_duration_ms / 1000).toFixed(1)}s</span>
-                          </div>
-                        )}
-                        {memo.generation_tokens?.total && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Tokens used</span>
-                            <span>{memo.generation_tokens.total.toLocaleString()}</span>
-                          </div>
-                        )}
-                        {memo.provenance?.source_url && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Inspired by</span>
-                            <a href={memo.provenance.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-48">
-                              {new URL(memo.provenance.source_url).hostname}
-                            </a>
-                          </div>
-                        )}
-                        {memo.provenance?.generated_at && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Generated</span>
-                            <span>{new Date(memo.provenance.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                          </div>
-                        )}
-                        {(memo.human_edits_count || 0) > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Human edits</span>
-                            <span>{memo.human_edits_count} revision{memo.human_edits_count! > 1 ? 's' : ''}</span>
-                          </div>
-                        )}
-                        {memo.reviewed_at && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-500">Human verified</span>
-                            <span>{new Date(memo.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                          </div>
-                        )}
-                      </div>
-                    </details>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -372,38 +305,6 @@ export function MemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
           dangerouslySetInnerHTML={{ __html: contentHtml }} 
         />
       </main>
-      
-      {/* Source Attribution */}
-      <div className="max-w-3xl mx-auto px-6 pb-12">
-        <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-              <span className="text-slate-600 font-semibold text-sm">
-                {brand.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="font-medium text-slate-900">{brand.name}</p>
-              <p className="text-sm text-slate-500 mt-1">
-                This memo contains factual information about {brand.name}, auto-generated from verified brand sources.
-              </p>
-              {brand.domain && (
-                <a 
-                  href={`https://${brand.domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mt-2"
-                >
-                  Visit {brand.domain}
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
       
       {/* Footer */}
       <footer className="border-t bg-slate-50">

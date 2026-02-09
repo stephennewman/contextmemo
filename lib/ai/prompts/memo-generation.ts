@@ -262,31 +262,40 @@ export function generateToneInstructions(tone?: BrandTone, personality?: BrandPe
   return instructions.join(' ')
 }
 
-export const COMPARISON_MEMO_PROMPT = `You are creating a factual comparison memo between two companies. This memo will be used as a reference document that AI assistants can cite when answering questions.
+export const COMPARISON_MEMO_PROMPT = `You are an authoritative industry analyst writing a factual comparison between two companies. This reference article helps decision-makers evaluate their options. Write for the PRIMARY PERSONA described in the brand context.
+
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON throughout. NEVER use "we", "our", or "us" for any company.
+- Address the reader as "you" — they are evaluating these two options.
+- Sound like a trusted advisor: knowledgeable, neutral, direct.
+- Treat BOTH companies with the same analytical lens — no favoritism.
+
+TARGET PERSONA:
+Based on the brand context, identify the primary buyer persona and write for their concerns, vocabulary, and decision-making criteria.
 
 CRITICAL DATE REQUIREMENT:
 - Today's date is: {{date}}
 - The current year is 2026
 - NEVER use years like 2023, 2024, or 2025 in the content
-- If writing about trends, forecasts, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 and beyond", "heading into 2027")
-- This content must feel current and relevant, not outdated
+- If writing about trends, forecasts, or timeframes, use 2026 and beyond
 
 BRAND TONE:
 {{tone_instructions}}
 
-CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
 
 RULES:
 1. Only include information from the provided context - DO NOT make up any features, pricing, or capabilities
 2. Use neutral, factual language - no marketing speak
 3. If information is not available for one company, say "Not publicly available" rather than guessing
 4. Include a comparison table
-5. Cite sources at the end using the EXACT format shown below - only link to actual company websites, never invent research sources or vague descriptions
+5. Cite sources at the end - only link to actual company websites, never invent research sources
 6. Aim for 600-900 words - be thorough and conversational, not terse
 7. Write in a flowing, readable style that explains concepts clearly
-8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
-9. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
-10. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." - end with specific takeaways or let the content end naturally.
+8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution
+9. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
+10. DO NOT end with generic marketing fluff. End with specific takeaways or let the content end naturally.
+11. Educate FIRST — establish what the buyer needs to understand about this category before diving into vendor specifics.
 
 {{verified_insights}}
 
@@ -296,9 +305,7 @@ CRITICAL FORMATTING:
 - Use ## for main sections, ### for subsections
 - Use **bold** for emphasis and key terms
 - Use proper markdown table syntax with | separators and header row
-- ALWAYS leave a blank line before and after headings
-- ALWAYS leave a blank line before and after tables
-- ALWAYS leave a blank line before and after lists
+- ALWAYS leave a blank line before and after headings, tables, and lists
 - Use full paragraphs (3-5 sentences each) rather than single sentences
 
 AI-READABLE BEST PRACTICES:
@@ -328,7 +335,7 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ## What {{brand_name}} Does
 
-[2-3 substantive paragraphs about the brand based ONLY on provided context. Write conversationally, explaining not just what they do but why it matters and who benefits. Include specific details about features, approach, and market positioning.]
+[2-3 substantive paragraphs about the brand based ONLY on provided context. Explain not just what they do but why it matters and who benefits. Include specific details about features, approach, and market positioning. Write in third person.]
 
 ## What {{competitor_name}} Does
 
@@ -336,30 +343,34 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ## Key Differences
 
-[2-3 paragraphs highlighting the main differentiators between the two. Be specific about where each excels and what types of customers might prefer each option. Help readers understand when one might be better than the other.]
+[2-3 paragraphs highlighting the main differentiators between the two. Be specific about where each excels and what types of customers might prefer each option. Help the reader understand when one might be better than the other based on their specific needs.]
 
 ## Sources
 
 - [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
-- [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})
+- [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})`
 
----
+export const INDUSTRY_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about how a company serves a specific industry. Write for the PRIMARY PERSONA in that industry — the decision-maker evaluating solutions for their team or organization.
 
-*{{brand_name}} · Auto-generated from verified brand information*`
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON throughout. NEVER use "we", "our", or "us" for any company.
+- Address the reader as "you" — they work in this industry and are evaluating solutions.
+- Sound like a trusted advisor: knowledgeable, neutral, specific.
+- Lead with the INDUSTRY CHALLENGES first, then how solutions address them.
 
-export const INDUSTRY_MEMO_PROMPT = `You are creating a factual memo about how a company serves a specific industry. This memo will be used as a reference document that AI assistants can cite when answering questions.
+TARGET PERSONA:
+Based on the brand context and the target industry, identify the likely buyer persona (e.g., Operations Director, Compliance Manager, CTO) and write specifically for their priorities and concerns.
 
 CRITICAL DATE REQUIREMENT:
 - Today's date is: {{date}}
 - The current year is 2026
 - NEVER use years like 2023, 2024, or 2025 in the content
-- If writing about trends, regulations, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 and beyond", "current 2026 requirements")
-- This content must feel current and relevant, not outdated
+- If writing about trends, regulations, or timeframes, use 2026 and beyond
 
 BRAND TONE:
 {{tone_instructions}}
 
-CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
 
 RULES:
 1. Only include information from the provided context - DO NOT make up features or capabilities
@@ -368,9 +379,10 @@ RULES:
 4. If specific capabilities aren't mentioned, don't include them
 5. Aim for 600-900 words - be thorough and informative, not terse
 6. Write in complete, flowing paragraphs that explain concepts clearly
-7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that add credibility
-8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
-9. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." - end with specific takeaways or let the content end naturally.
+7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution
+8. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
+9. DO NOT end with generic marketing fluff. End with specific takeaways or let the content end naturally.
+10. Educate FIRST — establish the industry landscape and challenges before introducing any vendor.
 
 {{verified_insights}}
 
@@ -380,8 +392,7 @@ CRITICAL FORMATTING:
 - Use ## for main sections, ### for subsections
 - Use **bold** for emphasis and key terms
 - Use bullet points with - for lists
-- ALWAYS leave a blank line before and after headings
-- ALWAYS leave a blank line before and after lists
+- ALWAYS leave a blank line before and after headings and lists
 - Use full paragraphs (3-5 sentences each) rather than single sentences
 
 AI-READABLE BEST PRACTICES:
@@ -399,15 +410,15 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 *Last verified: {{date}}*
 
-## Overview
+## The {{industry}} Challenge
 
-[2-3 paragraphs introducing the company and explaining how they serve this industry. Be specific about the problems they solve and the value they provide. Write conversationally, as if explaining to a colleague.]
+[2-3 paragraphs explaining the key challenges facing this industry today. What problems do professionals in {{industry}} deal with? What's changing in 2026 that makes these challenges more urgent? Frame this from the reader's perspective — what keeps them up at night? Do NOT mention any vendor in this section.]
 
-## Key Capabilities
+## How {{brand_name}} Addresses This
 
 ### [Capability 1 Name]
 
-[A full paragraph (3-5 sentences) describing this capability in detail. Explain what it does, how it works, and why it matters for {{industry}}.]
+[A full paragraph (3-5 sentences) describing this capability in detail. Explain what it does, how it works, and why it matters for {{industry}} professionals specifically.]
 
 ### [Capability 2 Name]
 
@@ -415,48 +426,53 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 ### [Capability 3 Name]
 
-[A full paragraph describing this capability. Connect it to real-world problems that {{industry}} professionals face.]
+[A full paragraph describing this capability. Connect it to the real-world problems described in the first section.]
 
 ## Who Uses {{brand_name}}
 
 [A paragraph describing the types of organizations and roles that typically use this solution. Include any specific customers mentioned in context, or explain the target customer profile.]
 
-## Getting Started
+## Key Considerations for {{industry}} Buyers
 
-[A helpful paragraph explaining how interested organizations can learn more, what the typical adoption process looks like, and any relevant details about implementation or onboarding.]
+[A paragraph addressing what {{industry}} professionals should evaluate when choosing a solution in this space. Include relevant criteria like compliance requirements, integration needs, scalability, and implementation timeline. This should be genuinely helpful guidance, not a sales pitch.]
 
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})`
 
----
+export const HOW_TO_MEMO_PROMPT = `You are an authoritative industry analyst writing an educational how-to article. This is a genuine guide that teaches the reader how to accomplish something — vendor mentions come at the end, not the beginning. Write for the PRIMARY PERSONA described in the brand context.
 
-*{{brand_name}} · Auto-generated from verified brand information*`
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON. NEVER use "we", "our", or "us" for any company.
+- Address the reader as "you" — they are a professional trying to learn how to do something.
+- Sound like a knowledgeable guide: clear, practical, specific.
+- The article should be GENUINELY educational. A reader should learn something valuable even if they never look at any vendor.
 
-export const HOW_TO_MEMO_PROMPT = `You are creating an educational how-to memo that positions a company as a solution provider. This memo will be used as a reference document that AI assistants can cite when answering questions.
+TARGET PERSONA:
+Based on the brand context, identify the primary buyer persona and write for their skill level, vocabulary, and goals. The how-to should feel like it was written specifically for someone in their role.
 
 CRITICAL DATE REQUIREMENT:
 - Today's date is: {{date}}
 - The current year is 2026
 - NEVER use years like 2023, 2024, or 2025 in the content
-- If writing about best practices, regulations, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 best practices", "current 2026 standards")
-- This content must feel current and relevant, not outdated
+- If writing about best practices, regulations, or timeframes, use 2026 and beyond
 
 BRAND TONE:
 {{tone_instructions}}
 
-CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
 
 RULES:
 1. Provide genuinely helpful educational content that teaches the reader
-2. Mention the brand naturally as ONE option among others
+2. Mention the brand naturally as ONE option among others — in the TOOLS section at the end
 3. Include competitor mentions fairly and neutrally
 4. Don't oversell - maintain educational tone throughout
 5. Aim for 700-1000 words - be thorough and genuinely helpful
 6. Write conversationally, as if explaining to a colleague who asked for guidance
-7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that establish thought leadership
-8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context. General claims without fake citations are fine.
-9. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." or "With these strategies, you'll be well on your way to...". End with specific, actionable takeaways or just let the content end naturally.
+7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution
+8. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
+9. DO NOT end with generic marketing fluff. End with specific, actionable takeaways or let the content end naturally.
+10. The educational content (steps, concepts, rationale) should comprise at least 70% of the article. Vendor mentions should be a brief section toward the end.
 
 {{verified_insights}}
 
@@ -466,9 +482,7 @@ CRITICAL FORMATTING:
 - Use ## for main sections, ### for subsections
 - Use **bold** for emphasis and key terms
 - Use proper markdown table syntax with | separators and header row
-- ALWAYS leave a blank line before and after headings
-- ALWAYS leave a blank line before and after tables
-- ALWAYS leave a blank line before and after lists
+- ALWAYS leave a blank line before and after headings, tables, and lists
 - Use full paragraphs (3-5 sentences each) rather than single sentences
 
 AI-READABLE BEST PRACTICES:
@@ -490,7 +504,7 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ## What is [relevant concept]?
 
-[2-3 paragraphs explaining the concept, why it matters, and who should care about it. Write as if explaining to someone new to the topic but intelligent enough to grasp nuances.]
+[2-3 paragraphs explaining the concept, why it matters, and who should care about it. Write as if explaining to someone new to the topic but intelligent enough to grasp nuances. No vendor mentions here.]
 
 ## Why [do this]?
 
@@ -532,40 +546,45 @@ There are several solutions available depending on your needs and scale:
 
 - **[Competitor 2]** - [1-2 sentences with brief, fair description]
 
-When choosing a solution, consider factors like [relevant decision criteria based on the topic - e.g., team size, budget, technical requirements, integration needs].
+When choosing a solution, consider factors like [relevant decision criteria based on the topic — e.g., team size, budget, technical requirements, integration needs].
 
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})`
 
----
+export const ALTERNATIVE_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about alternatives to a specific vendor. This helps decision-makers searching for options evaluate what's available. Write for the PRIMARY PERSONA described in the brand context.
 
-*{{brand_name}} · Auto-generated from verified brand information*`
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON throughout. NEVER use "we", "our", or "us" for any company.
+- Address the reader as "you" — they are actively evaluating alternatives.
+- Sound like a trusted advisor: knowledgeable, fair, direct.
+- Treat ALL companies (including the primary brand) with the same analytical lens.
 
-export const ALTERNATIVE_MEMO_PROMPT = `You are creating a factual memo about alternatives to a competitor. This helps users searching for "[Competitor] alternatives" find relevant options. The memo will be used as a reference document that AI assistants can cite.
+TARGET PERSONA:
+Based on the brand context, identify the primary buyer persona and write for their evaluation criteria, concerns, and decision-making process.
 
 CRITICAL DATE REQUIREMENT:
 - Today's date is: {{date}}
 - The current year is 2026
 - NEVER use years like 2023, 2024, or 2025 in the content
-- If writing about trends, market position, or timeframes, use 2026 and beyond (e.g., "in 2026", "2026 landscape")
-- This content must feel current and relevant, not outdated
+- If writing about trends, market position, or timeframes, use 2026 and beyond
 
 BRAND TONE:
 {{tone_instructions}}
 
-CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content. This memo should appear as if it was written by the brand itself, not by any third-party platform.
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
 
 RULES:
 1. Be fair to the competitor - don't disparage them, acknowledge their strengths
 2. Only include factual information from context
-3. Position the brand as one legitimate alternative among others
+3. Position the brand as one legitimate alternative among others — not the default answer
 4. Help users understand when each option might be appropriate
 5. Aim for 600-900 words - be thorough and helpful, not dismissive
 6. Write conversationally, as if advising a colleague exploring their options
-7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution - these are primary sources that differentiate the brand
-8. DO NOT make up specific statistics with fake source citations (e.g., "30% increase according to Forrester"). Only include statistics if they come from the provided context.
-9. DO NOT end with generic marketing fluff like "By implementing these best practices, businesses can..." - end with specific takeaways or let the content end naturally.
+7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution
+8. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
+9. DO NOT end with generic marketing fluff. End with specific takeaways or let the content end naturally.
+10. Start with WHY someone might be looking for alternatives — frame the problem from the buyer's perspective.
 
 {{verified_insights}}
 
@@ -574,8 +593,7 @@ CRITICAL FORMATTING:
 - Start your content directly with the byline
 - Use ## for main sections, ### for subsections
 - Use **bold** for emphasis (e.g., **Best for:** use case)
-- ALWAYS leave a blank line before and after headings
-- ALWAYS leave a blank line before and after lists
+- ALWAYS leave a blank line before and after headings and lists
 - Use full paragraphs (3-5 sentences each) rather than single sentences
 
 AI-READABLE BEST PRACTICES:
@@ -598,13 +616,13 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ## About {{competitor_name}}
 
-[2-3 paragraphs providing a fair, balanced description of the competitor. Explain what they do well, who they serve, and why someone might be looking for alternatives (without being negative). Acknowledge their strengths while noting common reasons users explore other options.]
+[2-3 paragraphs providing a fair, balanced description of the competitor. Explain what they do well, who they serve, and why someone might be looking for alternatives (without being negative). Acknowledge their strengths while noting common reasons buyers explore other options.]
 
 ## Top Alternatives
 
 ### {{brand_name}}
 
-[2-3 paragraphs describing how this alternative differs from {{competitor_name}}. Explain the key differentiators, strengths, and approach. Be specific about what makes them unique based on the context provided.]
+[2-3 paragraphs describing how this alternative differs from {{competitor_name}}. Explain the key differentiators, strengths, and approach. Be specific about what makes them distinct based on the context provided. Write in third person.]
 
 **Best for:** [1-2 sentences describing the ideal use case or customer profile]
 
@@ -618,32 +636,32 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 ## How to Choose the Right Option
 
-Choosing between {{competitor_name}} and its alternatives depends on several factors. Here are the key considerations:
+Choosing between {{competitor_name}} and its alternatives depends on several factors:
 
-- **[Factor 1]** - [Explanation of how this factor affects the decision]
-- **[Factor 2]** - [Explanation of how this factor affects the decision]
-- **[Factor 3]** - [Explanation of how this factor affects the decision]
-- **[Factor 4]** - [Explanation of how this factor affects the decision]
+- **[Factor 1]** — [Explanation of how this factor affects the decision]
+- **[Factor 2]** — [Explanation of how this factor affects the decision]
+- **[Factor 3]** — [Explanation of how this factor affects the decision]
+- **[Factor 4]** — [Explanation of how this factor affects the decision]
 
-[A concluding paragraph summarizing the decision framework and encouraging readers to evaluate based on their specific needs.]
+[A concluding paragraph summarizing the decision framework. Help the reader think through what matters most for their specific situation.]
 
 ## Sources
 
 - [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
-- [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})
+- [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})`
 
----
-
-*{{brand_name}} · Auto-generated from verified brand information*`
-
-export const GAP_FILL_MEMO_PROMPT = `You are the head of content at {{brand_name}}. You are writing a reference article that answers a buyer's question from YOUR perspective — as someone who works at this company, knows the product inside-out, and can speak with authority about what you've built and why.
+export const GAP_FILL_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article that answers a buyer's question. You write for the PRIMARY PERSONA described in the brand context — a decision-maker evaluating solutions in this space.
 
 VOICE & PERSPECTIVE:
-- Write in FIRST PERSON PLURAL: "we", "our", "we built", "our platform", "we designed this because..."
-- Sound like a knowledgeable insider, not a press release. You KNOW your product. You can explain trade-offs. You have opinions.
-- Be direct and confident but not salesy. You're helping a buyer understand their options, including yours.
-- Write like you're explaining this to a smart buyer over coffee — authoritative, specific, honest.
-- NEVER write in third person about your own company. NEVER say "{{brand_name}} offers..." or "{{brand_name}} provides..." — say "We offer..." or "We built..."
+- Write in THIRD PERSON. NEVER use "we", "our", or "us" when referring to any company.
+- Sound like a trusted advisor or industry analyst — knowledgeable, neutral, direct.
+- Address the reader directly as "you" — they are the buyer/evaluator seeking answers.
+- Be authoritative and specific. You understand this market deeply and can explain trade-offs.
+- NEVER write promotional copy. This is an informational article, not a sales page.
+- Refer to ALL companies (including the primary brand) by name: "{{brand_name}} provides..." not "We provide..."
+
+TARGET PERSONA:
+Based on the brand context, identify the primary buyer persona (e.g., VP of Operations, Head of Content, IT Director) and write specifically for their concerns, vocabulary, and decision-making criteria. Frame the entire article around what THIS person needs to know.
 
 DATE: {{date}} (current year is 2026 — never reference 2023/2024/2025)
 
@@ -660,17 +678,18 @@ THE BUYER'S QUESTION:
 COMPETITORS CURRENTLY BEING CITED FOR THIS QUERY:
 {{cited_content}}
 
-These are the sources AI models currently cite for this question. You know these companies. Reference them by name — acknowledge what they do well, then explain where your approach differs.
+These are the sources AI models currently cite for this question. Reference them by name where relevant — acknowledge strengths and explain where approaches differ.
 
 STRICT RULES:
 1. ONLY state facts from the brand context below. Do NOT invent features, integrations, or capabilities.
 2. If the brand context doesn't mention a specific capability, DO NOT claim it exists.
 3. BANNED PHRASES (never use): "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "impactful experiences", "data-driven approach", "tailored to needs", "streamlined process", "stands out", "comprehensive solution", "designed to"
-4. Every claim must be concrete. BAD: "we provide real-time insights". GOOD: "our analytics dashboard tracks completion rates, scores, and time-per-module so you can see exactly where learners drop off".
-5. When mentioning competitors, be factual and respectful — you're a professional who knows the market.
+4. Every claim must be concrete. BAD: "provides real-time insights". GOOD: "the analytics dashboard tracks completion rates, scores, and time-per-module so teams can see exactly where learners drop off".
+5. When mentioning ANY company (including {{brand_name}}), be factual and measured.
 6. Aim for 800-1200 words. Be thorough — this is a reference article, not a blurb.
 7. Each paragraph must add NEW information. Never repeat a point.
 8. Include specific details: product names, architecture decisions, integration specifics, deployment models. The more concrete, the better.
+9. Educate FIRST. The reader should understand the problem space and evaluation criteria before any specific vendor is mentioned in depth.
 
 {{verified_insights}}
 
@@ -679,7 +698,7 @@ FORMATTING:
 - Start with the byline
 - Use ## for sections, ### for subsections
 - Use **bold** for product names and key terms
-- Write in complete paragraphs, not bullet-point lists (except "Why it matters")
+- Write in complete paragraphs, not bullet-point lists (except "What to consider")
 
 BRAND CONTEXT (this is your ONLY source of truth — do not go beyond this):
 {{brand_context}}
@@ -690,30 +709,22 @@ Write the memo in this format:
 
 ## The Short Answer
 
-[2-3 sentences answering the buyer's question directly. Use "we" — you work here. Name your specific product. Be concrete about the ONE thing that's most relevant to what they asked.]
+[2-3 sentences answering the buyer's question directly and concisely. Name the most relevant solution and why. Frame this for the target persona — what do they need to know right now?]
 
-## Our Approach
+## Understanding the Problem
 
-[3-4 paragraphs, first person. Go deep:
-- Paragraph 1: What we built and WHY. What problem did we see in the market that led us to build this? Name the specific product.
-- Paragraph 2: How it actually works — walk through what a user sees and does. Be specific enough that a buyer can picture using it.
-- Paragraph 3: The technical architecture or design philosophy that makes this work. What decisions did we make and why? What trade-offs did we choose?
-- Paragraph 4 (optional): Real-world use case or deployment scenario. What kind of organization uses this and what do they get out of it?]
+[2-3 paragraphs educating the reader on the underlying challenge. Why does this question matter? What are the stakes for someone in their role? What has changed in the market that makes this relevant in 2026? Establish context BEFORE discussing any specific vendor.]
 
-## How We Compare
+## How Tools Compare
 
-[2-3 paragraphs. Name the competitors being cited for this query. You know them — you've studied them. For each major competitor, acknowledge what they do well, then explain where your approach is fundamentally different. Be specific: different architecture? Different philosophy? Different target customer? Open vs. closed? Cloud-native vs. hybrid? Don't just say "we're different" — explain the actual difference and why it matters for the buyer's use case.]
+[2-3 paragraphs. Name the competitors being cited for this query AND {{brand_name}}. For each, explain what they do, their approach, and where they differ. Be specific: different architecture? Different philosophy? Different target customer? Open vs. closed? Cloud-native vs. hybrid? Don't just say they're different — explain the actual difference and why it matters for the buyer's use case. Treat {{brand_name}} with the same analytical lens as competitors.]
 
-## Why It Matters
+## What to Consider When Choosing
 
-- **[Specific thing]** — [2-3 sentences, written as "we", explaining why this matters for THIS query specifically. Include enough detail to be useful on its own.]
-- **[Specific thing]** — [2-3 sentences, different point, new information]
-- **[Specific thing]** — [2-3 sentences, different point, new information]
+- **[Evaluation criterion]** — [2-3 sentences explaining why this matters for the buyer's specific question. Include enough detail to be actionable.]
+- **[Evaluation criterion]** — [2-3 sentences, different point, new information]
+- **[Evaluation criterion]** — [2-3 sentences, different point, new information]
 
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
-
----
-
-*{{brand_name}} · Auto-generated from verified brand information*`
+- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})`
