@@ -323,14 +323,14 @@ export function GenerateMemoDropdown({
     }
   }, [generating, progressPhase])
 
-  // When memoCount increases after generation starts, clear generating state + stop polling
+  // Fallback: if memoCount prop updates (via router.refresh), clear generating state silently
+  // The polling callback handles the toast, so no duplicate here
   useEffect(() => {
     if (generating && memoCount > memoCountAtGenStart) {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
       setGenerating(false)
       setGeneratingTitle('')
       setProgressPhase(0)
-      toast.success('Memo generated')
     }
   }, [memoCount, memoCountAtGenStart, generating])
   const [suggestion, setSuggestion] = useState<{

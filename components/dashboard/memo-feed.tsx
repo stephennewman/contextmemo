@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -93,7 +93,32 @@ export function MemoFeed({
   hubspotAutoPublish,
 }: MemoFeedProps) {
   const [memos, setMemos] = useState<Memo[]>(initialMemos)
+  const [highlightedMemoIds, setHighlightedMemoIds] = useState<Set<string>>(new Set())
+  const prevMemoIdsRef = useRef<Set<string>>(new Set(initialMemos.map(m => m.id)))
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Sync when initialMemos prop changes (e.g. after router.refresh())
+  // and detect new memos for highlight animation
+  useEffect(() => {
+    const currentIds = new Set(initialMemos.map(m => m.id))
+    const prevIds = prevMemoIdsRef.current
+    const newIds = new Set<string>()
+    
+    currentIds.forEach(id => {
+      if (!prevIds.has(id)) newIds.add(id)
+    })
+
+    if (currentIds.size !== prevIds.size || newIds.size > 0) {
+      setMemos(initialMemos)
+      prevMemoIdsRef.current = currentIds
+
+      if (newIds.size > 0) {
+        setHighlightedMemoIds(newIds)
+        // Clear highlight after 5 seconds
+        setTimeout(() => setHighlightedMemoIds(new Set()), 5000)
+      }
+    }
+  }, [initialMemos])
 
   const [state, setState] = useState<MemoCardState>({
     saving: {},
@@ -1007,13 +1032,17 @@ export function MemoFeed({
             const schemaJson = memo.schema_json as { hubspot_synced_at?: string } | null
             const memoTypeLabel = memo.memo_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
 
+            const isNew = highlightedMemoIds.has(memo.id)
+
             return (
               <div
                 key={memo.id}
                 className={`border-[3px] transition-all ${
-                  memo.status === 'published' ? 'border-[#0F172A]' : 'border-slate-300'
+                  isNew 
+                    ? 'border-emerald-400 ring-2 ring-emerald-300/50 animate-[memo-glow_2s_ease-in-out]' 
+                    : memo.status === 'published' ? 'border-[#0F172A]' : 'border-slate-300'
                 } ${isRegenerating ? 'opacity-60 pointer-events-none' : ''}`}
-                style={{ borderLeft: memo.status === 'published' ? '6px solid #10B981' : '6px solid #F59E0B' }}
+                style={{ borderLeft: isNew ? '6px solid #10B981' : memo.status === 'published' ? '6px solid #10B981' : '6px solid #F59E0B' }}
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -1022,6 +1051,11 @@ export function MemoFeed({
                         {memo.title}
                       </h3>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {isNew && (
+                          <Badge className="text-[10px] font-bold tracking-wider py-0 bg-emerald-500 text-white hover:bg-emerald-500 animate-pulse">
+                            NEW
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-[10px] font-bold tracking-wider border-2 py-0">{memoTypeLabel}</Badge>
                         <Badge className={`text-[10px] font-bold tracking-wider py-0 ${
                           memo.status === 'published' ? 'bg-[#10B981] text-white hover:bg-[#10B981]' : 'bg-[#F59E0B] text-white hover:bg-[#F59E0B]'
