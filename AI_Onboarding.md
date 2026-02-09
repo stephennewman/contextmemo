@@ -388,6 +388,15 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 9, 2026
+
+**Fix: localeCompare crash on undefined persona fields** (e2a7b6b)
+- Fixed client-side crash when clicking on brands (e.g., Benchprep) whose personas have missing `function` or `seniority` fields
+- Root cause: `PersonaManager` sort called `.localeCompare()` on `persona.function` without null-checking — `undefined.localeCompare()` throws TypeError
+- Added fallback empty strings to `localeCompare` calls in `persona-manager.tsx` and `settings/page.tsx`
+- Also hardened `coverage-audit.tsx` category sort with the same pattern
+- Files changed: `components/dashboard/persona-manager.tsx`, `app/(dashboard)/brands/[brandId]/settings/page.tsx`, `components/dashboard/coverage-audit.tsx`
+
 ### February 8, 2026 (v11)
 
 **Memo Quality Overhaul: GPT-4o, first-person voice, comprehensive format, regeneration** (45968b3)
