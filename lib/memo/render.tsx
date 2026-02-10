@@ -309,8 +309,8 @@ export function MemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
         />
       </main>
       
-      {/* Brand link */}
-      {brand.domain && (
+      {/* Brand link — hide for contextmemo's own memos */}
+      {brand.domain && !brand.domain.toLowerCase().includes('contextmemo') && (
         <div className="max-w-3xl mx-auto px-6 pb-12">
           <div className="border-t border-slate-200 pt-8">
             <a 

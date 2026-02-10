@@ -431,8 +431,8 @@ export default async function MemoPage({ params }: Props) {
         />
       </main>
       
-      {/* Brand link */}
-      {brand.domain && (
+      {/* Brand link — hide for contextmemo's own memos since visitor is already on the site */}
+      {brand.domain && !brand.domain.toLowerCase().includes('contextmemo') && (
         <div className="max-w-3xl mx-auto px-6 pb-12">
           <div className="border-t border-slate-200 pt-8">
             <a 
