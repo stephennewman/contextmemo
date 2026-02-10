@@ -357,40 +357,7 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
       <div className="mx-6 border-t border-zinc-200" />
       <div className="px-6">
         <SectionHeader icon={<Radar className="h-4 w-4 text-emerald-500" />} title="Bot Crawl Activity" sub={crawlEvents.length > 0 ? `${crawlEvents.length} total crawls detected` : 'Tracking active · crawls will appear here'} />
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5">
-          {sortedBots.map(([botName, info]) => {
-            const isAI = isAICategory(info.category)
-            const categoryColor = BOT_CATEGORY_COLORS[info.category] || '#6B7280'
-            const sparkline = sparklineByBot[botName] || days7.map(() => 0)
-            const sparkMax = Math.max(1, ...sparkline)
-            return (
-              <div key={botName} className="flex items-center py-1.5">
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  {isAI ? <Scan className="h-3 w-3 shrink-0" style={{ color: categoryColor }} /> : <Search className="h-3 w-3 shrink-0 text-zinc-400" />}
-                  <span className={`text-xs truncate ${info.count > 0 ? 'text-zinc-700 font-medium' : 'text-zinc-400'}`}>{info.displayName}</span>
-                  <Badge
-                    variant="outline"
-                    className="text-[8px] font-medium px-1 py-0 shrink-0 cursor-help"
-                    style={{ borderColor: categoryColor, color: categoryColor }}
-                    title={BOT_CATEGORY_DESCRIPTIONS[info.category] || info.category}
-                  >
-                    {CATEGORY_LABEL[info.category] || info.category}
-                  </Badge>
-                </div>
-                <div className="flex items-end gap-px h-3 mx-2">
-                  {sparkline.map((val, i) => (
-                    <div key={i} className="w-1.5 rounded-[1px]" style={{
-                      height: val > 0 ? `${Math.max(25, (val / sparkMax) * 100)}%` : '1px',
-                      backgroundColor: val > 0 ? categoryColor : '#e4e4e7',
-                      opacity: val > 0 ? 0.7 : 0.25,
-                    }} title={`${days7[i]}: ${val}`} />
-                  ))}
-                </div>
-                <span className={`text-xs tabular-nums w-6 text-right ${info.count > 0 ? 'font-semibold text-zinc-700' : 'text-zinc-300'}`}>{info.count}</span>
-              </div>
-            )
-          })}
-        </div>
+        <BotCrawlList sortedBots={sortedBots} sparklineByBot={sparklineByBot} days7={days7} />
       </div>
 
       {/* ── Traffic by Source + Content Breakdown ── */}
@@ -398,7 +365,7 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
       <div className="px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Traffic by Source */}
         <div>
-          <SectionHeader icon={<Bot className="h-4 w-4 text-emerald-500" />} title="Traffic by Source" sub="Last 90 days" />
+          <SectionHeader icon={<Bot className="h-4 w-4 text-emerald-500" />} title="Human Traffic" sub="Last 90 days" />
           {hasTraffic && Object.keys(bySource).length > 0 ? (
             <div className="space-y-2 mt-3">
               {Object.entries(bySource).sort(([, a], [, b]) => b - a).map(([source, count]) => (
@@ -418,7 +385,10 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-400 mt-3">No traffic yet</p>
+            <div className="mt-3">
+              <p className="text-sm text-zinc-400">No human visitors from AI platforms yet</p>
+              <p className="text-[10px] text-zinc-300 mt-1">Bot crawls (above) show AI platforms indexing your content. This section tracks when a real person clicks through from ChatGPT, Perplexity, etc.</p>
+            </div>
           )}
         </div>
 
@@ -513,6 +483,71 @@ function InlineStat({ label, value, color, sub }: { label: string; value: number
       <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</p>
       <p className="text-xl font-bold tabular-nums" style={{ color }}>{value}</p>
       {sub && <p className="text-[10px] text-zinc-400">{sub}</p>}
+    </div>
+  )
+}
+
+function BotCrawlList({ sortedBots, sparklineByBot, days7 }: {
+  sortedBots: [string, { count: number; displayName: string; category: BotCategory; provider: string; lastSeen: string | null }][]
+  sparklineByBot: Record<string, number[]>
+  days7: string[]
+}) {
+  const [showInactive, setShowInactive] = useState(false)
+  const activeBots = sortedBots.filter(([, info]) => info.count > 0)
+  const inactiveBots = sortedBots.filter(([, info]) => info.count === 0)
+
+  function renderBot([botName, info]: [string, { count: number; displayName: string; category: BotCategory; provider: string; lastSeen: string | null }]) {
+    const isAI = isAICategory(info.category)
+    const categoryColor = BOT_CATEGORY_COLORS[info.category] || '#6B7280'
+    const sparkline = sparklineByBot[botName] || days7.map(() => 0)
+    const sparkMax = Math.max(1, ...sparkline)
+    return (
+      <div key={botName} className="flex items-center py-1.5">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {isAI ? <Scan className="h-3 w-3 shrink-0" style={{ color: categoryColor }} /> : <Search className="h-3 w-3 shrink-0 text-zinc-400" />}
+          <span className={`text-xs truncate ${info.count > 0 ? 'text-zinc-700 font-medium' : 'text-zinc-400'}`}>{info.displayName}</span>
+          <Badge
+            variant="outline"
+            className="text-[8px] font-medium px-1 py-0 shrink-0 cursor-help"
+            style={{ borderColor: categoryColor, color: categoryColor }}
+            title={BOT_CATEGORY_DESCRIPTIONS[info.category] || info.category}
+          >
+            {CATEGORY_LABEL[info.category] || info.category}
+          </Badge>
+        </div>
+        <div className="flex items-end gap-px h-3 mx-2">
+          {sparkline.map((val, i) => (
+            <div key={i} className="w-1.5 rounded-[1px]" style={{
+              height: val > 0 ? `${Math.max(25, (val / sparkMax) * 100)}%` : '1px',
+              backgroundColor: val > 0 ? categoryColor : '#e4e4e7',
+              opacity: val > 0 ? 0.7 : 0.25,
+            }} title={`${days7[i]}: ${val}`} />
+          ))}
+        </div>
+        <span className={`text-xs tabular-nums w-6 text-right ${info.count > 0 ? 'font-semibold text-zinc-700' : 'text-zinc-300'}`}>{info.count}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5">
+        {activeBots.map(renderBot)}
+      </div>
+      {inactiveBots.length > 0 && (
+        <button
+          onClick={() => setShowInactive(!showInactive)}
+          className="mt-2 flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-600 transition-colors"
+        >
+          {showInactive ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          {showInactive ? 'Hide' : 'Show'} {inactiveBots.length} bot{inactiveBots.length !== 1 ? 's' : ''} with no crawls
+        </button>
+      )}
+      {showInactive && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0.5 mt-1">
+          {inactiveBots.map(renderBot)}
+        </div>
+      )}
     </div>
   )
 }
