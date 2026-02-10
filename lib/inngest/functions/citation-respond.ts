@@ -197,7 +197,9 @@ export const citationRespond = inngest.createFunction(
         .replace('{{available_images}}', imagePromptBlock)
         .replace('{{source_url}}', url)
         .replace('{{source_title}}', sourceContent.title)
-        .replace('{{source_content}}', sourceContent.content.slice(0, 25000)) // Keep prompt within limits
+        .replace('{{source_content}}', sourceContent.content.length > 80000
+          ? sourceContent.content.slice(0, 80000) + '\n\n[NOTE: Source content was truncated. If the title references a specific number of items, either cover all items mentioned or adjust your title to match the number you actually cover.]'
+          : sourceContent.content) // GPT-4o handles 128k tokens; 80k chars ≈ 20k tokens
         .replace('{{cited_queries}}', citedQueries)
         .replace('{{current_date}}', currentDate)
         .replace('{{cta_section}}', ctaSection)

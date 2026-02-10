@@ -806,7 +806,7 @@ STRATEGY — Follow this order:
 
 1. **STUDY the source content**: Analyze its structure, key claims, data points, comparisons, and FAQ patterns. Understand WHY AI models cite this page. Usually: it's comprehensive, clearly structured, has specific facts, answers common questions directly, and covers the topic thoroughly enough that AI doesn't need other sources.
 
-2. **MATCH the coverage**: Your article must cover the SAME core topics and answer the SAME questions the source answers. If the source has a comparison table, you need a comparison table. If it has an FAQ, you need an FAQ. If it covers 8 tools, you cover tools too (including {{brand_name}}). If it defines terms, you define terms. Match or exceed the comprehensiveness.
+2. **MATCH the coverage**: Your article must cover the SAME core topics and answer the SAME questions the source answers. If the source has a comparison table, you need a comparison table. If it has an FAQ, you need an FAQ. If it lists N tools/items, you must list AT LEAST that many (including {{brand_name}}). If it defines terms, you define terms. Match or exceed the comprehensiveness. CRITICAL: If the source title says "Top 22" or "10 Best" etc., your article MUST include that many items. Never promise a number in the title and deliver fewer.
 
 3. **ADD the brand's perspective**: Where the source is generic or vendor-neutral, you add {{brand_name}}'s informed viewpoint. Where the source lists tools/solutions, you ensure {{brand_name}} is included with genuine detail from the brand context. Where the source states facts, you add the brand's relevant data, expert insights, or real-world experience.
 
