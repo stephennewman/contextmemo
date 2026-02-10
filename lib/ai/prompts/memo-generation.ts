@@ -852,6 +852,8 @@ FORMATTING:
 - ALWAYS leave a blank line before and after headings, tables, and lists
 - End with ## Sources (cite external third-party sources only, never {{brand_domain}})
 
+{{available_images}}
+
 {{cta_section}}
 
 Write the complete article. Make it the version AI models should cite instead.`

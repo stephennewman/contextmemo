@@ -15,6 +15,7 @@ import {
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 import { canBrandSpend } from '@/lib/utils/budget-guard'
 import { logSingleUsage, normalizeModelId } from '@/lib/utils/usage-logger'
+import { extractImageConcepts, sourceImagesForTopic, formatImagesForPrompt } from '@/lib/utils/image-sourcer'
 
 const supabase = createServiceRoleClient()
 
@@ -160,7 +161,23 @@ export const citationRespond = inngest.createFunction(
       return await trackJobStart(brandId, 'generate', { type: 'citation_response', sourceUrl: url })
     })
 
-    // Step 3: Generate the citation response content
+    // Step 3: Source images for the content
+    const imagePromptBlock = await step.run('source-images', async () => {
+      // Extract image concepts from the source content (what images are in the original)
+      const imageConcepts = extractImageConcepts(sourceContent.content)
+      console.log(`Extracted ${imageConcepts.length} image concepts from source:`, imageConcepts.slice(0, 3))
+
+      // Source images — Unsplash API if available, otherwise curated pool
+      const images = await sourceImagesForTopic(
+        sourceContent.title,
+        imageConcepts,
+        4
+      )
+
+      return formatImagesForPrompt(images)
+    })
+
+    // Step 4: Generate the citation response content
     const generated = await step.run('generate-content', async () => {
       const now = new Date()
       const currentDate = now.toLocaleDateString('en-US', {
@@ -176,6 +193,7 @@ export const citationRespond = inngest.createFunction(
         .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
         .replace('{{tone_instructions}}', toneInstructions)
         .replace('{{verified_insights}}', voiceInsightsText)
+        .replace('{{available_images}}', imagePromptBlock)
         .replace('{{source_url}}', url)
         .replace('{{source_title}}', sourceContent.title)
         .replace('{{source_content}}', sourceContent.content.slice(0, 25000)) // Keep prompt within limits
@@ -235,7 +253,7 @@ export const citationRespond = inngest.createFunction(
       }
     })
 
-    // Step 4: Generate meta description
+    // Step 5: Generate meta description
     const metaDescription = await step.run('generate-meta', async () => {
       try {
         const { text, usage: metaUsage } = await generateText({
@@ -264,7 +282,7 @@ ${generated.content.slice(0, 1000)}`,
       }
     })
 
-    // Step 5: Save as memo
+    // Step 6: Save as memo
     const savedMemo = await step.run('save-memo', async () => {
       // Generate slug from title
       const slug = `resources/${generated.title
@@ -382,7 +400,7 @@ ${generated.content.slice(0, 1000)}`,
       return data
     })
 
-    // Step 6: Create alert
+    // Step 7: Create alert
     await step.run('create-alert', async () => {
       await supabase.from('alerts').insert({
         brand_id: brandId,
