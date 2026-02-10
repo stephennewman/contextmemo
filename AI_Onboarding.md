@@ -390,6 +390,17 @@ _Most recent deploys first_
 
 ### February 9, 2026
 
+**Corporate Positioning Enrichment — second-pass AI fills gaps** (eb22e94)
+- Added `POSITIONING_ENRICHMENT_PROMPT` — a focused prompt that synthesizes strategic positioning fields (messaging pillars, elevator pitches, objection handling, competitive stance) from extracted company data
+- New step 2b `enrich-positioning` in `context-extract.ts` runs automatically after initial extraction: checks all 16 positioning sub-fields for gaps, fills via single GPT-4o call (~$0.03)
+- Skips enrichment if 3 or fewer fields missing (not worth the cost)
+- Merges enriched fields back into existing data, appends differentiators rather than replacing
+- "Fill Gaps with AI" button on Corporate Positioning card appears when completion <100%
+- New `enrich_positioning` API action for existing brands — fills gaps without re-crawling the website
+- Root cause: extraction prompt had contradictory instructions (leave empty vs. infer), causing GPT-4o to leave strategic/synthesis fields empty. These fields (pillars, pitches, objections) are never explicit on websites.
+- Expected impact: positioning completion should jump from ~22% to 90%+ for brands like AlphaSense
+- Files changed: `lib/ai/prompts/context-extraction.ts`, `lib/inngest/functions/context-extract.ts`, `components/dashboard/corporate-positioning.tsx`, `app/api/brands/[brandId]/actions/route.ts`
+
 **Generate Memo now responds to top-cited competitor content** (74972f5)
 - Rewrote `suggest_next_memo` to query `scan_results.citations`, aggregate by URL (excluding brand's own domain and social sites), and suggest a `gap_fill` memo responding to the most-cited competitor content
 - Added `gap_fill` to `allowedMemoTypes` in the `generate_memo` API handler (was missing -- previous gap_fill attempts would silently fail with "Invalid memoType")
