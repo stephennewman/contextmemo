@@ -1543,8 +1543,11 @@ function MemoGenerationModal({
         >
           {progressLines.map((line) => (
             <div key={line.id} className="flex items-start gap-2 py-0.5">
-              {line.type === 'working' && (
+              {line.type === 'working' && !isComplete && (
                 <Loader2 className="h-4 w-4 text-[#F59E0B] animate-spin shrink-0 mt-0.5" />
+              )}
+              {line.type === 'working' && isComplete && (
+                <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
               )}
               {line.type === 'success' && (
                 <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
@@ -1557,7 +1560,8 @@ function MemoGenerationModal({
               )}
               <span className={
                 line.type === 'success' ? 'text-[#10B981] font-bold' :
-                line.type === 'working' ? 'text-[#F59E0B]' :
+                line.type === 'working' && !isComplete ? 'text-[#F59E0B]' :
+                line.type === 'working' && isComplete ? 'text-slate-400' :
                 line.type === 'result' ? 'text-[#0EA5E9]' :
                 line.text.startsWith('▶') ? 'text-[#7aa2f7] font-bold' :
                 line.text.startsWith('━') ? 'text-[#7aa2f7]' :
