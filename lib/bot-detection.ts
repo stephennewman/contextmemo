@@ -88,6 +88,9 @@ export interface MemoPathInfo {
   pagePath: string
 }
 
+// Paths that bots request under /memo/subdomain/ that are NOT actual memos
+const NON_MEMO_SLUGS = new Set(['robots.txt', 'sitemap.xml', 'favicon.ico', '.well-known'])
+
 // Content paths that bots may crawl (these serve published memos)
 // Some are "slug prefixes" where the route prefix IS part of the memo slug.
 // Others are "wrapper routes" where the route prefix is NOT part of the slug.
@@ -141,7 +144,9 @@ export function resolveMemoPath(request: NextRequest): MemoPathInfo | null {
     const parts = pathname.split('/').filter(Boolean) // ['memo', 'subdomain', ...slug]
     if (parts.length >= 2) {
       const brandSubdomain = parts[1]
-      const memoSlug = parts.length > 2 ? parts.slice(2).join('/') : null
+      const rawSlug = parts.length > 2 ? parts.slice(2).join('/') : null
+      // Filter out non-memo paths that bots request under /memo/subdomain/
+      const memoSlug = rawSlug && !NON_MEMO_SLUGS.has(rawSlug) && !rawSlug.startsWith('api/') ? rawSlug : null
       return {
         brandSubdomain,
         memoSlug,

@@ -13,17 +13,20 @@ export default async function PerformancePage({ params }: Props) {
   const ninetyDaysAgo = new Date()
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
 
+  // First fetch brand to get subdomain for crawl event filtering
+  const { data: brand, error } = await supabase
+    .from('brands')
+    .select('name, subdomain')
+    .eq('id', brandId)
+    .single()
+
+  if (error || !brand) notFound()
+
   const [
-    { data: brand, error },
     { data: memos },
     { data: traffic },
     { data: crawlEvents },
   ] = await Promise.all([
-    supabase
-      .from('brands')
-      .select('name, subdomain')
-      .eq('id', brandId)
-      .single(),
     supabase
       .from('memos')
       .select('id, title, slug, status, memo_type, created_at, published_at, schema_json')
@@ -36,22 +39,16 @@ export default async function PerformancePage({ params }: Props) {
       .gte('timestamp', ninetyDaysAgo.toISOString())
       .order('timestamp', { ascending: false })
       .limit(2000),
-    // We need the brand subdomain first, so we do a second query
-    // after getting the brand. For now, fetch all and filter client-side.
     supabase
       .from('bot_crawl_events')
       .select('id, bot_name, bot_category, bot_display_name, bot_provider, brand_subdomain, memo_slug, page_path, ip_country, created_at')
+      .eq('brand_subdomain', brand.subdomain)
       .gte('created_at', ninetyDaysAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(5000),
   ])
 
-  if (error || !brand) notFound()
-
-  // Filter crawl events to this brand's subdomain
-  const brandCrawlEvents = (crawlEvents || []).filter(
-    e => e.brand_subdomain === brand.subdomain
-  )
+  const brandCrawlEvents = crawlEvents || []
 
   return (
     <ContentPerformance
