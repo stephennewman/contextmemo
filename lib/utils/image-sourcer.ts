@@ -219,7 +219,7 @@ export function formatImagesForPrompt(images: UnsplashImage[]): string {
   if (images.length === 0) return ''
 
   const imageList = images.map((img, i) => 
-    `${i + 1}. ![${img.alt}](${img.url})\n   Credit: Photo by [${img.credit}](${img.creditUrl}) on Unsplash`
+    `${i + 1}. ![${img.alt}](${img.url})\n   *Photo by [${img.credit}](${img.creditUrl}) on Unsplash*`
   ).join('\n\n')
 
   return `
@@ -230,9 +230,10 @@ ${imageList}
 
 IMAGE PLACEMENT RULES:
 - Place images BETWEEN sections, not inside paragraphs
-- Use the exact ![alt](url) syntax provided — do not modify the URLs
+- Use the EXACT image markdown provided: the ![alt](url) line followed by the italic credit line on the next line
 - Include at least 2 images in the article
 - Space images evenly throughout the content (not all at the top or bottom)
-- Each image should be on its own line with a blank line before and after
+- Each image block should have a blank line before and after
+- The credit line MUST be italic (wrapped in * *) — do not change this formatting
 `
 }

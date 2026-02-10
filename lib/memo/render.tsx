@@ -145,10 +145,11 @@ export const memoContentStyles = `memo-content text-slate-600 text-[1.0625rem] l
   [&>blockquote_p]:m-0 [&>blockquote_p]:text-blue-900
   [&>hr]:my-12 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-slate-200
   [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
-  [&>p>em:only-child]:text-slate-500 [&>p>em:only-child]:text-sm [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
+  [&>p>em:only-child]:text-slate-400 [&>p>em:only-child]:text-xs [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
   [&_em]:text-slate-500 [&_em]:italic
   [&_img]:w-full [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-8 [&_img]:shadow-sm [&_img]:border [&_img]:border-slate-200
-  [&>p>img]:block [&>p>img]:mx-auto`
+  [&>p>img]:block [&>p>img]:mx-auto
+  [&>p:has(>img)+p>em:only-child]:mt-[-1.5rem] [&>p:has(>img)+p>em:only-child]:mb-6 [&>p:has(>img)+p>em:only-child]:text-[11px] [&>p:has(>img)+p>em:only-child]:text-slate-400`
 
 interface MemoData {
   id: string
@@ -445,10 +446,11 @@ export const brandedMemoContentStyles = `memo-content text-slate-300 text-[1.062
   [&>blockquote_p]:m-0 [&>blockquote_p]:text-white
   [&>hr]:my-12 [&>hr]:border-0 [&>hr]:border-t-2 [&>hr]:border-white/20
   [&_code]:bg-white/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_code]:text-[#0EA5E9]
-  [&>p>em:only-child]:text-slate-400 [&>p>em:only-child]:text-sm [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
+  [&>p>em:only-child]:text-slate-500 [&>p>em:only-child]:text-xs [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
   [&_em]:text-slate-400 [&_em]:italic
   [&_img]:w-full [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-8 [&_img]:shadow-lg [&_img]:border-2 [&_img]:border-white/10
-  [&>p>img]:block [&>p>img]:mx-auto`
+  [&>p>img]:block [&>p>img]:mx-auto
+  [&>p:has(>img)+p>em:only-child]:mt-[-1.5rem] [&>p:has(>img)+p>em:only-child]:mb-6 [&>p:has(>img)+p>em:only-child]:text-[11px] [&>p:has(>img)+p>em:only-child]:text-slate-500`
 
 // Context Memo branded memo page - "Bold Electric" theme
 export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
