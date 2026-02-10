@@ -390,6 +390,15 @@ _Most recent deploys first_
 
 ### February 10, 2026
 
+**Citations Tab Overhaul — My Content, domain rank, content matching** (6fe7a2e)
+- Citation count now displays in tab label (e.g. `CITATIONS (47)`) matching how PROMPTS and MEMOS show counts
+- New **My Content** toggle (alongside URLs and Domains): shows which of your memos/URLs are being cited by AI models, how many times, and across which prompts. Also lists published memos that haven't been cited yet.
+- **Brand domain rank callout** at top of Domains view: prominent display showing where your domain ranks among all cited domains (e.g. "#11 of 45 domains") with contextual guidance
+- **Content match indicators** on URLs view: each cited URL shows "Covered" (green) badge if you have a related memo, or "Gap" (amber) badge for top-10 unmatched citations. Expanding a covered URL shows links to your related memos.
+- **Generate Memo CTA** for top-10 cited URLs with no matching content — amber alert with one-click generate button pre-populated with the cited URL context
+- Content matching uses two strategies: query-based matching (via `source_query_id`) and keyword fallback (URL path words matched against memo titles/slugs)
+- Files changed: `app/(dashboard)/brands/[brandId]/citations/page.tsx`, `app/(dashboard)/brands/[brandId]/layout.tsx`, `components/dashboard/citation-insights.tsx`
+
 **Memo Generation v3 — UX polish and prompt fixes** (1531995)
 - Fixed hover underline bug: `hover:[&_a]:underline` was underlining ALL links when hovering the content container; changed to `[&_a:hover]:underline` so only the individual hovered link underlines (both standard and branded themes)
 - Removed memo type label (e.g. "— gap fill") from Related Reading section in backlinks

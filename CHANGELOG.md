@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Citations Tab Overhaul** - Major upgrade to the Citations page
+  - Citation count now shows in the tab label (e.g., `CITATIONS (47)`)
+  - New **My Content** view showing which of your memos are being cited by AI models, citation counts, and which prompts cite them
+  - Brand domain rank callout in Domains view (e.g., "You rank #11 of 45 domains")
+  - Content match indicators: "Covered" and "Gap" badges on cited URLs
+  - Generate Memo CTA for top cited URLs with no matching content
+
 ### Planned
 - Additional memo templates (best-of, what-is)
 
