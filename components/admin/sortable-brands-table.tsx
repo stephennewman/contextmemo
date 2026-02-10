@@ -18,6 +18,9 @@ export type BrandRow = {
   publishedMemos: number
   totalMemos: number
   aiCrawls: number
+  aiSearchCrawls: number
+  aiTrainingCrawls: number
+  aiUserCrawls: number
   searchCrawls: number
   totalCrawls: number
   lastCrawl: string | null
@@ -37,8 +40,10 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right' }[] = [
   { key: 'mentionRate', label: 'Mention %', align: 'right' },
   { key: 'citationRate', label: 'Citation %', align: 'right' },
   { key: 'publishedMemos', label: 'Memos', align: 'right' },
-  { key: 'aiCrawls', label: 'AI Crawls', align: 'right' },
-  { key: 'searchCrawls', label: 'Search Crawls', align: 'right' },
+  { key: 'aiSearchCrawls', label: 'AI Search', align: 'right' },
+  { key: 'aiTrainingCrawls', label: 'AI Training', align: 'right' },
+  { key: 'aiUserCrawls', label: 'AI User', align: 'right' },
+  { key: 'searchCrawls', label: 'Search', align: 'right' },
   { key: 'lastCrawl', label: 'Last Crawl', align: 'right' },
 ]
 
@@ -168,11 +173,31 @@ export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
                 <td className="py-3 pr-4 text-right text-xs text-slate-600">
                   {brand.publishedMemos || <span className="text-slate-300">0</span>}
                 </td>
-                {/* AI Crawls */}
+                {/* AI Search Crawls */}
                 <td className="py-3 pr-4 text-right font-mono text-xs">
-                  {brand.aiCrawls > 0 ? (
-                    <span className={brand.aiCrawls >= 10 ? 'font-medium text-indigo-600' : 'text-indigo-500'}>
-                      {brand.aiCrawls}
+                  {brand.aiSearchCrawls > 0 ? (
+                    <span className={brand.aiSearchCrawls >= 5 ? 'font-semibold text-emerald-600' : 'text-emerald-500'}>
+                      {brand.aiSearchCrawls}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* AI Training Crawls */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {brand.aiTrainingCrawls > 0 ? (
+                    <span className={brand.aiTrainingCrawls >= 10 ? 'font-medium text-violet-600' : 'text-violet-500'}>
+                      {brand.aiTrainingCrawls}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* AI User Crawls */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {brand.aiUserCrawls > 0 ? (
+                    <span className={brand.aiUserCrawls >= 5 ? 'font-medium text-sky-600' : 'text-sky-500'}>
+                      {brand.aiUserCrawls}
                     </span>
                   ) : (
                     <span className="text-slate-300">0</span>
@@ -181,7 +206,7 @@ export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
                 {/* Search Crawls */}
                 <td className="py-3 pr-4 text-right font-mono text-xs">
                   {brand.searchCrawls > 0 ? (
-                    <span className="text-slate-600">{brand.searchCrawls}</span>
+                    <span className="text-amber-600">{brand.searchCrawls}</span>
                   ) : (
                     <span className="text-slate-300">0</span>
                   )}
@@ -197,7 +222,7 @@ export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={12} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
+                <td colSpan={14} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
               </tr>
             )}
           </tbody>
