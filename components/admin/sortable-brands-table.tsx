@@ -40,10 +40,10 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right'; tooltip?:
   { key: 'mentionRate', label: 'Mention %', align: 'right', tooltip: 'Percentage of scans where the brand is mentioned by name' },
   { key: 'citationRate', label: 'Citation %', align: 'right', tooltip: 'Percentage of scans where the brand\'s domain appears in citations' },
   { key: 'publishedMemos', label: 'Memos', align: 'right', tooltip: 'Published memos on contextmemo.com' },
-  { key: 'aiSearchCrawls', label: 'AI Search', align: 'right', tooltip: 'AI platforms fetching content to answer a user query right now (PerplexityBot, ChatGPT Search, Claude Search). Directly leads to citations.' },
-  { key: 'aiTrainingCrawls', label: 'AI Training', align: 'right', tooltip: 'Bots scraping for future model training data (GPTBot, ClaudeBot, Google AI). Content may appear in model outputs months later.' },
-  { key: 'aiUserCrawls', label: 'AI User', align: 'right', tooltip: 'A human inside ChatGPT/Perplexity/Claude clicked to browse the page. Strongest signal of real engagement.' },
-  { key: 'searchCrawls', label: 'Search', align: 'right', tooltip: 'Traditional search engine indexing (Googlebot, Bingbot). Required for search results and AI Overviews.' },
+  { key: 'aiSearchCrawls', label: 'AI Search', align: 'right', tooltip: 'Total events: AI platforms fetching content to answer a user query (PerplexityBot, ChatGPT Search, Claude Search). Same page hit multiple times = multiple events. Directly leads to citations.' },
+  { key: 'aiTrainingCrawls', label: 'AI Training', align: 'right', tooltip: 'Total events: Bots scraping for future model training data (GPTBot, ClaudeBot, Google AI). Content may appear in model outputs months later.' },
+  { key: 'aiUserCrawls', label: 'AI User', align: 'right', tooltip: 'Total events: A human inside ChatGPT/Perplexity/Claude clicked to browse a page. Strongest signal of real engagement.' },
+  { key: 'searchCrawls', label: 'Search', align: 'right', tooltip: 'Total events: Traditional search engine indexing (Googlebot, Bingbot). Required for search results and AI Overviews.' },
   { key: 'lastCrawl', label: 'Last Crawl', align: 'right', tooltip: 'Most recent crawl from any bot' },
 ]
 

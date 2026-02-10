@@ -580,11 +580,17 @@ function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents
                 style={{ width: `${barPct}%`, backgroundColor: `${stage.color}18`, minWidth: stage.value > 0 ? '24px' : '0px' }}
               >
                 {barPct > 15 && (
-                  <span className="text-xs font-bold tabular-nums" style={{ color: stage.color }}>{stage.value}</span>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: stage.color }}>
+                    {stage.value}
+                    {stage.extra && <span className="ml-1 font-normal text-[10px] text-zinc-400">({stage.extra})</span>}
+                  </span>
                 )}
               </div>
               {barPct <= 15 && stage.value > 0 && (
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold tabular-nums" style={{ color: stage.color, marginLeft: `${barPct}%` }}>{stage.value}</span>
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold tabular-nums" style={{ color: stage.color, marginLeft: `${barPct}%` }}>
+                  {stage.value}
+                  {stage.extra && <span className="ml-1 font-normal text-[10px] text-zinc-400">({stage.extra})</span>}
+                </span>
               )}
               {stage.value === 0 && (
                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-zinc-300">0</span>
