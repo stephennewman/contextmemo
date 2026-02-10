@@ -12,6 +12,7 @@ import {
   formatVoiceInsightsForPrompt,
   formatBrandContextForPrompt,
   selectVoiceInsightsForMemo,
+  formatOffersForPrompt,
 } from '@/lib/ai/prompts/memo-generation'
 import { BrandContext, VoiceInsight, ExistingPage } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
@@ -240,6 +241,9 @@ export const memoGenerate = inngest.createFunction(
     // Generate tone instructions from brand settings + personality diagnostic
     const toneInstructions = generateToneInstructions(brandContext.brand_tone, brandContext.brand_personality)
     
+    // Format CTA from brand offers (if available)
+    const ctaSection = formatOffersForPrompt(brandContext.offers, brand.name)
+    
     // Select the most relevant voice insights for this memo type (topic-matched, deduplicated)
     const selectedInsights = selectVoiceInsightsForMemo(voiceInsights, memoType, existingMemoIds, 3)
     const verifiedInsights = formatVoiceInsightsForPrompt(selectedInsights)
@@ -377,6 +381,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = COMPARISON_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{cta_section}}', ctaSection)
             .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
             .replace(/\{\{brand_name\}\}/g, brand.name)
@@ -400,6 +405,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = ALTERNATIVE_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{cta_section}}', ctaSection)
             .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace(/\{\{competitor_name\}\}/g, competitor.name)
             .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
@@ -421,6 +427,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = INDUSTRY_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{cta_section}}', ctaSection)
             .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{industry}}', industry)
             .replace(/\{\{brand_name\}\}/g, brand.name)
@@ -472,6 +479,7 @@ export const memoGenerate = inngest.createFunction(
           prompt = HOW_TO_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{cta_section}}', ctaSection)
             .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{competitors}}', competitorList)
             .replace('{{topic}}', topic)
@@ -505,12 +513,22 @@ export const memoGenerate = inngest.createFunction(
             ).join('\n')
           }
 
+          // Determine if the query is a question to pick the right section heading
+          const isQuestion = /\?$/.test(queryText.trim()) || /^(how|what|why|which|where|when|who|can|does|do|is|are|should|will|would)\s/i.test(queryText.trim())
+          const shortAnswerHeading = isQuestion ? 'The Short Answer' : 'Overview'
+          const shortAnswerInstruction = isQuestion
+            ? 'answering the buyer\'s question directly and concisely'
+            : 'providing a concise overview of the topic'
+
           prompt = GAP_FILL_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{cta_section}}', ctaSection)
             .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
             .replace('{{query_text}}', queryText)
             .replace('{{cited_content}}', citedContentSummary || 'No specific competitor citations available.')
+            .replace('{{short_answer_heading}}', shortAnswerHeading)
+            .replace('{{short_answer_instruction}}', shortAnswerInstruction)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
             .replace(/\{\{date\}\}/g, today)
@@ -564,7 +582,24 @@ export const memoGenerate = inngest.createFunction(
         throw new Error(`Memo generation failed: AI could not generate content. Brand context may be insufficient. Please review brand settings and try again.`)
       }
 
-      return { content: text, slug, title }
+      // Strip any self-referencing source lines (brand citing itself)
+      const brandDomain = brand.domain || ''
+      let cleanedText = text
+      if (brandDomain) {
+        // Remove source lines that reference the brand's own domain or contextmemo.com
+        cleanedText = cleanedText
+          .split('\n')
+          .filter(line => {
+            const trimmed = line.trim()
+            // Only filter markdown list items in Sources-like sections
+            if (!trimmed.startsWith('- [') && !trimmed.startsWith('* [')) return true
+            const lower = trimmed.toLowerCase()
+            return !lower.includes(brandDomain.toLowerCase()) && !lower.includes('contextmemo.com') && !lower.includes('context memo')
+          })
+          .join('\n')
+      }
+
+      return { content: cleanedText, slug, title }
     })
 
     // Step 4: Create meta description

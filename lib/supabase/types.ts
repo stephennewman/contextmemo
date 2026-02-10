@@ -1511,7 +1511,7 @@ export const ACTIVITY_TYPE_META: Record<ActivityType, {
 export type TopicCategory = 'comparisons' | 'alternatives' | 'how_tos' | 'industry_guides' | 'definitions' | 'use_cases'
 export type TopicContentType = 'comparison' | 'alternative' | 'how_to' | 'industry' | 'definition' | 'guide'
 export type TopicStatus = 'gap' | 'partial' | 'covered'
-export type TopicSource = 'ai_generated' | 'entity_discovered' | 'competitor_content' | 'manual'
+export type TopicSource = 'ai_generated' | 'entity_discovered' | 'competitor_content' | 'manual' | 'product_deploy'
 
 export interface TopicUniverse {
   id: string

@@ -1,6 +1,7 @@
 import { inngest } from '../client'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { Memo } from '@/lib/supabase/types'
+import { getMemoUrl } from '@/lib/memo/render'
 
 const supabase = createServiceRoleClient()
 
@@ -164,7 +165,8 @@ function injectContextualLinks(
           || memos.find(m => m.memo_type === 'alternative')
           || memos[0]
         
-        const link = `[**${match[0].replace(/\*\*/g, '')}**](/${linkMemo.slug})`
+        const linkUrl = getMemoUrl(linkMemo.slug, linkMemo.memo_type)
+        const link = `[**${match[0].replace(/\*\*/g, '')}**](${linkUrl})`
         updated = updated.replace(regex, link)
         break // Only replace first match
       }
@@ -197,8 +199,8 @@ function generateRelatedSection(relatedMemos: RelatedMemo[]): string {
   let section = '\n\n---\n\n## Related Reading\n\n'
   
   for (const memo of toShow) {
-    const typeLabel = memo.memo_type.replace('_', ' ')
-    section += `- [${memo.title}](/${memo.slug}) — ${typeLabel}\n`
+    const linkUrl = getMemoUrl(memo.slug, memo.memo_type)
+    section += `- [${memo.title}](${linkUrl})\n`
   }
 
   return section

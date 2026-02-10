@@ -134,7 +134,7 @@ export const memoContentStyles = `memo-content text-slate-600 text-[1.0625rem] l
   [&>ul>li]:relative [&>ul>li]:pl-7 [&>ul>li]:leading-relaxed
   [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-1.5 [&>ul>li]:before:h-1.5 [&>ul>li]:before:bg-blue-500 [&>ul>li]:before:rounded-full
   [&>ol]:my-8 [&>ol]:pl-6 [&>ol]:space-y-4
-  [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline hover:[&_a]:underline
+  [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline [&_a:hover]:underline
   [&>table]:w-full [&>table]:my-10 [&>table]:border-collapse [&>table]:text-[0.9375rem] [&>table]:rounded-lg [&>table]:overflow-hidden [&>table]:border [&>table]:border-slate-200
   [&_thead]:bg-slate-50
   [&_th]:p-4 [&_th]:text-left [&_th]:border-b [&_th]:border-slate-200 [&_th]:font-semibold [&_th]:text-slate-800
@@ -432,7 +432,7 @@ export const brandedMemoContentStyles = `memo-content text-slate-300 text-[1.062
   [&>ul>li]:relative [&>ul>li]:pl-7 [&>ul>li]:leading-relaxed
   [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-2 [&>ul>li]:before:h-2 [&>ul>li]:before:bg-[#0EA5E9]
   [&>ol]:my-8 [&>ol]:pl-6 [&>ol]:space-y-4
-  [&_a]:text-[#0EA5E9] [&_a]:font-medium [&_a]:no-underline hover:[&_a]:underline
+  [&_a]:text-[#0EA5E9] [&_a]:font-medium [&_a]:no-underline [&_a:hover]:underline
   [&>table]:w-full [&>table]:my-10 [&>table]:border-collapse [&>table]:text-[0.9375rem] [&>table]:overflow-hidden [&>table]:border-2 [&>table]:border-white/20
   [&_thead]:bg-white/10
   [&_th]:p-4 [&_th]:text-left [&_th]:border-b-2 [&_th]:border-white/20 [&_th]:font-bold [&_th]:text-white [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-sm

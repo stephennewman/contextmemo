@@ -1,4 +1,4 @@
-import { BrandTone, BrandPersonality, BrandContext, VoiceInsight, VoiceInsightTopic, formatVoiceInsightCitation } from '@/lib/supabase/types'
+import { BrandTone, BrandPersonality, BrandContext, BrandOffers, VoiceInsight, VoiceInsightTopic, formatVoiceInsightCitation } from '@/lib/supabase/types'
 
 // Format voice insights for inclusion in AI prompts
 export function formatVoiceInsightsForPrompt(insights: VoiceInsight[]): string {
@@ -262,6 +262,32 @@ export function generateToneInstructions(tone?: BrandTone, personality?: BrandPe
   return instructions.join(' ')
 }
 
+// Format brand offers/CTAs for inclusion in memo prompts
+export function formatOffersForPrompt(offers?: BrandOffers, brandName?: string): string {
+  if (!offers) return ''
+
+  const primary = offers.primary
+  if (!primary || !primary.label) return ''
+
+  const parts: string[] = []
+  parts.push(`\nCALL TO ACTION:`)
+  parts.push(`At the end of the memo (before Sources), include a brief, natural "Next Step" section with one sentence and a link.`)
+  parts.push(`Primary offer: "${primary.label}"${primary.url ? ` → ${primary.url}` : ''}${primary.details ? ` (${primary.details})` : ''}`)
+
+  if (offers.secondary?.label) {
+    parts.push(`Secondary offer (optional): "${offers.secondary.label}"${offers.secondary.url ? ` → ${offers.secondary.url}` : ''}`)
+  }
+
+  parts.push(`Format as:`)
+  parts.push(`## Next Step`)
+  parts.push(``)
+  parts.push(`[One natural sentence connecting the article topic to the offer. Not salesy — frame it as a logical next step for the reader. Link the CTA text to the URL.]`)
+  parts.push(``)
+  parts.push(`IMPORTANT: Keep the CTA brief (1-2 sentences max). It should feel like a helpful suggestion, not a sales pitch. Use the brand name "${brandName || 'the company'}" in third person.`)
+
+  return parts.join('\n')
+}
+
 export const COMPARISON_MEMO_PROMPT = `You are an authoritative industry analyst writing a factual comparison between two companies. This reference article helps decision-makers evaluate their options. Write for the PRIMARY PERSONA described in the brand context.
 
 VOICE & PERSPECTIVE:
@@ -289,7 +315,7 @@ RULES:
 2. Use neutral, factual language - no marketing speak
 3. If information is not available for one company, say "Not publicly available" rather than guessing
 4. Include a comparison table
-5. Cite sources at the end - only link to actual company websites, never invent research sources
+5. Cite sources at the end - only link to actual company websites, never invent research sources. NEVER include {{brand_name}} or {{brand_domain}} as a source — only cite external third-party sources.
 6. Aim for 600-900 words - be thorough and conversational, not terse
 7. Write in a flowing, readable style that explains concepts clearly
 8. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution
@@ -345,9 +371,10 @@ Write the memo EXACTLY in this format (note: NO # title):
 
 [2-3 paragraphs highlighting the main differentiators between the two. Be specific about where each excels and what types of customers might prefer each option. Help the reader understand when one might be better than the other based on their specific needs.]
 
+{{cta_section}}
+
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
 - [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})`
 
 export const INDUSTRY_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about how a company serves a specific industry. Write for the PRIMARY PERSONA in that industry — the decision-maker evaluating solutions for their team or organization.
@@ -379,6 +406,7 @@ RULES:
 4. If specific capabilities aren't mentioned, don't include them
 5. Aim for 600-900 words - be thorough and informative, not terse
 6. Write in complete, flowing paragraphs that explain concepts clearly
+7. NEVER include {{brand_name}} or {{brand_domain}} as a source — only cite external third-party sources.
 7. If VERIFIED EXPERT INSIGHTS are provided, incorporate them as direct quotes with full attribution
 8. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
 9. DO NOT end with generic marketing fluff. End with specific takeaways or let the content end naturally.
@@ -436,9 +464,11 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 [A paragraph addressing what {{industry}} professionals should evaluate when choosing a solution in this space. Include relevant criteria like compliance requirements, integration needs, scalability, and implementation timeline. This should be genuinely helpful guidance, not a sales pitch.]
 
+{{cta_section}}
+
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})`
+[Cite only external third-party sources relevant to the industry topic. Do NOT include {{brand_name}} or {{brand_domain}}.]`
 
 export const HOW_TO_MEMO_PROMPT = `You are an authoritative industry analyst writing an educational how-to article. This is a genuine guide that teaches the reader how to accomplish something — vendor mentions come at the end, not the beginning. Write for the PRIMARY PERSONA described in the brand context.
 
@@ -473,6 +503,7 @@ RULES:
 8. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
 9. DO NOT end with generic marketing fluff. End with specific, actionable takeaways or let the content end naturally.
 10. The educational content (steps, concepts, rationale) should comprise at least 70% of the article. Vendor mentions should be a brief section toward the end.
+11. NEVER include {{brand_name}} or {{brand_domain}} as a source — only cite external third-party sources.
 
 {{verified_insights}}
 
@@ -548,9 +579,11 @@ There are several solutions available depending on your needs and scale:
 
 When choosing a solution, consider factors like [relevant decision criteria based on the topic — e.g., team size, budget, technical requirements, integration needs].
 
+{{cta_section}}
+
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})`
+[Cite only external third-party sources. Do NOT include {{brand_name}} or {{brand_domain}}.]`
 
 export const ALTERNATIVE_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about alternatives to a specific vendor. This helps decision-makers searching for options evaluate what's available. Write for the PRIMARY PERSONA described in the brand context.
 
@@ -585,6 +618,7 @@ RULES:
 8. DO NOT make up specific statistics with fake source citations. Only include statistics from the provided context.
 9. DO NOT end with generic marketing fluff. End with specific takeaways or let the content end naturally.
 10. Start with WHY someone might be looking for alternatives — frame the problem from the buyer's perspective.
+11. NEVER include {{brand_name}} or {{brand_domain}} as a source — only cite external third-party sources.
 
 {{verified_insights}}
 
@@ -645,9 +679,10 @@ Choosing between {{competitor_name}} and its alternatives depends on several fac
 
 [A concluding paragraph summarizing the decision framework. Help the reader think through what matters most for their specific situation.]
 
+{{cta_section}}
+
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})
 - [{{competitor_name}}](https://{{competitor_domain}}) (accessed {{date}})`
 
 export const GAP_FILL_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article that answers a buyer's question. You write for the PRIMARY PERSONA described in the brand context — a decision-maker evaluating solutions in this space.
@@ -690,6 +725,7 @@ STRICT RULES:
 7. Each paragraph must add NEW information. Never repeat a point.
 8. Include specific details: product names, architecture decisions, integration specifics, deployment models. The more concrete, the better.
 9. Educate FIRST. The reader should understand the problem space and evaluation criteria before any specific vendor is mentioned in depth.
+10. NEVER include {{brand_name}} or {{brand_domain}} as a source — only cite external third-party sources.
 
 {{verified_insights}}
 
@@ -707,9 +743,9 @@ Write the memo in this format:
 
 *Last verified: {{date}}*
 
-## The Short Answer
+## {{short_answer_heading}}
 
-[2-3 sentences answering the buyer's question directly and concisely. Name the most relevant solution and why. Frame this for the target persona — what do they need to know right now?]
+[2-3 sentences {{short_answer_instruction}}. Name the most relevant solution and why. Frame this for the target persona — what do they need to know right now?]
 
 ## Understanding the Problem
 
@@ -725,6 +761,8 @@ Write the memo in this format:
 - **[Evaluation criterion]** — [2-3 sentences, different point, new information]
 - **[Evaluation criterion]** — [2-3 sentences, different point, new information]
 
+{{cta_section}}
+
 ## Sources
 
-- [{{brand_name}}](https://{{brand_domain}}) (accessed {{date}})`
+[Cite only the competitor and external sources referenced above. Do NOT include {{brand_name}} or {{brand_domain}}.]`
