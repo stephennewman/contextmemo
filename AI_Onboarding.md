@@ -390,6 +390,24 @@ _Most recent deploys first_
 
 ### February 10, 2026
 
+**Images in citation response memos** (5f4d8b5)
+- New `lib/utils/image-sourcer.ts`: Unsplash API search (when `UNSPLASH_ACCESS_KEY` env var is set) with curated fallback pool categorized by topic (technology, business, analytics, AI, marketing, workspace)
+- Extracts image alt-text concepts from source content to find topically relevant images
+- Citation respond function now sources 4 images and passes them to the prompt with placement instructions
+- Prompt tells AI to include 2-3 images between major sections using exact markdown syntax
+- Added responsive image CSS to both standard and branded memo themes: full-width, rounded corners, shadow, border, centered
+- To enable Unsplash API: add `UNSPLASH_ACCESS_KEY=your_key` to `.env.local` (free tier: 50 req/hr). Without it, curated pool images are used.
+- Files changed: `lib/utils/image-sourcer.ts` (new), `lib/inngest/functions/citation-respond.ts`, `lib/ai/prompts/memo-generation.ts`, `lib/memo/render.tsx`
+
+**Citation Response System — strategic variations of cited content** (9121a93)
+- New `CITATION_RESPONSE_PROMPT` in `memo-generation.ts`: instead of generating generic content, it studies the actual cited page (structure, claims, data), then creates a variation that covers the same ground with the brand's positioning, tone, and expert insights
+- New Inngest function `citation-respond.ts`: fetches cited URL via Jina reader, auto-detects which queries cite it from scan data, loads brand context/voice insights, generates content via GPT-4o, saves as `memo_type: 'citation_response'` with full provenance
+- New API action `respond_to_citation`: accepts a URL and triggers the citation response pipeline
+- Wired into scan-run auto-generation: when gaps are found with cited URLs, triggers `citation/respond` instead of generic `memo/generate` — content is now informed by what's actually winning
+- Updated Citations page "Generate Memo" button: now calls `respond_to_citation` with the cited URL instead of generic `gap_fill`, updated progress messages to reflect the new flow
+- Registered event type `citation/respond` in Inngest client, function in Inngest route
+- Files changed: `lib/ai/prompts/memo-generation.ts`, `lib/inngest/functions/citation-respond.ts` (new), `lib/inngest/client.ts`, `app/api/inngest/route.ts`, `app/api/brands/[brandId]/actions/route.ts`, `lib/inngest/functions/scan-run.ts`, `components/dashboard/citation-insights.tsx`
+
 **Merge chris branch — User deletion + Crawler Guide** (d4b4b21)
 - Merged `chris` branch into `main`: brought in user deletion endpoint update and crawler detection user guide documentation
 - Files changed: `app/api/privacy/delete/route.ts`, `docs/CRAWLER_DETECTION_USER_GUIDE.md`, `test/unit/privacy-delete.test.ts`
