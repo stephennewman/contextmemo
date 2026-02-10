@@ -7,7 +7,8 @@ interface RouteParams {
 }
 
 // Lightweight endpoint for polling memo count during generation
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+// ?include_latest=true also returns the most recently created memo
+export async function GET(request: NextRequest, { params }: RouteParams) {
   const { brandId } = await params
 
   if (!isValidUUID(brandId)) {
@@ -21,14 +22,30 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { count, error } = await supabase
-    .from('memos')
-    .select('*', { count: 'exact', head: true })
-    .eq('brand_id', brandId)
+  const includeLatest = request.nextUrl.searchParams.get('include_latest') === 'true'
 
-  if (error) {
+  const [countResult, latestResult] = await Promise.all([
+    supabase
+      .from('memos')
+      .select('*', { count: 'exact', head: true })
+      .eq('brand_id', brandId),
+    includeLatest
+      ? supabase
+          .from('memos')
+          .select('id, title, slug, memo_type, status')
+          .eq('brand_id', brandId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+      : Promise.resolve({ data: null, error: null }),
+  ])
+
+  if (countResult.error) {
     return NextResponse.json({ error: 'Failed to check memo count' }, { status: 500 })
   }
 
-  return NextResponse.json({ count: count ?? 0 })
+  return NextResponse.json({ 
+    count: countResult.count ?? 0,
+    ...(latestResult.data && { latest: latestResult.data }),
+  })
 }

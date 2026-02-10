@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import {
   ExternalLink,
   Link2,
@@ -20,6 +22,11 @@ import {
   Sparkles,
   TrendingUp,
   AlertCircle,
+  Loader2,
+  CheckCircle2,
+  X,
+  Pencil,
+  Eye,
 } from 'lucide-react'
 import { subDays, eachDayOfInterval, startOfDay } from 'date-fns'
 import { FunnelStage, FUNNEL_STAGE_META } from '@/lib/supabase/types'
@@ -104,6 +111,29 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('urls')
+  
+  // Generation modal state
+  const [genModal, setGenModal] = useState<{
+    isOpen: boolean
+    citedUrl: string
+    citedDomain: string
+    citationCount: number
+    promptTexts: string[]
+  } | null>(null)
+
+  const handleGenerateMemo = useCallback((url: string, domain: string, citationCount: number, prompts: Query[]) => {
+    setGenModal({
+      isOpen: true,
+      citedUrl: url,
+      citedDomain: domain,
+      citationCount,
+      promptTexts: prompts.slice(0, 5).map(p => p.query_text),
+    })
+  }, [])
+
+  const closeGenModal = useCallback(() => {
+    setGenModal(null)
+  }, [])
 
   // Build query lookup map
   const queryMap = useMemo(() => {
@@ -647,14 +677,16 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
                                       AI models cite this URL {source.totalCitations}x — consider writing a memo on this topic.
                                     </p>
                                   </div>
-                                  <a
-                                    href={`/brands/${brandId}/memos?generate=gap_fill&citedUrl=${encodeURIComponent(source.url)}&citedDomain=${encodeURIComponent(source.domain)}`}
+                                  <button
                                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-[#0F172A] text-white rounded hover:bg-[#1e293b] transition-colors shrink-0"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleGenerateMemo(source.url, source.domain, source.totalCitations, source.prompts)
+                                    }}
                                   >
                                     <Sparkles className="h-3 w-3" />
                                     Generate Memo
-                                  </a>
+                                  </button>
                                 </div>
                               </div>
                             ) : null
@@ -1260,6 +1292,21 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
           </div>
         </CardContent>
       </Card>
+
+      {/* Generation Modal */}
+      {genModal && (
+        <MemoGenerationModal
+          brandId={brandId}
+          brandName={brandName}
+          brandSubdomain={brandSubdomain}
+          isOpen={genModal.isOpen}
+          onClose={closeGenModal}
+          citedUrl={genModal.citedUrl}
+          citedDomain={genModal.citedDomain}
+          citationCount={genModal.citationCount}
+          promptTexts={genModal.promptTexts}
+        />
+      )}
     </div>
   )
 }
@@ -1271,5 +1318,336 @@ function EmptyState() {
       <p>No citations found in selected period</p>
       <p className="text-sm">Run more scans to see citation data</p>
     </div>
+  )
+}
+
+// ─── Terminal-style memo generation modal ────────────────────────────────
+
+interface ProgressLine {
+  id: string
+  text: string
+  type: 'info' | 'success' | 'working' | 'result'
+}
+
+function MemoGenerationModal({
+  brandId,
+  brandName,
+  brandSubdomain,
+  isOpen,
+  onClose,
+  citedUrl,
+  citedDomain,
+  citationCount,
+  promptTexts,
+}: {
+  brandId: string
+  brandName: string
+  brandSubdomain: string
+  isOpen: boolean
+  onClose: () => void
+  citedUrl: string
+  citedDomain: string
+  citationCount: number
+  promptTexts: string[]
+}) {
+  const [progressLines, setProgressLines] = useState<ProgressLine[]>([])
+  const [isComplete, setIsComplete] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [generatedMemo, setGeneratedMemo] = useState<{
+    id: string
+    title: string
+    slug: string
+    memo_type: string
+  } | null>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const lineIdRef = useRef(0)
+  const baselineCountRef = useRef(0)
+  const isCompleteRef = useRef(false)
+
+  // Auto-scroll
+  useEffect(() => {
+    if (progressRef.current) {
+      progressRef.current.scrollTop = progressRef.current.scrollHeight
+    }
+  }, [progressLines])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+      timersRef.current.forEach(t => clearTimeout(t))
+    }
+  }, [])
+
+  const addLine = useCallback((text: string, type: ProgressLine['type'] = 'info') => {
+    const id = `line-${lineIdRef.current++}`
+    setProgressLines(prev => [...prev, { id, text, type }])
+  }, [])
+
+  // Start generation when modal opens
+  useEffect(() => {
+    if (!isOpen || hasStarted) return
+    setHasStarted(true)
+
+    const startGeneration = async () => {
+      // Add context lines
+      addLine(`▶ GENERATING MEMO`, 'info')
+      addLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+      addLine(``, 'info')
+      addLine(`Responding to: ${citedDomain}`, 'result')
+      addLine(`Citation count: ${citationCount}x`, 'result')
+      addLine(`URL: ${citedUrl.length > 60 ? citedUrl.slice(0, 57) + '...' : citedUrl}`, 'info')
+      
+      if (promptTexts.length > 0) {
+        addLine(``, 'info')
+        addLine(`Triggered by prompts:`, 'info')
+        promptTexts.slice(0, 3).forEach(pt => {
+          addLine(`  "${pt.length > 70 ? pt.slice(0, 67) + '...' : pt}"`, 'info')
+        })
+        if (promptTexts.length > 3) {
+          addLine(`  +${promptTexts.length - 3} more...`, 'info')
+        }
+      }
+
+      addLine(``, 'info')
+
+      // Get baseline memo count
+      try {
+        const countRes = await fetch(`/api/brands/${brandId}/memo-count`)
+        if (countRes.ok) {
+          const { count } = await countRes.json()
+          baselineCountRef.current = count
+        }
+      } catch {
+        // Continue anyway
+      }
+
+      // Fire the generation API
+      try {
+        addLine(`Sending generation request...`, 'working')
+        
+        const res = await fetch(`/api/brands/${brandId}/actions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate_memo',
+            memoType: 'gap_fill',
+            citedUrls: [citedUrl],
+          }),
+        })
+        const data = await res.json()
+        
+        if (!res.ok) {
+          throw new Error(data.error || 'Generation failed')
+        }
+
+        addLine(`Generation started`, 'success')
+        addLine(``, 'info')
+
+        // Schedule progress messages
+        const steps = [
+          { delay: 2000, text: 'Analyzing cited content and buyer queries...', type: 'working' as const },
+          { delay: 6000, text: 'Extracting key themes and competitive angle...', type: 'working' as const },
+          { delay: 11000, text: 'Building response with brand positioning...', type: 'working' as const },
+          { delay: 17000, text: 'Writing authoritative content (800-1200 words)...', type: 'working' as const },
+          { delay: 25000, text: 'Adding sources and cross-references...', type: 'working' as const },
+          { delay: 35000, text: 'Formatting and injecting internal backlinks...', type: 'working' as const },
+          { delay: 50000, text: 'Finalizing memo structure...', type: 'working' as const },
+        ]
+
+        timersRef.current = steps.map(step =>
+          setTimeout(() => {
+            if (!isCompleteRef.current) addLine(step.text, step.type)
+          }, step.delay)
+        )
+
+        // Poll for completion
+        pollRef.current = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/brands/${brandId}/memo-count?include_latest=true`)
+            if (pollRes.ok) {
+              const { count, latest } = await pollRes.json()
+              if (count > baselineCountRef.current && latest) {
+                // Memo is ready!
+                if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+                timersRef.current.forEach(t => clearTimeout(t))
+                
+                addLine(``, 'info')
+                addLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+                addLine(`✓ MEMO GENERATED SUCCESSFULLY`, 'success')
+                addLine(``, 'info')
+                addLine(`Title: ${latest.title}`, 'result')
+                addLine(`Type: ${(latest.memo_type || '').replace(/_/g, ' ')}`, 'info')
+                addLine(`Status: ${latest.status}`, 'info')
+                
+                setGeneratedMemo(latest)
+                isCompleteRef.current = true
+                setIsComplete(true)
+              }
+            }
+          } catch {
+            // Retry silently
+          }
+        }, 3000)
+
+        // Timeout after 2 minutes
+        timersRef.current.push(
+          setTimeout(() => {
+            if (!isCompleteRef.current && pollRef.current) {
+              clearInterval(pollRef.current)
+              pollRef.current = null
+              addLine(``, 'info')
+              addLine(`⏱ Generation is taking longer than expected.`, 'info')
+              addLine(`The memo may still be processing. Check the Memos tab.`, 'info')
+              isCompleteRef.current = true
+              setIsComplete(true)
+            }
+          }, 120000)
+        )
+      } catch (err) {
+        addLine(``, 'info')
+        addLine(`⚠️ Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'info')
+        setError(err instanceof Error ? err.message : 'Generation failed')
+        isCompleteRef.current = true
+        setIsComplete(true)
+      }
+    }
+
+    startGeneration()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
+
+  const handleClose = () => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    timersRef.current.forEach(t => clearTimeout(t))
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="max-w-2xl p-0 gap-0 border-[3px] border-[#0F172A] rounded-none overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>Generate Memo</DialogTitle>
+        </VisuallyHidden>
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 bg-[#0F172A] text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#0EA5E9] rounded-lg">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="font-bold tracking-wide">GENERATE MEMO</h2>
+              <p className="text-sm text-slate-300">{brandName} — responding to {citedDomain}</p>
+            </div>
+          </div>
+          <button 
+            onClick={handleClose}
+            className="text-slate-400 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Progress Log */}
+        <div 
+          ref={progressRef}
+          className="h-72 overflow-y-auto bg-[#1a1b26] p-4 font-mono text-sm"
+        >
+          {progressLines.map((line) => (
+            <div key={line.id} className="flex items-start gap-2 py-0.5">
+              {line.type === 'working' && (
+                <Loader2 className="h-4 w-4 text-[#F59E0B] animate-spin shrink-0 mt-0.5" />
+              )}
+              {line.type === 'success' && (
+                <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
+              )}
+              {line.type === 'info' && line.text && !line.text.startsWith('━') && !line.text.startsWith('▶') && (
+                <span className="text-slate-500 shrink-0">→</span>
+              )}
+              {line.type === 'result' && (
+                <span className="text-[#0EA5E9] shrink-0">•</span>
+              )}
+              <span className={
+                line.type === 'success' ? 'text-[#10B981] font-bold' :
+                line.type === 'working' ? 'text-[#F59E0B]' :
+                line.type === 'result' ? 'text-[#0EA5E9]' :
+                line.text.startsWith('▶') ? 'text-[#7aa2f7] font-bold' :
+                line.text.startsWith('━') ? 'text-[#7aa2f7]' :
+                'text-slate-400'
+              }>
+                {line.text}
+              </span>
+            </div>
+          ))}
+          
+          {/* Blinking cursor when running */}
+          {!isComplete && hasStarted && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="w-2 h-4 bg-[#0EA5E9] animate-pulse" />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-[#0F172A] px-4 py-3 border-t border-slate-700">
+          <div className="flex items-center justify-between">
+            {isComplete && generatedMemo ? (
+              <div className="flex items-center gap-2 w-full">
+                <a
+                  href={`/brands/${brandId}/memos/${generatedMemo.id}`}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#0EA5E9] text-white text-sm font-semibold rounded hover:bg-[#0284C7] transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit Memo
+                </a>
+                <a
+                  href={`/memo/${brandSubdomain}/${generatedMemo.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 text-white text-sm font-semibold rounded hover:bg-slate-600 transition-colors"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View Memo
+                </a>
+                <div className="flex-1" />
+                <span className="font-mono text-sm text-[#10B981]">● COMPLETE</span>
+              </div>
+            ) : isComplete && error ? (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-red-400">{error}</span>
+                <button
+                  onClick={handleClose}
+                  className="px-3 py-2 bg-slate-700 text-white text-sm font-semibold rounded hover:bg-slate-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            ) : isComplete ? (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-slate-400">Check the Memos tab for your new content.</span>
+                <a
+                  href={`/brands/${brandId}/memos`}
+                  className="px-3 py-2 bg-[#0EA5E9] text-white text-sm font-semibold rounded hover:bg-[#0284C7] transition-colors"
+                >
+                  Go to Memos
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 text-[#F59E0B] animate-spin" />
+                  <span className="text-sm text-slate-400">Generating memo...</span>
+                </div>
+                <span className="font-mono text-sm text-[#F59E0B]">● GENERATING</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

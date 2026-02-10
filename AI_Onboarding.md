@@ -390,6 +390,10 @@ _Most recent deploys first_
 
 ### February 10, 2026
 
+**Merge chris branch — User deletion + Crawler Guide** (d4b4b21)
+- Merged `chris` branch into `main`: brought in user deletion endpoint update and crawler detection user guide documentation
+- Files changed: `app/api/privacy/delete/route.ts`, `docs/CRAWLER_DETECTION_USER_GUIDE.md`, `test/unit/privacy-delete.test.ts`
+
 **Citations Tab Overhaul — My Content, domain rank, content matching** (6fe7a2e)
 - Citation count now displays in tab label (e.g. `CITATIONS (47)`) matching how PROMPTS and MEMOS show counts
 - New **My Content** toggle (alongside URLs and Domains): shows which of your memos/URLs are being cited by AI models, how many times, and across which prompts. Also lists published memos that haven't been cited yet.
