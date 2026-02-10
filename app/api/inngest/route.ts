@@ -49,6 +49,8 @@ import {
 import { dailyDigest } from '@/lib/inngest/functions/daily-digest'
 import { topicUniverseGenerate, topicUniverseRefresh } from '@/lib/inngest/functions/topic-universe'
 import { competitorEnrich, competitorEnrichBatch } from '@/lib/inngest/functions/competitor-enrich'
+import { memoVerifyContent } from '@/lib/inngest/functions/memo-verify'
+import { citationRespond } from '@/lib/inngest/functions/citation-respond'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -130,6 +132,12 @@ export const { GET, POST, PUT } = serve({
     // Topic Universe - Content Coverage Audit
     topicUniverseGenerate,   // Generate full topic universe for a brand
     topicUniverseRefresh,    // Add topics for newly discovered entities
+    
+    // Memo content verification - prove published memos are getting cited
+    memoVerifyContent,       // Reverse-engineer prompts from memos, scan, verify citations
+    
+    // Citation response - strategic variations of cited competitor content
+    citationRespond,         // Fetch cited URL, generate better version with brand's perspective
   ],
 })
 // Sync trigger Wed Feb  4 13:26:53 EST 2026

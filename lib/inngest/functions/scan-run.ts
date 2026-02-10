@@ -748,20 +748,56 @@ export const scanRun = inngest.createFunction(
 
         // Group by type and prepare memo generation events
         const memoEvents: Array<{
-          name: 'memo/generate'
+          name: 'memo/generate' | 'citation/respond'
           data: {
             brandId: string
             queryId?: string
-            memoType: string
+            memoType?: string
             competitorId?: string
+            url?: string
+            queryIds?: string[]
           }
         }> = []
 
         // Track what we've already queued to avoid duplicates
         const queuedTypes = new Set<string>()
+        // Track cited URLs already queued to avoid duplicate citation responses
+        const queuedCitationUrls = new Set<string>()
+
+        // Build a map of query → top cited URLs from scan results (for citation response)
+        const queryCitationMap = new Map<string, string[]>()
+        for (const result of scanResults) {
+          if (result.citations && result.citations.length > 0 && result.brandInCitations !== true) {
+            const existing = queryCitationMap.get(result.queryId) || []
+            for (const citUrl of result.citations) {
+              if (!existing.includes(citUrl)) existing.push(citUrl)
+            }
+            queryCitationMap.set(result.queryId, existing)
+          }
+        }
 
         for (const query of gapQueries) {
-          // Determine memo type based on query type
+          // Check if there are cited URLs for this gap query — if so, use citation/respond
+          // to create a strategic variation of the winning content
+          const citedUrls = queryCitationMap.get(query.id)
+          if (citedUrls && citedUrls.length > 0) {
+            // Pick the top cited URL (first one — typically the most prominent citation)
+            const topCitedUrl = citedUrls[0]
+            if (!queuedCitationUrls.has(topCitedUrl)) {
+              memoEvents.push({
+                name: 'citation/respond',
+                data: {
+                  brandId,
+                  url: topCitedUrl,
+                  queryIds: [query.id],
+                },
+              })
+              queuedCitationUrls.add(topCitedUrl)
+              continue // Skip the generic memo type switch below
+            }
+          }
+
+          // Fallback: no cited URLs available — use standard memo generation
           let memoType: string
           let key: string
 
@@ -867,8 +903,10 @@ export const scanRun = inngest.createFunction(
           await inngest.send(memoEvents)
         }
 
-        console.log(`Memo generation: ${memoEvents.length} queued, daily cap: ${dailyCap}, already created today: ${memosCreatedToday}`)
-        return { memosQueued: memoEvents.length, dailyCap, memosCreatedToday }
+        const citationResponses = memoEvents.filter(e => e.name === 'citation/respond').length
+        const standardMemos = memoEvents.filter(e => e.name === 'memo/generate').length
+        console.log(`Memo generation: ${memoEvents.length} queued (${citationResponses} citation responses, ${standardMemos} standard memos), daily cap: ${dailyCap}, already created today: ${memosCreatedToday}`)
+        return { memosQueued: memoEvents.length, citationResponses, standardMemos, dailyCap, memosCreatedToday }
       })
     }
 

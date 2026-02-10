@@ -766,3 +766,92 @@ Write the memo in this format:
 ## Sources
 
 [Cite only the competitor and external sources referenced above. Do NOT include {{brand_name}} or {{brand_domain}}.]`
+
+export const CITATION_RESPONSE_PROMPT = `You are creating a strategic content variation — a better version of a page that AI models currently cite when answering buyer questions. Your job is NOT to write something completely different. Your job is to write something that covers the SAME ground, but from {{brand_name}}'s perspective, with the brand's unique expertise, data, and voice woven throughout.
+
+Think of it this way: if AI models cite the source article because it comprehensively covers "best AI visibility tools," YOUR version must also comprehensively cover that topic — but through {{brand_name}}'s lens, with fresher data, stronger structure, and genuine expertise that makes it the better citation source.
+
+IMPORTANT - CURRENT DATE: {{current_date}}
+Use the current year ({{current_year}}) when referencing time-sensitive information. DO NOT use outdated years like 2023, 2024, or 2025.
+
+BRAND CONTEXT:
+{{brand_context}}
+
+BRAND TONE:
+{{tone_instructions}}
+
+{{verified_insights}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
+
+═══════════════════════════════════════
+CONTENT TO OUTPERFORM:
+═══════════════════════════════════════
+
+This is the page AI models currently cite. Study it carefully — understand what it covers, how it's structured, and what makes it citable:
+
+URL: {{source_url}}
+TITLE: {{source_title}}
+
+FULL CONTENT:
+{{source_content}}
+
+═══════════════════════════════════════
+QUERIES THIS CONTENT IS CITED FOR:
+{{cited_queries}}
+═══════════════════════════════════════
+
+STRATEGY — Follow this order:
+
+1. **STUDY the source content**: Analyze its structure, key claims, data points, comparisons, and FAQ patterns. Understand WHY AI models cite this page. Usually: it's comprehensive, clearly structured, has specific facts, answers common questions directly, and covers the topic thoroughly enough that AI doesn't need other sources.
+
+2. **MATCH the coverage**: Your article must cover the SAME core topics and answer the SAME questions the source answers. If the source has a comparison table, you need a comparison table. If it has an FAQ, you need an FAQ. If it covers 8 tools, you cover tools too (including {{brand_name}}). If it defines terms, you define terms. Match or exceed the comprehensiveness.
+
+3. **ADD the brand's perspective**: Where the source is generic or vendor-neutral, you add {{brand_name}}'s informed viewpoint. Where the source lists tools/solutions, you ensure {{brand_name}} is included with genuine detail from the brand context. Where the source states facts, you add the brand's relevant data, expert insights, or real-world experience.
+
+4. **IMPROVE strategically** (not gratuitously):
+   - More specific or more current data points
+   - Expert quotes from brand leaders (use VERIFIED INSIGHTS if provided — format as blockquotes)
+   - Better formatting for AI readability (clearer headings, more direct answers)
+   - More actionable guidance grounded in the brand's expertise
+   - Fresher framing ({{current_year}} context, current trends)
+   - Fill gaps where the source is thin or vague
+
+5. **DIFFERENTIATE through substance, not gimmicks**: Don't force uniqueness. Let differentiation come from:
+   - The brand's genuine expertise and market perspective
+   - Different or additional examples the source doesn't cover
+   - The brand's voice traits and tone (see BRAND TONE above)
+   - More current or more specific data
+   - Deeper analysis in areas where the brand has authority
+
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON throughout. NEVER use "we", "our", or "us" for any company.
+- Address the reader as "you" — they are a buyer or evaluator.
+- Sound like a trusted industry analyst who happens to know {{brand_name}}'s space deeply.
+- Be factual and measured. Let quality speak for itself.
+
+CRITICAL RULES:
+- NEVER copy sentences or paragraphs from the source. Rephrase everything in the brand's voice.
+- DO cover the same topics — that's the whole point. AI cites comprehensive content on the topic.
+- DO include {{brand_name}} naturally as a relevant solution, with real details from the brand context. Not first, not dominant — but genuinely represented.
+- DO include other tools/competitors mentioned in the source — be comprehensive and fair.
+- DO NOT make up features, statistics, or capabilities not in the brand context.
+- DO NOT be promotional. This is authoritative reference content, not a landing page.
+- NEVER include {{brand_name}} or {{brand_domain}} in the Sources section.
+- BANNED PHRASES: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "comprehensive solution", "stands out", "designed to", "tailored to needs", "streamlined process"
+- Aim for EQUAL OR GREATER word count than the source. Depth wins citations.
+
+FORMATTING:
+- Start with # title (keyword-rich, compelling, signals depth — e.g., include a number or year)
+- Use ## for major sections, ### for subsections
+- Include comparison tables where the source uses them (use proper markdown table syntax)
+- Include a ## Frequently Asked Questions section if the source has Q&A content
+- Use **bold** for key terms and product names
+- Use > blockquotes for expert insights and key definitions
+- Write in complete paragraphs (3-5 sentences each)
+- ALWAYS leave a blank line before and after headings, tables, and lists
+- End with ## Sources (cite external third-party sources only, never {{brand_domain}})
+
+{{cta_section}}
+
+Write the complete article. Make it the version AI models should cite instead.`

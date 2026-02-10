@@ -8,7 +8,7 @@ export type Json =
 
 // Query/Prompt tracking types
 export type QueryStatus = 'never_scanned' | 'gap' | 'cited' | 'lost_citation'
-export type QuerySourceType = 'original' | 'expanded' | 'competitor_inspired' | 'greenspace' | 'manual' | 'auto'
+export type QuerySourceType = 'original' | 'expanded' | 'competitor_inspired' | 'greenspace' | 'manual' | 'auto' | 'verification'
 export type QueryExcludedReason = 'irrelevant' | 'duplicate' | 'low_value' | 'other' | 'manual'
 export type FunnelStage = 'top_funnel' | 'mid_funnel' | 'bottom_funnel'
 

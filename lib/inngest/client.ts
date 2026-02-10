@@ -180,4 +180,19 @@ export type InngestEvents = {
       newEntityType?: string
     }
   }
+  // Memo content verification - prove memos are getting cited
+  'memo/verify-content': {
+    data: {
+      brandId: string
+      memoIds?: string[] // Specific memos to verify, or all published if omitted
+    }
+  }
+  // Citation response - create strategic variation of cited content
+  'citation/respond': {
+    data: {
+      brandId: string
+      url: string // The cited URL to create a response for
+      queryIds?: string[] // Optional: which queries this URL is cited for
+    }
+  }
 }

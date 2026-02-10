@@ -1433,9 +1433,8 @@ function MemoGenerationModal({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'generate_memo',
-            memoType: 'gap_fill',
-            citedUrls: [citedUrl],
+            action: 'respond_to_citation',
+            url: citedUrl,
           }),
         })
         const data = await res.json()
@@ -1449,13 +1448,13 @@ function MemoGenerationModal({
 
         // Schedule progress messages
         const steps = [
-          { delay: 2000, text: 'Analyzing cited content and buyer queries...', type: 'working' as const },
-          { delay: 6000, text: 'Extracting key themes and competitive angle...', type: 'working' as const },
-          { delay: 11000, text: 'Building response with brand positioning...', type: 'working' as const },
-          { delay: 17000, text: 'Writing authoritative content (800-1200 words)...', type: 'working' as const },
-          { delay: 25000, text: 'Adding sources and cross-references...', type: 'working' as const },
-          { delay: 35000, text: 'Formatting and injecting internal backlinks...', type: 'working' as const },
-          { delay: 50000, text: 'Finalizing memo structure...', type: 'working' as const },
+          { delay: 2000, text: 'Fetching cited content from source URL...', type: 'working' as const },
+          { delay: 6000, text: 'Analyzing content structure and key claims...', type: 'working' as const },
+          { delay: 11000, text: 'Loading brand context and voice insights...', type: 'working' as const },
+          { delay: 17000, text: 'Generating strategic variation with brand positioning...', type: 'working' as const },
+          { delay: 25000, text: 'Writing differentiated content to outperform source...', type: 'working' as const },
+          { delay: 35000, text: 'Generating meta description and schema...', type: 'working' as const },
+          { delay: 50000, text: 'Publishing and creating version history...', type: 'working' as const },
         ]
 
         timersRef.current = steps.map(step =>

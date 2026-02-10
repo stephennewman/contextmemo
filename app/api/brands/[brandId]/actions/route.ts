@@ -913,6 +913,35 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Memo generation started for pending content' 
         })
 
+      case 'respond_to_citation': {
+        // Generate a strategic variation of a specific cited URL
+        const { url: citationUrl, queryIds: citationQueryIds } = body
+        if (!citationUrl) {
+          return NextResponse.json({ error: 'url is required' }, { status: 400 })
+        }
+
+        // Basic URL validation
+        try {
+          new URL(citationUrl)
+        } catch {
+          return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+        }
+
+        await inngest.send({
+          name: 'citation/respond',
+          data: {
+            brandId,
+            url: citationUrl,
+            queryIds: citationQueryIds || undefined,
+          },
+        })
+
+        return NextResponse.json({
+          success: true,
+          message: `Citation response generation started for ${citationUrl}`,
+        })
+      }
+
       case 'generate-response': {
         // Generate a response for a specific competitor content item
         const { contentId } = body
@@ -1819,6 +1848,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           success: true, 
           message: `Generating ${events.length} memos from coverage gaps`,
           count: events.length,
+        })
+      }
+
+      case 'verify_content': {
+        // Verify published memos are getting cited by AI models
+        const verifyMemoIds = body.memoIds as string[] | undefined
+        await inngest.send({
+          name: 'memo/verify-content',
+          data: { 
+            brandId,
+            ...(verifyMemoIds && verifyMemoIds.length > 0 && { memoIds: verifyMemoIds }),
+          },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Content verification started. Generating verification prompts and scanning across AI models...' 
         })
       }
 
