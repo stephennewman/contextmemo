@@ -80,6 +80,7 @@ export default async function AdminDashboardPage() {
     allBrandsResult,
     usageEventsResult,
     perfResult,
+    crawlResult,
     recentScansResult,
   ] = await Promise.all([
     getCount(serviceClient, 'tenants'),
@@ -91,22 +92,26 @@ export default async function AdminDashboardPage() {
     serviceClient.from('brands').select('id, name, domain, subdomain, tenant_id, created_at').order('created_at', { ascending: false }),
     serviceClient.rpc('get_admin_brand_spend'),
     serviceClient.rpc('get_admin_brand_performance'),
+    serviceClient.rpc('get_admin_brand_crawl_stats'),
     serviceClient.from('scan_results').select('brand_id, scanned_at').gte('scanned_at', last24h),
   ])
 
   const allBrands = allBrandsResult.data || []
   const spendData = (usageEventsResult.data || []) as Array<{ brand_id: string; all_time_spend: number; spend_7d: number; last_active: string | null }>
   const perfData = (perfResult.data || []) as Array<{ brand_id: string; prompts: number; cited_prompts: number; total_scans: number; mention_rate: number; citation_rate: number; competitors: number; published_memos: number; total_memos: number; last_scanned: string | null }>
+  const crawlData = (crawlResult.data || []) as Array<{ brand_subdomain: string; total_crawls: number; ai_crawls: number; search_crawls: number; ai_training_crawls: number; ai_search_crawls: number; ai_user_crawls: number; unique_bots: number; last_crawl: string | null }>
   const recentScans = recentScansResult.data || []
 
   // Build lookups from RPC results
   const spendMap = new Map(spendData.map(s => [s.brand_id, s]))
   const perfMap = new Map(perfData.map(p => [p.brand_id, p]))
+  const crawlMap = new Map(crawlData.map(c => [c.brand_subdomain, c]))
 
   // Aggregate per-brand stats
   const brandStats = allBrands.map(brand => {
     const spend = spendMap.get(brand.id)
     const perf = perfMap.get(brand.id)
+    const crawl = crawlMap.get(brand.subdomain || '')
     const scans24h = recentScans.filter(s => s.brand_id === brand.id).length
 
     return {
@@ -124,6 +129,10 @@ export default async function AdminDashboardPage() {
       totalMemos: Number(perf?.total_memos) || 0,
       lastScanned: perf?.last_scanned || null,
       lastActivity: spend?.last_active || null,
+      aiCrawls: Number(crawl?.ai_crawls) || 0,
+      searchCrawls: Number(crawl?.search_crawls) || 0,
+      totalCrawls: Number(crawl?.total_crawls) || 0,
+      lastCrawl: crawl?.last_crawl || null,
     }
   }).sort((a, b) => b.spendAllTime - a.spendAllTime)
 
@@ -256,6 +265,10 @@ export default async function AdminDashboardPage() {
         citationRate: b.citationRate,
         publishedMemos: b.publishedMemos,
         totalMemos: b.totalMemos,
+        aiCrawls: b.aiCrawls,
+        searchCrawls: b.searchCrawls,
+        totalCrawls: b.totalCrawls,
+        lastCrawl: b.lastCrawl,
         lastScanned: b.lastScanned,
       }))} />
 
