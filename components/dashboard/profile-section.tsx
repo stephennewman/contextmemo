@@ -681,7 +681,7 @@ function BrandPersonalityCard({ brandId, personality: initialPersonality }: { br
   const router = useRouter()
   const [personality, setPersonality] = useState(initialPersonality)
   const [refreshing, setRefreshing] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
 
   useEffect(() => { setPersonality(initialPersonality) }, [initialPersonality])
 
