@@ -280,6 +280,14 @@ export const BOT_CATEGORY_LABELS: Record<BotCategory, string> = {
   seo_tool: 'SEO Tool',
 }
 
+export const BOT_CATEGORY_DESCRIPTIONS: Record<BotCategory, string> = {
+  ai_search: 'AI platforms fetching your content in real-time to answer a user\'s query (e.g. PerplexityBot, ChatGPT Search, Claude Search). These directly lead to citations.',
+  ai_training: 'Bots scraping content for future model training data (e.g. GPTBot, ClaudeBot, Google AI). Long-term play — content may appear in future model outputs months later.',
+  ai_user_browse: 'A human inside an AI app (ChatGPT, Perplexity, Claude) clicked a link to browse your page. Strongest signal of real engagement.',
+  search_engine: 'Traditional search engine indexing (Googlebot, Bingbot). Required for appearing in search results and AI Overviews.',
+  seo_tool: 'SEO tools crawling for index and ranking data (Ahrefs, Semrush).',
+}
+
 export const BOT_CATEGORY_COLORS: Record<BotCategory, string> = {
   ai_training: '#8B5CF6',
   ai_search: '#10B981',

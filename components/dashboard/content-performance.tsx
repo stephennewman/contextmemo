@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { AI_SOURCE_LABELS, type AIReferrerSource } from '@/lib/supabase/types'
-import { BOT_CATEGORY_COLORS, type BotCategory } from '@/lib/bot-detection'
+import { BOT_CATEGORY_COLORS, BOT_CATEGORY_DESCRIPTIONS, type BotCategory } from '@/lib/bot-detection'
 
 interface Memo {
   id: string
@@ -368,7 +368,12 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   {isAI ? <Scan className="h-3 w-3 shrink-0" style={{ color: categoryColor }} /> : <Search className="h-3 w-3 shrink-0 text-zinc-400" />}
                   <span className={`text-xs truncate ${info.count > 0 ? 'text-zinc-700 font-medium' : 'text-zinc-400'}`}>{info.displayName}</span>
-                  <Badge variant="outline" className="text-[8px] font-medium px-1 py-0 shrink-0" style={{ borderColor: categoryColor, color: categoryColor }}>
+                  <Badge
+                    variant="outline"
+                    className="text-[8px] font-medium px-1 py-0 shrink-0 cursor-help"
+                    style={{ borderColor: categoryColor, color: categoryColor }}
+                    title={BOT_CATEGORY_DESCRIPTIONS[info.category] || info.category}
+                  >
                     {CATEGORY_LABEL[info.category] || info.category}
                   </Badge>
                 </div>
@@ -546,10 +551,10 @@ function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents
   const trainingCrawls = crawlEvents.filter(e => e.bot_category === 'ai_training').length
 
   const stages = [
-    { label: 'Published', value: publishedCount, color: '#0EA5E9', extra: 'total pages' },
-    { label: 'AI Discovered', value: discoveredMemos, color: '#6366F1', extra: trainingCrawls > 0 ? `incl. ${trainingCrawls} training crawls` : 'unique memos' },
-    { label: 'Query Referenced', value: referencedMemos, color: '#10B981', extra: totalSearchEvents > referencedMemos ? `${totalSearchEvents} total queries` : 'unique memos' },
-    { label: 'Click-through', value: clickedMemos, color: '#F59E0B', extra: totalClickEvents > clickedMemos ? `${totalClickEvents} total clicks` : 'unique memos' },
+    { label: 'Published', value: publishedCount, color: '#0EA5E9', extra: 'total pages', tooltip: 'Total published memos available for AI discovery' },
+    { label: 'AI Discovered', value: discoveredMemos, color: '#6366F1', extra: trainingCrawls > 0 ? `incl. ${trainingCrawls} training crawls` : 'unique memos', tooltip: 'Memos crawled by any AI bot (training, search, or user browse). First step to getting cited.' },
+    { label: 'Query Referenced', value: referencedMemos, color: '#10B981', extra: totalSearchEvents > referencedMemos ? `${totalSearchEvents} total queries` : 'unique memos', tooltip: 'Memos fetched by AI search bots (PerplexityBot, ChatGPT Search) to answer a real user query. Directly leads to citations.' },
+    { label: 'Click-through', value: clickedMemos, color: '#F59E0B', extra: totalClickEvents > clickedMemos ? `${totalClickEvents} total clicks` : 'unique memos', tooltip: 'Memos where a human inside an AI app clicked through to read the full page. Strongest engagement signal.' },
   ]
 
   const maxVal = Math.max(1, publishedCount)
@@ -564,8 +569,8 @@ function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents
         return (
           <div key={stage.label} className="flex items-center gap-3">
             {/* Label */}
-            <div className="w-28 shrink-0 text-right">
-              <p className="text-xs font-medium text-zinc-700">{stage.label}</p>
+            <div className="w-28 shrink-0 text-right" title={stage.tooltip}>
+              <p className="text-xs font-medium text-zinc-700 cursor-help border-b border-dotted border-zinc-300 inline">{stage.label}</p>
             </div>
 
             {/* Bar */}

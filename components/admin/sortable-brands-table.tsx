@@ -30,21 +30,21 @@ export type BrandRow = {
 type SortKey = keyof BrandRow
 type SortDir = 'asc' | 'desc'
 
-const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right' }[] = [
+const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right'; tooltip?: string }[] = [
   { key: 'name', label: 'Brand', align: 'left' },
   { key: 'owner', label: 'Owner', align: 'left' },
-  { key: 'spendAllTime', label: 'All-Time $', align: 'right' },
-  { key: 'spend7d', label: '7d $', align: 'right' },
-  { key: 'prompts', label: 'Prompts', align: 'right' },
-  { key: 'totalScans', label: 'Scans', align: 'right' },
-  { key: 'mentionRate', label: 'Mention %', align: 'right' },
-  { key: 'citationRate', label: 'Citation %', align: 'right' },
-  { key: 'publishedMemos', label: 'Memos', align: 'right' },
-  { key: 'aiSearchCrawls', label: 'AI Search', align: 'right' },
-  { key: 'aiTrainingCrawls', label: 'AI Training', align: 'right' },
-  { key: 'aiUserCrawls', label: 'AI User', align: 'right' },
-  { key: 'searchCrawls', label: 'Search', align: 'right' },
-  { key: 'lastCrawl', label: 'Last Crawl', align: 'right' },
+  { key: 'spendAllTime', label: 'All-Time $', align: 'right', tooltip: 'Total AI API spend across all usage events' },
+  { key: 'spend7d', label: '7d $', align: 'right', tooltip: 'AI API spend in the last 7 days' },
+  { key: 'prompts', label: 'Prompts', align: 'right', tooltip: 'Active prompts tracked (cited prompts in green)' },
+  { key: 'totalScans', label: 'Scans', align: 'right', tooltip: 'Total AI model scans run across all prompts' },
+  { key: 'mentionRate', label: 'Mention %', align: 'right', tooltip: 'Percentage of scans where the brand is mentioned by name' },
+  { key: 'citationRate', label: 'Citation %', align: 'right', tooltip: 'Percentage of scans where the brand\'s domain appears in citations' },
+  { key: 'publishedMemos', label: 'Memos', align: 'right', tooltip: 'Published memos on contextmemo.com' },
+  { key: 'aiSearchCrawls', label: 'AI Search', align: 'right', tooltip: 'AI platforms fetching content to answer a user query right now (PerplexityBot, ChatGPT Search, Claude Search). Directly leads to citations.' },
+  { key: 'aiTrainingCrawls', label: 'AI Training', align: 'right', tooltip: 'Bots scraping for future model training data (GPTBot, ClaudeBot, Google AI). Content may appear in model outputs months later.' },
+  { key: 'aiUserCrawls', label: 'AI User', align: 'right', tooltip: 'A human inside ChatGPT/Perplexity/Claude clicked to browse the page. Strongest signal of real engagement.' },
+  { key: 'searchCrawls', label: 'Search', align: 'right', tooltip: 'Traditional search engine indexing (Googlebot, Bingbot). Required for search results and AI Overviews.' },
+  { key: 'lastCrawl', label: 'Last Crawl', align: 'right', tooltip: 'Most recent crawl from any bot' },
 ]
 
 export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
@@ -94,8 +94,11 @@ export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
                   key={col.key}
                   className={`cursor-pointer select-none pb-3 pr-4 font-medium hover:text-slate-800 ${col.align === 'right' ? 'text-right' : ''}`}
                   onClick={() => handleSort(col.key)}
+                  title={col.tooltip}
                 >
-                  {col.label}{arrow(col.key)}
+                  <span className={`inline-flex items-center gap-0.5 ${col.tooltip ? 'border-b border-dotted border-slate-300' : ''}`}>
+                    {col.label}{arrow(col.key)}
+                  </span>
                 </th>
               ))}
             </tr>
