@@ -394,6 +394,15 @@ _Most recent deploys first_
 - Merged `chris` branch into `main`: brought in user deletion endpoint update and crawler detection user guide documentation
 - Files changed: `app/api/privacy/delete/route.ts`, `docs/CRAWLER_DETECTION_USER_GUIDE.md`, `test/unit/privacy-delete.test.ts`
 
+**Citations: Terminal-style memo generation modal** (c12e123)
+- Replaced dead "Generate Memo" link (which just navigated to memos page) with inline button that triggers real memo generation
+- Terminal-style modal popup shows: cited URL context (domain, citation count, triggering prompts), animated progress steps with blinking cursor, and completion state
+- On success: shows memo title, **Edit Memo** button (links to memo editor), **View Memo** button (opens public page in new tab)
+- Polls `memo-count` API every 3s until new memo is detected (2-minute timeout with fallback message)
+- Updated `memo-count` API endpoint to optionally return latest memo details via `?include_latest=true` query param
+- Uses ref-based completion tracking to prevent stale closure bugs in setTimeout/setInterval callbacks
+- Files changed: `components/dashboard/citation-insights.tsx`, `app/api/brands/[brandId]/memo-count/route.ts`
+
 **Citations Tab Overhaul — My Content, domain rank, content matching** (6fe7a2e)
 - Citation count now displays in tab label (e.g. `CITATIONS (47)`) matching how PROMPTS and MEMOS show counts
 - New **My Content** toggle (alongside URLs and Domains): shows which of your memos/URLs are being cited by AI models, how many times, and across which prompts. Also lists published memos that haven't been cited yet.
