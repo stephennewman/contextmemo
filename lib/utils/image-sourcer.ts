@@ -2,7 +2,10 @@
  * Image sourcing for memo content.
  * 
  * Uses Unsplash API when available (UNSPLASH_ACCESS_KEY),
- * falls back to curated pool from image-selector.ts.
+ * falls back to a large curated pool of business-appropriate images.
+ * 
+ * Each memo gets unique images based on a hash of the source URL + topic,
+ * so different articles never reuse the same photos.
  */
 
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY
@@ -60,92 +63,80 @@ async function searchUnsplash(query: string, count: number = 4): Promise<Unsplas
   }
 }
 
-// Curated fallback images categorized by topic keywords
-const FALLBACK_IMAGES: Record<string, UnsplashImage[]> = {
-  technology: [
-    { url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=450&fit=crop', alt: 'Technology circuit board', credit: 'Alexandre Debiève', creditUrl: 'https://unsplash.com/@alexkixa' },
-    { url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=450&fit=crop', alt: 'Global network connections', credit: 'NASA', creditUrl: 'https://unsplash.com/@nasa' },
-    { url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=450&fit=crop', alt: 'Cybersecurity concept', credit: 'Adi Goldstein', creditUrl: 'https://unsplash.com/@adigold1' },
-    { url: 'https://images.unsplash.com/photo-1488229297570-58520851e868?w=800&h=450&fit=crop', alt: 'Network visualization', credit: 'JJ Ying', creditUrl: 'https://unsplash.com/@jjying' },
-  ],
-  business: [
-    { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=450&fit=crop', alt: 'Business analytics dashboard', credit: 'Luke Chesser', creditUrl: 'https://unsplash.com/@lukechesser' },
-    { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop', alt: 'Business data analysis', credit: 'Carlos Muza', creditUrl: 'https://unsplash.com/@kmuza' },
-    { url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=450&fit=crop', alt: 'Professional workspace', credit: 'Austin Distel', creditUrl: 'https://unsplash.com/@austindistel' },
-    { url: 'https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?w=800&h=450&fit=crop', alt: 'Business strategy planning', credit: 'Helloquence', creditUrl: 'https://unsplash.com/@helloquence' },
-  ],
-  analytics: [
-    { url: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=800&h=450&fit=crop', alt: 'Charts and graphs', credit: 'Isaac Smith', creditUrl: 'https://unsplash.com/@isaacmsmith' },
-    { url: 'https://images.unsplash.com/photo-1590650153855-d9e808231d41?w=800&h=450&fit=crop', alt: 'Financial data visualization', credit: 'Maxim Hopman', creditUrl: 'https://unsplash.com/@nampoh' },
-    { url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&h=450&fit=crop', alt: 'Data dashboard', credit: 'Nicholas Cappello', creditUrl: 'https://unsplash.com/@nickcapp' },
-  ],
-  ai: [
-    { url: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=450&fit=crop', alt: 'Artificial intelligence', credit: 'Steve Johnson', creditUrl: 'https://unsplash.com/@steve_j' },
-    { url: 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?w=800&h=450&fit=crop', alt: 'AI concept', credit: 'Possessed Photography', creditUrl: 'https://unsplash.com/@possessedphotography' },
-    { url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&h=450&fit=crop', alt: 'Neural network', credit: 'DeepMind', creditUrl: 'https://unsplash.com/@deepmind' },
-    { url: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=450&fit=crop', alt: 'Robot technology', credit: 'Alex Knight', creditUrl: 'https://unsplash.com/@agk42' },
-  ],
-  marketing: [
-    { url: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=800&h=450&fit=crop', alt: 'Marketing strategy', credit: 'Campaign Creators', creditUrl: 'https://unsplash.com/@campaign_creators' },
-    { url: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=800&h=450&fit=crop', alt: 'Content planning', credit: 'Firmbee.com', creditUrl: 'https://unsplash.com/@firmbee' },
-    { url: 'https://images.unsplash.com/photo-1557838923-2985c318be48?w=800&h=450&fit=crop', alt: 'Digital marketing', credit: 'Diggity Marketing', creditUrl: 'https://unsplash.com/@diggitymarketing' },
-  ],
-  workspace: [
-    { url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&h=450&fit=crop', alt: 'Modern office', credit: 'Adolfo Félix', creditUrl: 'https://unsplash.com/@adolfofelix' },
-    { url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=450&fit=crop', alt: 'Developer workspace', credit: 'Christopher Gower', creditUrl: 'https://unsplash.com/@cgower' },
-    { url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=450&fit=crop', alt: 'Team working', credit: 'Marvin Meyer', creditUrl: 'https://unsplash.com/@marvelous' },
-  ],
-  general: [
-    { url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=450&fit=crop', alt: 'Abstract gradient', credit: 'Lucas Benjamin', creditUrl: 'https://unsplash.com/@acharaphotography' },
-    { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&h=450&fit=crop', alt: 'Gradient mesh', credit: 'Lucas Benjamin', creditUrl: 'https://unsplash.com/@acharaphotography' },
-    { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=450&fit=crop', alt: 'Abstract geometric art', credit: 'Milad Fakurian', creditUrl: 'https://unsplash.com/@fakurian' },
-    { url: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&h=450&fit=crop', alt: 'Abstract 3D shapes', credit: 'Milad Fakurian', creditUrl: 'https://unsplash.com/@fakurian' },
-  ],
-}
-
-// Keyword to category mapping
-const KEYWORD_CATEGORIES: Record<string, string[]> = {
-  technology: ['software', 'platform', 'tool', 'app', 'system', 'digital', 'cloud', 'saas', 'api', 'integration', 'automation', 'tech'],
-  business: ['business', 'enterprise', 'company', 'organization', 'corporate', 'strategy', 'management', 'operations', 'roi'],
-  analytics: ['analytics', 'data', 'metrics', 'tracking', 'dashboard', 'reporting', 'insights', 'performance', 'measure', 'kpi', 'visibility'],
-  ai: ['ai', 'artificial intelligence', 'machine learning', 'chatgpt', 'llm', 'generative', 'neural', 'model', 'chatbot', 'perplexity', 'gemini', 'claude'],
-  marketing: ['marketing', 'seo', 'content', 'brand', 'campaign', 'audience', 'engagement', 'search', 'visibility', 'geo'],
-  workspace: ['team', 'collaboration', 'workspace', 'remote', 'productivity', 'workflow'],
-}
+// Large curated pool of business-appropriate images.
+// No space imagery, no overly abstract tech. Focus on:
+// professional settings, data/dashboards, teams, clean abstracts.
+const FALLBACK_IMAGES: UnsplashImage[] = [
+  // Data & dashboards
+  { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=450&fit=crop', alt: 'Business analytics dashboard', credit: 'Luke Chesser', creditUrl: 'https://unsplash.com/@lukechesser' },
+  { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop', alt: 'Business data analysis', credit: 'Carlos Muza', creditUrl: 'https://unsplash.com/@kmuza' },
+  { url: 'https://images.unsplash.com/photo-1543286386-713bdd548da4?w=800&h=450&fit=crop', alt: 'Charts and graphs on paper', credit: 'Isaac Smith', creditUrl: 'https://unsplash.com/@isaacmsmith' },
+  { url: 'https://images.unsplash.com/photo-1590650153855-d9e808231d41?w=800&h=450&fit=crop', alt: 'Financial data visualization', credit: 'Maxim Hopman', creditUrl: 'https://unsplash.com/@nampoh' },
+  { url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&h=450&fit=crop', alt: 'Data dashboard on screen', credit: 'Nicholas Cappello', creditUrl: 'https://unsplash.com/@nickcapp' },
+  // Professional workspace & teams
+  { url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=450&fit=crop', alt: 'Team meeting at whiteboard', credit: 'Austin Distel', creditUrl: 'https://unsplash.com/@austindistel' },
+  { url: 'https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?w=800&h=450&fit=crop', alt: 'Business strategy planning', credit: 'Helloquence', creditUrl: 'https://unsplash.com/@helloquence' },
+  { url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&h=450&fit=crop', alt: 'Modern office space', credit: 'Adolfo Félix', creditUrl: 'https://unsplash.com/@adolfofelix' },
+  { url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=450&fit=crop', alt: 'Team working on laptops', credit: 'Marvin Meyer', creditUrl: 'https://unsplash.com/@marvelous' },
+  { url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=450&fit=crop', alt: 'Team collaboration at table', credit: 'Jason Goodman', creditUrl: 'https://unsplash.com/@jasongoodman_youxventures' },
+  // Marketing & content
+  { url: 'https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=800&h=450&fit=crop', alt: 'Marketing strategy session', credit: 'Campaign Creators', creditUrl: 'https://unsplash.com/@campaign_creators' },
+  { url: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=800&h=450&fit=crop', alt: 'Content planning workspace', credit: 'Firmbee.com', creditUrl: 'https://unsplash.com/@firmbee' },
+  { url: 'https://images.unsplash.com/photo-1557838923-2985c318be48?w=800&h=450&fit=crop', alt: 'Digital marketing on screen', credit: 'Diggity Marketing', creditUrl: 'https://unsplash.com/@diggitymarketing' },
+  // Developer & tech (no space)
+  { url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=450&fit=crop', alt: 'Developer writing code', credit: 'Christopher Gower', creditUrl: 'https://unsplash.com/@cgower' },
+  { url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=450&fit=crop', alt: 'Digital security concept', credit: 'Adi Goldstein', creditUrl: 'https://unsplash.com/@adigold1' },
+  { url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=450&fit=crop', alt: 'Circuit board closeup', credit: 'Alexandre Debiève', creditUrl: 'https://unsplash.com/@alexkixa' },
+  // AI & tech (grounded, not sci-fi)
+  { url: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=450&fit=crop', alt: 'AI interface on screen', credit: 'Steve Johnson', creditUrl: 'https://unsplash.com/@steve_j' },
+  { url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&h=450&fit=crop', alt: 'Neural network visualization', credit: 'DeepMind', creditUrl: 'https://unsplash.com/@deepmind' },
+  // Clean abstract gradients & shapes
+  { url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=450&fit=crop', alt: 'Abstract gradient', credit: 'Lucas Benjamin', creditUrl: 'https://unsplash.com/@acharaphotography' },
+  { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&h=450&fit=crop', alt: 'Colorful gradient mesh', credit: 'Lucas Benjamin', creditUrl: 'https://unsplash.com/@acharaphotography' },
+  { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=450&fit=crop', alt: 'Abstract geometric art', credit: 'Milad Fakurian', creditUrl: 'https://unsplash.com/@fakurian' },
+  { url: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=800&h=450&fit=crop', alt: 'Abstract 3D shapes', credit: 'Milad Fakurian', creditUrl: 'https://unsplash.com/@fakurian' },
+  // Additional business / presentations
+  { url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&h=450&fit=crop', alt: 'Business presentation', credit: 'Headway', creditUrl: 'https://unsplash.com/@headwayio' },
+  { url: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&h=450&fit=crop', alt: 'Modern office meeting', credit: 'Benjamin Child', creditUrl: 'https://unsplash.com/@bchild311' },
+  { url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=450&fit=crop', alt: 'Team brainstorming session', credit: 'Annie Spratt', creditUrl: 'https://unsplash.com/@anniespratt' },
+  { url: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&h=450&fit=crop', alt: 'Woman analyzing data on screen', credit: 'ThisisEngineering', creditUrl: 'https://unsplash.com/@thisisengineering' },
+  { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=450&fit=crop', alt: 'Collaborative planning session', credit: 'Mapbox', creditUrl: 'https://unsplash.com/@mapbox' },
+  { url: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=450&fit=crop', alt: 'Professionals in discussion', credit: 'LinkedIn Sales Solutions', creditUrl: 'https://unsplash.com/@linkedinsalesnavigator' },
+  { url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&h=450&fit=crop', alt: 'Conference room presentation', credit: 'Product School', creditUrl: 'https://unsplash.com/@productschool' },
+  { url: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=450&fit=crop', alt: 'Clean minimal workspace', credit: 'Edgar Chaparro', creditUrl: 'https://unsplash.com/@echaparro' },
+]
 
 /**
- * Detect the best category for a topic string
+ * Generate a deterministic hash from a string.
+ * Uses FNV-1a inspired algorithm for better distribution than char code sum.
  */
-function detectCategory(topic: string): string {
-  const lower = topic.toLowerCase()
-  let bestCategory = 'general'
-  let bestScore = 0
-
-  for (const [category, keywords] of Object.entries(KEYWORD_CATEGORIES)) {
-    const score = keywords.filter(kw => lower.includes(kw)).length
-    if (score > bestScore) {
-      bestScore = score
-      bestCategory = category
-    }
+function hashString(str: string): number {
+  let hash = 2166136261 // FNV offset basis
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i)
+    hash = (hash * 16777619) >>> 0 // FNV prime, keep as unsigned 32-bit
   }
-
-  return bestCategory
+  return hash
 }
 
 /**
- * Get fallback images from the curated pool based on topic
+ * Get fallback images from the curated pool.
+ * Uses source URL + topic hash for per-article uniqueness.
  */
-function getFallbackImages(topic: string, count: number = 4): UnsplashImage[] {
-  const category = detectCategory(topic)
-  const pool = FALLBACK_IMAGES[category] || FALLBACK_IMAGES.general
-  // Shuffle deterministically based on topic, take count
-  const hash = topic.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  const shuffled = [...pool].sort((a, b) => {
-    const ha = (hash + a.url.length) % 100
-    const hb = (hash + b.url.length) % 100
-    return ha - hb
-  })
-  return shuffled.slice(0, count)
+function getFallbackImages(topic: string, sourceUrl: string, count: number = 4): UnsplashImage[] {
+  // Combine topic + source URL so different articles get different images
+  const seed = hashString(`${sourceUrl}::${topic}`)
+  
+  // Fisher-Yates shuffle with deterministic seed
+  const pool = [...FALLBACK_IMAGES]
+  let rng = seed
+  for (let i = pool.length - 1; i > 0; i--) {
+    rng = ((rng * 1103515245) + 12345) >>> 0 // LCG PRNG
+    const j = rng % (i + 1)
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  
+  return pool.slice(0, count)
 }
 
 /**
@@ -181,12 +172,13 @@ export function extractImageConcepts(markdown: string): string[] {
  * Source images for a memo topic.
  * 
  * Tries Unsplash API first (if key available), falls back to curated pool.
- * Returns images formatted for inclusion in prompts.
+ * Uses sourceUrl to ensure per-article uniqueness in fallback mode.
  */
 export async function sourceImagesForTopic(
   topic: string,
   imageConceptsFromSource: string[] = [],
-  count: number = 4
+  count: number = 4,
+  sourceUrl: string = ''
 ): Promise<UnsplashImage[]> {
   // Try Unsplash API first
   if (UNSPLASH_ACCESS_KEY) {
@@ -208,8 +200,8 @@ export async function sourceImagesForTopic(
     }
   }
 
-  // Fallback to curated pool
-  return getFallbackImages(topic, count)
+  // Fallback to curated pool (per-article unique selection)
+  return getFallbackImages(topic, sourceUrl, count)
 }
 
 /**

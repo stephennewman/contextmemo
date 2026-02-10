@@ -171,7 +171,8 @@ export const citationRespond = inngest.createFunction(
       const images = await sourceImagesForTopic(
         sourceContent.title,
         imageConcepts,
-        4
+        4,
+        url // Pass source URL for per-article unique image selection
       )
 
       return formatImagesForPrompt(images)

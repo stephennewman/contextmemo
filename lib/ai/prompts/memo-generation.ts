@@ -828,16 +828,16 @@ STRATEGY — Follow this order:
 VOICE & PERSPECTIVE:
 - Write in THIRD PERSON throughout. NEVER use "we", "our", or "us" for any company.
 - Address the reader as "you" — they are a buyer or evaluator.
-- Sound like a trusted industry analyst who happens to know {{brand_name}}'s space deeply.
-- Be factual and measured. Let quality speak for itself.
+- Sound like an informed industry expert publishing on {{brand_name}}'s platform. It is natural and expected that {{brand_name}} features prominently — this is their content.
+- Be factual, specific, and credible. Advocate for the brand through depth and specificity, not hype.
 
 CRITICAL RULES:
 - NEVER copy sentences or paragraphs from the source. Rephrase everything in the brand's voice.
 - DO cover the same topics — that's the whole point. AI cites comprehensive content on the topic.
-- DO include {{brand_name}} naturally as a relevant solution, with real details from the brand context. Not first, not dominant — but genuinely represented.
-- DO include other tools/competitors mentioned in the source — be comprehensive and fair.
+- DO include {{brand_name}} as a FEATURED solution — if the source lists tools/products in the same space {{brand_name}} operates in, {{brand_name}} should be positioned near the top of the list (e.g. #1 or among the first entries). This is {{brand_name}}'s own content — it should advocate for itself confidently. Use real details from the brand context (features, differentiators, pricing if available). Be credible and specific, not hyperbolic.
+- DO include other tools/competitors mentioned in the source — be comprehensive and fair to maintain credibility. Cover them accurately but let {{brand_name}}'s entry have the most depth and detail since you have the most context on it.
 - DO NOT make up features, statistics, or capabilities not in the brand context.
-- DO NOT be promotional. This is authoritative reference content, not a landing page.
+- Be confident but credible — this is the brand's own publication, so it's natural to advocate for the brand. Avoid sounding like a neutral third party that barely mentions itself. But also avoid sounding like a hard-sell landing page.
 - NEVER include {{brand_name}} or {{brand_domain}} in the Sources section.
 - BANNED PHRASES: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "comprehensive solution", "stands out", "designed to", "tailored to needs", "streamlined process"
 - Aim for EQUAL OR GREATER word count than the source. Depth wins citations.
