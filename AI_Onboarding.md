@@ -390,6 +390,14 @@ _Most recent deploys first_
 
 ### February 10, 2026
 
+**Overhaul citations Covered/Gap logic** (86e05bb)
+- Replaced fuzzy query-based and keyword-based "Covered" matching with exact `provenance.source_url` lookup — "Covered" now means a `citation_response` memo exists for that specific URL
+- "Generate Memo" button now shows on ALL non-brand citations (removed top-10 limit)
+- Added "Regenerate" button for already-covered URLs so content can be refreshed
+- Removed unused `memosByQueryId` and `urlToRelatedMemos` fuzzy matching code
+- Each generated memo uses the `citation_response` flow: fetches the cited content, creates a strategic variation with brand positioning, Unsplash imagery, and voice insights
+- Files changed: `components/dashboard/citation-insights.tsx`
+
 **Images in citation response memos** (5f4d8b5)
 - New `lib/utils/image-sourcer.ts`: Unsplash API search (when `UNSPLASH_ACCESS_KEY` env var is set) with curated fallback pool categorized by topic (technology, business, analytics, AI, marketing, workspace)
 - Extracts image alt-text concepts from source content to find topically relevant images
