@@ -308,16 +308,16 @@ Common buyer objections and how to address them:
 ---
 
 EXTRACTION RULES:
-1. Only include information explicitly stated or clearly implied in the content
-2. Leave fields empty or as empty arrays if information is not available
-3. Use the exact language from the website when possible
-4. Do not embellish or add marketing language
+1. For FACTUAL fields (company_name, products, customers, certifications, offers): only include information explicitly stated or clearly implied in the content. Leave empty if not available.
+2. For STRATEGIC fields (corporate_positioning, brand_personality): ALWAYS synthesize from the available evidence. These fields are never stated literally on websites — they must be inferred from messaging, products, and market position. NEVER leave strategic fields empty if you have any company context to work with.
+3. Use the exact language from the website when possible for factual fields.
+4. Do not embellish factual fields, but strategic fields should be substantive and specific.
 5. For brand_voice, analyze the tone: "professional" (formal business), "casual" (friendly/conversational), "technical" (industry jargon, detailed specs)
 6. For target_personas, only include personas with CLEAR evidence from the website content
 7. For offers, extract the EXACT CTA text as the label (e.g., "Start Your Free Trial" not just "trial")
 8. For prompt_themes, extract the most specific keyword clusters - prefer "temperature monitoring" over generic "monitoring"
-9. For corporate_positioning, be THOROUGH - this data powers content generation. Extract even if you need to synthesize from multiple pages.
-10. If certain positioning fields aren't clear, make intelligent inferences based on the overall website messaging - but mark them as inferred.
+9. For corporate_positioning, be THOROUGH - this data powers content generation. Fill ALL 8 sections. Synthesize messaging_pillars from repeated themes, elevator_pitches from the value proposition, objection_responses from likely buyer concerns, and competitive_stance from differentiators.
+10. The goal is to produce a profile that is at least 70% complete from a single extraction pass. Do not leave positioning fields empty.
 
 Respond ONLY with valid JSON, no explanations.`
 

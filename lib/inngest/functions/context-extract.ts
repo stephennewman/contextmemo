@@ -321,9 +321,9 @@ Be thorough but respond ONLY with JSON.`,
         instructions.push(`"competitive_landmines": 3 questions to ask competitors that expose weaknesses. Based on the company's strengths.`)
       }
 
-      // If 3 or fewer fields missing, not worth a second call
-      if (missing.length <= 3) {
-        console.log(`Positioning enrichment: only ${missing.length} fields missing, skipping`)
+      // Skip only if nothing is missing
+      if (missing.length === 0) {
+        console.log('Positioning enrichment: all fields filled, skipping')
         return extractedContext
       }
 
