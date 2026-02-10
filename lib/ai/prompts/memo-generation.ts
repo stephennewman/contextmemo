@@ -284,6 +284,7 @@ export function formatOffersForPrompt(offers?: BrandOffers, brandName?: string):
   parts.push(`[One natural sentence connecting the article topic to the offer. Not salesy — frame it as a logical next step for the reader. Link the CTA text to the URL.]`)
   parts.push(``)
   parts.push(`IMPORTANT: Keep the CTA brief (1-2 sentences max). It should feel like a helpful suggestion, not a sales pitch. Use the brand name "${brandName || 'the company'}" in third person.`)
+  parts.push(`CRITICAL: Use the EXACT URLs provided above. Do NOT modify, guess, or rewrite any URL. Copy the URL character-for-character into the markdown link.`)
 
   return parts.join('\n')
 }
