@@ -25,6 +25,11 @@ type MockSupabaseBuilder = {
 
 type MockSupabase = {
   from: (table: string) => MockSupabaseBuilder
+  auth: {
+    admin: {
+      deleteUser: (userId: string) => Promise<{ error: null }>
+    }
+  }
   getDeletes: () => Array<{ table: string; eqFilters: Record<string, unknown>; inFilters: Record<string, unknown[]> }>
 }
 
@@ -32,6 +37,11 @@ const buildSupabaseMock = (tableData: Record<string, SupabaseRow[]>): MockSupaba
   const deletes: Array<{ table: string; eqFilters: Record<string, unknown>; inFilters: Record<string, unknown[]> }> = []
 
   return {
+    auth: {
+      admin: {
+        deleteUser: vi.fn().mockResolvedValue({ error: null }),
+      },
+    },
     from: (table: string) => {
       let eqFilters: Record<string, unknown> = {}
       let inFilters: Record<string, unknown[]> = {}
@@ -174,5 +184,7 @@ describe('privacy delete API', () => {
       Array.isArray(d.inFilters.id) && 
       d.inFilters.id.includes('brand-1')
     )).toBe(true)
+
+    expect(supabaseMock.auth.admin.deleteUser).toHaveBeenCalledWith('user-1')
   })
 })
