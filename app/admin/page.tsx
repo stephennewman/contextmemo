@@ -78,8 +78,8 @@ export default async function AdminDashboardPage() {
     openRouterBalance,
     allBrandsResult,
     usageEventsResult,
+    perfResult,
     recentScansResult,
-    memoCountResult,
   ] = await Promise.all([
     getCount(serviceClient, 'tenants'),
     getCount(serviceClient, 'brands'),
@@ -89,33 +89,39 @@ export default async function AdminDashboardPage() {
     getOpenRouterBalance(),
     serviceClient.from('brands').select('id, name, domain, subdomain, tenant_id, created_at').order('created_at', { ascending: false }),
     serviceClient.rpc('get_admin_brand_spend'),
+    serviceClient.rpc('get_admin_brand_performance'),
     serviceClient.from('scan_results').select('brand_id, scanned_at').gte('scanned_at', last24h),
-    serviceClient.from('memos').select('brand_id, status', { count: 'exact' }),
   ])
 
   const allBrands = allBrandsResult.data || []
   const spendData = (usageEventsResult.data || []) as Array<{ brand_id: string; all_time_spend: number; spend_7d: number; last_active: string | null }>
+  const perfData = (perfResult.data || []) as Array<{ brand_id: string; prompts: number; cited_prompts: number; total_scans: number; mention_rate: number; citation_rate: number; competitors: number; published_memos: number; total_memos: number; last_scanned: string | null }>
   const recentScans = recentScansResult.data || []
-  const allMemos = memoCountResult.data || []
 
-  // Build a spend lookup from the RPC results
+  // Build lookups from RPC results
   const spendMap = new Map(spendData.map(s => [s.brand_id, s]))
+  const perfMap = new Map(perfData.map(p => [p.brand_id, p]))
 
   // Aggregate per-brand stats
   const brandStats = allBrands.map(brand => {
     const spend = spendMap.get(brand.id)
+    const perf = perfMap.get(brand.id)
     const scans24h = recentScans.filter(s => s.brand_id === brand.id).length
-    const memos = allMemos.filter((m: { brand_id: string; status: string }) => m.brand_id === brand.id)
-    const publishedMemos = memos.filter((m: { status: string }) => m.status === 'published').length
-    const totalMemos = memos.length
 
     return {
       ...brand,
       spendAllTime: Number(spend?.all_time_spend) || 0,
       spend7d: Number(spend?.spend_7d) || 0,
       scans24h,
-      totalMemos,
-      publishedMemos,
+      prompts: Number(perf?.prompts) || 0,
+      citedPrompts: Number(perf?.cited_prompts) || 0,
+      totalScans: Number(perf?.total_scans) || 0,
+      mentionRate: Number(perf?.mention_rate) || 0,
+      citationRate: Number(perf?.citation_rate) || 0,
+      competitors: Number(perf?.competitors) || 0,
+      publishedMemos: Number(perf?.published_memos) || 0,
+      totalMemos: Number(perf?.total_memos) || 0,
+      lastScanned: perf?.last_scanned || null,
       lastActivity: spend?.last_active || null,
     }
   }).sort((a, b) => b.spendAllTime - a.spendAllTime)
@@ -245,11 +251,14 @@ export default async function AdminDashboardPage() {
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
                 <th className="pb-3 pr-4 font-medium">Brand</th>
                 <th className="pb-3 pr-4 font-medium">Owner</th>
-                <th className="pb-3 pr-4 text-right font-medium">All-Time</th>
-                <th className="pb-3 pr-4 text-right font-medium">7d Spend</th>
-                <th className="pb-3 pr-4 text-right font-medium">Scans (24h)</th>
+                <th className="pb-3 pr-4 text-right font-medium">All-Time $</th>
+                <th className="pb-3 pr-4 text-right font-medium">7d $</th>
+                <th className="pb-3 pr-4 text-right font-medium">Prompts</th>
+                <th className="pb-3 pr-4 text-right font-medium">Scans</th>
+                <th className="pb-3 pr-4 text-right font-medium">Mention %</th>
+                <th className="pb-3 pr-4 text-right font-medium">Citation %</th>
                 <th className="pb-3 pr-4 text-right font-medium">Memos</th>
-                <th className="pb-3 text-right font-medium">Last Active</th>
+                <th className="pb-3 text-right font-medium">Last Scan</th>
               </tr>
             </thead>
             <tbody>
@@ -259,7 +268,9 @@ export default async function AdminDashboardPage() {
                     <div className="font-medium text-[#0F172A]">{brand.name}</div>
                     <div className="text-[10px] text-slate-400">{brand.domain || '—'}</div>
                   </td>
-                  <td className="py-3 pr-4 text-xs text-slate-500">{tenantMap.get(brand.tenant_id) || '—'}</td>
+                  <td className="py-3 pr-4 text-xs text-slate-500">
+                    {(tenantMap.get(brand.tenant_id) || '—').split('@')[0]}
+                  </td>
                   <td className="py-3 pr-4 text-right font-mono text-xs">
                     {brand.spendAllTime > 0 ? (
                       <span className={brand.spendAllTime > 5 ? 'font-semibold text-red-600' : brand.spendAllTime > 2 ? 'text-amber-600' : 'text-slate-600'}>
@@ -275,19 +286,48 @@ export default async function AdminDashboardPage() {
                         ${brand.spend7d.toFixed(2)}
                       </span>
                     ) : (
-                      <span className="text-slate-300">$0.00</span>
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-right text-xs text-slate-600">
+                    {brand.prompts > 0 ? (
+                      <span>
+                        {brand.prompts}
+                        {brand.citedPrompts > 0 && (
+                          <span className="ml-1 text-emerald-600">({brand.citedPrompts} cited)</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">0</span>
                     )}
                   </td>
                   <td className="py-3 pr-4 text-right font-mono text-xs text-slate-600">
-                    {brand.scans24h || <span className="text-slate-300">0</span>}
+                    {brand.totalScans > 0 ? brand.totalScans.toLocaleString() : <span className="text-slate-300">0</span>}
                   </td>
-                  <td className="py-3 pr-4 text-right text-xs">
-                    <span className="text-slate-600">{brand.publishedMemos}</span>
-                    <span className="text-slate-300">/{brand.totalMemos}</span>
+                  <td className="py-3 pr-4 text-right font-mono text-xs">
+                    {brand.totalScans > 0 ? (
+                      <span className={brand.mentionRate >= 5 ? 'text-emerald-600 font-medium' : brand.mentionRate > 0 ? 'text-slate-600' : 'text-slate-300'}>
+                        {brand.mentionRate}%
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-right font-mono text-xs">
+                    {brand.totalScans > 0 ? (
+                      <span className={brand.citationRate >= 5 ? 'text-emerald-600 font-medium' : brand.citationRate > 0 ? 'text-slate-600' : 'text-slate-300'}>
+                        {brand.citationRate}%
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-right text-xs text-slate-600">
+                    {brand.publishedMemos || <span className="text-slate-300">0</span>}
                   </td>
                   <td className="py-3 text-right text-xs text-slate-400">
-                    {brand.lastActivity
-                      ? new Date(brand.lastActivity).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    {brand.lastScanned
+                      ? new Date(brand.lastScanned).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                       : <span className="text-slate-300">never</span>
                     }
                   </td>
@@ -295,7 +335,7 @@ export default async function AdminDashboardPage() {
               ))}
               {brandStats.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
+                  <td colSpan={10} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
                 </tr>
               )}
             </tbody>
