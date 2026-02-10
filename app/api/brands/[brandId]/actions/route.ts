@@ -54,6 +54,93 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Context extraction started' 
         })
 
+      case 'enrich_positioning': {
+        // Run positioning enrichment on existing brand context (no re-crawl)
+        const ctx = brand.context as Record<string, unknown> | null
+        if (!ctx?.company_name) {
+          return NextResponse.json({ error: 'Brand has no extracted context. Run extract_context first.' }, { status: 400 })
+        }
+        
+        // Import and run enrichment inline
+        const { generateText } = await import('ai')
+        const { openai } = await import('@ai-sdk/openai')
+        const { POSITIONING_ENRICHMENT_PROMPT } = await import('@/lib/ai/prompts/context-extraction')
+        
+        const cp = (ctx.corporate_positioning || {}) as Record<string, unknown>
+        
+        // Build missing fields list
+        const missingInstructions: string[] = []
+        const missingFields: string[] = []
+        
+        if (!cp.vision_statement) { missingFields.push('vision_statement'); missingInstructions.push(`"vision_statement": Generate a 1-2 sentence vision statement — the future state the company is creating.`) }
+        if (!(cp.primary_verticals as string[])?.length) { missingFields.push('primary_verticals'); missingInstructions.push(`"primary_verticals": List 2-4 industries/verticals with sub-segments. Format: "• Industry - sub-segments".`) }
+        if (!(cp.buyer_personas as string[])?.length) { missingFields.push('buyer_personas'); missingInstructions.push(`"buyer_personas": List 2-3 decision-maker personas. Format: "• Title - responsibilities, pain points".`) }
+        if (!(cp.user_personas as string[])?.length) { missingFields.push('user_personas'); missingInstructions.push(`"user_personas": List 2-3 end-user personas. Format: "• User type - daily interactions".`) }
+        if (!cp.core_value_promise) { missingFields.push('core_value_promise'); missingInstructions.push(`"core_value_promise": One sentence: what we do and why it matters.`) }
+        if (!(cp.key_benefits as string[])?.length) { missingFields.push('key_benefits'); missingInstructions.push(`"key_benefits": 4-6 specific, outcome-oriented benefit statements.`) }
+        if (!(cp.proof_points as string[])?.length) { missingFields.push('proof_points'); missingInstructions.push(`"proof_points": 3-5 trust signals — customer logos, stats, awards.`) }
+        if (!(cp.differentiators as unknown[])?.length || ((cp.differentiators as unknown[])?.length || 0) < 3) { missingFields.push('differentiators'); missingInstructions.push(`"differentiators": Array of differentiator objects with "name" and "detail". Be specific.`) }
+        if (!(cp.messaging_pillars as unknown[])?.length) { missingFields.push('messaging_pillars'); missingInstructions.push(`"messaging_pillars": Array of 3 objects with "name" (one word) and "supporting_points" (array of 3-4 capabilities).`) }
+        if (!cp.pitch_10_second) { missingFields.push('pitch_10_second'); missingInstructions.push(`"pitch_10_second": One sentence — who, what, for whom.`) }
+        if (!cp.pitch_30_second) { missingFields.push('pitch_30_second'); missingInstructions.push(`"pitch_30_second": 3-4 sentences: problem → solution → differentiator.`) }
+        if (!cp.pitch_2_minute) { missingFields.push('pitch_2_minute'); missingInstructions.push(`"pitch_2_minute": 5-8 sentences: problem, solution, how it works, benefits, proof, CTA.`) }
+        if (!(cp.objection_responses as unknown[])?.length) { missingFields.push('objection_responses'); missingInstructions.push(`"objection_responses": Array of 3 objects with "objection" and "response".`) }
+        if (!cp.competitive_positioning) { missingFields.push('competitive_positioning'); missingInstructions.push(`"competitive_positioning": One paragraph on positioning vs competitors.`) }
+        if (!(cp.win_themes as string[])?.length) { missingFields.push('win_themes'); missingInstructions.push(`"win_themes": 3-5 themes that win deals.`) }
+        if (!(cp.competitive_landmines as string[])?.length) { missingFields.push('competitive_landmines'); missingInstructions.push(`"competitive_landmines": 3 questions to ask competitors that expose weaknesses.`) }
+        
+        if (missingFields.length === 0) {
+          return NextResponse.json({ success: true, message: 'All positioning fields already filled', filled: 0 })
+        }
+        
+        const diffs = (cp.differentiators as Array<{name: string; detail: string}>) || []
+        const prompt = POSITIONING_ENRICHMENT_PROMPT
+          .replace('{{company_name}}', String(ctx.company_name || ''))
+          .replace('{{description}}', String(ctx.description || ''))
+          .replace('{{products}}', (ctx.products as string[] || []).join(', '))
+          .replace('{{markets}}', (ctx.markets as string[] || []).join(', '))
+          .replace('{{features}}', (ctx.features as string[] || []).join(', '))
+          .replace('{{customers}}', (ctx.customers as string[] || []).join(', '))
+          .replace('{{mission_statement}}', String(cp.mission_statement || 'Not available'))
+          .replace('{{core_value_promise}}', String(cp.core_value_promise || 'Not available'))
+          .replace('{{differentiators}}', diffs.map(d => `${d.name}: ${d.detail}`).join('; ') || 'None')
+          .replace('{{missing_fields_instructions}}', `Generate these missing fields:\n\n${missingInstructions.join('\n\n')}`)
+        
+        const { text: enrichText } = await generateText({
+          model: openai('gpt-4o'),
+          prompt,
+          temperature: 0.3,
+        })
+        
+        const jsonMatch = enrichText.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          return NextResponse.json({ error: 'Enrichment failed — no valid JSON response' }, { status: 500 })
+        }
+        
+        const enriched = JSON.parse(jsonMatch[0])
+        const mergedPositioning = { ...cp, ...enriched }
+        
+        // For differentiators, append rather than replace
+        if (enriched.differentiators && diffs.length > 0) {
+          mergedPositioning.differentiators = [...diffs, ...enriched.differentiators].slice(0, 3)
+        }
+        
+        // Save back to brand context
+        const { createServiceRoleClient } = await import('@/lib/supabase/service')
+        const adminDb = createServiceRoleClient()
+        await adminDb.from('brands').update({
+          context: { ...ctx, corporate_positioning: mergedPositioning },
+          updated_at: new Date().toISOString(),
+        }).eq('id', brandId)
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: `Enriched ${Object.keys(enriched).length} positioning fields`,
+          filled: Object.keys(enriched).length,
+          fields: Object.keys(enriched)
+        })
+      }
+
       case 'discover_competitors':
         await inngest.send({
           name: 'competitor/discover',

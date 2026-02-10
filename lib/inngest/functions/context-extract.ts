@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { fetchUrlAsMarkdown, crawlWebsite, searchWebsite, JinaReaderResponse } from '@/lib/utils/jina-reader'
-import { CONTEXT_EXTRACTION_PROMPT } from '@/lib/ai/prompts/context-extraction'
+import { CONTEXT_EXTRACTION_PROMPT, POSITIONING_ENRICHMENT_PROMPT } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext, ExistingPage } from '@/lib/supabase/types'
 import { logSingleUsage, logUsageEvents } from '@/lib/utils/usage-logger'
 
@@ -238,6 +238,152 @@ Be thorough but respond ONLY with JSON.`,
       return result
     })
 
+    // Step 2b: Enrich corporate positioning gaps with a focused second-pass
+    const enrichedContext = await step.run('enrich-positioning', async () => {
+      // Cast to BrandContext for property access (minimal fallback won't have these fields)
+      const ctx = extractedContext as BrandContext
+      const cp = ctx.corporate_positioning
+      if (!cp) {
+        // No corporate_positioning at all — build from scratch
+        // But only if we have basic context to work with
+        if (!ctx.company_name || ctx.company_name === domain) {
+          return extractedContext
+        }
+      }
+
+      // Calculate which fields are missing
+      const missing: string[] = []
+      const instructions: string[] = []
+
+      if (!cp?.vision_statement) {
+        missing.push('vision_statement')
+        instructions.push(`"vision_statement": Generate a 1-2 sentence vision statement — the future state the company is creating. Infer from their mission, products, and market positioning.`)
+      }
+      if (!cp?.primary_verticals?.length) {
+        missing.push('primary_verticals')
+        instructions.push(`"primary_verticals": List 2-4 industries/verticals with specific sub-segments. Format: "• Industry - sub-segments". Use the company's markets data.`)
+      }
+      if (!cp?.buyer_personas?.length) {
+        missing.push('buyer_personas')
+        instructions.push(`"buyer_personas": List 2-3 decision-maker personas as prose descriptions. Format: "• Title - responsibilities, pain points, what they look for". Infer from markets + products.`)
+      }
+      if (!cp?.user_personas?.length) {
+        missing.push('user_personas')
+        instructions.push(`"user_personas": List 2-3 end-user personas. Format: "• User type - how they interact with the product daily". Infer from features + products.`)
+      }
+      if (!cp?.core_value_promise) {
+        missing.push('core_value_promise')
+        instructions.push(`"core_value_promise": One sentence answering "What do we do and why does it matter?" Ground in the company's actual products.`)
+      }
+      if (!cp?.key_benefits?.length) {
+        missing.push('key_benefits')
+        instructions.push(`"key_benefits": 4-6 specific, outcome-oriented benefit statements. Use action verbs. Derive from features + products.`)
+      }
+      if (!cp?.proof_points?.length) {
+        missing.push('proof_points')
+        instructions.push(`"proof_points": 3-5 trust signals — customer logos, statistics, awards, compliance certs. Use the customers + certifications data.`)
+      }
+      if (!cp?.differentiators?.length || cp.differentiators.length < 3) {
+        missing.push('differentiators')
+        const existing = cp?.differentiators?.length || 0
+        instructions.push(`"differentiators": Array of ${3 - existing} differentiator objects with "name" (3-5 words) and "detail" (2-3 sentences). What makes this company unique? Be specific, not generic.`)
+      }
+      if (!cp?.messaging_pillars?.length) {
+        missing.push('messaging_pillars')
+        instructions.push(`"messaging_pillars": Array of 3 objects with "name" (one word like "Speed" or "Intelligence") and "supporting_points" (array of 3-4 specific capabilities). Identify the 3 most repeated themes across the company's messaging.`)
+      }
+      if (!cp?.pitch_10_second) {
+        missing.push('pitch_10_second')
+        instructions.push(`"pitch_10_second": One sentence — who the company is, what they do, for whom.`)
+      }
+      if (!cp?.pitch_30_second) {
+        missing.push('pitch_30_second')
+        instructions.push(`"pitch_30_second": 3-4 sentences covering: the problem → the solution → the key differentiator.`)
+      }
+      if (!cp?.pitch_2_minute) {
+        missing.push('pitch_2_minute')
+        instructions.push(`"pitch_2_minute": A complete narrative (5-8 sentences) covering: 1) The problem, 2) The solution, 3) How it works, 4) Key benefits, 5) Proof points, 6) Call to action.`)
+      }
+      if (!cp?.objection_responses?.length) {
+        missing.push('objection_responses')
+        instructions.push(`"objection_responses": Array of 3 objects with "objection" (common buyer pushback) and "response" (how to address it). Think about what a skeptical buyer in this market would say.`)
+      }
+      if (!cp?.competitive_positioning) {
+        missing.push('competitive_positioning')
+        instructions.push(`"competitive_positioning": One paragraph on how the company positions itself vs competitors. Infer from differentiators and market position.`)
+      }
+      if (!cp?.win_themes?.length) {
+        missing.push('win_themes')
+        instructions.push(`"win_themes": 3-5 themes that win deals. E.g., "Unified platform vs. point solutions". Derive from differentiators + value prop.`)
+      }
+      if (!cp?.competitive_landmines?.length) {
+        missing.push('competitive_landmines')
+        instructions.push(`"competitive_landmines": 3 questions to ask competitors that expose weaknesses. Based on the company's strengths.`)
+      }
+
+      // If 3 or fewer fields missing, not worth a second call
+      if (missing.length <= 3) {
+        console.log(`Positioning enrichment: only ${missing.length} fields missing, skipping`)
+        return extractedContext
+      }
+
+      console.log(`Positioning enrichment: ${missing.length} fields missing for ${extractedContext.company_name}, running enrichment...`)
+
+      // Build the prompt with context
+      const prompt = POSITIONING_ENRICHMENT_PROMPT
+        .replace('{{company_name}}', ctx.company_name || '')
+        .replace('{{description}}', ctx.description || '')
+        .replace('{{products}}', (ctx.products || []).join(', '))
+        .replace('{{markets}}', (ctx.markets || []).join(', '))
+        .replace('{{features}}', (ctx.features || []).join(', '))
+        .replace('{{customers}}', (ctx.customers || []).join(', '))
+        .replace('{{mission_statement}}', cp?.mission_statement || 'Not available')
+        .replace('{{core_value_promise}}', cp?.core_value_promise || 'Not available')
+        .replace('{{differentiators}}', cp?.differentiators?.map((d: { name: string; detail: string }) => `${d.name}: ${d.detail}`).join('; ') || 'None extracted')
+        .replace('{{missing_fields_instructions}}', `Generate these missing fields:\n\n${instructions.join('\n\n')}`)
+
+      try {
+        const { text, usage: uEnrich } = await generateText({
+          model: openai('gpt-4o'),
+          prompt,
+          temperature: 0.3,
+        })
+
+        if (tenantId) {
+          await logSingleUsage(tenantId, brandId, 'context_extract', 'gpt-4o', uEnrich?.inputTokens || 0, uEnrich?.outputTokens || 0)
+        }
+
+        // Parse the enrichment response
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          console.error('Positioning enrichment: no JSON found in response')
+          return extractedContext
+        }
+
+        const enriched = JSON.parse(jsonMatch[0])
+        console.log(`Positioning enrichment: filled ${Object.keys(enriched).length} fields`)
+
+        // Merge enriched fields into existing corporate_positioning
+        const mergedPositioning = { ...(cp || {}), ...enriched }
+
+        // For differentiators, append rather than replace if we had some
+        if (enriched.differentiators && cp?.differentiators?.length) {
+          mergedPositioning.differentiators = [
+            ...cp.differentiators,
+            ...enriched.differentiators
+          ].slice(0, 3) // Cap at 3
+        }
+
+        return {
+          ...extractedContext,
+          corporate_positioning: mergedPositioning
+        }
+      } catch (e) {
+        console.error('Positioning enrichment failed:', e)
+        return extractedContext
+      }
+    })
+
     // Step 3: Extract topics from crawled pages to build site index
     const existingPages = await step.run('extract-page-topics', async () => {
       const pages = websiteContent.pages || []
@@ -336,7 +482,7 @@ Respond ONLY with valid JSON array, no explanations.`,
     await step.run('save-context', async () => {
       // Store homepage content (truncated) and existing pages for memo deduplication
       const contextWithContent = {
-        ...extractedContext,
+        ...enrichedContext,
         homepage_content: websiteContent.content.slice(0, 15000), // Keep first 15k chars for intent extraction
         existing_pages: existingPages, // Site index for preventing memo redundancy
       }
@@ -365,7 +511,7 @@ Respond ONLY with valid JSON array, no explanations.`,
 
     return { 
       success: true, 
-      context: extractedContext,
+      context: enrichedContext,
       source: websiteContent.source,
       contentLength: websiteContent.content.length,
       pagesIndexed: existingPages.length,

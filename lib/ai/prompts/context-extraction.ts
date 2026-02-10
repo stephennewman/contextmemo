@@ -321,6 +321,41 @@ EXTRACTION RULES:
 
 Respond ONLY with valid JSON, no explanations.`
 
+// Second-pass enrichment: focused on filling corporate positioning gaps
+// Only called when the initial extraction leaves strategic fields empty
+export const POSITIONING_ENRICHMENT_PROMPT = `You are a B2B positioning strategist. You've been given a company's extracted website data and need to SYNTHESIZE the missing strategic positioning fields.
+
+Unlike extraction (which only captures what's stated), your job is to INFER and GENERATE strategic positioning from the available evidence. These fields are never explicitly on a website — they must be constructed from the company's messaging, products, markets, and value proposition.
+
+## COMPANY CONTEXT
+Company: {{company_name}}
+Description: {{description}}
+Products: {{products}}
+Markets: {{markets}}
+Features: {{features}}
+Customers: {{customers}}
+Mission: {{mission_statement}}
+Value Promise: {{core_value_promise}}
+Existing Differentiators: {{differentiators}}
+
+## YOUR TASK
+Fill in ONLY the missing fields listed below. Do not modify fields that already have values.
+
+{{missing_fields_instructions}}
+
+## RULES
+1. Be SPECIFIC to this company — no generic business platitudes
+2. Ground everything in the company's actual products, markets, and capabilities
+3. For objection handling, think about what a skeptical buyer in their market would ask
+4. For competitive stance, infer from their differentiators and market position
+5. For messaging pillars, identify the 3 most repeated themes across their messaging
+6. For elevator pitches, build from their value promise and key benefits
+7. For target markets, use the company's actual markets and personas data
+8. Write in a professional, concise tone matching the brand voice
+9. Every field must have substantive content — no placeholder text
+
+Respond ONLY with valid JSON containing the missing fields. Do not include fields that were already filled.`
+
 export const COMPETITOR_DISCOVERY_PROMPT = `You are identifying ENTITIES that are relevant to a B2B software/service company - both direct competitors AND other important entities in their space (publishers, associations, analysts, etc.).
 
 ## COMPANY TO ANALYZE

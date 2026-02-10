@@ -261,6 +261,7 @@ function EditableList({
 export function CorporatePositioningSection({ positioning, brandName, brandId, onUpdate, embedded = false }: CorporatePositioningSectionProps) {
   const [editingSection, setEditingSection] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isEnriching, setIsEnriching] = useState(false)
   const [localData, setLocalData] = useState<CorporatePositioningType>(positioning || {})
   
   const { filled, total } = calculateFieldCount(positioning)
@@ -292,6 +293,31 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
       toast.error(error instanceof Error ? error.message : 'Failed to save')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const enrichPositioning = async () => {
+    setIsEnriching(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'enrich_positioning' })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Enrichment failed')
+      }
+      
+      const result = await response.json()
+      toast.success(`Filled ${result.filled} positioning fields`)
+      // Reload the page to show updated data
+      window.location.reload()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Enrichment failed')
+    } finally {
+      setIsEnriching(false)
     }
   }
 
@@ -342,9 +368,26 @@ export function CorporatePositioningSection({ positioning, brandName, brandId, o
               Strategic messaging framework • {filled}/{total} fields • {brandName}
             </CardDescription>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-emerald-600">{completionPercent}%</div>
-            <div className="text-xs text-muted-foreground">Complete</div>
+          <div className="flex items-center gap-3">
+            {completionPercent < 100 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={enrichPositioning}
+                disabled={isEnriching}
+                className="text-xs"
+              >
+                {isEnriching ? (
+                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Filling gaps...</>
+                ) : (
+                  <><Sparkles className="h-3 w-3 mr-1" /> Fill Gaps with AI</>
+                )}
+              </Button>
+            )}
+            <div className="text-right">
+              <div className="text-2xl font-bold text-emerald-600">{completionPercent}%</div>
+              <div className="text-xs text-muted-foreground">Complete</div>
+            </div>
           </div>
         </div>
         <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
