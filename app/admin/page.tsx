@@ -88,48 +88,41 @@ export default async function AdminDashboardPage() {
     getCount(serviceClient, 'ai_traffic', { column: 'timestamp', operator: 'gte', value: last24h }),
     getOpenRouterBalance(),
     serviceClient.from('brands').select('id, name, domain, subdomain, tenant_id, created_at').order('created_at', { ascending: false }),
-    serviceClient.from('usage_events').select('brand_id, total_cost_cents, created_at'),
+    serviceClient.rpc('get_admin_brand_spend'),
     serviceClient.from('scan_results').select('brand_id, scanned_at').gte('scanned_at', last24h),
     serviceClient.from('memos').select('brand_id, status', { count: 'exact' }),
   ])
 
   const allBrands = allBrandsResult.data || []
-  const usageEvents = usageEventsResult.data || []
+  const spendData = (usageEventsResult.data || []) as Array<{ brand_id: string; all_time_spend: number; spend_7d: number; last_active: string | null }>
   const recentScans = recentScansResult.data || []
   const allMemos = memoCountResult.data || []
 
-  // Aggregate per-brand: all-time spend, 7d spend, 24h scans, total memos
+  // Build a spend lookup from the RPC results
+  const spendMap = new Map(spendData.map(s => [s.brand_id, s]))
+
+  // Aggregate per-brand stats
   const brandStats = allBrands.map(brand => {
-    const brandEvents = usageEvents.filter(e => e.brand_id === brand.id)
-    const spendAllTime = brandEvents
-      .reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
-    const spend7d = brandEvents
-      .filter(e => new Date(e.created_at) >= new Date(last7d))
-      .reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
+    const spend = spendMap.get(brand.id)
     const scans24h = recentScans.filter(s => s.brand_id === brand.id).length
     const memos = allMemos.filter((m: { brand_id: string; status: string }) => m.brand_id === brand.id)
     const publishedMemos = memos.filter((m: { status: string }) => m.status === 'published').length
     const totalMemos = memos.length
-    const lastActivity = brandEvents.length > 0
-      ? brandEvents.reduce((latest, e) => new Date(e.created_at) > new Date(latest) ? e.created_at : latest, brandEvents[0].created_at)
-      : null
 
     return {
       ...brand,
-      spendAllTime,
-      spend7d,
+      spendAllTime: Number(spend?.all_time_spend) || 0,
+      spend7d: Number(spend?.spend_7d) || 0,
       scans24h,
       totalMemos,
       publishedMemos,
-      lastActivity,
+      lastActivity: spend?.last_active || null,
     }
   }).sort((a, b) => b.spendAllTime - a.spendAllTime)
 
   // Totals
-  const totalSpendAllTime = usageEvents.reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
-  const totalSpend7d = usageEvents
-    .filter(e => new Date(e.created_at) >= new Date(last7d))
-    .reduce((sum, e) => sum + (Number(e.total_cost_cents) || 0), 0) / 100
+  const totalSpendAllTime = spendData.reduce((sum, s) => sum + Number(s.all_time_spend), 0)
+  const totalSpend7d = spendData.reduce((sum, s) => sum + Number(s.spend_7d), 0)
 
   // Get tenant names for brand ownership display
   const tenantIds = Array.from(new Set(allBrands.map(b => b.tenant_id)))

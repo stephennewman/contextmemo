@@ -883,20 +883,17 @@ export function TerminalWidget({
   brandName: string
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [lines, setLines] = useState<ProgressLine[]>([])
-  const progressRef = useRef<HTMLDivElement>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [status, setStatus] = useState<StatusResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
 
+  // Load full status data on open
   useEffect(() => {
-    if (progressRef.current) {
-      progressRef.current.scrollTop = progressRef.current.scrollHeight
-    }
-  }, [lines])
+    if (!isOpen || status) return
 
-  // Load recent activity on open
-  useEffect(() => {
-    if (!isOpen || lines.length > 0) return
-
-    const loadActivity = async () => {
+    const loadStatus = async () => {
+      setLoading(true)
       try {
         const res = await fetch(`/api/brands/${brandId}/actions`, {
           method: 'POST',
@@ -904,36 +901,23 @@ export function TerminalWidget({
           body: JSON.stringify({ action: 'check_status' }),
         })
         if (res.ok) {
-          const status = await res.json()
-          const newLines: ProgressLine[] = [
-            { text: `${brandName} — Status`, type: 'header' },
-            { text: '', type: 'info' },
-            { text: `Prompts tracked    ${status.queryCount}`, type: 'result' },
-            { text: `Scans completed    ${status.scanCount}`, type: 'result' },
-            { text: `Memos generated    ${status.memoCount}`, type: 'result' },
-            { text: `Competitors        ${status.competitorCount}`, type: 'result' },
-          ]
-          if (status.scanSummary) {
-            newLines.push(
-              { text: '', type: 'info' },
-              { text: `Mention rate       ${status.scanSummary.mentionRate}%`, type: status.scanSummary.mentionRate >= 30 ? 'success' : 'result' },
-              { text: `Citation rate      ${status.scanSummary.citationRate}%`, type: status.scanSummary.citationRate >= 20 ? 'success' : 'result' },
-            )
-          }
-          setLines(newLines)
+          const data = await res.json()
+          setStatus(data)
         }
       } catch (err) {
-        console.error('[onboarding] Failed to load activity:', err)
+        console.error('[terminal] Failed to load status:', err)
+      } finally {
+        setLoading(false)
       }
     }
-    loadActivity()
-  }, [isOpen, brandId, brandName, lines.length])
+    loadStatus()
+  }, [isOpen, brandId, status])
 
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 bg-[#0F172A] text-white text-xs font-mono border-2 border-slate-600 hover:border-[#0EA5E9] transition-colors shadow-lg"
+        className="fixed bottom-0 right-0 z-50 flex items-center gap-2 px-4 py-2.5 bg-[#0F172A] text-white text-xs font-mono border-t-2 border-l-2 border-slate-600 hover:border-[#0EA5E9] transition-colors shadow-lg"
       >
         <Terminal className="h-4 w-4 text-[#0EA5E9]" />
         Terminal
@@ -941,8 +925,11 @@ export function TerminalWidget({
     )
   }
 
+  const panelWidth = isExpanded ? 'w-[520px]' : 'w-96'
+  const panelHeight = isExpanded ? 'max-h-[80vh]' : 'max-h-[420px]'
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 border-[3px] border-[#0F172A] shadow-2xl">
+    <div className={`fixed bottom-0 right-0 z-50 ${panelWidth} border-t-[3px] border-l-[3px] border-[#0F172A] shadow-2xl transition-all duration-200`}>
       {/* Header */}
       <div className="bg-[#0F172A] px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -956,28 +943,185 @@ export function TerminalWidget({
             {brandName}
           </span>
         </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="text-slate-400 hover:text-white transition-colors"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-slate-400 hover:text-white transition-colors"
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            {isExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-slate-400 hover:text-white transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Content */}
       <div
-        ref={progressRef}
-        className="h-48 overflow-y-auto bg-[#1a1b26] p-3 font-mono text-xs"
+        ref={contentRef}
+        className={`${panelHeight} overflow-y-auto bg-[#1a1b26] p-3 font-mono text-xs transition-all duration-200`}
       >
-        {lines.map((line, i) => (
-          <div key={i} className="py-0.5">
-            {line.type === 'header' && <span className="text-[#7aa2f7] font-bold">{line.text}</span>}
-            {line.type === 'result' && <span className="text-[#0EA5E9] whitespace-pre">{line.text}</span>}
-            {line.type === 'success' && <span className="text-[#10B981] whitespace-pre">{line.text}</span>}
-            {line.type === 'info' && line.text && <span className="text-slate-400 whitespace-pre">{line.text}</span>}
-            {!line.text && <br />}
+        {loading && (
+          <div className="flex items-center gap-2 text-slate-400 py-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Loading...
           </div>
-        ))}
+        )}
+
+        {status && (
+          <div className="space-y-3">
+            {/* ── Overview ── */}
+            <div>
+              <div className="text-[#7aa2f7] font-bold mb-1">STATUS</div>
+              <div className="text-[#0EA5E9] whitespace-pre">Prompts tracked    {status.queryCount}</div>
+              <div className="text-[#0EA5E9] whitespace-pre">Scans completed    {status.scanCount}</div>
+              <div className="text-[#0EA5E9] whitespace-pre">Memos generated    {status.memoCount}</div>
+              <div className="text-[#0EA5E9] whitespace-pre">Entities           {status.competitorCount}</div>
+              {status.scanSummary && (
+                <>
+                  <div className={`whitespace-pre ${status.scanSummary.mentionRate >= 30 ? 'text-[#10B981]' : 'text-[#0EA5E9]'}`}>
+                    Mention rate       {status.scanSummary.mentionRate}%
+                  </div>
+                  <div className={`whitespace-pre ${status.scanSummary.citationRate >= 20 ? 'text-[#10B981]' : 'text-[#0EA5E9]'}`}>
+                    Citation rate      {status.scanSummary.citationRate}%
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="border-t border-slate-700/50" />
+
+            {/* ── 1. Brand Context ── */}
+            {status.brandDetails && (
+              <div>
+                <div className="text-[#7aa2f7] font-bold mb-1">YOUR BRAND</div>
+                <div className="text-slate-300">{status.brandDetails.companyName}</div>
+                {status.brandDetails.description && (
+                  <div className="text-slate-500 mt-0.5 leading-relaxed">{status.brandDetails.description.slice(0, 150)}{status.brandDetails.description.length > 150 ? '...' : ''}</div>
+                )}
+                {status.brandDetails.products.length > 0 && (
+                  <div className="mt-1">
+                    <span className="text-slate-500">Products: </span>
+                    <span className="text-[#0EA5E9]">{status.brandDetails.products.join(', ')}</span>
+                  </div>
+                )}
+                {status.brandDetails.personas.length > 0 && (
+                  <div>
+                    <span className="text-slate-500">Personas: </span>
+                    <span className="text-[#0EA5E9]">{status.brandDetails.personas.join(', ')}</span>
+                  </div>
+                )}
+                {status.brandDetails.markets.length > 0 && (
+                  <div>
+                    <span className="text-slate-500">Markets: </span>
+                    <span className="text-[#0EA5E9]">{status.brandDetails.markets.join(', ')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="border-t border-slate-700/50" />
+
+            {/* ── 2. Prompts by Funnel ── */}
+            {status.promptSamples && (
+              <div>
+                <div className="text-[#7aa2f7] font-bold mb-1">PROMPTS BY FUNNEL</div>
+                <div className="text-[#0EA5E9] whitespace-pre">
+                  Top of Funnel      {status.promptSamples.counts.top}
+                </div>
+                <div className="text-[#0EA5E9] whitespace-pre">
+                  Mid Funnel         {status.promptSamples.counts.mid}
+                </div>
+                <div className="text-[#0EA5E9] whitespace-pre">
+                  Bottom Funnel      {status.promptSamples.counts.bottom}
+                </div>
+                {status.promptSamples.top_funnel.length > 0 && (
+                  <div className="mt-1.5 space-y-0.5">
+                    <div className="text-slate-500 text-[10px]">Sample prompts:</div>
+                    {[...status.promptSamples.top_funnel.slice(0, 2), ...status.promptSamples.mid_funnel.slice(0, 1), ...status.promptSamples.bottom_funnel.slice(0, 1)].map((p, i) => (
+                      <div key={i} className="text-slate-400 pl-2 truncate">→ {p}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="border-t border-slate-700/50" />
+
+            {/* ── 3. Citations & Visibility ── */}
+            {status.scanSummary && (
+              <div>
+                <div className="text-[#7aa2f7] font-bold mb-1">AI VISIBILITY</div>
+                <div className="text-[#0EA5E9] whitespace-pre">Total citations     {status.scanSummary.totalCitations}</div>
+                <div className="text-[#0EA5E9] whitespace-pre">Unique domains      {status.scanSummary.uniqueDomains}</div>
+                <div className="text-[#0EA5E9] whitespace-pre">Brand mentioned     {status.scanSummary.mentioned}x</div>
+                <div className="text-[#0EA5E9] whitespace-pre">Brand cited         {status.scanSummary.brandCited}x</div>
+                {status.scanSummary.topDomains.length > 0 && (
+                  <div className="mt-1.5">
+                    <div className="text-slate-500 text-[10px]">Top cited domains:</div>
+                    {status.scanSummary.topDomains.slice(0, 5).map((d, i) => (
+                      <div key={i} className="text-slate-400 pl-2">
+                        {d.domain} <span className="text-slate-600">({d.count}x)</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="border-t border-slate-700/50" />
+
+            {/* ── 4. Entities ── */}
+            {status.entityGroups && Object.keys(status.entityGroups).length > 0 && (
+              <div>
+                <div className="text-[#7aa2f7] font-bold mb-1">ENTITIES DISCOVERED</div>
+                {Object.entries(status.entityGroups).map(([type, names]) => (
+                  <div key={type} className="mb-1">
+                    <span className="text-slate-500">{type}: </span>
+                    <span className="text-[#0EA5E9]">{(names as string[]).slice(0, 5).join(', ')}{(names as string[]).length > 5 ? ` +${(names as string[]).length - 5} more` : ''}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="border-t border-slate-700/50" />
+
+            {/* ── 5. Content Gaps ── */}
+            {status.gapQueries && status.gapQueries.length > 0 && (
+              <div>
+                <div className="text-[#7aa2f7] font-bold mb-1">
+                  CONTENT GAPS
+                  <span className="text-slate-500 font-normal ml-2">({status.scanSummary?.gapCount || status.gapQueries.length} queries)</span>
+                </div>
+                <div className="text-slate-500 text-[10px] mb-1">Queries where AI doesn&apos;t mention you:</div>
+                {status.gapQueries.slice(0, 5).map((g, i) => (
+                  <div key={i} className="text-amber-400 pl-2 truncate">
+                    ✗ {g.text}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="border-t border-slate-700/50" />
+
+            {/* ── 6. Most Cited URLs ── */}
+            {status.topCitedUrls && status.topCitedUrls.length > 0 && (
+              <div>
+                <div className="text-[#7aa2f7] font-bold mb-1">WHAT AI TRUSTS</div>
+                <div className="text-slate-500 text-[10px] mb-1">Most cited content by AI models:</div>
+                {status.topCitedUrls.slice(0, 6).map((u, i) => (
+                  <div key={i} className="text-slate-400 pl-2 truncate">
+                    {u.domain} <span className="text-slate-600">({u.count}x)</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
