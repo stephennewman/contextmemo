@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { SortableBrandsTable, type BrandRow } from '@/components/admin/sortable-brands-table'
 
 async function getCount(
   serviceClient: ReturnType<typeof createServiceRoleClient>,
@@ -239,109 +240,24 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* All Brands Table */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#0F172A]">All Brands</h2>
-          <span className="text-xs text-slate-500">{allBrands.length} total</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
-                <th className="pb-3 pr-4 font-medium">Brand</th>
-                <th className="pb-3 pr-4 font-medium">Owner</th>
-                <th className="pb-3 pr-4 text-right font-medium">All-Time $</th>
-                <th className="pb-3 pr-4 text-right font-medium">7d $</th>
-                <th className="pb-3 pr-4 text-right font-medium">Prompts</th>
-                <th className="pb-3 pr-4 text-right font-medium">Scans</th>
-                <th className="pb-3 pr-4 text-right font-medium">Mention %</th>
-                <th className="pb-3 pr-4 text-right font-medium">Citation %</th>
-                <th className="pb-3 pr-4 text-right font-medium">Memos</th>
-                <th className="pb-3 text-right font-medium">Last Scan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {brandStats.map(brand => (
-                <tr key={brand.id} className="border-b border-slate-50 hover:bg-slate-50">
-                  <td className="py-3 pr-4">
-                    <div className="font-medium text-[#0F172A]">{brand.name}</div>
-                    <div className="text-[10px] text-slate-400">{brand.domain || '—'}</div>
-                  </td>
-                  <td className="py-3 pr-4 text-xs text-slate-500">
-                    {(tenantMap.get(brand.tenant_id) || '—').split('@')[0]}
-                  </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs">
-                    {brand.spendAllTime > 0 ? (
-                      <span className={brand.spendAllTime > 5 ? 'font-semibold text-red-600' : brand.spendAllTime > 2 ? 'text-amber-600' : 'text-slate-600'}>
-                        ${brand.spendAllTime.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">$0.00</span>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs">
-                    {brand.spend7d > 0 ? (
-                      <span className={brand.spend7d > 2 ? 'text-amber-600' : 'text-slate-600'}>
-                        ${brand.spend7d.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">—</span>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-right text-xs text-slate-600">
-                    {brand.prompts > 0 ? (
-                      <span>
-                        {brand.prompts}
-                        {brand.citedPrompts > 0 && (
-                          <span className="ml-1 text-emerald-600">({brand.citedPrompts} cited)</span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">0</span>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs text-slate-600">
-                    {brand.totalScans > 0 ? brand.totalScans.toLocaleString() : <span className="text-slate-300">0</span>}
-                  </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs">
-                    {brand.totalScans > 0 ? (
-                      <span className={brand.mentionRate >= 5 ? 'text-emerald-600 font-medium' : brand.mentionRate > 0 ? 'text-slate-600' : 'text-slate-300'}>
-                        {brand.mentionRate}%
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">—</span>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-right font-mono text-xs">
-                    {brand.totalScans > 0 ? (
-                      <span className={brand.citationRate >= 5 ? 'text-emerald-600 font-medium' : brand.citationRate > 0 ? 'text-slate-600' : 'text-slate-300'}>
-                        {brand.citationRate}%
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">—</span>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-right text-xs text-slate-600">
-                    {brand.publishedMemos || <span className="text-slate-300">0</span>}
-                  </td>
-                  <td className="py-3 text-right text-xs text-slate-400">
-                    {brand.lastScanned
-                      ? new Date(brand.lastScanned).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                      : <span className="text-slate-300">never</span>
-                    }
-                  </td>
-                </tr>
-              ))}
-              {brandStats.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* All Brands Table (sortable) */}
+      <SortableBrandsTable brands={brandStats.map(b => ({
+        id: b.id,
+        name: b.name,
+        domain: b.domain,
+        owner: tenantMap.get(b.tenant_id) || '—',
+        spendAllTime: b.spendAllTime,
+        spend7d: b.spend7d,
+        scans24h: b.scans24h,
+        prompts: b.prompts,
+        citedPrompts: b.citedPrompts,
+        totalScans: b.totalScans,
+        mentionRate: b.mentionRate,
+        citationRate: b.citationRate,
+        publishedMemos: b.publishedMemos,
+        totalMemos: b.totalMemos,
+        lastScanned: b.lastScanned,
+      }))} />
 
       {/* Recent Alerts */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
