@@ -1,11 +1,12 @@
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export type SecurityEventType =
+  | 'access_denied'
   | 'csrf_blocked'
   | 'rate_limited'
   | 'session_expired'
-  | 'webhook_invalid'
   | 'unauthorized'
+  | 'webhook_invalid'
 
 export async function logSecurityEvent(params: {
   type: SecurityEventType

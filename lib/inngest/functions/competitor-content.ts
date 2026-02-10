@@ -11,6 +11,7 @@ import crypto from 'crypto'
 import Parser from 'rss-parser'
 
 const supabase = createServiceRoleClient()
+const baseModel = process.env.BASE_MODEL || 'openai/gpt-4o-mini'
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -321,7 +322,7 @@ async function parseFeedItems(feedUrl: string, maxItems = 50): Promise<ParsedFee
     
     return feed.items.slice(0, maxItems).map(item => {
       // Normalize the item URL
-      let url = item.link || item.guid || ''
+      const url = item.link || item.guid || ''
       
       // Parse published date
       let publishedAt: Date | null = null
@@ -888,7 +889,7 @@ export const competitorContentClassify = inngest.createFunction(
 
         try {
           const { text } = await generateText({
-            model: openrouter('openai/gpt-4o-mini'),
+            model: openrouter(baseModel),
             prompt,
             temperature: 0.3,
           })
@@ -1075,7 +1076,7 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
 
         try {
           const { text } = await generateText({
-            model: openrouter('openai/gpt-4o'),
+            model: openrouter(baseModel),
             prompt,
             temperature: 0.5, // Slightly higher for more creative differentiation
           })
@@ -1116,7 +1117,7 @@ WORD COUNT: ~${(content as { word_count?: number }).word_count || 'Unknown'} wor
       const metaDescription = await step.run(`meta-${content.id}`, async () => {
         try {
           const { text } = await generateText({
-            model: openrouter('openai/gpt-4o-mini'),
+            model: openrouter(baseModel),
             prompt: `Write a 150-160 character meta description for this article. Be factual and include key concepts:\n\n${memo.content.slice(0, 1000)}`,
             temperature: 0.3,
           })

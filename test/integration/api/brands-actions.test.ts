@@ -175,4 +175,217 @@ describe('POST /api/brands/[brandId]/actions', () => {
     const body = await response.json()
     expect(body.error).toBe('Action failed')
   })
+
+  it('should trigger competitor/discover for "discover_competitors" action', async () => {
+    const request = makeRequest('discover_competitors')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Competitor discovery started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'competitor/discover',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger query/generate for "generate_queries" action', async () => {
+    const request = makeRequest('generate_queries')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Query generation started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'query/generate',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger scan/run for "run_scan" action', async () => {
+    const queryId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380b23'
+    const request = makeRequest('run_scan', MOCK_BRAND_ID, { queryIds: [queryId] })
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('AI search scan started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'scan/run',
+      data: { brandId: MOCK_BRAND_ID, queryIds: [queryId], autoGenerateMemos: true },
+    })
+  })
+
+  it('should trigger full_setup action', async () => {
+    const request = makeRequest('full_setup')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Full setup pipeline started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'context/extract',
+      data: { brandId: MOCK_BRAND_ID, domain: MOCK_DOMAIN },
+    })
+  })
+
+  it('should trigger run_daily action', async () => {
+    const request = makeRequest('run_daily')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Daily scan triggered (scan + auto memo generation)')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'daily/brand-scan',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger run_weekly action', async () => {
+    const request = makeRequest('run_weekly')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Weekly update triggered (competitors → queries → scan)')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'daily/brand-update',
+      data: { brandId: MOCK_BRAND_ID, discoverCompetitors: true, generateQueries: true },
+    })
+  })
+
+  it('should trigger run_full_refresh action', async () => {
+    const request = makeRequest('run_full_refresh')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Full refresh triggered (context → competitors → queries → scan)')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'daily/brand-full-refresh',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger scan_and_generate action', async () => {
+    const request = makeRequest('scan_and_generate')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Scan started with auto memo generation')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'scan/run',
+      data: { brandId: MOCK_BRAND_ID, queryIds: undefined, autoGenerateMemos: true },
+    })
+  })
+
+  it('should trigger discovery_scan action', async () => {
+    const request = makeRequest('discovery_scan')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Discovery scan started - testing 50+ query variations to find brand mentions')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'discovery/scan',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger update_backlinks action', async () => {
+    const request = makeRequest('update_backlinks')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Backlink update started for all memos')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'memo/batch-backlink',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger sync_bing action', async () => {
+    const request = makeRequest('sync_bing')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Bing Webmaster sync started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'bing/sync',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger sync_google action', async () => {
+    const request = makeRequest('sync_google')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Google Search Console sync started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'google-search-console/sync',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger content-scan action', async () => {
+    const request = makeRequest('content-scan')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Competitor content scan started')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'competitor/content-scan',
+      data: { brandId: MOCK_BRAND_ID, retroactive: false },
+    })
+  })
+
+  it('should trigger content-backfill action', async () => {
+    const request = makeRequest('content-backfill')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Historical content backfill started - fetching all available content from competitor feeds')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'competitor/content-backfill',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger content-classify action', async () => {
+    const request = makeRequest('content-classify')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Content classification started - will generate memos for respondable content')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'competitor/content-classify',
+      data: { brandId: MOCK_BRAND_ID },
+    })
+  })
+
+  it('should trigger ai_overview_scan action', async () => {
+    const request = makeRequest('ai_overview_scan')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.message).toBe('Google AI Overview scan started (checking top queries)')
+    expect(inngestSendMock).toHaveBeenCalledWith({
+      name: 'ai-overview/scan',
+      data: { brandId: MOCK_BRAND_ID, maxQueries: 10 },
+    })
+  })
+
+  it('should return 400 if memoId is missing for "regenerate_memo"', async () => {
+    const request = makeRequest('regenerate_memo')
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(400)
+    const body = await response.json()
+    expect(body.error).toBe('memoId required')
+  })
+
+  it('should return 404 if memo not found for "regenerate_memo"', async () => {
+    supabaseMock.single
+      .mockResolvedValueOnce({ data: { id: MOCK_BRAND_ID, tenant_id: MOCK_USER_ID, domain: MOCK_DOMAIN }, error: null }) // for brand check
+      .mockResolvedValueOnce({ data: null, error: { message: 'Not found' } }) // for memo fetch
+
+    const request = makeRequest('regenerate_memo', MOCK_BRAND_ID, { memoId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380c23' })
+    const response = await POST(request, { params: Promise.resolve({ brandId: MOCK_BRAND_ID }) })
+    expect(response.status).toBe(404)
+    const body = await response.json()
+    expect(body.error).toBe('Memo not found')
+  })
 })

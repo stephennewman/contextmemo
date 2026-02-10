@@ -11,6 +11,7 @@ export const TOKEN_COSTS = {
   'gpt-4o-mini': { input: 15, output: 60 },            // $0.15/$0.60 per 1M
   'claude-3-5-haiku': { input: 80, output: 400 },      // $0.80/$4 per 1M
   'grok-4-fast': { input: 20, output: 50 },            // $0.20/$0.50 per 1M
+  'nemotron-3-nano-30b-a3b': { input: 10, output: 0 },   // free model
 } as const
 
 // Search costs per query (in cents)
@@ -27,6 +28,7 @@ export const MODEL_SEARCH_TYPE: Record<string, keyof typeof SEARCH_COSTS> = {
   'gpt-4o-mini': 'openai-native',
   'claude-3-5-haiku': 'anthropic-native',
   'grok-4-fast': 'xai-native',
+  'nemotron-3-nano-30b-a3b': 'xai-native', // free model, but use same cost as xai-native for consistency
 }
 
 /**

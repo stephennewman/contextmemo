@@ -14,6 +14,7 @@ import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 
 const supabase = createServiceRoleClient()
+const baseModel = process.env.BASE_MODEL || 'openai/gpt-4o-mini'
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -212,7 +213,7 @@ Provide 3-5 strategic insights in JSON format:
 
       try {
         const { text } = await generateText({
-          model: openrouter('openai/gpt-4o-mini'),
+          model: openrouter(baseModel),
           prompt,
           temperature: 0.5,
         })

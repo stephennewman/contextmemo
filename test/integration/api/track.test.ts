@@ -306,4 +306,93 @@ describe('GET /api/track (pixel tracking)', () => {
     expect(response.headers.get('Content-Type')).toBe('image/gif')
     expect(mockInsert).not.toHaveBeenCalled()
   })
+
+  it('should handle malformed decoded URL in pixel tracking', async () => {
+    vi.mocked(detectAISource).mockReturnValue('chatgpt');
+
+    // Use a malformed URL that will fail decodeURIComponent
+    const request = new NextRequest(new URL(`http://localhost/api/track?b=${MOCK_BRAND_ID}&u=%E0%A4%A`), {
+      method: 'GET',
+      headers: {
+        'x-forwarded-for': MOCK_IP,
+      },
+    })
+
+    const response = await GET(request)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toBe('image/gif')
+    // Should not insert due to invalid URL
+    expect(mockInsert).not.toHaveBeenCalled()
+  })
+
+  it('should handle valid memoId in pixel tracking', async () => {
+    vi.mocked(detectAISource).mockReturnValue('chatgpt');
+
+    const request = new NextRequest(new URL(`http://localhost/api/track?b=${MOCK_BRAND_ID}&m=${MOCK_MEMO_ID}&u=${encodeURIComponent(MOCK_PAGE_URL)}`), {
+      method: 'GET',
+      headers: {
+        'x-forwarded-for': MOCK_IP,
+      },
+    })
+
+    const response = await GET(request)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toBe('image/gif')
+  })
+
+  it('should ignore invalid memoId in pixel tracking', async () => {
+    vi.mocked(detectAISource).mockReturnValue('chatgpt');
+
+    const request = new NextRequest(new URL(`http://localhost/api/track?b=${MOCK_BRAND_ID}&m=invalid-memo-id&u=${encodeURIComponent(MOCK_PAGE_URL)}`), {
+      method: 'GET',
+      headers: {
+        'x-forwarded-for': MOCK_IP,
+      },
+    })
+
+    const response = await GET(request)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toBe('image/gif')
+  })
+})
+
+describe('POST /api/track error handling', () => {
+  const MOCK_BRAND_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01'
+  const MOCK_PAGE_URL = 'https://example.com/memo/test'
+  const MOCK_IP = '127.0.0.1'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    
+    // Reset supabase mock
+    mockFrom.mockReturnValue({ insert: mockInsert })
+    mockInsert.mockResolvedValue({ data: [], error: null })
+    
+    // Reset rate limit mock
+    mockLimit.mockResolvedValue({ success: true, limit: 100, remaining: 99, reset: 12345 })
+  })
+
+  it('should return 500 when an unexpected error is thrown', async () => {
+    // Mock rate limit to throw an error
+    mockLimit.mockImplementationOnce(() => {
+      throw new Error('Unexpected error')
+    })
+
+    const request = new NextRequest(new URL('http://localhost/api/track'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': MOCK_IP,
+      },
+      body: JSON.stringify({
+        brandId: MOCK_BRAND_ID,
+        pageUrl: MOCK_PAGE_URL,
+      }),
+    })
+
+    const response = await POST(request)
+    expect(response.status).toBe(500)
+    const body = await response.json()
+    expect(body.error).toBe('An unexpected error occurred')
+  })
 })

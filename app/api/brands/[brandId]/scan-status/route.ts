@@ -18,7 +18,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
   const brandId = parsedBrandId.data
   const supabase = await createClient()
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.ip || 'unknown'
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+             request.headers.get('x-real-ip') ||
+             'unknown'
 
 
   // Verify user owns the brand

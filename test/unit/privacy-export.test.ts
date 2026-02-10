@@ -180,4 +180,143 @@ describe('privacy export API', () => {
     const body = await response.json()
     expect(body.error).toBe('An unexpected error occurred during data export')
   })
+
+  it('exports data when user has no brands', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      tenants: [{ id: 'user-1', email: 'owner@example.com' }],
+      brands: [], // No brands
+      competitors: [],
+      brand_settings: [],
+      queries: [],
+      scan_results: [],
+      memos: [],
+      memo_versions: [],
+      alerts: [],
+      visibility_history: [],
+      search_console_stats: [],
+      ai_traffic: [],
+      competitor_content: [],
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const response = await GET()
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.tenant?.id).toBe('user-1')
+    expect(body.brands).toHaveLength(0)
+    expect(body.competitors).toHaveLength(0)
+    expect(body.memoVersions).toHaveLength(0)
+  })
+
+  it('exports data when brands have no memos', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      tenants: [{ id: 'user-1', email: 'owner@example.com' }],
+      brands: [{ id: 'brand-1', tenant_id: 'user-1' }],
+      competitors: [{ id: 'comp-1', brand_id: 'brand-1' }],
+      brand_settings: [{ brand_id: 'brand-1' }],
+      queries: [],
+      scan_results: [],
+      memos: [], // No memos
+      memo_versions: [],
+      alerts: [],
+      visibility_history: [],
+      search_console_stats: [],
+      ai_traffic: [],
+      competitor_content: [{ id: 'content-1', competitor_id: 'comp-1' }],
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const response = await GET()
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.memos).toHaveLength(0)
+    expect(body.memoVersions).toHaveLength(0)
+  })
+
+  it('exports data when competitors have no content', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      tenants: [{ id: 'user-1', email: 'owner@example.com' }],
+      brands: [{ id: 'brand-1', tenant_id: 'user-1' }],
+      competitors: [{ id: 'comp-1', brand_id: 'brand-1' }],
+      brand_settings: [],
+      queries: [],
+      scan_results: [],
+      memos: [],
+      memo_versions: [],
+      alerts: [],
+      visibility_history: [],
+      search_console_stats: [],
+      ai_traffic: [],
+      competitor_content: [], // No competitor content
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const response = await GET()
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.competitorContent).toHaveLength(0)
+  })
+
+  it('handles pagination when fetching large datasets', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    // Create a large dataset to test pagination
+    const largeBrandArray = Array.from({ length: 1500 }, (_, i) => ({
+      id: `brand-${i}`,
+      tenant_id: 'user-1',
+    }))
+
+    const supabaseMock = buildSupabaseMock({
+      tenants: [{ id: 'user-1', email: 'owner@example.com' }],
+      brands: largeBrandArray,
+      competitors: [],
+      brand_settings: [],
+      queries: [],
+      scan_results: [],
+      memos: [],
+      memo_versions: [],
+      alerts: [],
+      visibility_history: [],
+      search_console_stats: [],
+      ai_traffic: [],
+      competitor_content: [],
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const response = await GET()
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    // The mock should return all brands (pagination is handled internally)
+    expect(body.brands.length).toBeGreaterThan(0)
+  })
 })

@@ -213,4 +213,30 @@ describe('POST /api/billing/checkout', () => {
     const body = await response.json()
     expect(body.error).toBe('An unexpected error occurred')
   })
+
+  it('should return 400 when planId is not in PLANS', async () => {
+    // This tests the edge case where planId passes zod validation but isn't in PLANS
+    // Note: This is a defensive test - in practice zod should catch this
+    const request = new NextRequest(new URL('http://localhost/api/billing/checkout'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': 'valid-csrf-token' },
+      body: JSON.stringify({ planId: 'nonexistent_plan' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(400)
+    const body = await response.json()
+    expect(body.error).toBe('Invalid request')
+  })
+
+  it('should handle missing body gracefully', async () => {
+    const request = new NextRequest(new URL('http://localhost/api/billing/checkout'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': 'valid-csrf-token' },
+      // No body provided
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(400)
+    const body = await response.json()
+    expect(body.error).toBe('Invalid request')
+  })
 })

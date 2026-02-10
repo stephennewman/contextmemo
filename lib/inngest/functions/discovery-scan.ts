@@ -5,6 +5,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { BrandContext } from '@/lib/supabase/types'
 
 const supabase = createServiceRoleClient()
+const baseModel = process.env.BASE_MODEL || 'openai/gpt-4o-mini'
 
 // Helper to get active OpenRouter API key for rotation
 function getOpenRouterApiKey(): string | undefined {
@@ -167,7 +168,7 @@ export const discoveryScan = inngest.createFunction(
         const promises = batch.map(async (dq): Promise<DiscoveryResult | null> => {
           try {
             const { text } = await generateText({
-              model: openrouter('openai/gpt-4o-mini'),
+              model: openrouter(baseModel),
               system: SCAN_SYSTEM_PROMPT,
               prompt: dq.query,
               temperature: 0.7,

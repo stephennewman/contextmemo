@@ -24,6 +24,8 @@ import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
 
 const supabase = createServiceRoleClient()
 
+const baseModel = process.env.BASE_MODEL || 'openai/gpt-4o-mini'
+
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 })
@@ -202,7 +204,7 @@ export const citationLoopRun = inngest.createFunction(
           const homepage = await fetchUrlAsMarkdown(`https://${competitor.domain}`)
           
           const { text } = await generateText({
-            model: openrouter('openai/gpt-4o-mini'),
+            model: openrouter(baseModel),
             prompt: `Extract key information about this company from their homepage:
 
 WEBSITE CONTENT:
@@ -256,7 +258,7 @@ Respond with JSON:
           .replace('{{competitor_context}}', JSON.stringify(competitorContext, null, 2))
 
         const { text } = await generateText({
-          model: openrouter('openai/gpt-4o-mini'),
+          model: openrouter(baseModel),
           prompt,
           temperature: 0.5,
         })
@@ -320,7 +322,7 @@ Respond with JSON:
               .replace('{{citations}}', citations.join('\n') || 'No citations provided')
 
             const { text: analysisText } = await generateText({
-              model: openrouter('openai/gpt-4o-mini'),
+              model: openrouter(baseModel),
               prompt: analysisPrompt,
               temperature: 0.3,
             })
@@ -431,7 +433,7 @@ export const analyzeCitation = inngest.createFunction(
           .replace('{{citations}}', (scanResult.citations || []).join('\n') || 'None')
 
         const { text } = await generateText({
-          model: openrouter('openai/gpt-4o-mini'),
+          model: openrouter(baseModel),
           prompt,
           temperature: 0.3,
         })

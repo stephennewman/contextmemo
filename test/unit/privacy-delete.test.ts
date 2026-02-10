@@ -272,4 +272,127 @@ describe('privacy delete API', () => {
       expect.any(Request)
     )
   })
+
+  it('returns 400 when confirm is not true', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: false }),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(400)
+
+    const body = await response.json()
+    expect(body.error).toBe('Confirmation required')
+  })
+
+  it('returns 400 when confirm is missing', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(400)
+
+    const body = await response.json()
+    expect(body.error).toBe('Confirmation required')
+  })
+
+  it('handles deletion when user has no brands', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      brands: [], // No brands
+      competitors: [],
+      memos: [],
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.success).toBe(true)
+
+    // Verify tenant was still deleted
+    const deletes = supabaseMock.getDeletes()
+    expect(deletes.some(d => d.table === 'tenants')).toBe(true)
+  })
+
+  it('handles deletion when brands have no competitors', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      brands: [{ id: 'brand-1', tenant_id: 'user-1' }],
+      competitors: [], // No competitors
+      memos: [{ id: 'memo-1', brand_id: 'brand-1' }],
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.success).toBe(true)
+  })
+
+  it('handles deletion when brands have no memos', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      brands: [{ id: 'brand-1', tenant_id: 'user-1' }],
+      competitors: [{ id: 'comp-1', brand_id: 'brand-1' }],
+      memos: [], // No memos
+    })
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(200)
+
+    const body = await response.json()
+    expect(body.success).toBe(true)
+  })
 })

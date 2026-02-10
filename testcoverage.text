@@ -1,0 +1,355 @@
+% Coverage report from v8
+------------------------------------------------------------------------|---------|----------|---------|---------|------------------------
+File                                                                    | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s      
+------------------------------------------------------------------------|---------|----------|---------|---------|------------------------
+All files                                                               |    2.16 |    61.67 |   56.14 |    2.16 |                        
+ contextmemo                                                            |       0 |      100 |     100 |       0 |                        
+  middleware.ts                                                         |       0 |      100 |     100 |       0 | 2-19                   
+ contextmemo/app                                                        |       0 |       75 |      75 |       0 |                        
+  layout.tsx                                                            |       0 |      100 |     100 |       0 | 2-39                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-597                  
+  robots.ts                                                             |       0 |      100 |     100 |       0 | 3-55                   
+  sitemap.ts                                                            |       0 |      100 |     100 |       0 | 2-105                  
+ contextmemo/app/(auth)                                                 |       0 |        0 |       0 |       0 |                        
+  layout.tsx                                                            |       0 |        0 |       0 |       0 | 1-29                   
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-31                   
+ contextmemo/app/(auth)/login                                           |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-132                  
+ contextmemo/app/(auth)/signup                                          |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-290                  
+ contextmemo/app/(auth)/verify-email                                    |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-102                  
+ contextmemo/app/(dashboard)                                            |       0 |        0 |       0 |       0 |                        
+  layout.tsx                                                            |       0 |        0 |       0 |       0 | 1-92                   
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-52                   
+ contextmemo/app/(dashboard)/brands/[brandId]                           |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-71                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-705                  
+ contextmemo/app/(dashboard)/brands/[brandId]/memos/[memoId]            |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-79                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-623                  
+ contextmemo/app/(dashboard)/brands/[brandId]/settings                  |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-75                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-1368                 
+ contextmemo/app/(dashboard)/brands/new                                 |       0 |       50 |      50 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-41                   
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-474                  
+ contextmemo/app/(dashboard)/dashboard                                  |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-52                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-98                   
+ contextmemo/app/about/editorial                                        |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 2-146                  
+ contextmemo/app/admin                                                  |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-126                  
+ contextmemo/app/api/activity                                           |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-432                  
+ contextmemo/app/api/activity/detail                                    |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-243                  
+ contextmemo/app/api/activity/views                                     |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-136                  
+ contextmemo/app/api/auth/google-search-console/authorize               |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-55                   
+ contextmemo/app/api/auth/google-search-console/callback                |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-140                  
+ contextmemo/app/api/auth/hubspot/authorize                             |       0 |      100 |     100 |       0 |                        
+  route.ts                                                              |       0 |      100 |     100 |       0 | 8-138                  
+ contextmemo/app/api/auth/hubspot/callback                              |       0 |      100 |     100 |       0 |                        
+  route.ts                                                              |       0 |      100 |     100 |       0 | 11-196                 
+ contextmemo/app/api/auth/hubspot/disconnect                            |       0 |      100 |     100 |       0 |                        
+  route.ts                                                              |       0 |      100 |     100 |       0 | 7-88                   
+ contextmemo/app/api/auth/hubspot/status                                |       0 |      100 |     100 |       0 |                        
+  route.ts                                                              |       0 |      100 |     100 |       0 | 7-30                   
+ contextmemo/app/api/auth/rate-limit                                    |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-70                   
+ contextmemo/app/api/billing/change-plan                                |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-202                  
+ contextmemo/app/api/billing/checkout                                   |   97.93 |       95 |     100 |   97.93 |                        
+  route.ts                                                              |   97.93 |       95 |     100 |   97.93 | 48-49                  
+ contextmemo/app/api/billing/portal                                     |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-55                   
+ contextmemo/app/api/billing/webhook                                    |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-298                  
+ contextmemo/app/api/brands/[brandId]/actions                           |   28.67 |    39.53 |     100 |   28.67 |                        
+  route.ts                                                              |   28.67 |    39.53 |     100 |   28.67 | ...438,442-478,482-526 
+ contextmemo/app/api/brands/[brandId]/competitors/[competitorId]/toggle |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-164                  
+ contextmemo/app/api/brands/[brandId]/content-gaps-status               |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-74                   
+ contextmemo/app/api/brands/[brandId]/export                            |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-315                  
+ contextmemo/app/api/brands/[brandId]/memos/[memoId]/analytics          |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-232                  
+ contextmemo/app/api/brands/[brandId]/memos/[memoId]/hubspot            |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-234                  
+ contextmemo/app/api/brands/[brandId]/personas                          |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-381                  
+ contextmemo/app/api/brands/[brandId]/prompts/[promptId]/exclude        |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-93                   
+ contextmemo/app/api/brands/[brandId]/prompts/[promptId]/reenable       |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-59                   
+ contextmemo/app/api/brands/[brandId]/scan-status                       |     100 |    70.83 |     100 |     100 |                        
+  route.ts                                                              |     100 |    70.83 |     100 |     100 | 21,66-68,79-86         
+ contextmemo/app/api/brands/[brandId]/tab-data                          |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-244                  
+ contextmemo/app/api/brands/[brandId]/voice-insights                    |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-174                  
+ contextmemo/app/api/brands/[brandId]/voice-insights/[insightId]        |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-146                  
+ contextmemo/app/api/brands/[brandId]/voice-insights/transcribe         |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-81                   
+ contextmemo/app/api/brands/[brandId]/voice-insights/upload-audio       |   96.26 |     91.3 |     100 |   96.26 |                        
+  route.ts                                                              |   96.26 |     91.3 |     100 |   96.26 | 95-99                  
+ contextmemo/app/api/health                                             |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-5                    
+ contextmemo/app/api/indexnow                                           |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-96                   
+ contextmemo/app/api/inngest                                            |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-112                  
+ contextmemo/app/api/integrations/hubspot/blogs                         |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-109                  
+ contextmemo/app/api/invites/[token]                                    |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-166                  
+ contextmemo/app/api/jobs                                               |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-49                   
+ contextmemo/app/api/organizations                                      |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-181                  
+ contextmemo/app/api/organizations/[orgId]/members                      |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-291                  
+ contextmemo/app/api/privacy/delete                                     |   95.34 |    66.66 |     100 |   95.34 |                        
+  route.ts                                                              |   95.34 |    66.66 |     100 |   95.34 | 26-27,43,52            
+ contextmemo/app/api/privacy/export                                     |   91.36 |    53.84 |     100 |   91.36 |                        
+  route.ts                                                              |   91.36 |    53.84 |     100 |   91.36 | ...77-78,87-88,122,150 
+ contextmemo/app/api/track                                              |   94.95 |     87.5 |     100 |   94.95 |                        
+  route.ts                                                              |   94.95 |     87.5 |     100 |   94.95 | 99-102,127-128         
+ contextmemo/app/api/usage                                              |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-82                   
+ contextmemo/app/api/v2/feed                                            |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-383                  
+ contextmemo/app/api/v2/usage                                           |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-80                   
+ contextmemo/app/auth/auth-error                                        |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-35                   
+ contextmemo/app/auth/callback                                          |       0 |        0 |       0 |       0 |                        
+  route.ts                                                              |       0 |        0 |       0 |       0 | 1-48                   
+ contextmemo/app/changelog                                              |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-102                  
+ contextmemo/app/hubspot                                                |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-578                  
+ contextmemo/app/invite/[token]                                         |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-182                  
+ contextmemo/app/memo/[subdomain]/[[...slug]]                           |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-439                  
+ contextmemo/app/mockups                                                |       0 |        0 |       0 |       0 |                        
+  layout.tsx                                                            |       0 |        0 |       0 |       0 | 1-11                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-181                  
+ contextmemo/app/mockups/bold-coral                                     |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-294                  
+ contextmemo/app/mockups/bold-electric                                  |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-319                  
+ contextmemo/app/mockups/bold-marketing                                 |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-314                  
+ contextmemo/app/mockups/bold-monochrome                                |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-247                  
+ contextmemo/app/mockups/bold-multi                                     |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-304                  
+ contextmemo/app/mockups/bold-neon                                      |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-320                  
+ contextmemo/app/mockups/bold-sport                                     |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-297                  
+ contextmemo/app/mockups/bold-vivid                                     |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-310                  
+ contextmemo/app/mockups/clean-professional                             |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-282                  
+ contextmemo/app/mockups/neural-dark                                    |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-367                  
+ contextmemo/app/mockups/soft-modern                                    |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-353                  
+ contextmemo/app/pricing                                                |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-281                  
+ contextmemo/app/pricing/calculator                                     |       0 |      100 |     100 |       0 |                        
+  page.tsx                                                              |       0 |      100 |     100 |       0 | 3-395                  
+ contextmemo/app/v2                                                     |       0 |        0 |       0 |       0 |                        
+  layout.tsx                                                            |       0 |        0 |       0 |       0 | 1-175                  
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-179                  
+ contextmemo/app/v2/brands/[brandId]                                    |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-198                  
+ contextmemo/app/v2/brands/[brandId]/competitors                        |       0 |        0 |       0 |       0 |                        
+  competitors-list-client.tsx                                           |       0 |        0 |       0 |       0 | 1-525                  
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-41                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-137                  
+ contextmemo/app/v2/brands/[brandId]/memos                              |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-43                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-177                  
+ contextmemo/app/v2/brands/[brandId]/profile                            |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-76                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-406                  
+ contextmemo/app/v2/brands/[brandId]/prompts                            |       0 |        0 |       0 |       0 |                        
+  loading.tsx                                                           |       0 |        0 |       0 |       0 | 1-38                   
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-158                  
+  prompts-list-client.tsx                                               |       0 |        0 |       0 |       0 | 1-820                  
+ contextmemo/app/v2/brands/[brandId]/settings                           |       0 |        0 |       0 |       0 |                        
+  page.tsx                                                              |       0 |        0 |       0 |       0 | 1-378                  
+ contextmemo/components                                                 |       0 |      100 |     100 |       0 |                        
+  voice-insight-card.tsx                                                |       0 |      100 |     100 |       0 | 3-195                  
+  voice-insights-section.tsx                                            |       0 |      100 |     100 |       0 | 3-437                  
+  voice-recorder.tsx                                                    |       0 |      100 |     100 |       0 | 3-252                  
+ contextmemo/components/dashboard                                       |       0 |      100 |     100 |       0 |                        
+  activity-detail.tsx                                                   |       0 |      100 |     100 |       0 | 3-597                  
+  activity-feed.tsx                                                     |       0 |      100 |     100 |       0 | 3-933                  
+  activity-indicator.tsx                                                |       0 |      100 |     100 |       0 | 3-115                  
+  ai-traffic-view.tsx                                                   |       0 |      100 |     100 |       0 | 3-271                  
+  alert-detail.tsx                                                      |       0 |      100 |     100 |       0 | 3-304                  
+  alerts-list.tsx                                                       |       0 |      100 |     100 |       0 | 3-163                  
+  attribution-dashboard.tsx                                             |       0 |      100 |     100 |       0 | 3-315                  
+  billing-section.tsx                                                   |       0 |      100 |     100 |       0 | 3-192                  
+  brand-actions.tsx                                                     |       0 |      100 |     100 |       0 | 3-730                  
+  brand-tabs.tsx                                                        |       0 |      100 |     100 |       0 | 3-360                  
+  competitive-intelligence.tsx                                          |       0 |      100 |     100 |       0 | 3-514                  
+  competitor-content-feed.tsx                                           |       0 |      100 |     100 |       0 | 3-573                  
+  competitor-detail.tsx                                                 |       0 |      100 |     100 |       0 | 3-294                  
+  competitor-list.tsx                                                   |       0 |      100 |     100 |       0 | 3-474                  
+  dashboard-header.tsx                                                  |       0 |      100 |     100 |       0 | 3-110                  
+  export-dropdown.tsx                                                   |       0 |      100 |     100 |       0 | 3-149                  
+  gaps-progress-modal.tsx                                               |       0 |      100 |     100 |       0 | 3-300                  
+  memo-analytics-card.tsx                                               |       0 |      100 |     100 |       0 | 3-293                  
+  model-insights-panel.tsx                                              |       0 |      100 |     100 |       0 | 3-250                  
+  onboarding-flow.tsx                                                   |       0 |      100 |     100 |       0 | 3-466                  
+  onboarding-terminal.tsx                                               |       0 |      100 |     100 |       0 | 3-378                  
+  persona-manager.tsx                                                   |       0 |      100 |     100 |       0 | 3-453                  
+  profile-section.tsx                                                   |       0 |      100 |     100 |       0 | 3-478                  
+  prompt-intelligence-feed.tsx                                          |       0 |      100 |     100 |       0 | 3-312                  
+  queries-list-drawer.tsx                                               |       0 |      100 |     100 |       0 | 3-183                  
+  query-detail.tsx                                                      |       0 |      100 |     100 |       0 | 3-345                  
+  scan-progress-modal.tsx                                               |       0 |      100 |     100 |       0 | 3-349                  
+  scan-results-view.tsx                                                 |       0 |      100 |     100 |       0 | 3-1160                 
+  search-console-view.tsx                                               |       0 |      100 |     100 |       0 | 3-398                  
+  team-management.tsx                                                   |       0 |      100 |     100 |       0 | 3-329                  
+  usage-badge.tsx                                                       |       0 |      100 |     100 |       0 | 3-115                  
+  verification-badge.tsx                                                |       0 |      100 |     100 |       0 | 3-157                  
+  visibility-chart.tsx                                                  |       0 |      100 |     100 |       0 | 3-643                  
+ contextmemo/components/tracking                                        |       0 |      100 |     100 |       0 |                        
+  ai-traffic-tracker.tsx                                                |       0 |      100 |     100 |       0 | 3-40                   
+ contextmemo/components/ui                                              |       0 |    95.45 |   95.45 |       0 |                        
+  alert.tsx                                                             |       0 |      100 |     100 |       0 | 2-64                   
+  badge.tsx                                                             |       0 |      100 |     100 |       0 | 2-50                   
+  button.tsx                                                            |       0 |      100 |     100 |       0 | 2-62                   
+  card.tsx                                                              |       0 |      100 |     100 |       0 | 3-82                   
+  command.tsx                                                           |       0 |      100 |     100 |       0 | 3-141                  
+  dialog.tsx                                                            |       0 |      100 |     100 |       0 | 4-145                  
+  dropdown-menu.tsx                                                     |       0 |      100 |     100 |       0 | 4-239                  
+  form.tsx                                                              |       0 |      100 |     100 |       0 | 3-156                  
+  input.tsx                                                             |       0 |      100 |     100 |       0 | 3-19                   
+  label.tsx                                                             |       0 |      100 |     100 |       0 | 4-22                   
+  popover.tsx                                                           |       0 |      100 |     100 |       0 | 3-31                   
+  progress.tsx                                                          |       0 |      100 |     100 |       0 | 3-38                   
+  select.tsx                                                            |       0 |      100 |     100 |       0 | 3-146                  
+  separator.tsx                                                         |       0 |      100 |     100 |       0 | 4-26                   
+  sheet.tsx                                                             |       0 |      100 |     100 |       0 | 4-132                  
+  skeleton.tsx                                                          |       0 |        0 |       0 |       0 | 1-11                   
+  slider.tsx                                                            |       0 |      100 |     100 |       0 | 3-61                   
+  sonner.tsx                                                            |       0 |      100 |     100 |       0 | 3-38                   
+  switch.tsx                                                            |       0 |      100 |     100 |       0 | 3-27                   
+  tabs.tsx                                                              |       0 |      100 |     100 |       0 | 4-88                   
+  textarea.tsx                                                          |       0 |      100 |     100 |       0 | 3-16                   
+  tooltip.tsx                                                           |       0 |      100 |     100 |       0 | 3-30                   
+ contextmemo/components/v2/actions                                      |       0 |      100 |     100 |       0 |                        
+  cost-badge.tsx                                                        |       0 |      100 |     100 |       0 | 3-28                   
+ contextmemo/components/v2/feed                                         |       0 |      100 |     100 |       0 |                        
+  feed-container.tsx                                                    |       0 |      100 |     100 |       0 | 3-416                  
+  feed-detail-drawer.tsx                                                |       0 |      100 |     100 |       0 | 3-638                  
+  feed-empty.tsx                                                        |       0 |      100 |     100 |       0 | 3-19                   
+  feed-filters.tsx                                                      |       0 |      100 |     100 |       0 | 3-108                  
+  feed-item.tsx                                                         |       0 |      100 |     100 |       0 | 3-396                  
+  feed-skeleton.tsx                                                     |       0 |      100 |     100 |       0 | 3-55                   
+ contextmemo/components/v2/layout                                       |       0 |      100 |     100 |       0 |                        
+  brand-switcher.tsx                                                    |       0 |      100 |     100 |       0 | 3-149                  
+  usage-bar.tsx                                                         |       0 |      100 |     100 |       0 | 4-229                  
+  v2-sidebar.tsx                                                        |       0 |      100 |     100 |       0 | 3-247                  
+ contextmemo/components/v2/profile                                      |       0 |      100 |     100 |       0 |                        
+  persona-cards.tsx                                                     |       0 |      100 |     100 |       0 | 3-168                  
+  profile-refresh-button.tsx                                            |       0 |      100 |     100 |       0 | 3-71                   
+ contextmemo/lib                                                        |     100 |      100 |     100 |     100 |                        
+  utils.ts                                                              |     100 |      100 |     100 |     100 |                        
+ contextmemo/lib/ai                                                     |       0 |        0 |       0 |       0 |                        
+  sanitize.ts                                                           |       0 |        0 |       0 |       0 | 1-7                    
+ contextmemo/lib/ai/prompts                                             |       0 |        0 |       0 |       0 |                        
+  context-extraction.ts                                                 |       0 |        0 |       0 |       0 | 1-395                  
+  memo-generation.ts                                                    |       0 |        0 |       0 |       0 | 1-381                  
+ contextmemo/lib/cache                                                  |       0 |        0 |       0 |       0 |                        
+  redis-cache.ts                                                        |       0 |        0 |       0 |       0 | 1-24                   
+ contextmemo/lib/config                                                 |       0 |      100 |     100 |       0 |                        
+  costs.ts                                                              |       0 |      100 |     100 |       0 | 9-76                   
+ contextmemo/lib/feed                                                   |       0 |      100 |     100 |       0 |                        
+  emit.ts                                                               |       0 |      100 |     100 |       0 | 6-563                  
+  types.ts                                                              |       0 |      100 |     100 |       0 | 302-381                
+ contextmemo/lib/hubspot                                                |       0 |      100 |     100 |       0 |                        
+  oauth.ts                                                              |       0 |      100 |     100 |       0 | 7-285                  
+ contextmemo/lib/inngest                                                |       0 |        0 |       0 |       0 |                        
+  client.ts                                                             |       0 |        0 |       0 |       0 | 1-13                   
+ contextmemo/lib/inngest/functions                                      |       0 |    28.57 |   28.57 |       0 |                        
+  ai-overview-scan.ts                                                   |       0 |        0 |       0 |       0 | 1-147                  
+  bing-sync.ts                                                          |       0 |        0 |       0 |       0 | 1-237                  
+  citation-loop.ts                                                      |       0 |      100 |     100 |       0 | 19-467                 
+  citation-verify.ts                                                    |       0 |      100 |     100 |       0 | 13-474                 
+  cleanup.ts                                                            |       0 |        0 |       0 |       0 | 1-45                   
+  competitor-content.ts                                                 |       0 |        0 |       0 |       0 | 1-1283                 
+  competitor-discover.ts                                                |       0 |        0 |       0 |       0 | 1-229                  
+  context-extract.ts                                                    |       0 |        0 |       0 |       0 | 1-189                  
+  daily-run.ts                                                          |       0 |        0 |       0 |       0 | 1-554                  
+  discovery-scan.ts                                                     |       0 |        0 |       0 |       0 | 1-302                  
+  gap-to-content.ts                                                     |       0 |      100 |     100 |       0 | 14-492                 
+  google-search-console-sync.ts                                         |       0 |        0 |       0 |       0 | 1-316                  
+  hourly-content.ts                                                     |       0 |        0 |       0 |       0 | 1-157                  
+  memo-backlink.ts                                                      |       0 |        0 |       0 |       0 | 1-430                  
+  memo-generate.ts                                                      |       0 |        0 |       0 |       0 | 1-556                  
+  model-insights.ts                                                     |       0 |      100 |     100 |       0 | 11-476                 
+  prompt-enrich.ts                                                      |       0 |        0 |       0 |       0 | 1-367                  
+  prompt-intelligence.ts                                                |       0 |      100 |     100 |       0 | 11-384                 
+  query-generate.ts                                                     |       0 |        0 |       0 |       0 | 1-318                  
+  revenue-attribution.ts                                                |       0 |      100 |     100 |       0 | 16-528                 
+  scan-run.ts                                                           |       0 |        0 |       0 |       0 | 1-1158                 
+ contextmemo/lib/redis                                                  |       0 |        0 |       0 |       0 |                        
+  client.ts                                                             |       0 |        0 |       0 |       0 | 1-46                   
+ contextmemo/lib/security                                               |    5.75 |    44.44 |   28.57 |    5.75 |                        
+  audit-events.ts                                                       |       0 |        0 |       0 |       0 | 1-39                   
+  csrf.ts                                                               |       0 |      100 |     100 |       0 | 2-39                   
+  encryption.ts                                                         |       0 |        0 |       0 |       0 | 1-41                   
+  ip.ts                                                                 |   57.14 |       75 |      50 |   57.14 | 12-19                  
+  rate-limit.ts                                                         |       0 |        0 |       0 |       0 | 1-47                   
+  security-events.ts                                                    |       0 |        0 |       0 |       0 | 1-30                   
+ contextmemo/lib/stripe                                                 |       0 |        0 |       0 |       0 |                        
+  billing-events.ts                                                     |       0 |        0 |       0 |       0 | 1-27                   
+  client-browser.ts                                                     |       0 |        0 |       0 |       0 | 1-10                   
+  client.ts                                                             |       0 |        0 |       0 |       0 | 1-153                  
+ contextmemo/lib/supabase                                               |   28.98 |        0 |       0 |   28.98 |                        
+  client.ts                                                             |       0 |        0 |       0 |       0 | 1-8                    
+  middleware.ts                                                         |       0 |        0 |       0 |       0 | 1-178                  
+  server.ts                                                             |       0 |        0 |       0 |       0 | 1-29                   
+  service.ts                                                            |       0 |        0 |       0 |       0 | 1-12                   
+  types.ts                                                              |   66.91 |      100 |       0 |   66.91 | ...98,899-922,988-1020 
+ contextmemo/lib/utils                                                  |    6.98 |    92.85 |   83.33 |    6.98 |                        
+  activity-logger.ts                                                    |       0 |        0 |       0 |       0 | 1-235                  
+  domain-verification.ts                                                |     100 |      100 |     100 |     100 |                        
+  indexnow.ts                                                           |       0 |      100 |     100 |       0 | 9-106                  
+  jina-reader.ts                                                        |       0 |      100 |     100 |       0 | 23-130                 
+  job-tracker.ts                                                        |       0 |        0 |       0 |       0 | 1-60                   
+  openrouter.ts                                                         |       0 |      100 |     100 |       0 | 38-116                 
+  perplexity.ts                                                         |       0 |      100 |     100 |       0 | 8-209                  
+  serpapi.ts                                                            |       0 |      100 |     100 |       0 | 53-255                 
+ contextmemo/scripts                                                    |       0 |      100 |     100 |       0 |                        
+  backfill-feed-events.ts                                               |       0 |      100 |     100 |       0 | 13-411                 
+  backfill-prompt-tracking.ts                                           |       0 |      100 |     100 |       0 | 14-219                 
+  create-test-user.ts                                                   |       0 |      100 |     100 |       0 | 3-69                   
+  send-prd-email.ts                                                     |       0 |      100 |     100 |       0 | 6-116                  
+  test-serpapi.ts                                                       |       0 |      100 |     100 |       0 | 4-65                   
+------------------------------------------------------------------------|---------|----------|---------|---------|------------------------
+
+
+
+
+
+
+
+
+
+
