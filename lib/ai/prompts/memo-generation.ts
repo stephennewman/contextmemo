@@ -851,7 +851,7 @@ FORMATTING:
 - Use > blockquotes for expert insights and key definitions
 - Write in complete paragraphs (3-5 sentences each)
 - ALWAYS leave a blank line before and after headings, tables, and lists
-- End with ## Sources — EVERY source MUST be a clickable markdown link with a real URL, e.g. `- [Source Title](https://example.com/page)`. Do NOT list source names without URLs. If you cannot provide a real URL for a source, omit it entirely. Never include {{brand_domain}}.
+- End with ## Sources — EVERY source MUST be a clickable markdown link with a real URL, e.g. - [Source Title](https://example.com/page). Do NOT list source names without URLs. If you cannot provide a real URL for a source, omit it entirely. Never include {{brand_domain}}.
 
 {{available_images}}
 
