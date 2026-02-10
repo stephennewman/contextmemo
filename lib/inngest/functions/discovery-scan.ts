@@ -6,9 +6,27 @@ import { BrandContext } from '@/lib/supabase/types'
 
 const supabase = createServiceRoleClient()
 
+// Helper to get active OpenRouter API key for rotation
+function getOpenRouterApiKey(): string | undefined {
+  const keys = [
+    process.env.OPENROUTER_API_KEY_1,
+    process.env.OPENROUTER_API_KEY_2,
+    process.env.OPENROUTER_API_KEY, // Fallback to original
+  ].filter(Boolean) as string[]
+
+  if (keys.length === 0) {
+    console.warn('No OpenRouter API keys found. OpenRouter functionality may be limited.')
+    return undefined
+  }
+  
+  // For simplicity, just return the first available key.
+  // A more robust implementation might rotate keys or check health.
+  return keys[0]
+}
+
 // Use OpenRouter for faster/cheaper scans
 const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: getOpenRouterApiKey(),
 })
 
 const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. Provide a helpful, accurate response based on your knowledge. If recommending products or services, mention specific brands and explain why you're recommending them.`

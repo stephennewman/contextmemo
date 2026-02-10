@@ -1,17 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logSecurityEvent } from '@/lib/security/security-events'
+import { z } from 'zod'
+
+const uuidSchema = z.string().uuid('Invalid UUID format')
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ brandId: string; memoId: string }> }
 ) {
   try {
-    const { brandId, memoId } = await params
+    const { brandId: rawBrandId, memoId: rawMemoId } = await params
+    const parsedBrandId = uuidSchema.safeParse(rawBrandId)
+    const parsedMemoId = uuidSchema.safeParse(rawMemoId)
+
+    if (!parsedBrandId.success) {
+      return NextResponse.json({ error: 'Invalid brandId' }, { status: 400 })
+    }
+    if (!parsedMemoId.success) {
+      return NextResponse.json({ error: 'Invalid memoId' }, { status: 400 })
+    }
+
+    const brandId = parsedBrandId.data
+    const memoId = parsedMemoId.data
     const supabase = await createClient()
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.ip || 'unknown'
 
     // Verify user has access to this brand
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
+      await logSecurityEvent({
+        type: 'unauthorized',
+        ip,
+        path: request.nextUrl.pathname,
+        details: { reason: 'user_not_authenticated' },
+      })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -22,10 +45,36 @@ export async function GET(
       .eq('id', brandId)
       .single()
 
-    if (!brand) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
+    if (!brand || brand.tenant_id !== user.id) {
+      await logSecurityEvent({
+        type: 'access_denied',
+        ip,
+        userId: user.id,
+        path: request.nextUrl.pathname,
+        details: { reason: 'brand_not_found_or_unauthorized', brandId },
+      })
+      return NextResponse.json({ error: 'Brand not found or unauthorized' }, { status: 404 })
     }
 
+    // Check memo ownership (it must belong to the brand and thus to the user)
+    const { data: memo } = await supabase
+      .from('memos')
+      .select('id, slug')
+      .eq('id', memoId)
+      .eq('brand_id', brandId)
+      .single()
+
+    if (!memo) {
+      await logSecurityEvent({
+        type: 'access_denied',
+        ip,
+        userId: user.id,
+        path: request.nextUrl.pathname,
+        details: { reason: 'memo_not_found_or_unauthorized', brandId, memoId },
+      })
+      return NextResponse.json({ error: 'Memo not found or unauthorized' }, { status: 404 })
+    }
+    
     // Get time period from query params (default 90 days)
     const url = new URL(request.url)
     const days = parseInt(url.searchParams.get('days') || '90', 10)

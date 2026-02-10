@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service'
 
-const supabase = createServiceRoleClient()
+
+const supabase = await createClient()
 
 interface ExportParams {
   params: Promise<{ brandId: string }>

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/privacy/delete/route'
+import { logAuditEvent } from '@/lib/security/audit-events'
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
@@ -8,6 +9,10 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: vi.fn(),
+}))
+
+vi.mock('@/lib/security/audit-events', () => ({
+  logAuditEvent: vi.fn(),
 }))
 
 const { createClient } = await import('@/lib/supabase/server')
@@ -27,7 +32,7 @@ type MockSupabase = {
   from: (table: string) => MockSupabaseBuilder
   auth: {
     admin: {
-      deleteUser: (userId: string) => Promise<{ error: null }>
+      deleteUser: (userId: string) => Promise<{ error: null } | { error: { message: string } }>
     }
   }
   getDeletes: () => Array<{ table: string; eqFilters: Record<string, unknown>; inFilters: Record<string, unknown[]> }>
@@ -186,5 +191,85 @@ describe('privacy delete API', () => {
     )).toBe(true)
 
     expect(supabaseMock.auth.admin.deleteUser).toHaveBeenCalledWith('user-1')
+  })
+
+  it('returns 500 with generic error on auth user deletion failure and logs audit event', async () => {
+    const userId = 'user-1'
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: userId } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    const supabaseMock = buildSupabaseMock({
+      brands: [{ id: 'brand-1', tenant_id: userId }],
+      competitors: [{ id: 'comp-1', brand_id: 'brand-1' }],
+      memos: [{ id: 'memo-1', brand_id: 'brand-1' }],
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabaseMock as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    // Mock admin.deleteUser to throw an error
+    vi.mocked(supabaseMock.auth.admin).deleteUser.mockResolvedValueOnce({ error: { message: 'Supabase auth delete error' } })
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(500)
+
+    const body = await response.json()
+    expect(body.error).toBe('An unexpected error occurred during account deletion')
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'delete_account_attempt',
+        userId: userId,
+        resourceType: 'user',
+        resourceId: userId,
+        metadata: { status: 'failed', reason: 'auth_delete_error', errorMessage: 'Supabase auth delete error' },
+      }),
+      expect.any(Request)
+    )
+  })
+
+  it('returns 500 with generic error on general internal failure and logs audit event', async () => {
+    const userId = 'user-1'
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: userId } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    // Simulate an error during data fetching by throwing from the mock
+    vi.mocked(createServiceRoleClient).mockReturnValue({
+      from: vi.fn().mockImplementation(() => {
+        throw new Error('Database connection error')
+      }),
+      auth: {
+        admin: {
+          deleteUser: vi.fn().mockResolvedValue({ error: null }),
+        },
+      },
+    } as unknown as ReturnType<typeof createServiceRoleClient>)
+
+    const request = new Request('http://localhost/api/privacy/delete', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: true }),
+    }) as NextRequest
+
+    const response = await POST(request)
+    expect(response.status).toBe(500)
+
+    const body = await response.json()
+    expect(body.error).toBe('An unexpected error occurred during data deletion')
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'delete_account_attempt',
+        userId: userId,
+        metadata: { status: 'failed', reason: 'internal_server_error', errorMessage: 'Database connection error' },
+      }),
+      expect.any(Request)
+    )
   })
 })

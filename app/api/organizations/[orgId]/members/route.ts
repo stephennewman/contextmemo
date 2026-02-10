@@ -33,13 +33,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const userId = user?.id || 'unknown'
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Check if user is a member
-  const role = await getUserRole(user.id, orgId)
+  const role = await getUserRole(userId, orgId)
   if (!role) {
     return NextResponse.json({ error: 'Not a member of this organization' }, { status: 403 })
   }
@@ -61,8 +62,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     .order('joined_at', { ascending: true })
 
   if (error) {
-    console.error('Error fetching members:', error)
-    return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 })
+    console.error('Error fetching members', { error: error.message, orgId, userId })
+    return NextResponse.json({ error: 'An unexpected error occurred while fetching members' }, { status: 500 })
   }
 
   // Get pending invites (only for admins+)
@@ -89,14 +90,29 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.ip || 'unknown'
+  const userId = user?.id || 'unknown'
 
   if (!user) {
+    await logSecurityEvent({
+      type: 'unauthorized',
+      ip,
+      path: request.nextUrl.pathname,
+      details: { reason: 'user_not_authenticated' },
+    })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Check permissions
-  const role = await getUserRole(user.id, orgId)
+  const role = await getUserRole(userId, orgId)
   if (!role || !hasPermission(role, 'manage_members')) {
+    await logSecurityEvent({
+      type: 'access_denied',
+      ip,
+      userId,
+      path: request.nextUrl.pathname,
+      details: { reason: 'not_authorized_to_invite_members', orgId },
+    })
     return NextResponse.json({ error: 'Not authorized to invite members' }, { status: 403 })
   }
 
@@ -175,8 +191,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     .single()
 
   if (error) {
-    console.error('Error creating invite:', error)
-    return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 })
+    console.error('Error creating invite', { error: error.message, orgId, email })
+    return NextResponse.json({ error: 'An unexpected error occurred while creating invitation' }, { status: 500 })
   }
 
   // TODO: Send invite email

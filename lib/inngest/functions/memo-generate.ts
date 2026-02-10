@@ -12,6 +12,8 @@ import {
 } from '@/lib/ai/prompts/memo-generation'
 import { BrandContext, VoiceInsight } from '@/lib/supabase/types'
 import { emitFeedEvent } from '@/lib/feed/emit'
+import { decrypt } from '@/lib/security/encryption'
+import { sanitizeForAI } from '@/lib/ai/sanitize'
 
 const supabase = createServiceRoleClient()
 
@@ -76,6 +78,18 @@ export const memoGenerate = inngest.createFunction(
         throw new Error('Brand not found')
       }
 
+      // Decrypt brand.context if it exists and is a string
+      if (brandResult.data.context && typeof brandResult.data.context === 'string') {
+        try {
+          brandResult.data.context = JSON.parse(decrypt(brandResult.data.context))
+        } catch (e: any) {
+          console.error('Failed to decrypt brand context:', e.message)
+          // Fallback to original if decryption fails (or handle as an error)
+          // For now, we'll leave it as original if it fails to decrypt.
+        }
+      }
+
+
       // Get all competitors for the brand
       const { data: allCompetitors } = await supabase
         .from('competitors')
@@ -102,6 +116,11 @@ export const memoGenerate = inngest.createFunction(
       year: 'numeric' 
     })
 
+    // Sanitize sensitive inputs
+    const sanitizedBrandContextDescription = brandContext.description ? sanitizeForAI(brandContext.description) : ''
+    const sanitizedQueryText = query?.query_text ? sanitizeForAI(query.query_text) : ''
+    const sanitizedCompetitorContextDescription = competitor?.context?.description ? sanitizeForAI(competitor.context.description) : ''
+
     // Generate tone instructions from brand settings
     const toneInstructions = generateToneInstructions(brandContext.brand_tone)
     
@@ -122,8 +141,8 @@ export const memoGenerate = inngest.createFunction(
           prompt = COMPARISON_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
-            .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
+            .replace('{{brand_context}}', JSON.stringify({ ...brandContext, description: sanitizedBrandContextDescription }, null, 2))
+            .replace('{{competitor_context}}', JSON.stringify({ ...competitor.context, description: sanitizedCompetitorContextDescription } || {}, null, 2))
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{competitor_name\}\}/g, competitor.name)
             .replace(/\{\{date\}\}/g, today)
@@ -143,9 +162,9 @@ export const memoGenerate = inngest.createFunction(
           prompt = ALTERNATIVE_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', JSON.stringify({ ...brandContext, description: sanitizedBrandContextDescription }, null, 2))
             .replace('{{competitor_name}}', competitor.name)
-            .replace('{{competitor_context}}', JSON.stringify(competitor.context || {}, null, 2))
+            .replace('{{competitor_context}}', JSON.stringify({ ...competitor.context, description: sanitizedCompetitorContextDescription } || {}, null, 2))
             .replace('{{other_alternatives}}', otherCompetitors)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
@@ -155,13 +174,13 @@ export const memoGenerate = inngest.createFunction(
 
         case 'industry':
           // Extract industry from query or use first market
-          const industry = query?.query_text?.match(/for\s+(.+)$/i)?.[1] 
+          const industry = sanitizedQueryText.match(/for\s+(.+)$/i)?.[1] 
             || brandContext.markets?.[0] 
             || 'business'
           prompt = INDUSTRY_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', JSON.stringify({ ...brandContext, description: sanitizedBrandContextDescription }, null, 2))
             .replace('{{industry}}', industry)
             .replace(/\{\{brand_name\}\}/g, brand.name)
             .replace(/\{\{date\}\}/g, today)
@@ -171,13 +190,13 @@ export const memoGenerate = inngest.createFunction(
 
         case 'how_to':
           // Extract topic from query
-          const topic = query?.query_text?.replace(/^how\s+to\s+/i, '') 
+          const topic = sanitizedQueryText.replace(/^how\s+to\s+/i, '') 
             || 'get started'
           const competitorList = competitors.slice(0, 3).map(c => c.name).join(', ')
           prompt = HOW_TO_MEMO_PROMPT
             .replace('{{tone_instructions}}', toneInstructions)
             .replace('{{verified_insights}}', verifiedInsights)
-            .replace('{{brand_context}}', JSON.stringify(brandContext, null, 2))
+            .replace('{{brand_context}}', JSON.stringify({ ...brandContext, description: sanitizedBrandContextDescription }, null, 2))
             .replace('{{competitors}}', competitorList)
             .replace('{{topic}}', topic)
             .replace(/\{\{brand_name\}\}/g, brand.name)

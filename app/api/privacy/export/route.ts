@@ -91,15 +91,18 @@ async function fetchAllByMemoIds<T>(supabase: ReturnType<typeof createServiceRol
 }
 
 export async function GET() {
+  let userId = 'unknown'
   try {
     const authClient = await createClient()
     const { data: { user } } = await authClient.auth.getUser()
+    userId = user?.id || 'unknown'
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const supabase = createServiceRoleClient()
+
 
     const { data: tenant } = await supabase
       .from('tenants')
@@ -162,8 +165,8 @@ export async function GET() {
       aiTraffic,
       exportedAt: new Date().toISOString(),
     })
-  } catch (error) {
-    console.error('Privacy export error:', error)
-    return NextResponse.json({ error: 'Failed to export data' }, { status: 500 })
+  } catch (error: unknown) {
+    console.error('Privacy export error', { error: error instanceof Error ? error.message : String(error), userId })
+    return NextResponse.json({ error: 'An unexpected error occurred during data export' }, { status: 500 })
   }
 }

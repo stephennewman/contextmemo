@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { getClientIp, isAdminIP } from '@/lib/security/ip'
 
 async function getCount(
   serviceClient: ReturnType<typeof createServiceRoleClient>,
@@ -20,6 +22,13 @@ async function getCount(
 }
 
 export default async function AdminDashboardPage() {
+  const headerList = headers()
+  const ip = getClientIp({ headers: headerList } as any) // Cast to any because NextRequest is not directly available here
+
+  if (!isAdminIP(ip)) {
+    redirect('/dashboard')
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

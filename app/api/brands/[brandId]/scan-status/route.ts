@@ -1,13 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logSecurityEvent } from '@/lib/security/security-events'
+import { z } from 'zod'
+
+const uuidSchema = z.string().uuid('Invalid brandId format')
 
 interface RouteParams {
   params: Promise<{ brandId: string }>
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const { brandId } = await params
+  const { brandId: rawBrandId } = await params
+  const parsedBrandId = uuidSchema.safeParse(rawBrandId)
+
+  if (!parsedBrandId.success) {
+    return NextResponse.json({ error: 'Invalid brandId' }, { status: 400 })
+  }
+  const brandId = parsedBrandId.data
   const supabase = await createClient()
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || request.ip || 'unknown'
+
+
+  // Verify user owns the brand
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    await logSecurityEvent({
+      type: 'unauthorized',
+      ip,
+      path: request.nextUrl.pathname,
+      details: { reason: 'user_not_authenticated' },
+    })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: brand, error: brandError } = await supabase
+    .from('brands')
+    .select('tenant_id')
+    .eq('id', brandId)
+    .single()
+
+  if (brandError || !brand || brand.tenant_id !== user.id) {
+    await logSecurityEvent({
+      type: 'access_denied',
+      ip,
+      userId: user.id,
+      path: request.nextUrl.pathname,
+      details: { reason: 'brand_not_found_or_unauthorized', brandId },
+    })
+    return NextResponse.json(
+      { error: 'Brand not found or unauthorized' },
+      { status: 404 }
+    )
+  }
   
   // Get recent scan count (last 10 minutes)
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()

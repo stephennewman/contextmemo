@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { logAuditEvent } from '@/lib/security/audit-events'
 
 const deleteSchema = z.object({
   confirm: z.literal(true),
 })
 
 export async function POST(request: NextRequest) {
+  let userId = 'unknown'
   try {
     const authClient = await createClient()
     const { data: { user } } = await authClient.auth.getUser()
+    userId = user?.id || 'unknown'
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -28,7 +31,7 @@ export async function POST(request: NextRequest) {
     const { data: brands } = await supabase
       .from('brands')
       .select('id')
-      .eq('tenant_id', user.id)
+      .eq('tenant_id', userId)
 
     const brandIds = (brands || []).map(brand => brand.id)
 
@@ -72,17 +75,31 @@ export async function POST(request: NextRequest) {
       await supabase.from('brands').delete().in('id', brandIds)
     }
 
-    await supabase.from('tenants').delete().eq('id', user.id)
+    await supabase.from('tenants').delete().eq('id', userId)
 
-    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(user.id)
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId)
     if (authDeleteError) {
-      console.error('Failed to delete auth user:', authDeleteError)
-      return NextResponse.json({ error: 'Failed to delete auth user' }, { status: 500 })
+      console.error('Failed to delete auth user', { error: authDeleteError.message, userId })
+      await logAuditEvent({
+        action: 'delete_account_attempt',
+        userId,
+        resourceType: 'user',
+        resourceId: userId,
+        metadata: { status: 'failed', reason: 'auth_delete_error', errorMessage: authDeleteError.message },
+      }, request)
+      return NextResponse.json({ error: 'An unexpected error occurred during account deletion' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Privacy delete error:', error)
-    return NextResponse.json({ error: 'Failed to delete data' }, { status: 500 })
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Privacy delete error', { error: errorMessage, userId })
+    await logAuditEvent({
+      action: 'delete_account_attempt',
+      userId,
+      metadata: { status: 'failed', reason: 'internal_server_error', errorMessage },
+    }, request)
+    return NextResponse.json({ error: 'An unexpected error occurred during data deletion' }, { status: 500 })
   }
 }
+

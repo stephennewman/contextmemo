@@ -63,6 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const { token } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const userId = user?.id || 'unknown'
 
   if (!user) {
     return NextResponse.json({ error: 'Please log in to accept this invitation' }, { status: 401 })
@@ -140,8 +141,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
   if (memberError) {
-    console.error('Error adding member:', memberError)
-    return NextResponse.json({ error: 'Failed to join organization' }, { status: 500 })
+    console.error('Error adding member', { error: memberError.message, inviteId: invite.id, userId })
+    return NextResponse.json({ error: 'An unexpected error occurred while joining organization' }, { status: 500 })
   }
 
   // Mark invite as accepted

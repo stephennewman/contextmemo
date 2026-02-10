@@ -135,4 +135,49 @@ describe('privacy export API', () => {
     expect(body.memoVersions).toHaveLength(1)
     expect(body.exportedAt).toBeTypeOf('string')
   })
+
+  it('returns 500 with generic error on export failure', async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>)
+
+    // Mock serviceClient to throw an error on competitors fetch (after brands succeeds)
+    vi.mocked(createServiceRoleClient).mockReturnValue({
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'tenants') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: { id: 'user-1', email: 'owner@example.com' }, error: null }),
+          }
+        }
+        if (table === 'brands') {
+          // Return brands successfully with a proper thenable
+          const builder = {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            then: (resolve: (value: unknown) => unknown) => resolve({ data: [{ id: 'brand-1', tenant_id: 'user-1' }], error: null }),
+          }
+          return builder
+        }
+        // Simulate an error for other tables (competitors, etc.)
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          in: vi.fn().mockReturnThis(),
+          range: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } }),
+          single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } }),
+        }
+      }),
+    } as unknown as ReturnType<typeof createServiceRoleClient>)
+
+
+    const response = await GET()
+    expect(response.status).toBe(500)
+
+    const body = await response.json()
+    expect(body.error).toBe('An unexpected error occurred during data export')
+  })
 })

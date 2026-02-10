@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
   } catch (err) {
-    console.error('Webhook signature verification failed:', err)
+    console.error('Webhook verification failed')
     await logSecurityEvent({
       type: 'webhook_invalid',
       ip,

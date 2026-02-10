@@ -90,8 +90,8 @@ export async function GET(request: NextRequest) {
   const { data: events, error, count } = await query
 
   if (error) {
-    console.error('Feed query error:', error)
-    return NextResponse.json({ error: 'Failed to fetch feed' }, { status: 500 })
+    console.error('Feed query error', { error: error.message })
+    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
   }
 
   // Check if there are more items
@@ -187,8 +187,8 @@ export async function PATCH(request: NextRequest) {
     .in('id', event_ids)
 
   if (error) {
-    console.error('Feed update error:', error)
-    return NextResponse.json({ error: 'Failed to update events' }, { status: 500 })
+    console.error('Feed update error', { error: error.message })
+    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true, updated: event_ids.length })
@@ -264,9 +264,9 @@ export async function POST(request: NextRequest) {
             },
           })
           actionResult = { triggered: 'memo/generate', job_id: query.id }
-        } catch (err) {
-          console.error('Failed to trigger memo generation:', err)
-          return NextResponse.json({ error: 'Failed to trigger memo generation' }, { status: 500 })
+        } catch (err: any) {
+          console.error('Failed to trigger memo generation', { error: err.message })
+          return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
         }
       }
     } else if (queryId) {
@@ -282,9 +282,9 @@ export async function POST(request: NextRequest) {
           },
         })
         actionResult = { triggered: 'memo/generate', job_id: queryId }
-      } catch (err) {
-        console.error('Failed to trigger memo generation:', err)
-        return NextResponse.json({ error: 'Failed to trigger memo generation' }, { status: 500 })
+      } catch (err: any) {
+        console.error('Failed to trigger memo generation', { error: err.message })
+        return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
       }
     }
   }
@@ -308,8 +308,8 @@ export async function POST(request: NextRequest) {
       .eq('id', queryId)
     
     if (excludeError) {
-      console.error('Failed to exclude prompt:', excludeError)
-      return NextResponse.json({ error: 'Failed to exclude prompt' }, { status: 500 })
+      console.error('Failed to exclude prompt', { error: excludeError.message })
+      return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
     }
     
     // Emit feed event for the exclusion
@@ -323,8 +323,8 @@ export async function POST(request: NextRequest) {
         query_text: queryText,
         reason: body.reason || 'manual',
       })
-    } catch (err) {
-      console.error('Failed to emit prompt excluded event:', err)
+    } catch (err: any) {
+      console.error('Failed to emit prompt excluded event', { error: err.message })
       // Don't fail the request, exclusion was successful
     }
     
@@ -350,8 +350,8 @@ export async function POST(request: NextRequest) {
       .eq('id', queryId)
     
     if (reenableError) {
-      console.error('Failed to re-enable prompt:', reenableError)
-      return NextResponse.json({ error: 'Failed to re-enable prompt' }, { status: 500 })
+      console.error('Failed to re-enable prompt', { error: reenableError.message })
+      return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
     }
     
     actionResult = { triggered: 'prompt_reenabled', job_id: queryId }
@@ -367,11 +367,10 @@ export async function POST(request: NextRequest) {
     })
     .eq('id', event_id)
 
-  if (updateError) {
-    console.error('Failed to record action:', updateError)
-    return NextResponse.json({ error: 'Failed to record action' }, { status: 500 })
-  }
-
+      if (updateError) {
+        console.error('Failed to record action', { error: updateError.message })
+        return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+      }
   return NextResponse.json({ 
     success: true, 
     event_id,

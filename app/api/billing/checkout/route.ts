@@ -4,6 +4,7 @@ import { stripe, PLANS, PlanId } from '@/lib/stripe/client'
 import { createClient } from '@/lib/supabase/server'
 import { getClientIp } from '@/lib/security/ip'
 import { rateLimit } from '@/lib/security/rate-limit'
+import { validateCSRFToken, getCSRFHeaderName } from '@/lib/security/csrf'
 
 const planIds = Object.keys(PLANS) as [PlanId, ...PlanId[]]
 const checkoutSchema = z.object({
@@ -12,6 +13,10 @@ const checkoutSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    if (!await validateCSRFToken(request)) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+    }
+
     const ip = getClientIp(request)
     const rate = await rateLimit({
       key: `billing:checkout:ip:${ip}`,
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const { planId } = parsed.data
 
-    if (!planId || !PLANS[planId]) {
+    if (!PLANS[planId]) { // planId is already validated by zod, no need to check `!planId`
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
@@ -109,7 +114,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Checkout error:', error)
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     )
   }

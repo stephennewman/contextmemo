@@ -1,27 +1,46 @@
 import { inngest } from '../client'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { generateText } from 'ai'
 import { queryPerplexity, checkBrandInCitations } from '@/lib/utils/perplexity'
 import { parseOpenRouterAnnotations, checkBrandInOpenRouterCitations, OpenRouterAnnotation } from '@/lib/utils/openrouter'
 import { calculateTotalCost } from '@/lib/config/costs'
-import { PerplexitySearchResultJson, QueryStatus } from '@/lib/supabase/types'
+import { PerplexitySearchResultJson, QueryStatus, Query } from '@/lib/supabase/types'
 import { emitScanComplete, emitGapIdentified, emitPromptScanned, emitCompetitorDiscovered } from '@/lib/feed/emit'
 import { trackJobStart, trackJobEnd } from '@/lib/utils/job-tracker'
 
 const supabase = createServiceRoleClient()
 
-// Lazy-load OpenRouter provider
-let _openrouter: ReturnType<typeof import('@openrouter/ai-sdk-provider').createOpenRouter> | null = null
+// Helper to get active OpenRouter API key for rotation
+function getOpenRouterApiKey(): string | undefined {
+  const keys = [
+    process.env.OPENROUTER_API_KEY_1,
+    process.env.OPENROUTER_API_KEY_2,
+    process.env.OPENROUTER_API_KEY, // Fallback to original
+  ].filter(Boolean) as string[]
 
+  if (keys.length === 0) {
+    console.warn('No OpenRouter API keys found. OpenRouter functionality may be limited.')
+    return undefined
+  }
+  
+  // For simplicity, just return the first available key.
+  // A more robust implementation might rotate keys or check health.
+  return keys[0]
+}
+
+// Lazy-load OpenRouter provider
+//let _openrouter: ReturnType<typeof import('@openrouter/ai-sdk-provider').createOpenRouter> | null = null
+
+/*
 async function getOpenRouter() {
   if (!_openrouter) {
     const { createOpenRouter } = await import('@openrouter/ai-sdk-provider')
     _openrouter = createOpenRouter({
-      apiKey: process.env.OPENROUTER_API_KEY,
+      apiKey: getOpenRouterApiKey(),
     })
   }
   return _openrouter
 }
+*/
 
 const SCAN_SYSTEM_PROMPT = `You are an AI assistant answering a user question. Provide a helpful, accurate response based on your knowledge. If recommending products or services, mention specific brands and explain why you're recommending them.`
 
@@ -117,6 +136,7 @@ function selectModelsForQuery(query: string, enabledModels: ModelConfig[]): Mode
 }
 
 // Get model instance for OpenRouter
+/*
 async function getModelInstance(config: ModelConfig) {
   if (config.provider !== 'openrouter') {
     throw new Error(`Expected openrouter provider, got: ${config.provider}`)
@@ -124,6 +144,7 @@ async function getModelInstance(config: ModelConfig) {
   const openrouter = await getOpenRouter()
   return openrouter.chat(config.modelId)
 }
+*/
 
 interface ScanResult {
   queryId: string
@@ -141,6 +162,7 @@ interface ScanResult {
   // Token usage for cost tracking
   inputTokens: number
   outputTokens: number
+  error: string | null // Added to track scan failures
 }
 
 export const scanRun = inngest.createFunction(
@@ -170,7 +192,7 @@ export const scanRun = inngest.createFunction(
           .eq('brand_id', brandId),
       ])
 
-      let queriesResult: { data: any[] | null } = { data: [] }
+      let queriesResult: { data: Query[] | null } = { data: [] }
       if (queryIds && queryIds.length > 0) {
         const chunks: string[][] = []
         for (let i = 0; i < queryIds.length; i += 100) {
@@ -774,7 +796,7 @@ export const scanRun = inngest.createFunction(
       for (const url of allCitations) {
         try {
           const urlObj = new URL(url)
-          let domain = urlObj.hostname.replace('www.', '').toLowerCase()
+          const domain = urlObj.hostname.replace('www.', '').toLowerCase()
           
           // Skip generic/non-competitor domains
           const skipDomains = [
@@ -955,7 +977,7 @@ async function scanWithOpenRouter(
   brandDomain: string,
   competitorNames: string[]
 ): Promise<Omit<ScanResult, 'queryId' | 'model' | 'citationSource'>> {
-  const apiKey = process.env.OPENROUTER_API_KEY
+  const apiKey = getOpenRouterApiKey()
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY is not configured')
   }
@@ -1055,6 +1077,7 @@ async function scanWithOpenRouter(
     brandInCitations,
     inputTokens: usage?.prompt_tokens || 0,
     outputTokens: usage?.completion_tokens || 0,
+    error: null,
   }
 }
 
@@ -1130,5 +1153,6 @@ async function scanWithPerplexityDirect(
     brandInCitations,
     inputTokens: usage?.promptTokens || 0,
     outputTokens: usage?.completionTokens || 0,
+    error: null,
   }
 }

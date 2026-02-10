@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { detectAISource } from '@/lib/supabase/types'
 import { z } from 'zod'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 const supabase = createServiceRoleClient()
 
@@ -22,38 +24,24 @@ const trackSchema = z.object({
   referrer: z.string().optional(),
 })
 
-// Rate limiting: track IPs to prevent abuse
-const recentRequests = new Map<string, number>()
-const RATE_LIMIT_WINDOW = 60000 // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 100
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(100, '60 s'), // 100 requests per 60 seconds
+  analytics: true,
+})
 
 export async function POST(request: NextRequest) {
+  // Get IP for rate limiting (defined outside try block so it's accessible in catch)
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+             request.headers.get('x-real-ip') || 
+             'unknown'
+  
   try {
-    // Get IP for rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
+    // Distributed Rate limiting
+    const { success } = await ratelimit.limit(ip)
     
-    // Rate limiting
-    const now = Date.now()
-    const lastRequest = recentRequests.get(ip)
-    if (lastRequest && now - lastRequest < RATE_LIMIT_WINDOW) {
-      const count = Array.from(recentRequests.entries())
-        .filter(([key, time]) => key === ip && now - time < RATE_LIMIT_WINDOW)
-        .length
-      if (count >= MAX_REQUESTS_PER_WINDOW) {
-        return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
-      }
-    }
-    recentRequests.set(ip, now)
-    
-    // Clean old entries periodically
-    if (Math.random() < 0.1) {
-      for (const [key, time] of recentRequests.entries()) {
-        if (now - time > RATE_LIMIT_WINDOW) {
-          recentRequests.delete(key)
-        }
-      }
+    if (!success) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
     const body = await request.json().catch(() => null)
@@ -65,9 +53,6 @@ export async function POST(request: NextRequest) {
 
     const { brandId, memoId, pageUrl, referrer } = parsed.data
     
-    if (!brandId || !pageUrl) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
 
     // Get user agent from request
     const userAgent = request.headers.get('user-agent')
@@ -101,8 +86,8 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       // Table might not exist yet - fail silently in production
-      console.error('Track error:', error)
-      return NextResponse.json({ tracked: false, error: 'db_error' })
+      console.error('Track error in Supabase insert', { error: error.message, brandId, memoId })
+      return NextResponse.json({ tracked: false, error: 'An unexpected error occurred' })
     }
 
     return NextResponse.json({ 
@@ -110,9 +95,10 @@ export async function POST(request: NextRequest) {
       source: referrerSource,
       isAI: !['organic', 'direct_nav'].includes(referrerSource)
     })
-  } catch (error) {
-    console.error('Track error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Track error in POST handler', { error: errorMessage, ip })
+    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
   }
 }
 
