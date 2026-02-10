@@ -390,6 +390,13 @@ _Most recent deploys first_
 
 ### February 10, 2026
 
+**Fix brand self-promotion + diversify images** (5fa1f0c)
+- Updated `CITATION_RESPONSE_PROMPT` so the brand is featured prominently (near top of listicles) rather than buried as an afterthought — content published on the brand's platform should advocate for itself confidently
+- Voice perspective changed from "neutral analyst" to "informed expert publishing on the brand's platform"
+- Removed NASA/space imagery from fallback pool, flattened to one 30-image pool of business-appropriate photos
+- Added FNV-1a hash + Fisher-Yates shuffle seeded by `sourceUrl + topic` so each article gets unique images
+- Files changed: `lib/ai/prompts/memo-generation.ts`, `lib/utils/image-sourcer.ts`, `lib/inngest/functions/citation-respond.ts`
+
 **Overhaul citations Covered/Gap logic** (86e05bb)
 - Replaced fuzzy query-based and keyword-based "Covered" matching with exact `provenance.source_url` lookup — "Covered" now means a `citation_response` memo exists for that specific URL
 - "Generate Memo" button now shows on ALL non-brand citations (removed top-10 limit)
