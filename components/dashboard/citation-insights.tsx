@@ -16,6 +16,10 @@ import {
   ThumbsDown,
   Minus,
   Target,
+  BookOpen,
+  Sparkles,
+  TrendingUp,
+  AlertCircle,
 } from 'lucide-react'
 import { subDays, eachDayOfInterval, startOfDay } from 'date-fns'
 import { FunnelStage, FUNNEL_STAGE_META } from '@/lib/supabase/types'
@@ -50,11 +54,14 @@ interface Memo {
   memo_type: string
   status: string
   slug: string
+  source_query_id?: string | null
 }
 
 interface CitationInsightsProps {
+  brandId: string
   brandName: string
   brandDomain: string
+  brandSubdomain: string
   scanResults: ScanResult[]
   queries: Query[]
   memos?: Memo[]
@@ -72,7 +79,7 @@ const MEMO_FUNNEL_MAP: Record<string, FunnelStage> = {
 }
 
 type TimeRange = '7d' | '30d' | '90d'
-type ViewMode = 'domains' | 'urls'
+type ViewMode = 'domains' | 'urls' | 'my_content'
 
 function getDomainFromUrl(url: string): string {
   try {
@@ -93,7 +100,7 @@ function getPathFromUrl(url: string): string {
   }
 }
 
-export function CitationInsights({ brandName, brandDomain, scanResults, queries, memos = [] }: CitationInsightsProps) {
+export function CitationInsights({ brandId, brandName, brandDomain, brandSubdomain, scanResults, queries, memos = [] }: CitationInsightsProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('urls')
@@ -187,6 +194,88 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
       }))
       .sort((a, b) => b.totalCitations - a.totalCitations)
   }, [filteredScans, brandDomain, queryMap])
+
+  // Compute brand's rank in the domains list
+  const brandDomainRank = useMemo(() => {
+    const rank = citationsByDomain.findIndex(d => d.isBrand) + 1 // 1-indexed, 0 if not found
+    return { rank, total: citationsByDomain.length }
+  }, [citationsByDomain])
+
+  // Build map from query ID → memos generated from that query
+  const memosByQueryId = useMemo(() => {
+    const map = new Map<string, Memo[]>()
+    for (const memo of memos) {
+      if (memo.source_query_id) {
+        if (!map.has(memo.source_query_id)) {
+          map.set(memo.source_query_id, [])
+        }
+        map.get(memo.source_query_id)!.push(memo)
+      }
+    }
+    return map
+  }, [memos])
+
+  // For each cited URL, find related memos (via shared query_id)
+  const urlToRelatedMemos = useMemo(() => {
+    const map = new Map<string, Memo[]>()
+    for (const entry of citationsByUrl) {
+      const related = new Map<string, Memo>() // dedupe by memo id
+      for (const prompt of entry.prompts) {
+        const queryMemos = memosByQueryId.get(prompt.id)
+        if (queryMemos) {
+          for (const m of queryMemos) related.set(m.id, m)
+        }
+      }
+      // Also do a title/slug keyword match as fallback
+      if (related.size === 0) {
+        const urlLower = entry.url.toLowerCase()
+        const pathWords = entry.path.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(w => w.length > 3)
+        for (const memo of memos) {
+          const titleLower = memo.title.toLowerCase()
+          const slugLower = memo.slug.toLowerCase()
+          // Check if any significant path word appears in memo title or slug
+          const hasMatch = pathWords.some(word => titleLower.includes(word) || slugLower.includes(word))
+          if (hasMatch) related.set(memo.id, memo)
+        }
+      }
+      if (related.size > 0) {
+        map.set(entry.url, Array.from(related.values()))
+      }
+    }
+    return map
+  }, [citationsByUrl, memosByQueryId, memos])
+
+  // "My Content" view: find brand's own URLs being cited + match to memos
+  const myContentCited = useMemo(() => {
+    // Brand URLs in citations = brand domain or contextmemo subdomain
+    const brandPatterns = [
+      brandDomain.toLowerCase().replace(/^www\./, ''),
+      `${brandSubdomain}.contextmemo.com`,
+      'contextmemo.com',
+    ]
+    
+    const brandCitedUrls = citationsByUrl.filter(entry => {
+      const domain = entry.domain.toLowerCase()
+      return brandPatterns.some(p => domain.includes(p) || p.includes(domain))
+    })
+
+    // Try to match each brand URL to a specific memo
+    return brandCitedUrls.map(entry => {
+      // Try to match URL path to a memo slug
+      const pathParts = entry.path.toLowerCase().replace(/^\//, '').split('/')
+      const lastPart = pathParts[pathParts.length - 1]?.replace(/\/$/, '') || ''
+      
+      const matchedMemo = memos.find(m => {
+        const slugLower = m.slug.toLowerCase()
+        return lastPart && (slugLower === lastPart || slugLower.includes(lastPart) || lastPart.includes(slugLower))
+      })
+
+      return {
+        ...entry,
+        matchedMemo: matchedMemo || null,
+      }
+    })
+  }, [citationsByUrl, brandDomain, brandSubdomain, memos])
 
   // Calculate citation timeline data
   const timelineData = useMemo(() => {
@@ -410,6 +499,17 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                   <Globe className="h-3 w-3" />
                   Domains
                 </button>
+                <button
+                  onClick={() => { setViewMode('my_content'); setExpandedItem(null) }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    viewMode === 'my_content'
+                      ? 'bg-white shadow-sm text-[#0F172A]'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <BookOpen className="h-3 w-3" />
+                  My Content
+                </button>
               </div>
             </div>
           </div>
@@ -465,6 +565,20 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
 
                           {/* Stats */}
                           <div className="flex items-center gap-3 text-sm shrink-0">
+                            {/* Content match indicator */}
+                            {!source.isBrand && (
+                              urlToRelatedMemos.has(source.url) ? (
+                                <span className="flex items-center gap-0.5 text-[10px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded" title="You have content addressing this topic">
+                                  <BookOpen className="h-3 w-3" />
+                                  Covered
+                                </span>
+                              ) : i < 10 ? (
+                                <span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded" title="No matching content — consider creating a memo">
+                                  <Sparkles className="h-3 w-3" />
+                                  Gap
+                                </span>
+                              ) : null
+                            )}
                             <div className="flex items-center gap-1 font-semibold" title="Times this URL was cited">
                               <Hash className="h-3 w-3 text-muted-foreground" />
                               {source.totalCitations}
@@ -496,6 +610,56 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
                             </p>
                           </div>
                           
+                          {/* Related memos or generate CTA */}
+                          {!source.isBrand && (() => {
+                            const relatedMemos = urlToRelatedMemos.get(source.url) || []
+                            return relatedMemos.length > 0 ? (
+                              <div className="px-3 py-2 border-b bg-green-50/50">
+                                <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3" />
+                                  Your related memos
+                                </p>
+                                <div className="space-y-1">
+                                  {relatedMemos.map(memo => (
+                                    <a
+                                      key={memo.id}
+                                      href={`/brands/${brandId}/memos/${memo.id}`}
+                                      className="text-sm text-green-700 hover:text-green-900 flex items-center gap-1.5"
+                                    >
+                                      <FileText className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{memo.title}</span>
+                                      <Badge className="text-[9px] px-1 py-0 bg-green-100 text-green-700 shrink-0">
+                                        {memo.status}
+                                      </Badge>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : i < 10 ? (
+                              <div className="px-3 py-2 border-b bg-amber-50/50">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-xs font-medium text-amber-700 flex items-center gap-1">
+                                      <AlertCircle className="h-3 w-3" />
+                                      No matching content for this citation
+                                    </p>
+                                    <p className="text-[11px] text-amber-600 mt-0.5">
+                                      AI models cite this URL {source.totalCitations}x — consider writing a memo on this topic.
+                                    </p>
+                                  </div>
+                                  <a
+                                    href={`/brands/${brandId}/memos?generate=gap_fill&citedUrl=${encodeURIComponent(source.url)}&citedDomain=${encodeURIComponent(source.domain)}`}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-[#0F172A] text-white rounded hover:bg-[#1e293b] transition-colors shrink-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Sparkles className="h-3 w-3" />
+                                    Generate Memo
+                                  </a>
+                                </div>
+                              </div>
+                            ) : null
+                          })()}
+
                           {/* Prompt list */}
                           <div className="divide-y">
                             {source.prompts.length > 0 ? (
@@ -556,10 +720,42 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
             ) : (
               <EmptyState />
             )
-          ) : (
+          ) : viewMode === 'domains' ? (
             /* Domain-level view */
             citationsByDomain.length > 0 ? (
               <div className="space-y-1">
+                {/* Brand rank callout */}
+                {brandDomainRank.rank > 0 ? (
+                  <div className="flex items-center gap-3 p-3 mb-3 rounded-lg border-2 border-cyan-200 bg-cyan-50/50">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-lg shrink-0">
+                      #{brandDomainRank.rank}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[#0F172A]">
+                        {brandName} ranks <span className="text-cyan-600">#{brandDomainRank.rank}</span> of {brandDomainRank.total} cited domains
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {brandDomainRank.rank <= 3
+                          ? 'Strong position — AI models frequently cite your content.'
+                          : brandDomainRank.rank <= 10
+                          ? 'Solid presence — room to climb with more targeted content.'
+                          : `${brandDomainRank.rank - 1} domain${brandDomainRank.rank - 1 !== 1 ? 's' : ''} are cited more often. More memos can improve your rank.`}
+                      </p>
+                    </div>
+                    {brandDomainRank.rank > 5 && (
+                      <TrendingUp className="h-5 w-5 text-cyan-400 shrink-0" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-3 mb-3 rounded-lg border-2 border-amber-200 bg-amber-50/50">
+                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-[#0F172A]">{brandName} is not yet in the cited domains list</p>
+                      <p className="text-xs text-muted-foreground">Generate memos to create citable content that AI models can reference.</p>
+                    </div>
+                  </div>
+                )}
+
                 {citationsByDomain.slice(0, 20).map((source, i) => {
                   const isExpanded = expandedItem === source.domain
                   const barWidth = (source.totalCitations / citationsByDomain[0].totalCitations) * 100
@@ -714,6 +910,202 @@ export function CitationInsights({ brandName, brandDomain, scanResults, queries,
             ) : (
               <EmptyState />
             )
+          ) : (
+            /* My Content view - show brand's memos and their citation status */
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-lg bg-cyan-50 border border-cyan-200">
+                  <p className="text-2xl font-bold text-cyan-700">{myContentCited.length}</p>
+                  <p className="text-xs text-cyan-600">Your URLs cited</p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 border">
+                  <p className="text-2xl font-bold text-[#0F172A]">
+                    {myContentCited.reduce((sum, c) => sum + c.totalCitations, 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Total citations</p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 border">
+                  <p className="text-2xl font-bold text-[#0F172A]">
+                    {new Set(myContentCited.flatMap(c => c.prompts.map(p => p.id))).size}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Across prompts</p>
+                </div>
+              </div>
+
+              {myContentCited.length > 0 ? (
+                <div className="space-y-1">
+                  {myContentCited.map((entry, i) => {
+                    const isExpanded = expandedItem === `my_${entry.url}`
+                    const barWidth = myContentCited[0].totalCitations > 0
+                      ? (entry.totalCitations / myContentCited[0].totalCitations) * 100
+                      : 0
+                    
+                    return (
+                      <div key={entry.url}>
+                        <button
+                          onClick={() => setExpandedItem(isExpanded ? null : `my_${entry.url}`)}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-colors group">
+                            <span className="w-6 text-sm font-mono text-muted-foreground text-right shrink-0">
+                              {i + 1}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {entry.matchedMemo ? (
+                                  <span className="text-sm font-medium text-cyan-600 truncate">
+                                    {entry.matchedMemo.title}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm font-medium text-cyan-600 truncate">
+                                    {entry.path || entry.url}
+                                  </span>
+                                )}
+                                {entry.matchedMemo && (
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-cyan-100 text-cyan-700 shrink-0">
+                                    {entry.matchedMemo.memo_type.replace(/_/g, ' ')}
+                                  </Badge>
+                                )}
+                                {isExpanded ? (
+                                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0" />
+                                ) : (
+                                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto shrink-0 opacity-0 group-hover:opacity-100" />
+                                )}
+                              </div>
+                              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full bg-cyan-500" style={{ width: `${barWidth}%` }} />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm shrink-0">
+                              <div className="flex items-center gap-1 font-semibold text-cyan-700" title="Times cited">
+                                <Hash className="h-3 w-3 text-cyan-400" />
+                                {entry.totalCitations}
+                              </div>
+                              <div className="flex items-center gap-1 text-muted-foreground" title="Across prompts">
+                                <MessageSquare className="h-3 w-3" />
+                                {entry.promptCount}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="ml-9 mr-2 mb-3 mt-1 rounded-lg border bg-slate-50/50 overflow-hidden">
+                            <div className="px-3 py-2 border-b bg-white">
+                              <a
+                                href={entry.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-cyan-600 hover:text-cyan-700 flex items-center gap-1.5"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                <span className="truncate">{entry.url}</span>
+                              </a>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Cited {entry.totalCitations} time{entry.totalCitations !== 1 ? 's' : ''} across {entry.promptCount} prompt{entry.promptCount !== 1 ? 's' : ''}
+                              </p>
+                              {entry.matchedMemo && (
+                                <a
+                                  href={`/brands/${brandId}/memos/${entry.matchedMemo.id}`}
+                                  className="text-xs text-cyan-600 hover:text-cyan-700 flex items-center gap-1 mt-1"
+                                >
+                                  <FileText className="h-3 w-3" />
+                                  Edit memo: {entry.matchedMemo.title}
+                                </a>
+                              )}
+                            </div>
+                            
+                            <div className="px-3 py-2 bg-white border-b">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                Prompts citing this content
+                              </p>
+                            </div>
+                            <div className="divide-y">
+                              {entry.prompts.slice(0, 15).map((prompt) => (
+                                <div key={prompt.id} className="px-3 py-2.5 flex items-start gap-2">
+                                  <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm">&ldquo;{prompt.query_text}&rdquo;</p>
+                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                      {prompt.funnel_stage && FUNNEL_STAGE_META[prompt.funnel_stage] && (
+                                        <span 
+                                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                                          style={{ 
+                                            backgroundColor: FUNNEL_STAGE_META[prompt.funnel_stage].bgColor, 
+                                            color: FUNNEL_STAGE_META[prompt.funnel_stage].color 
+                                          }}
+                                        >
+                                          {FUNNEL_STAGE_META[prompt.funnel_stage].shortLabel}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              {entry.prompts.length > 15 && (
+                                <div className="px-3 py-2 text-xs text-muted-foreground">
+                                  +{entry.prompts.length - 15} more prompts
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-muted-foreground">
+                  <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="font-medium">No content from {brandName} cited yet</p>
+                  <p className="text-sm mt-1">
+                    AI models haven&apos;t cited your domain or memos in the selected period.
+                  </p>
+                  <p className="text-sm mt-0.5">
+                    Generate memos targeting top-cited topics to start appearing in AI responses.
+                  </p>
+                </div>
+              )}
+
+              {/* Uncited memos - show memos that exist but aren't being cited yet */}
+              {memos.length > 0 && (() => {
+                const citedMemoIds = new Set(myContentCited.filter(e => e.matchedMemo).map(e => e.matchedMemo!.id))
+                const uncitedMemos = memos.filter(m => m.status === 'published' && !citedMemoIds.has(m.id))
+                
+                if (uncitedMemos.length === 0) return null
+                
+                return (
+                  <div className="pt-4 border-t">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      Published memos not yet cited ({uncitedMemos.length})
+                    </p>
+                    <div className="space-y-1">
+                      {uncitedMemos.slice(0, 10).map(memo => (
+                        <div key={memo.id} className="flex items-center gap-2 p-2 rounded hover:bg-slate-50">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <a
+                            href={`/brands/${brandId}/memos/${memo.id}`}
+                            className="text-sm text-slate-700 hover:text-cyan-600 truncate flex-1"
+                          >
+                            {memo.title}
+                          </a>
+                          <Badge className="text-[10px] px-1.5 py-0 bg-slate-100 text-slate-500 shrink-0">
+                            {memo.memo_type.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                      ))}
+                      {uncitedMemos.length > 10 && (
+                        <p className="text-xs text-muted-foreground pl-6">
+                          +{uncitedMemos.length - 10} more published memos
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           )}
           {/* Funnel Breakdown */}
           <div className="mt-8 pt-6 border-t">

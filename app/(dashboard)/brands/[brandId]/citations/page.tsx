@@ -23,7 +23,7 @@ export default async function CitationsPage({ params }: Props) {
   ] = await Promise.all([
     supabase
       .from('brands')
-      .select('name, domain')
+      .select('name, domain, subdomain')
       .eq('id', brandId)
       .single(),
     supabase
@@ -57,8 +57,10 @@ export default async function CitationsPage({ params }: Props) {
         { label: 'Citation Verify', enabled: brandSettings?.auto_verify_citations ?? true },
       ]} />
       <CitationInsights
+        brandId={brandId}
         brandName={brand.name}
         brandDomain={brand.domain}
+        brandSubdomain={brand.subdomain}
         scanResults={allScans || []}
         queries={allQueries || []}
         memos={memos || []}

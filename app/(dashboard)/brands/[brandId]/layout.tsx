@@ -24,11 +24,16 @@ export default async function BrandLayout({ params, children }: Props) {
   }
 
   // Fetch brand + lightweight counts in parallel
+  // Get the date 90 days ago for citation counting
+  const ninetyDaysAgo = new Date()
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+
   const [
     { data: brand, error },
     { count: queryCount },
     { count: memoCount },
     { count: entityCount },
+    { data: citationCountData },
   ] = await Promise.all([
     supabase
       .from('brands')
@@ -48,7 +53,27 @@ export default async function BrandLayout({ params, children }: Props) {
       .from('competitors')
       .select('*', { count: 'exact', head: true })
       .eq('brand_id', brandId),
+    // Count total citations (scans that have any citations) for the tab badge
+    supabase
+      .from('scan_results')
+      .select('citations')
+      .eq('brand_id', brandId)
+      .gte('scanned_at', ninetyDaysAgo.toISOString())
+      .not('citations', 'is', null),
   ])
+
+  // Count total unique citation URLs
+  const citationUrls = new Set<string>()
+  if (citationCountData) {
+    for (const scan of citationCountData) {
+      if (Array.isArray(scan.citations)) {
+        for (const url of scan.citations) {
+          citationUrls.add(url as string)
+        }
+      }
+    }
+  }
+  const citationCount = citationUrls.size
 
   if (error || !brand) {
     notFound()
@@ -120,7 +145,7 @@ export default async function BrandLayout({ params, children }: Props) {
     { slug: 'prompts', label: 'PROMPTS', count: queryCount },
     { slug: 'memos', label: 'MEMOS', count: memoCount },
     { slug: 'entities', label: 'ENTITIES', count: entityCount },
-    { slug: 'citations', label: 'CITATIONS' },
+    { slug: 'citations', label: 'CITATIONS', count: citationCount || null },
     { slug: 'performance', label: 'PERFORMANCE' },
     { slug: 'settings', label: 'SETTINGS' },
   ]
