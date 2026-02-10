@@ -388,6 +388,16 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 10, 2026
+
+**Memo Generation v3 — UX polish and prompt fixes** (1531995)
+- Fixed hover underline bug: `hover:[&_a]:underline` was underlining ALL links when hovering the content container; changed to `[&_a:hover]:underline` so only the individual hovered link underlines (both standard and branded themes)
+- Removed memo type label (e.g. "— gap fill") from Related Reading section in backlinks
+- Conditional section heading: uses "The Short Answer" when memo title is a question, "Overview" when it's a statement
+- Stopped self-sourcing: removed brand's own domain from Sources templates across all 5 prompt types + added post-generation filter to strip any self-referencing source lines
+- Fixed non-clickable backlinks: relative paths like `(/slug)` replaced with proper route-prefixed paths via `getMemoUrl()` (e.g. `/tools/slug-name`)
+- Added CTA from brand offers: new `formatOffersForPrompt()` injects a "Next Step" section before Sources using the brand's primary offer (demo, trial, etc.) — only appears if offers are configured
+
 ### February 9, 2026
 
 **Corporate Positioning Enrichment — second-pass AI fills gaps** (eb22e94)
