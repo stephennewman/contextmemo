@@ -110,6 +110,7 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | `bing/sync` | Syncs Bing Webmaster data weekly |
 | `ai-overview/scan` | Checks Google AI Overviews via SerpAPI |
 | `daily/run` | Main scheduler (6 AM ET) |
+| `uptime-check` | Health check every 5 min → email alerts on failure/recovery |
 
 ### Automation Schedule
 
@@ -123,11 +124,13 @@ When B2B buyers ask AI assistants "What's the best CRM for small teams?" or "How
 | Memo generation | On-demand | Gaps detected in scans |
 | Competitor content scan | Daily | Part of daily run |
 | Search console sync | Weekly | Sundays 9 AM UTC |
+| Uptime health check | Every 5 min | Inngest cron → emails admins on failure |
 
 ### API Routes
 
 | Route | Purpose |
 |-------|---------|
+| `/api/health` | Uptime health check (Supabase + Redis status) |
 | `/api/inngest` | Inngest webhook endpoint |
 | `/api/brands/[brandId]/actions` | Trigger background jobs |
 | `/api/brands/[brandId]/export` | Export data (CSV/JSON) |
@@ -389,6 +392,15 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 11, 2026
+
+**Uptime monitoring: health endpoint + Inngest alert system**
+- Created `/api/health` endpoint — checks Supabase (DB query) + Redis (ping) connectivity, returns structured JSON with status/latency per service
+- Returns 200 when healthy, 503 when degraded/down — compatible with external uptime monitors
+- Created Inngest `uptime-check` function — runs every 5 minutes, pings health endpoint, emails all ADMIN_EMAILS via Resend on failure
+- Sends recovery notification when services come back online
+- Alert rate-limiting: 1 email per service per hour to prevent inbox flooding
+- **Limitation**: Cannot detect Vercel-level outages (runs on Vercel). Recommend BetterStack or UptimeRobot free tier for external monitoring.
+- 3 files changed: `app/api/health/route.ts` (new), `lib/inngest/functions/uptime-check.ts` (new), `app/api/inngest/route.ts` (updated)
 
 **AI search optimization: dynamic llms.txt, JSON-LD, semantic HTML** (a0cc789)
 - Replaced static `public/llms.txt` with dynamic `app/llms.txt/route.ts` — queries brands + published memos from database, always current

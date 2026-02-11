@@ -51,6 +51,7 @@ import { topicUniverseGenerate, topicUniverseRefresh } from '@/lib/inngest/funct
 import { competitorEnrich, competitorEnrichBatch } from '@/lib/inngest/functions/competitor-enrich'
 import { memoVerifyContent } from '@/lib/inngest/functions/memo-verify'
 import { citationRespond } from '@/lib/inngest/functions/citation-respond'
+import { uptimeCheck } from '@/lib/inngest/functions/uptime-check'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -138,6 +139,9 @@ export const { GET, POST, PUT } = serve({
     
     // Citation response - strategic variations of cited competitor content
     citationRespond,         // Fetch cited URL, generate better version with brand's perspective
+    
+    // Uptime monitoring - 5-min health checks with email alerts
+    uptimeCheck,             // Check Supabase + Redis, email admins on failure/recovery
   ],
 })
 // Sync trigger Wed Feb  4 13:26:53 EST 2026
