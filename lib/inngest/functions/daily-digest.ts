@@ -333,6 +333,39 @@ function buildSubjectLine(digest: TenantDigest): string {
   return `Daily Digest · Avg Visibility ${avgScore}%${wins}`
 }
 
+function buildPreheader(digest: TenantDigest): string {
+  const parts: string[] = []
+  for (const b of digest.brands) {
+    const delta = b.scoreDelta > 0 ? `+${b.scoreDelta}` : b.scoreDelta < 0 ? `${b.scoreDelta}` : 'no change'
+    parts.push(`${b.brandName} ${b.visibilityScore}% (${delta})`)
+  }
+  const totalWins = digest.brands.reduce((s, b) => s + b.firstCitations, 0)
+  const totalLost = digest.brands.reduce((s, b) => s + b.lostCitations, 0)
+  if (totalWins > 0) parts.push(`${totalWins} new citation${totalWins > 1 ? 's' : ''}`)
+  if (totalLost > 0) parts.push(`${totalLost} lost`)
+  return parts.join(' · ')
+}
+
+function buildGreeting(digest: TenantDigest): string {
+  const totalWins = digest.brands.reduce((s, b) => s + b.firstCitations, 0)
+  const totalLost = digest.brands.reduce((s, b) => s + b.lostCitations, 0)
+  const avgDelta = digest.brands.reduce((s, b) => s + b.scoreDelta, 0)
+
+  if (totalWins > 0 && totalLost === 0 && avgDelta >= 0) {
+    return 'Good news — your AI visibility improved in the last 24 hours.'
+  }
+  if (totalLost > 0 && totalWins === 0) {
+    return 'Heads up — some citations dropped in the last 24 hours. Here\'s the breakdown.'
+  }
+  if (totalWins > 0 && totalLost > 0) {
+    return 'Mixed results in the last 24 hours — some wins, some drops. Here\'s the full picture.'
+  }
+  if (avgDelta < 0) {
+    return 'Your visibility score dipped in the last 24 hours. Here\'s what changed.'
+  }
+  return 'Here\'s your AI visibility summary for the last 24 hours.'
+}
+
 function buildDigestEmail(digest: TenantDigest): string {
   const firstName = digest.name?.split(' ')[0] || 'there'
   const dateStr = new Date().toLocaleDateString('en-US', {
@@ -342,6 +375,8 @@ function buildDigestEmail(digest: TenantDigest): string {
     year: 'numeric',
   })
 
+  const preheader = buildPreheader(digest)
+  const greeting = buildGreeting(digest)
   const brandSections = digest.brands.map(b => buildBrandSection(b)).join('')
 
   return `
@@ -351,8 +386,21 @@ function buildDigestEmail(digest: TenantDigest): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daily Digest</title>
+  <!--[if !mso]><!-->
+  <style>
+    @media only screen and (max-width: 480px) {
+      .stat-cell { display: block !important; width: 100% !important; box-sizing: border-box !important; margin-bottom: 8px !important; }
+      .stat-spacer { display: none !important; }
+      .stat-row { display: block !important; }
+    }
+  </style>
+  <!--<![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <!-- Preheader (hidden inbox preview text) -->
+  <div style="display:none;font-size:1px;color:#f4f4f5;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    ${preheader}${'&nbsp;&zwnj;'.repeat(40)}
+  </div>
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
     <tr>
       <td align="center">
@@ -378,7 +426,7 @@ function buildDigestEmail(digest: TenantDigest): string {
           <tr>
             <td style="padding:32px 32px 16px;background-color:#ffffff;">
               <p style="margin:0;font-size:15px;color:#3f3f46;">Hi ${firstName},</p>
-              <p style="margin:8px 0 0;font-size:15px;color:#71717a;">Here's what happened with your AI visibility in the last 24 hours.</p>
+              <p style="margin:8px 0 0;font-size:15px;color:#71717a;">${greeting}</p>
             </td>
           </tr>
 
@@ -398,6 +446,9 @@ function buildDigestEmail(digest: TenantDigest): string {
               <p style="margin:16px 0 0;font-size:12px;color:#a1a1aa;">
                 Sent by Context Memo · AI visibility monitoring running 24/7
               </p>
+              <p style="margin:8px 0 0;font-size:11px;color:#a1a1aa;">
+                <a href="${SITE_URL}/dashboard/settings#notifications" style="color:#a1a1aa;text-decoration:underline;">Unsubscribe</a> or <a href="${SITE_URL}/dashboard/settings#notifications" style="color:#a1a1aa;text-decoration:underline;">manage email preferences</a>
+              </p>
             </td>
           </tr>
 
@@ -411,42 +462,80 @@ function buildDigestEmail(digest: TenantDigest): string {
 }
 
 function buildBrandSection(b: BrandDigest): string {
+  const brandUrl = `${SITE_URL}/dashboard/brands/${b.brandId}`
+
   // Score delta display
   const deltaColor = b.scoreDelta > 0 ? '#10b981' : b.scoreDelta < 0 ? '#ef4444' : '#a1a1aa'
-  const deltaText = b.scoreDelta > 0 ? `+${b.scoreDelta}` : b.scoreDelta < 0 ? `${b.scoreDelta}` : '—'
+  const deltaText = b.scoreDelta > 0 ? `+${b.scoreDelta}` : b.scoreDelta < 0 ? `${b.scoreDelta}` : '='
   const deltaArrow = b.scoreDelta > 0 ? '↑' : b.scoreDelta < 0 ? '↓' : ''
+
+  // Check if this is a quiet day (no meaningful activity)
+  const isQuietDay = b.totalScans === 0 && b.memosGenerated === 0 && b.firstCitations === 0 && b.lostCitations === 0
+
+  if (isQuietDay) {
+    return `
+          <tr>
+            <td style="padding:0 32px;background-color:#ffffff;">
+              <!-- Brand header -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e4e4e7;padding-top:24px;margin-top:8px;">
+                <tr>
+                  <td>
+                    <a href="${brandUrl}" style="font-size:16px;font-weight:700;color:#09090b;text-decoration:none;">${b.brandName}</a>
+                    <span style="font-size:12px;color:#a1a1aa;margin-left:8px;">${b.domain}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Quiet day summary -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;padding-bottom:24px;">
+                <tr>
+                  <td style="padding:16px;background:#fafafa;border-radius:8px;text-align:center;">
+                    <span style="font-size:28px;font-weight:800;color:#09090b;">${b.visibilityScore}%</span>
+                    <span style="font-size:11px;color:${deltaColor};font-weight:600;margin-left:8px;">${deltaArrow} ${deltaText}</span>
+                    <p style="margin:8px 0 0;font-size:13px;color:#a1a1aa;">Quiet day — no scans ran. Your visibility score is holding steady.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+`
+  }
 
   // Build notable events
   const events: string[] = []
   if (b.firstCitations > 0) {
-    events.push(`<span style="color:#10b981;font-weight:600;">🎯 ${b.firstCitations} new citation${b.firstCitations > 1 ? 's' : ''} won</span>`)
+    events.push(`<tr><td style="padding:4px 0;font-size:13px;"><span style="color:#10b981;font-weight:600;">+ ${b.firstCitations} new citation${b.firstCitations > 1 ? 's' : ''} won</span></td></tr>`)
   }
   if (b.lostCitations > 0) {
-    events.push(`<span style="color:#ef4444;">⚠️ ${b.lostCitations} citation${b.lostCitations > 1 ? 's' : ''} lost</span>`)
+    events.push(`<tr><td style="padding:4px 0;font-size:13px;"><span style="color:#ef4444;font-weight:600;">- ${b.lostCitations} citation${b.lostCitations > 1 ? 's' : ''} lost</span></td></tr>`)
   }
   if (b.memosGenerated > 0) {
-    events.push(`<span style="color:#8b5cf6;">📝 ${b.memosGenerated} memo${b.memosGenerated > 1 ? 's' : ''} generated</span>`)
-  }
-  if (b.memosPublished > 0) {
-    events.push(`<span style="color:#0ea5e9;">🚀 ${b.memosPublished} memo${b.memosPublished > 1 ? 's' : ''} published</span>`)
+    events.push(`<tr><td style="padding:4px 0;font-size:13px;color:#71717a;">${b.memosGenerated} memo${b.memosGenerated > 1 ? 's' : ''} generated${b.memosPublished > 0 ? `, ${b.memosPublished} published` : ''}</td></tr>`)
+  } else if (b.memosPublished > 0) {
+    events.push(`<tr><td style="padding:4px 0;font-size:13px;color:#71717a;">${b.memosPublished} memo${b.memosPublished > 1 ? 's' : ''} published</td></tr>`)
   }
   if (b.competitorContentDetected > 0) {
-    events.push(`<span style="color:#f59e0b;">👀 ${b.competitorContentDetected} competitor post${b.competitorContentDetected > 1 ? 's' : ''} detected</span>`)
+    events.push(`<tr><td style="padding:4px 0;font-size:13px;color:#f59e0b;">${b.competitorContentDetected} new competitor post${b.competitorContentDetected > 1 ? 's' : ''} detected</td></tr>`)
   }
   for (const s of b.streakMilestones) {
-    events.push(`<span style="color:#f97316;">🔥 "${truncate(s.query, 50)}" — ${s.streak} day streak</span>`)
+    events.push(`<tr><td style="padding:4px 0;font-size:13px;color:#f97316;">"${truncate(s.query, 45)}" — ${s.streak}-day citation streak</td></tr>`)
   }
 
   const eventsHtml = events.length > 0
-    ? events.map(e => `<tr><td style="padding:3px 0;font-size:13px;">${e}</td></tr>`).join('')
-    : `<tr><td style="padding:3px 0;font-size:13px;color:#a1a1aa;">No notable events today</td></tr>`
+    ? events.join('')
+    : `<tr><td style="padding:4px 0;font-size:13px;color:#a1a1aa;">No notable changes today</td></tr>`
 
-  // Top competitors
-  const competitorsHtml = b.topCompetitors.length > 0
+  // Top entities (formerly competitors)
+  const entitiesHtml = b.topCompetitors.length > 0
     ? b.topCompetitors.map(c =>
         `<span style="display:inline-block;padding:3px 10px;background:#fef2f2;color:#ef4444;border-radius:12px;font-size:11px;font-weight:500;margin:2px 4px 2px 0;">${c.name} (${c.count})</span>`
       ).join('')
     : '<span style="font-size:12px;color:#a1a1aa;">None detected</span>'
+
+  // Coverage bar — use two-cell table approach for Outlook compatibility
+  const coveragePct = b.totalActivePrompts > 0 ? Math.round((b.promptsWithCitations / b.totalActivePrompts) * 100) : 0
+  const coverageBarFilled = Math.max(coveragePct, 1) // at least 1% so cell renders
+  const coverageBarEmpty = 100 - coverageBarFilled
 
   return `
           <tr>
@@ -455,56 +544,58 @@ function buildBrandSection(b: BrandDigest): string {
               <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e4e4e7;padding-top:24px;margin-top:8px;">
                 <tr>
                   <td>
-                    <span style="font-size:16px;font-weight:700;color:#09090b;">${b.brandName}</span>
+                    <a href="${brandUrl}" style="font-size:16px;font-weight:700;color:#09090b;text-decoration:none;">${b.brandName}</a>
                     <span style="font-size:12px;color:#a1a1aa;margin-left:8px;">${b.domain}</span>
                   </td>
+                  <td align="right">
+                    <a href="${brandUrl}" style="font-size:12px;color:#71717a;text-decoration:none;">View brand &rarr;</a>
+                  </td>
                 </tr>
               </table>
 
-              <!-- Score + Stats Row -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
-                <tr>
+              <!-- Score + Stats Row (responsive: stacks on mobile) -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;" role="presentation">
+                <tr class="stat-row">
                   <!-- Visibility Score -->
-                  <td width="25%" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
-                    <div style="font-size:28px;font-weight:800;color:#09090b;">${b.visibilityScore}%</div>
-                    <div style="font-size:11px;color:${deltaColor};font-weight:600;margin-top:2px;">${deltaArrow} ${deltaText}</div>
-                    <div style="font-size:10px;color:#a1a1aa;margin-top:4px;">VISIBILITY</div>
+                  <td width="25%" class="stat-cell" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
+                    <span style="font-size:28px;font-weight:800;color:#09090b;">${b.visibilityScore}%</span><br/>
+                    <span style="font-size:11px;color:${deltaColor};font-weight:600;">${deltaArrow} ${deltaText}</span><br/>
+                    <span style="font-size:10px;color:#a1a1aa;">VISIBILITY</span>
                   </td>
-                  <td width="4%"></td>
+                  <td width="3%" class="stat-spacer">&nbsp;</td>
                   <!-- Scans -->
-                  <td width="22%" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
-                    <div style="font-size:22px;font-weight:700;color:#09090b;">${b.totalScans}</div>
-                    <div style="font-size:10px;color:#a1a1aa;margin-top:4px;">SCANS</div>
+                  <td width="22%" class="stat-cell" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
+                    <span style="font-size:22px;font-weight:700;color:#09090b;">${b.totalScans}</span><br/>
+                    <span style="font-size:10px;color:#a1a1aa;">SCANS</span>
                   </td>
-                  <td width="4%"></td>
+                  <td width="3%" class="stat-spacer">&nbsp;</td>
                   <!-- Mentioned -->
-                  <td width="22%" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
-                    <div style="font-size:22px;font-weight:700;color:#10b981;">${b.mentionedScans}</div>
-                    <div style="font-size:10px;color:#a1a1aa;margin-top:4px;">MENTIONED</div>
+                  <td width="22%" class="stat-cell" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
+                    <span style="font-size:22px;font-weight:700;color:#10b981;">${b.mentionedScans}</span><br/>
+                    <span style="font-size:10px;color:#a1a1aa;">MENTIONED</span>
                   </td>
-                  <td width="4%"></td>
+                  <td width="3%" class="stat-spacer">&nbsp;</td>
                   <!-- Citation Rate -->
-                  <td width="22%" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
-                    <div style="font-size:22px;font-weight:700;color:#8b5cf6;">${b.citationRate}%</div>
-                    <div style="font-size:10px;color:#a1a1aa;margin-top:4px;">CITE RATE</div>
+                  <td width="22%" class="stat-cell" style="padding:12px;background:#fafafa;border-radius:8px;text-align:center;">
+                    <span style="font-size:22px;font-weight:700;color:#8b5cf6;">${b.citationRate}%</span><br/>
+                    <span style="font-size:10px;color:#a1a1aa;">CITE RATE</span>
                   </td>
                 </tr>
               </table>
 
-              <!-- Prompts coverage bar -->
+              <!-- Prompts coverage bar (Outlook-safe two-cell approach) -->
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
                 <tr>
                   <td style="font-size:12px;color:#71717a;">
-                    Prompt coverage: <strong>${b.promptsWithCitations}</strong> of <strong>${b.totalActivePrompts}</strong> prompts citing your brand
+                    Prompt coverage: <strong>${b.promptsWithCitations}</strong> of <strong>${b.totalActivePrompts}</strong> prompts citing your brand (${coveragePct}%)
                   </td>
                 </tr>
                 <tr>
                   <td style="padding-top:6px;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                       <tr>
-                        <td style="background:#e4e4e7;border-radius:4px;height:6px;">
-                          <div style="background:#10b981;border-radius:4px;height:6px;width:${b.totalActivePrompts > 0 ? Math.round((b.promptsWithCitations / b.totalActivePrompts) * 100) : 0}%;"></div>
-                        </td>
+                        <td width="${coverageBarFilled}%" style="background-color:#10b981;height:6px;line-height:6px;font-size:1px;border-radius:4px 0 0 4px;">&nbsp;</td>
+                        <td width="${coverageBarEmpty}%" style="background-color:#e4e4e7;height:6px;line-height:6px;font-size:1px;border-radius:0 4px 4px 0;">&nbsp;</td>
                       </tr>
                     </table>
                   </td>
@@ -519,13 +610,13 @@ function buildBrandSection(b: BrandDigest): string {
                 ${eventsHtml}
               </table>
 
-              <!-- Top Competitors -->
+              <!-- Top Entities -->
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;padding-bottom:24px;">
                 <tr>
-                  <td style="font-size:11px;font-weight:600;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:8px;">Top Competitors Mentioned</td>
+                  <td style="font-size:11px;font-weight:600;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:8px;">Top Entities Mentioned</td>
                 </tr>
                 <tr>
-                  <td>${competitorsHtml}</td>
+                  <td>${entitiesHtml}</td>
                 </tr>
               </table>
             </td>

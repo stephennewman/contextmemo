@@ -15,7 +15,14 @@ import {
   FileText,
   TrendingUp,
   Shield,
-  BookOpen
+  BookOpen,
+  DollarSign,
+  UserPlus,
+  Briefcase,
+  Trophy,
+  Search,
+  Link2,
+  BarChart3,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { CONTEXT_MEMO_BRAND_ID, getMemoUrl } from "@/lib/memo/render";
@@ -55,7 +62,7 @@ export default async function Home() {
     '@type': 'Organization',
     name: 'Context Memo',
     url: 'https://contextmemo.com',
-    description: 'AI visibility platform for B2B teams. Get your brand cited in ChatGPT, Claude, Perplexity, and Gemini.',
+    description: 'AI visibility platform for B2B teams. Monitor, win, and prove ROI in ChatGPT, Claude, Perplexity, and Grok.',
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'support@contextmemo.com',
@@ -68,7 +75,7 @@ export default async function Home() {
     '@type': 'WebSite',
     name: 'Context Memo',
     url: 'https://contextmemo.com',
-    description: 'The premium AI visibility platform for B2B marketing teams. Track, analyze, and improve your brand presence in AI-powered search engines.',
+    description: 'The premium AI visibility platform for B2B marketing teams. Track, analyze, and improve your brand presence in AI-powered search engines. The full closed loop from scan to revenue.',
   }
 
   return (
@@ -120,13 +127,14 @@ export default async function Home() {
           </div>
           
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight max-w-5xl mx-auto leading-[0.9]">
-            GET CITED IN{" "}
+            MONITOR, WIN, AND PROVE ROI IN{" "}
             <span className="text-[#0EA5E9]">AI SEARCH</span>
           </h1>
           
-          <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Your buyers ask ChatGPT, Claude, and Perplexity for recommendations. 
-            Make sure they hear about you.
+          <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+            Track your brand across 4 AI models and Google AI Overviews. 
+            Generate content that gets cited. Verify it worked. 
+            Attribute the revenue back to your CRM.
           </p>
           
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
@@ -137,14 +145,14 @@ export default async function Home() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-2 border-white/20 hover:border-white/40 bg-transparent text-white font-bold text-lg rounded-none px-8 py-6 h-auto">
-              <Link href="/pricing">VIEW PRICING</Link>
+              <Link href="#how-it-works">SEE HOW IT WORKS</Link>
             </Button>
           </div>
           
           {/* AI Models Row */}
           <div className="mt-16 flex flex-wrap items-center justify-center gap-3">
             <span className="text-sm font-semibold text-slate-500 mr-2">MONITORS:</span>
-            {["ChatGPT", "Claude", "Perplexity", "Gemini", "Llama", "Mistral"].map((model) => (
+            {["ChatGPT", "Claude", "Perplexity", "Grok", "Google AI Overviews"].map((model) => (
               <span key={model} className="px-4 py-2 bg-white/5 border border-white/10 text-sm font-semibold tracking-wide">
                 {model.toUpperCase()}
               </span>
@@ -153,266 +161,123 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* The Problem */}
       <section className="py-20 bg-white text-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">THE NEW BUYER JOURNEY</h2>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">AI IS THE NEW FIRST TOUCH</h2>
             <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
               Your prospects stopped Googling. They ask AI instead.
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
-            <div className="p-10 text-center border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <div className="text-6xl md:text-7xl font-black text-[#0EA5E9]">65%</div>
-              <p className="mt-4 text-lg font-semibold text-slate-600">
-                of B2B buyers use AI for product research
+            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <MessageSquare className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl mb-3">YOUR BUYER ASKS AI</h3>
+              <p className="text-2xl font-bold italic text-slate-700 mb-4">
+                &quot;What&apos;s the best project management tool for small B2B teams?&quot;
+              </p>
+              <p className="text-slate-500">
+                They don&apos;t Google it anymore. They ask ChatGPT, Claude, or Perplexity — and trust the first answer.
               </p>
             </div>
-            <div className="p-10 text-center border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <div className="text-6xl md:text-7xl font-black text-[#0EA5E9]">3-5</div>
-              <p className="mt-4 text-lg font-semibold text-slate-600">
-                brands mentioned per AI recommendation
+            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Users className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl mb-3">AI RECOMMENDS 3-5 BRANDS</h3>
+              <p className="text-slate-600">
+                Each response mentions a handful of names. Your competitors are on the list. Are you?
               </p>
             </div>
-            <div className="p-10 text-center">
-              <div className="text-6xl md:text-7xl font-black text-[#0EA5E9]">0</div>
-              <p className="mt-4 text-lg font-semibold text-slate-600">
-                clicks if AI doesn&apos;t mention you
+            <div className="p-10">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Eye className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl mb-3">YOU HAVE NO VISIBILITY</h3>
+              <p className="text-slate-600">
+                No analytics. No attribution. No strategy. If AI doesn&apos;t cite you, your buyer never sees your name.
               </p>
             </div>
           </div>
           
           <div className="mt-12 p-8 bg-slate-100 border-2 border-[#0F172A]">
-            <p className="text-2xl md:text-3xl font-bold text-center italic text-slate-700">
-              &quot;What&apos;s the best CRM for small B2B teams?&quot;
+            <p className="text-2xl md:text-3xl font-bold text-center text-slate-700">
+              <span className="text-[#0EA5E9] font-black">65%</span> of B2B buyers now use AI for product research.
             </p>
-            <p className="mt-4 text-center text-lg text-slate-500 font-semibold">
-              When your buyer asks this, does AI mention your brand?
+            <p className="mt-3 text-center text-lg text-slate-500 font-semibold">
+              If AI doesn&apos;t mention you, you don&apos;t exist in their shortlist.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 bg-[#0F172A]">
+      {/* The Closed Loop — How It Works */}
+      <section id="how-it-works" className="py-24 bg-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">EVERYTHING YOU NEED</h2>
-            <p className="mt-4 text-xl text-slate-400">
-              Track, analyze, and improve your AI visibility.
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">THE FULL CLOSED LOOP</h2>
+            <p className="mt-4 text-xl text-slate-400 max-w-2xl mx-auto">
+              Most tools stop at monitoring. Context Memo closes the loop from discovery to revenue.
             </p>
           </div>
           
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-0 border-2 border-white/20">
-            
-            {/* Feature 1 */}
-            <div className="p-8 border-b-2 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <Eye className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">6 AI MODEL SCANNING</h3>
-              <p className="text-slate-400 mb-6">
-                Daily visibility checks across ChatGPT, Claude, Perplexity, Gemini, Llama, and Mistral.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Automated daily scans
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Visibility score tracking
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Historical trends
-                </li>
-              </ul>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className="p-8 border-b-2 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <Target className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">COMPETITIVE INTELLIGENCE</h3>
-              <p className="text-slate-400 mb-6">
-                See which competitors win AI recommendations over you. Get share-of-voice metrics.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Share of voice tracking
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Win/loss analysis
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Query gap identification
-                </li>
-              </ul>
-            </div>
-            
-            {/* Feature 3 */}
-            <div className="p-8 border-b-2 border-white/20 group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <FileText className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">AUTO-GENERATED MEMOS</h3>
-              <p className="text-slate-400 mb-6">
-                Fresh, structured memos cross-referenced with your brand for accuracy. No hallucinations, no fluff.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  5 memo types
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Brand tone customization
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Auto internal linking
-                </li>
-              </ul>
-            </div>
-            
-            {/* Feature 4 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <LineChart className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">SEARCH CONSOLE SYNC</h3>
-              <p className="text-slate-400 mb-6">
-                Connect Bing and Google to see the full picture of your AI discoverability pathway.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Bing Webmaster integration
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Google Search Console
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Query correlation
-                </li>
-              </ul>
-            </div>
-            
-            {/* Feature 5 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20 group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <MessageSquare className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">COMPETITIVE WATCH</h3>
-              <p className="text-slate-400 mb-6">
-                Monitor competitor activity daily. Auto-generate response memos in your brand&apos;s voice.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Daily competitor scanning
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Smart relevance filtering
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Auto-publish response memos
-                </li>
-              </ul>
-            </div>
-            
-            {/* Feature 6 */}
-            <div className="p-8 group hover:bg-white/5 transition-colors">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <Users className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-xl tracking-tight mb-3">PERSONA TARGETING</h3>
-              <p className="text-slate-400 mb-6">
-                AI detects your target personas and generates memos specifically for each audience.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Auto persona detection
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  6 B2B persona types
-                </li>
-                <li className="flex items-center gap-2 text-sm font-semibold">
-                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9]" />
-                  Intent-matched queries
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-white text-[#0F172A]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">HOW IT WORKS</h2>
-            <p className="mt-4 text-xl text-slate-600">
-              Set it up once. Get continuous AI visibility.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
+          <div className="grid md:grid-cols-5 gap-0 border-2 border-white/20">
             {/* Step 1 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
-              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+            <div className="p-6 lg:p-8 border-b-2 md:border-b-0 md:border-r-2 border-white/20">
+              <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 1
               </div>
-              <h3 className="font-black text-lg mb-3">CONNECT YOUR BRAND</h3>
-              <p className="text-slate-600">
-                Verify with your work email. We crawl your site and extract key facts, features, and differentiators.
+              <h3 className="font-black text-lg mb-3">SCAN</h3>
+              <p className="text-slate-400 text-sm">
+                Daily automated scans across ChatGPT, Claude, Perplexity, Grok, and Google AI Overviews. See exactly where your brand gets cited — and where it doesn&apos;t.
               </p>
             </div>
             
             {/* Step 2 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
-              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+            <div className="p-6 lg:p-8 border-b-2 md:border-b-0 md:border-r-2 border-white/20">
+              <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 2
               </div>
-              <h3 className="font-black text-lg mb-3">DISCOVER LANDSCAPE</h3>
-              <p className="text-slate-600">
-                AI identifies your competitors and generates the high-intent queries your buyers actually ask.
+              <h3 className="font-black text-lg mb-3">DISCOVER</h3>
+              <p className="text-slate-400 text-sm">
+                AI surfaces your real competitive landscape. Competitors, aggregators, publishers — all organically discovered from actual AI responses, not self-reported.
               </p>
             </div>
             
             {/* Step 3 */}
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
-              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+            <div className="p-6 lg:p-8 border-b-2 md:border-b-0 md:border-r-2 border-white/20">
+              <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 3
               </div>
-              <h3 className="font-black text-lg mb-3">MONITOR VISIBILITY</h3>
-              <p className="text-slate-600">
-                Daily scans across 6 AI models show your score and where you&apos;re winning or losing vs competitors.
+              <h3 className="font-black text-lg mb-3">GENERATE</h3>
+              <p className="text-slate-400 text-sm">
+                For every gap, we generate structured memos in your brand&apos;s voice. 9 content types built for how AI actually reads.
               </p>
             </div>
             
             {/* Step 4 */}
-            <div className="p-8">
-              <div className="w-16 h-16 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-2xl mb-6">
+            <div className="p-6 lg:p-8 border-b-2 md:border-b-0 md:border-r-2 border-white/20">
+              <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 4
               </div>
-              <h3 className="font-black text-lg mb-3">GENERATE MEMOS</h3>
-              <p className="text-slate-600">
-                For gaps, we generate structured memos cross-referenced with your brand data. Factual, citable, and built for how AI actually reads.
+              <h3 className="font-black text-lg mb-3">VERIFY</h3>
+              <p className="text-slate-400 text-sm">
+                24-72 hours after publish, we re-scan across 3 models to confirm your brand is now getting cited. Closed-loop proof, not guesswork.
+              </p>
+            </div>
+            
+            {/* Step 5 */}
+            <div className="p-6 lg:p-8">
+              <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
+                5
+              </div>
+              <h3 className="font-black text-lg mb-3">ATTRIBUTE</h3>
+              <p className="text-slate-400 text-sm">
+                Track AI-sourced traffic from 9 platforms. Match visitors to HubSpot contacts. Follow them through pipeline to closed-won revenue. Prove the ROI.
               </p>
             </div>
           </div>
@@ -420,7 +285,213 @@ export default async function Home() {
           {/* Automation Note */}
           <div className="mt-8 flex items-center justify-center gap-3 text-slate-500 font-semibold">
             <RefreshCw className="h-5 w-5" />
-            <span>RUNS AUTOMATICALLY — DAILY SCANS, WEEKLY REFRESH, CONTINUOUS OPTIMIZATION</span>
+            <span>RUNS AUTOMATICALLY — DAILY SCANS, CONTINUOUS OPTIMIZATION, REVENUE PROOF</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Features — Three Pillars */}
+      <section id="features" className="py-24 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">EVERYTHING YOU NEED TO OWN AI SEARCH</h2>
+          </div>
+          
+          <div className="grid lg:grid-cols-3 gap-0 border-2 border-[#0F172A]">
+            
+            {/* Pillar 1 */}
+            <div className="p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Eye className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl tracking-tight mb-2">VISIBILITY INTELLIGENCE</h3>
+              <p className="text-slate-500 mb-6">
+                Know exactly where you stand across AI search — every day, every model, every prompt.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Daily scans across 4 AI models + Google AI Overviews",
+                  "Visibility score with historical trend tracking",
+                  "Per-prompt citation status and streak tracking",
+                  "Win/loss alerts when you gain or lose citations",
+                  "Daily digest email summarizing your last 24 hours",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm font-semibold">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Pillar 2 */}
+            <div className="p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Target className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl tracking-tight mb-2">COMPETITIVE ENGINE</h3>
+              <p className="text-slate-500 mb-6">
+                See who wins when you lose. Understand why. Then generate content that flips the result.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Organic competitor discovery from real AI responses",
+                  "Share-of-voice and win/loss tracking vs. competitors",
+                  "Citation insights — see which URLs competitors get cited for",
+                  "Daily competitor content monitoring via RSS",
+                  "Auto-generated response memos when competitors publish",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm font-semibold">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Pillar 3 */}
+            <div className="p-8 lg:p-10">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <FileText className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl tracking-tight mb-2">CONTENT THAT GETS CITED</h3>
+              <p className="text-slate-500 mb-6">
+                Not another blog post. Structured memos built for how AI reads — factual, citable, and verified.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "9 content types: compare, alternative, how-to, guide, industry, insight, and more",
+                  "Brand voice matching from your actual website content",
+                  "Auto-publish to HubSpot as blog drafts",
+                  "Instant search engine indexing via IndexNow",
+                  "Every claim cross-referenced with your brand data",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm font-semibold">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Revenue Attribution */}
+      <section className="py-24 bg-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/20 border border-[#0EA5E9]/30 text-[#0EA5E9] text-sm font-bold tracking-wide mb-6">
+              <DollarSign className="h-4 w-4" />
+              REVENUE ATTRIBUTION
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">FROM AI MENTION TO CLOSED DEAL</h2>
+            <p className="mt-4 text-xl text-slate-400 max-w-2xl mx-auto">
+              The only platform that connects AI visibility to actual revenue.
+            </p>
+          </div>
+
+          {/* Attribution Flow */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-16 text-sm font-bold">
+            <span className="px-4 py-2 bg-white/10 border border-white/20">AI CITES YOUR BRAND</span>
+            <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
+            <span className="px-4 py-2 bg-white/10 border border-white/20">VISITOR LANDS ON SITE</span>
+            <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
+            <span className="px-4 py-2 bg-white/10 border border-white/20">MATCHED TO HUBSPOT</span>
+            <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
+            <span className="px-4 py-2 bg-white/10 border border-white/20">PIPELINE INFLUENCED</span>
+            <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
+            <span className="px-4 py-2 bg-[#0EA5E9] border border-[#0EA5E9]">REVENUE ATTRIBUTED</span>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-white/20">
+            <div className="p-8 border-b-2 sm:border-b-2 lg:border-b-0 sm:border-r-2 lg:border-r-2 border-white/20">
+              <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
+                <Bot className="h-6 w-6 text-[#0EA5E9]" />
+              </div>
+              <h3 className="font-black text-lg mb-2">AI TRAFFIC SOURCES</h3>
+              <p className="text-slate-400 text-sm">
+                Track visitors from ChatGPT, Perplexity, Claude, Gemini, Copilot, Meta AI, Poe, You.com, and Phind. See exactly which AI platforms drive traffic.
+              </p>
+            </div>
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
+              <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
+                <UserPlus className="h-6 w-6 text-[#0EA5E9]" />
+              </div>
+              <h3 className="font-black text-lg mb-2">CONTACT ATTRIBUTION</h3>
+              <p className="text-slate-400 text-sm">
+                AI visitors matched to HubSpot contacts automatically. Know which contacts discovered you through AI.
+              </p>
+            </div>
+            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 lg:border-r-2 border-white/20">
+              <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
+                <Briefcase className="h-6 w-6 text-[#0EA5E9]" />
+              </div>
+              <h3 className="font-black text-lg mb-2">PIPELINE INFLUENCED</h3>
+              <p className="text-slate-400 text-sm">
+                Follow AI-sourced contacts through your sales pipeline. See deals influenced by AI visibility.
+              </p>
+            </div>
+            <div className="p-8">
+              <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
+                <Trophy className="h-6 w-6 text-[#0EA5E9]" />
+              </div>
+              <h3 className="font-black text-lg mb-2">REVENUE CLOSED</h3>
+              <p className="text-slate-400 text-sm">
+                Attribute closed-won revenue back to AI as a channel. Report the number your CMO actually cares about.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Integrations */}
+      <section className="py-24 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">FITS YOUR STACK</h2>
+            <p className="mt-4 text-xl text-slate-600">
+              Connect once. Everything syncs automatically.
+            </p>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
+            <div className="p-8 border-b-2 sm:border-b-2 lg:border-b-0 sm:border-r-2 border-[#0F172A]">
+              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
+                <Link2 className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">HUBSPOT</h3>
+              <p className="text-slate-600 text-sm">
+                OAuth integration. Auto-publish memos as blog posts. Match AI traffic to contacts, deals, and revenue.
+              </p>
+            </div>
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
+              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
+                <Search className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">GOOGLE SEARCH CONSOLE</h3>
+              <p className="text-slate-600 text-sm">
+                Correlate search queries with AI prompts. See the full discovery pathway from Google into AI.
+              </p>
+            </div>
+            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-[#0F172A]">
+              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">BING WEBMASTER</h3>
+              <p className="text-slate-600 text-sm">
+                Sync Bing data to understand how ChatGPT discovers and crawls your content.
+              </p>
+            </div>
+            <div className="p-8">
+              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">INDEXNOW</h3>
+              <p className="text-slate-600 text-sm">
+                Every published memo instantly submitted to search engines — so AI models with web search find your content faster.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -475,8 +546,11 @@ export default async function Home() {
             <div>
               <h3 className="font-black text-2xl tracking-tight mb-3">NOT ANOTHER BLOG POST</h3>
               <p className="text-xl text-slate-400">
-                Memos are structured for how AI actually reads — fresh, properly formatted, and cross-referenced with your brand for accuracy. 
+                Memos are structured for how AI actually reads — fresh, properly formatted, and cross-referenced with your brand data for accuracy. 
                 No hallucinations. No filler. Every claim is traceable to a source.
+              </p>
+              <p className="text-lg text-slate-500 mt-3">
+                After publish, we re-scan to verify AI now cites your content. If it doesn&apos;t, you know immediately.
               </p>
             </div>
           </div>
@@ -484,9 +558,10 @@ export default async function Home() {
           <div className="grid sm:grid-cols-2 gap-4">
             {[
               "Cross-referenced with your brand data",
-              "Structured for people, AI, and search",
+              "Structured for people, AI, and search engines",
               "Transparent about AI generation",
-              "Every claim traceable to a source"
+              "Every claim traceable to a source",
+              "Verified with closed-loop re-scanning",
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3 p-5 bg-white/5 border border-white/10">
                 <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />
@@ -563,32 +638,41 @@ export default async function Home() {
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">BUILT FOR B2B TEAMS</h2>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
-            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
+            <div className="p-8 border-b-2 sm:border-b-2 lg:border-b-0 sm:border-r-2 border-[#0F172A]">
               <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
                 <LineChart className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-black text-xl mb-3">DEMAND GEN LEADERS</h3>
-              <p className="text-slate-600">
-                Track AI as a discovery channel alongside SEO and paid. Understand where buyers find you in the AI-first research journey.
+              <h3 className="font-black text-lg mb-3">DEMAND GEN LEADERS</h3>
+              <p className="text-slate-600 text-sm">
+                Track AI as a revenue channel, not a vanity metric. See AI-sourced traffic, contacts, pipeline, and closed revenue in one dashboard.
               </p>
             </div>
-            <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
+            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
               <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
                 <Target className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-black text-xl mb-3">PRODUCT MARKETERS</h3>
-              <p className="text-slate-600">
-                See how AI positions you vs competitors. Identify messaging gaps where competitors win recommendations.
+              <h3 className="font-black text-lg mb-3">PRODUCT MARKETERS</h3>
+              <p className="text-slate-600 text-sm">
+                See how AI positions you vs. competitors in real time. Identify messaging gaps where competitors win recommendations you should own.
               </p>
             </div>
-            <div className="p-10">
+            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-[#0F172A]">
               <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
                 <FileText className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-black text-xl mb-3">CONTENT TEAMS</h3>
-              <p className="text-slate-600">
-                Replace the blog grind with structured memos. Auto-generated, brand-accurate, and built for AI discovery.
+              <h3 className="font-black text-lg mb-3">CONTENT TEAMS</h3>
+              <p className="text-slate-600 text-sm">
+                Replace the blog grind with structured, verifiable memos. 9 content types, auto-generated in your brand voice, built for AI discovery.
+              </p>
+            </div>
+            <div className="p-8">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <DollarSign className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-3">REVENUE OPS</h3>
+              <p className="text-slate-600 text-sm">
+                Attribute AI-sourced pipeline in HubSpot. Connect the dots from AI citation to closed-won deal. Give your CMO a number, not a theory.
               </p>
             </div>
           </div>
@@ -600,7 +684,7 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">PREMIUM AI VISIBILITY</h2>
           <p className="text-xl text-slate-400 mb-12">
-            Transparent pricing. Generous discounts and flexibility for early access members.
+            Transparent pricing. Generous discounts for early access members.
           </p>
           
           {/* Pricing Cards */}
@@ -610,7 +694,7 @@ export default async function Home() {
               <div className="text-4xl font-black mb-1">$499</div>
               <p className="text-slate-500 text-sm font-semibold mb-6">/month</p>
               <ul className="space-y-3 text-left">
-                {["50 prompts tracked", "3 AI models", "5 memos/month", "1 brand"].map((f, i) => (
+                {["50 prompts tracked", "2 AI models", "5 memos/month", "1 brand", "Daily digest email"].map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
                     <span className="text-slate-400">{f}</span>
@@ -624,7 +708,15 @@ export default async function Home() {
               <div className="text-4xl font-black mb-1">$999</div>
               <p className="text-slate-500 text-sm font-semibold mb-6">/month</p>
               <ul className="space-y-3 text-left">
-                {["150 prompts tracked", "7 AI models + Overviews", "Unlimited memos", "3 brands", "Competitor intelligence"].map((f, i) => (
+                {[
+                  "150 prompts tracked", 
+                  "4 AI models + AI Overviews", 
+                  "Unlimited memos", 
+                  "3 brands", 
+                  "Competitive intelligence",
+                  "HubSpot integration",
+                  "Revenue attribution",
+                ].map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
                     <span className="text-slate-400">{f}</span>
@@ -637,7 +729,13 @@ export default async function Home() {
               <div className="text-4xl font-black mb-1">CUSTOM</div>
               <p className="text-slate-500 text-sm font-semibold mb-6">talk to us</p>
               <ul className="space-y-3 text-left">
-                {["Unlimited everything", "All AI models", "API access", "SSO/SAML", "Dedicated support"].map((f, i) => (
+                {[
+                  "Unlimited prompts and brands", 
+                  "All AI models", 
+                  "Dedicated support", 
+                  "Custom onboarding",
+                  "Priority feature requests",
+                ].map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
                     <span className="text-slate-400">{f}</span>
@@ -676,10 +774,10 @@ export default async function Home() {
       <section className="py-24 bg-[#0EA5E9]">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <Sparkles className="h-16 w-16 mx-auto mb-8" />
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">START GETTING CITED BY AI</h2>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">YOUR COMPETITORS ARE ALREADY IN AI RECOMMENDATIONS</h2>
           <p className="text-xl text-white/80 mb-10 max-w-xl mx-auto">
-            Your competitors are already showing up in AI recommendations. 
-            Don&apos;t let them own the conversation.
+            You can monitor that. Or you can do something about it.
+            Context Memo gives you the full closed loop — scan, discover, generate, verify, attribute.
           </p>
           <Button size="lg" asChild className="bg-[#0F172A] hover:bg-[#0F172A]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
             <Link href="/request-access">
@@ -703,7 +801,7 @@ export default async function Home() {
                 <span className="font-black text-lg tracking-tight">CONTEXT MEMO</span>
               </div>
               <p className="text-sm text-slate-500 leading-relaxed">
-                The AI visibility platform for B2B teams. Get cited in ChatGPT, Claude, Perplexity, and more.
+                The AI visibility platform for B2B teams. Monitor, win, and prove ROI in AI search.
               </p>
             </div>
             
@@ -743,7 +841,7 @@ export default async function Home() {
               &copy; 2026 CONTEXT MEMO. ALL RIGHTS RESERVED.
             </p>
             <p className="text-xs text-slate-600">
-              Built for how AI actually reads.
+              The full closed loop for AI visibility.
             </p>
           </div>
         </div>
