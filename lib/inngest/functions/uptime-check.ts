@@ -169,7 +169,7 @@ export const uptimeCheck = inngest.createFunction(
     if (!healthResult.reachable) {
       failedServices.push({
         name: 'Health Endpoint',
-        error: healthResult.error || 'Unreachable',
+        error: ('error' in healthResult ? healthResult.error : null) || 'Unreachable',
       })
     } else if (healthResult.data) {
       const { services } = healthResult.data
