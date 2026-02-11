@@ -34,11 +34,11 @@ const PRICING_TRANCHES = [
   { min: 2001, max: Infinity, price: 99 },
 ];
 
-function getCurrentTranche(userCount: number) {
+export function getCurrentTranche(userCount: number) {
   return PRICING_TRANCHES.find(t => userCount >= t.min && userCount <= t.max) || PRICING_TRANCHES[PRICING_TRANCHES.length - 1];
 }
 
-function getNextTranche(userCount: number) {
+export function getNextTranche(userCount: number) {
   const currentIndex = PRICING_TRANCHES.findIndex(t => userCount >= t.min && userCount <= t.max);
   if (currentIndex < PRICING_TRANCHES.length - 1) {
     return PRICING_TRANCHES[currentIndex + 1];
@@ -531,7 +531,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 pb-28 bg-[#0F172A] border-t border-white/10">
+      <footer aria-label="Footer" className="py-12 pb-28 bg-[#0F172A] border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
@@ -557,12 +557,12 @@ export default function Home() {
   );
 }
 
-function PricingBar({ currentUserCount }: { currentUserCount: number }) {
+export function PricingBar({ currentUserCount }: { currentUserCount: number }) {
   const currentTranche = getCurrentTranche(currentUserCount);
   const spotsLeft = currentTranche.max - currentUserCount + 1;
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#0F172A] border-t-2 border-[#0EA5E9] z-50">
+    <div role="contentinfo" aria-label="Pricing Bar" className="fixed bottom-0 left-0 right-0 bg-[#0F172A] border-t-2 border-[#0EA5E9] z-50">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* Current Status */}

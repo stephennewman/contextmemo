@@ -49,6 +49,7 @@ export default function SignupPage() {
     const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{12,}$/
     if (!passwordPolicy.test(password)) {
       setError('Password must be 12+ chars and include upper, lower, number, and symbol')
+
       setLoading(false)
       return
     }
@@ -59,6 +60,7 @@ export default function SignupPage() {
     
     if (freeEmailProviders.includes(emailDomain.toLowerCase())) {
       setError('Please use your work email address to sign up')
+
       setLoading(false)
       return
     }
@@ -72,6 +74,8 @@ export default function SignupPage() {
 
       if (!rateLimitResponse.ok) {
         setError('Too many attempts. Please wait and try again.')
+  
+        setLoading(false)
         return
       }
 
@@ -96,11 +100,15 @@ export default function SignupPage() {
 
       if (authError) {
         setError(authError.message)
+  
+        setLoading(false)
         return
       }
 
       if (!authData.user) {
         setError('Failed to create account')
+  
+        setLoading(false)
         return
       }
 
@@ -109,6 +117,7 @@ export default function SignupPage() {
       setEmailSent(true)
     } catch {
       setError('An unexpected error occurred')
+
     } finally {
       setLoading(false)
     }
@@ -203,7 +212,7 @@ export default function SignupPage() {
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-5">
             {error && (
-              <div className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 font-medium">
+              <div data-testid="error-message" className="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 font-medium">
                 {error}
               </div>
             )}

@@ -4,9 +4,26 @@ import { GET } from '@/app/api/jobs/route'
 // Mock the supabase server module
 const mockGetUser = vi.fn()
 
+// Interface for the thenable mock
+interface ThenableMock {
+  then: (resolve: (value: unknown) => void) => Promise<unknown>
+  _resolvedValue: { data: unknown; error: unknown }
+  _singleValue?: { data: unknown; error: unknown }
+  _lastSelect?: unknown[]
+  select: ReturnType<typeof vi.fn> & ((...args: unknown[]) => ThenableMock)
+  eq: ReturnType<typeof vi.fn> & (() => ThenableMock)
+  in: ReturnType<typeof vi.fn> & (() => ThenableMock)
+  gte: ReturnType<typeof vi.fn> & (() => ThenableMock)
+  order: ReturnType<typeof vi.fn> & (() => ThenableMock)
+  single: ReturnType<typeof vi.fn> & (() => ThenableMock)
+  maybeSingle: ReturnType<typeof vi.fn> & (() => ThenableMock)
+  _resolveWith: (value: unknown) => ThenableMock
+  _setSingleValue: (value: unknown) => ThenableMock
+}
+
 // Create a thenable mock that can be both chained and awaited
-const createThenableMock = () => {
-  const mock: Record<string, unknown> = {}
+const createThenableMock = (): ThenableMock => {
+  const mock = {} as ThenableMock
   
   // Make it thenable (can be awaited)
   mock.then = (resolve: (value: unknown) => void) => {
@@ -19,27 +36,27 @@ const createThenableMock = () => {
   mock.select = vi.fn((...args: unknown[]) => {
     mock._lastSelect = args
     return mock
-  })
-  mock.eq = vi.fn(() => mock)
-  mock.in = vi.fn(() => mock)
-  mock.gte = vi.fn(() => mock)
-  mock.order = vi.fn(() => mock)
+  }) as ThenableMock['select']
+  mock.eq = vi.fn(() => mock) as ThenableMock['eq']
+  mock.in = vi.fn(() => mock) as ThenableMock['in']
+  mock.gte = vi.fn(() => mock) as ThenableMock['gte']
+  mock.order = vi.fn(() => mock) as ThenableMock['order']
   mock.single = vi.fn(() => {
     mock._resolvedValue = mock._singleValue || { data: null, error: null }
     return mock
-  })
+  }) as ThenableMock['single']
   mock.maybeSingle = vi.fn(() => {
     mock._resolvedValue = mock._singleValue || { data: null, error: null }
     return mock
-  })
+  }) as ThenableMock['maybeSingle']
   
   // Methods to set resolved values
   mock._resolveWith = (value: unknown) => {
-    mock._resolvedValue = value
+    mock._resolvedValue = value as { data: unknown; error: unknown }
     return mock
   }
   mock._setSingleValue = (value: unknown) => {
-    mock._singleValue = value
+    mock._singleValue = value as { data: unknown; error: unknown }
     return mock
   }
   

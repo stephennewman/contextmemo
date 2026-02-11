@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function AuthLoading() {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+    <div className="flex items-center justify-center min-h-[calc(100vh-80px)]" data-testid="auth-loading-main-div">
       <div className="w-full max-w-md p-8 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">

@@ -55,9 +55,9 @@ function createMockSupabaseClient() {
           return mockResult
         }),
         // Make the chain thenable so it can be awaited directly
-        then: vi.fn((resolve: (value: MockResult) => void) => {
+        then: vi.fn((onFulfilled: (value: MockResult) => void) => {
           trackOperation()
-          return Promise.resolve(resolve(mockResult))
+          return Promise.resolve(mockResult).then(onFulfilled)
         }),
       }
 
