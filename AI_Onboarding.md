@@ -393,6 +393,18 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Landing page: full restructure — Problem → Solution → Pillars → Attribution → How It Works** (189e3cd)
+- Reordered all sections per new information architecture
+- Moved dashboard mockup from hero into dedicated Solution section with "CONTEXT MEMO GIVES YOU THE FULL PICTURE" heading
+- Three Pillars and Revenue Attribution now appear before How It Works
+- Revenue Alignment moved above Partnership
+- Renamed Memo section to "ENSURE AI GETS THE MEMO" with blog vs memo explanation
+- Adapted dark/light color alternation for new section order
+- Removed duplicate Revenue Alignment section
+
+**Files changed:**
+- `app/page.tsx` — 293 insertions, 269 deletions
+
 **Landing page: Memo concept intro + features grid + monitors expansion** (f5a59d8)
 - Replaced "The Problem" section with "Not a Blog Post. A Memo." section introducing the Memo concept (structured for AI, verified & sourced, generated from gaps)
 - Added 8-cell Platform Features grid: Multi-Model Scanning, Visibility Scoring, Competitor Intelligence, Memo Generation, Citation Verification, Revenue Attribution, Daily Automation, HubSpot Integration
