@@ -131,10 +131,12 @@ export function resolveMemoPath(request: NextRequest): MemoPathInfo | null {
     // Subdomain request: checkit.contextmemo.com/some-slug
     // The middleware will rewrite this to /memo/checkit/some-slug
     // but at this point we see the original path
-    const slug = pathname === '/' ? null : pathname.slice(1) // remove leading /
+    const rawSlug = pathname === '/' ? null : pathname.slice(1) // remove leading /
+    // Filter out non-memo paths that bots commonly request
+    const memoSlug = rawSlug && !NON_MEMO_SLUGS.has(rawSlug) && !rawSlug.startsWith('api/') && !rawSlug.startsWith('_next/') ? rawSlug : null
     return {
       brandSubdomain: subdomain,
-      memoSlug: slug || null,
+      memoSlug,
       pagePath: `/memo/${subdomain}${pathname === '/' ? '' : pathname}`,
     }
   }

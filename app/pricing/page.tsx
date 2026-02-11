@@ -65,9 +65,51 @@ const PLANS = [
   },
 ]
 
+const FAQ_ITEMS = [
+  {
+    question: 'Why is Context Memo invite-only?',
+    answer: 'We work closely with each client to ensure they get maximum value from AI visibility monitoring. Invite-only access lets us provide white-glove onboarding and custom pricing.',
+  },
+  {
+    question: 'How do I get an invite code?',
+    answer: 'Submit a request through our early access form at contextmemo.com/request-access. We review every request and typically respond within 24 hours.',
+  },
+  {
+    question: 'What AI models do you track?',
+    answer: 'We track GPT-4o, Claude, Gemini, Perplexity, DeepSeek, Llama, and Mistral. Growth plans also include Google AI Overviews monitoring.',
+  },
+  {
+    question: 'How does early access pricing work?',
+    answer: 'We offer generous discounts and flexible pricing for early access members based on use case, team size, and commitment level. Request access and tell us about your situation — we\'ll work with you.',
+  },
+  {
+    question: 'Can I cancel anytime?',
+    answer: 'Yes, you can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.',
+  },
+]
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: item.answer,
+    },
+  })),
+}
+
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
+      {/* FAQPage JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
       {/* Header */}
       <header className="sticky top-0 bg-[#0F172A]/95 backdrop-blur-sm z-40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">

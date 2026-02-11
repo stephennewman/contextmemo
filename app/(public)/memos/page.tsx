@@ -112,6 +112,7 @@ export default async function MemosIndexPage() {
         </div>
       </header>
       
+      <main>
       {/* Hero */}
       <div className="border-b-2 border-white/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-linear-to-b from-[#0EA5E9]/10 to-transparent" />
@@ -194,6 +195,8 @@ export default async function MemosIndexPage() {
         </div>
       )}
       
+      </main>
+
       {/* Footer */}
       <footer className="border-t-2 border-white/10 mt-auto">
         <div className="max-w-5xl mx-auto px-6 py-8">

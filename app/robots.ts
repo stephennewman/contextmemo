@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const AI_CONTENT_PATHS = ['/memo/', '/resources/', '/memos/', '/compare/', '/alternatives/', '/guides/', '/for/', '/how-to/', '/how/', '/vs/', '/gap/', '/alternatives-to/', '/llms.txt']
+const AI_CONTENT_PATHS = ['/memo/', '/resources/', '/memos/', '/compare/', '/alternatives/', '/guides/', '/for/', '/how-to/', '/how/', '/vs/', '/gap/', '/alternatives-to/', '/llms.txt', '/llms-full.txt']
 
 export default function robots(): MetadataRoute.Robots {
   return {

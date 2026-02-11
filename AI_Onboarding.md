@@ -390,6 +390,13 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Fix infinite redirect loop — site down** (26c2dfd)
+- Root cause: Vercel domain config redirects `contextmemo.com` → `www.contextmemo.com` (307), but proxy middleware was redirecting `www` → non-www (301), creating an infinite loop
+- Removed the www→non-www redirect from proxy middleware (let Vercel handle domain routing)
+- Added `www` to subdomain exclusion list to prevent it being treated as a memo page
+- Site restored: canonical domain is now `www.contextmemo.com` (set by Vercel)
+- 1 file changed: `lib/supabase/middleware.ts`
+
 **Fix Google Search Console indexing issues** (6542c63)
 - Added 301 redirect: `www.contextmemo.com` → `contextmemo.com` (fixes 12 "duplicate without user-selected canonical" pages)
 - Added 301 redirects for deleted pages: `/hubspot` → `/request-access`, `/signup` → `/request-access` (fixes 6 404s)

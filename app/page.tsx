@@ -50,8 +50,39 @@ export default async function Home() {
     featuredMemos = null;
   }
 
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Context Memo',
+    url: 'https://contextmemo.com',
+    description: 'AI visibility platform for B2B teams. Get your brand cited in ChatGPT, Claude, Perplexity, and Gemini.',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'support@contextmemo.com',
+      contactType: 'customer support',
+    },
+  }
+
+  const webSiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Context Memo',
+    url: 'https://contextmemo.com',
+    description: 'The premium AI visibility platform for B2B marketing teams. Track, analyze, and improve your brand presence in AI-powered search engines.',
+  }
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-white">
+      {/* Schema.org JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
+      />
+
       {/* Header */}
       <header className="sticky top-0 bg-[#0F172A]/95 backdrop-blur-sm z-40 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -76,6 +107,7 @@ export default async function Home() {
         </div>
       </header>
 
+      <main>
       {/* Hero */}
       <section className="py-24 md:py-32 relative overflow-hidden">
         {/* Background gradient */}
@@ -657,6 +689,8 @@ export default async function Home() {
           </Button>
         </div>
       </section>
+
+      </main>
 
       {/* Footer */}
       <footer className="py-16 pb-28 bg-[#0F172A] border-t border-white/10">
