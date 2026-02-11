@@ -3,6 +3,21 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   compress: true,
+  async redirects() {
+    return [
+      // Retired pages → redirect to relevant live pages
+      {
+        source: '/hubspot',
+        destination: '/request-access',
+        permanent: true,
+      },
+      {
+        source: '/signup',
+        destination: '/request-access',
+        permanent: true,
+      },
+    ]
+  },
   async headers() {
     return [
       {

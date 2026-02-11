@@ -106,6 +106,15 @@ export async function updateSession(request: NextRequest) {
   const hostname = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
   const hostParts = hostname.split('.')
   
+  // Redirect www → non-www (301 permanent) to consolidate canonical domain
+  // Covers www.contextmemo.com → contextmemo.com
+  if (hostParts[0] === 'www' && !hostname.includes('localhost')) {
+    const canonicalUrl = new URL(request.url)
+    canonicalUrl.host = hostname.replace(/^www\./, '')
+    canonicalUrl.protocol = 'https:'
+    return NextResponse.redirect(canonicalUrl.toString(), 301)
+  }
+
   // Determine if this is a subdomain request
   // Valid subdomain patterns: checkit.contextmemo.com (3+ parts) or checkit.localhost:3000 (2+ parts for local)
   let subdomain: string | null = null
@@ -113,8 +122,8 @@ export async function updateSession(request: NextRequest) {
   if (hostParts.length >= 3) {
     // Production: checkit.contextmemo.com -> subdomain is 'checkit'
     const potentialSubdomain = hostParts[0]
-    // Ensure it's not 'www' and the remaining parts form a valid domain
-    if (potentialSubdomain !== 'www' && potentialSubdomain !== 'app') {
+    // Ensure it's not 'app' and the remaining parts form a valid domain
+    if (potentialSubdomain !== 'app') {
       subdomain = potentialSubdomain
     }
   } else if (hostParts.length === 2 && hostParts[1].startsWith('localhost')) {
