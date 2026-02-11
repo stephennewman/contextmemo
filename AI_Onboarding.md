@@ -390,6 +390,13 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Add SEO metadata across all public pages** (ec8a010)
+- Root layout: Open Graph, Twitter Cards, canonical URL, `metadataBase`, title template (`%s | Context Memo`), stronger default title/description
+- Added metadata layouts for `/pricing`, `/pricing/calculator`, `/request-access` (all client components)
+- Auth pages (`/login`, `/signup`, `/verify-email`): titles + noindex/nofollow
+- Enhanced existing metadata on `/changelog`, `/memos`, `/about/editorial` with OG tags and canonical URLs
+- 10 files changed, 6 new layout files
+
 **Premium polish: icons, white-glove section, footer, retire hubspot page** (7da453b)
 - Replaced emoji icons (📊🎯✍️) in Use Cases section with proper Lucide icon boxes matching the feature grid style
 - Added "White-Glove Onboarding" section: Dedicated Setup, Strategy Review, Ongoing Support — reinforces premium positioning
