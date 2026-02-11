@@ -393,6 +393,16 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Fix: gap_fill and product_deploy memo quality overhaul** (092cae1)
+- Root cause analysis identified 3 structural problems causing poor/generic/redundant memos:
+  1. Gap fill memos received only domain names as context (e.g., "competitor.com — cited 3x") while the citation-respond system fetches 50k chars of actual page content. Fixed: gap_fill now fetches top cited URL via Jina Reader for real competitive context.
+  2. Product deploy memos shared the same GAP_FILL_MEMO_PROMPT — completely wrong framing for feature announcements. Fixed: created dedicated PRODUCT_DEPLOY_MEMO_PROMPT focused on what shipped, why it matters, and how it works.
+  3. Deploy commit context was lost between deploy-analyze.ts and memo-generate.ts. Fixed: commit summaries now pass through so the AI has real feature details.
+- Updated `regenerate_memos` action to handle both gap_fill and product_deploy memos with the improved flow
+- Retroactively regenerated 40 impacted memos (16 gap_fill across 6 brands + 24 product_deploy for Context Memo) via Inngest events
+- Cleaned up 2 slug-collision duplicates from regeneration
+- 4 files changed: `lib/ai/prompts/memo-generation.ts`, `lib/inngest/functions/memo-generate.ts`, `lib/inngest/functions/deploy-analyze.ts`, `app/api/brands/[brandId]/actions/route.ts`
+
 **Uptime monitoring: health endpoint + Inngest alert system**
 - Created `/api/health` endpoint — checks Supabase (DB query) + Redis (ping) connectivity, returns structured JSON with status/latency per service
 - Returns 200 when healthy, 503 when degraded/down — compatible with external uptime monitors
