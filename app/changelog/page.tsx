@@ -6,8 +6,16 @@ import path from "path";
 import { marked } from "marked";
 
 export const metadata = {
-  title: "Changelog | Context Memo",
-  description: "See what's new in Context Memo - all features, improvements, and fixes.",
+  title: "Changelog",
+  description: "All the latest features, improvements, and fixes in Context Memo. Track our progress as we build the AI visibility platform.",
+  openGraph: {
+    title: 'Changelog | Context Memo',
+    description: 'All the latest features, improvements, and fixes in Context Memo.',
+    url: 'https://contextmemo.com/changelog',
+  },
+  alternates: {
+    canonical: 'https://contextmemo.com/changelog',
+  },
 };
 
 async function getChangelog() {

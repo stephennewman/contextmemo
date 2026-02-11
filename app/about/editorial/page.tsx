@@ -2,8 +2,16 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Editorial Guidelines - Context Memo',
-  description: 'How Context Memo creates, verifies, and maintains factual reference documents about brands.',
+  title: 'Editorial Guidelines',
+  description: 'How Context Memo creates, verifies, and maintains factual reference documents about brands. Every claim is traceable to a source.',
+  openGraph: {
+    title: 'Editorial Guidelines | Context Memo',
+    description: 'How Context Memo creates, verifies, and maintains factual reference documents about brands.',
+    url: 'https://contextmemo.com/about/editorial',
+  },
+  alternates: {
+    canonical: 'https://contextmemo.com/about/editorial',
+  },
 }
 
 export default function EditorialGuidelines() {

@@ -12,8 +12,16 @@ const supabase = createClient(
 )
 
 export const metadata: Metadata = {
-  title: 'Memos - Context Memo',
+  title: 'Memos',
   description: 'Structured memos built for people, AI models, and search engines. Fresh, factual, and cross-referenced with brand data.',
+  openGraph: {
+    title: 'Memos | Context Memo',
+    description: 'Structured memos built for people, AI models, and search engines. Fresh, factual, and cross-referenced with brand data.',
+    url: 'https://contextmemo.com/memos',
+  },
+  alternates: {
+    canonical: 'https://contextmemo.com/memos',
+  },
 }
 
 const MEMO_CATEGORIES = [

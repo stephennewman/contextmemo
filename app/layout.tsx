@@ -16,10 +16,36 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = 'https://contextmemo.com'
+
 export const metadata: Metadata = {
-  title: "Context Memo - The facts AI needs to recommend you",
-  description: "Create factual reference memos about your brand that AI search engines can cite. Improve your visibility in AI recommendations.",
-  keywords: ["AI search", "AI visibility", "brand memos", "AI recommendations", "ChatGPT", "Claude", "Perplexity"],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Context Memo — AI Visibility Platform for B2B Teams',
+    template: '%s | Context Memo',
+  },
+  description: 'Get your brand cited in ChatGPT, Claude, Perplexity, and Gemini. The premium AI visibility platform for B2B marketing teams.',
+  keywords: ['AI visibility', 'AI search optimization', 'B2B marketing', 'AI citations', 'ChatGPT visibility', 'Claude visibility', 'Perplexity visibility', 'AI brand monitoring'],
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: SITE_URL,
+    siteName: 'Context Memo',
+    title: 'Context Memo — AI Visibility Platform for B2B Teams',
+    description: 'Get your brand cited in ChatGPT, Claude, Perplexity, and Gemini. The premium AI visibility platform for B2B marketing teams.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Context Memo — AI Visibility Platform for B2B Teams',
+    description: 'Get your brand cited in ChatGPT, Claude, Perplexity, and Gemini. The premium AI visibility platform for B2B marketing teams.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
 };
 
 export default function RootLayout({
