@@ -390,6 +390,12 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Premium polish: icons, white-glove section, footer, retire hubspot page** (7da453b)
+- Replaced emoji icons (📊🎯✍️) in Use Cases section with proper Lucide icon boxes matching the feature grid style
+- Added "White-Glove Onboarding" section: Dedicated Setup, Strategy Review, Ongoing Support — reinforces premium positioning
+- Upgraded footer from 3-link bar to structured 4-column layout: Brand, Product, Resources, Account
+- Deleted /hubspot marketing landing page (HubSpot integration API routes preserved)
+
 **Premium positioning: invite-only access, no free signup** (4696d9d)
 - Repositioned product as invite-only premium platform — no self-service signups
 - Added invite code gate to signup form (validates against predefined codes: AMAZING2026, BRAVO2026, CUSTOMERS2026, DEALS2026, FUNNEL2026)
