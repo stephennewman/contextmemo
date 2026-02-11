@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { SortableBrandsTable, type BrandRow } from '@/components/admin/sortable-brands-table'
 import { SortableTenantsTable, type TenantRow } from '@/components/admin/sortable-tenants-table'
+import { SortableMemosTable, type MemoRow } from '@/components/admin/sortable-memos-table'
 
 async function getCount(
   serviceClient: ReturnType<typeof createServiceRoleClient>,
@@ -84,6 +85,7 @@ export default async function AdminDashboardPage() {
     crawlResult,
     recentScansResult,
     tenantStatsResult,
+    memoActivityResult,
   ] = await Promise.all([
     getCount(serviceClient, 'tenants'),
     getCount(serviceClient, 'brands'),
@@ -97,6 +99,7 @@ export default async function AdminDashboardPage() {
     serviceClient.rpc('get_admin_brand_crawl_stats'),
     serviceClient.from('scan_results').select('brand_id, scanned_at').gte('scanned_at', last24h),
     serviceClient.rpc('get_admin_tenant_stats'),
+    serviceClient.rpc('get_admin_memo_activity'),
   ])
 
   const allBrands = allBrandsResult.data || []
@@ -133,6 +136,32 @@ export default async function AdminDashboardPage() {
     aiTrainingHits: Number(t.ai_training_hits),
     totalQueries: Number(t.total_queries),
     citedQueries: Number(t.cited_queries),
+  }))
+
+  const memoActivityRaw = (memoActivityResult.data || []) as Array<{
+    memo_id: string; slug: string; title: string; memo_type: string;
+    memo_created_at: string; brand_name: string; brand_subdomain: string;
+    total_crawls: number; ai_search: number; ai_training: number;
+    ai_user: number; search_engine: number; seo_tool: number;
+    unique_bots: number; last_crawl: string | null; human_visits: number;
+  }>
+  const memoRows: MemoRow[] = memoActivityRaw.map(m => ({
+    memoId: m.memo_id,
+    slug: m.slug,
+    title: m.title,
+    memoType: m.memo_type,
+    brandName: m.brand_name,
+    brandSubdomain: m.brand_subdomain,
+    memoCreatedAt: m.memo_created_at,
+    totalCrawls: Number(m.total_crawls),
+    aiSearch: Number(m.ai_search),
+    aiTraining: Number(m.ai_training),
+    aiUser: Number(m.ai_user),
+    searchEngine: Number(m.search_engine),
+    seoTool: Number(m.seo_tool),
+    uniqueBots: Number(m.unique_bots),
+    lastCrawl: m.last_crawl,
+    humanVisits: Number(m.human_visits),
   }))
 
   // Build lookups from RPC results
@@ -313,6 +342,9 @@ export default async function AdminDashboardPage() {
         lastCrawl: b.lastCrawl,
         lastScanned: b.lastScanned,
       }))} />
+
+      {/* Memo Activity */}
+      <SortableMemosTable memos={memoRows} />
 
       {/* Recent Alerts */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
