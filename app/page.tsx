@@ -132,7 +132,7 @@ export default async function Home() {
           </h1>
           
           <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            Track your brand across 4 AI models and Google AI Overviews. 
+            Track your brand across 4 AI models. 
             Generate content that gets cited. Verify it worked. 
             Attribute the revenue back to your CRM.
           </p>
@@ -152,11 +152,139 @@ export default async function Home() {
           {/* AI Models Row */}
           <div className="mt-16 flex flex-wrap items-center justify-center gap-3">
             <span className="text-sm font-semibold text-slate-500 mr-2">MONITORS:</span>
-            {["ChatGPT", "Claude", "Perplexity", "Grok", "Google AI Overviews"].map((model) => (
+            {["ChatGPT", "Claude", "Perplexity", "Grok"].map((model) => (
               <span key={model} className="px-4 py-2 bg-white/5 border border-white/10 text-sm font-semibold tracking-wide">
                 {model.toUpperCase()}
               </span>
             ))}
+          </div>
+
+          {/* Dashboard Mockup */}
+          <div className="mt-20 max-w-5xl mx-auto">
+            <div className="bg-[#1E293B] border border-white/10 rounded-lg overflow-hidden shadow-2xl shadow-[#0EA5E9]/10">
+              {/* Window chrome */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-[#0F172A] border-b border-white/10">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-white/20" />
+                  <div className="w-3 h-3 rounded-full bg-white/20" />
+                  <div className="w-3 h-3 rounded-full bg-white/20" />
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="px-4 py-1 bg-white/5 rounded text-xs text-slate-500 font-mono">app.contextmemo.com/brands/acme-corp</div>
+                </div>
+              </div>
+              
+              {/* Dashboard content */}
+              <div className="p-6 md:p-8">
+                {/* Top bar */}
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#0EA5E9] rounded flex items-center justify-center">
+                        <Zap className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-black text-lg">ACME CORP</p>
+                        <p className="text-xs text-slate-500">acmecorp.com</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded">SCAN COMPLETE</span>
+                    <span className="text-xs text-slate-500">Today, 6:00 AM ET</span>
+                  </div>
+                </div>
+
+                {/* Score + Stats Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  <div className="bg-[#0F172A] border border-white/10 p-4 rounded">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">VISIBILITY SCORE</p>
+                    <p className="text-3xl font-black text-[#0EA5E9]">72</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                      <span className="text-xs text-emerald-400 font-bold">+8 vs last week</span>
+                    </div>
+                  </div>
+                  <div className="bg-[#0F172A] border border-white/10 p-4 rounded">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">CITATION RATE</p>
+                    <p className="text-3xl font-black text-white">64%</p>
+                    <p className="text-xs text-slate-500 mt-1">32 of 50 prompts</p>
+                  </div>
+                  <div className="bg-[#0F172A] border border-white/10 p-4 rounded">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">MEMOS PUBLISHED</p>
+                    <p className="text-3xl font-black text-white">18</p>
+                    <p className="text-xs text-slate-500 mt-1">12 verified cited</p>
+                  </div>
+                  <div className="bg-[#0F172A] border border-white/10 p-4 rounded">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">AI REVENUE</p>
+                    <p className="text-3xl font-black text-emerald-400">$47K</p>
+                    <p className="text-xs text-slate-500 mt-1">3 deals attributed</p>
+                  </div>
+                </div>
+
+                {/* Prompt Results Table */}
+                <div className="bg-[#0F172A] border border-white/10 rounded overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                    <p className="text-xs font-bold text-slate-400 tracking-wider">RECENT SCAN RESULTS</p>
+                    <p className="text-xs text-slate-600">4 models scanned</p>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                    {/* Row 1 */}
+                    <div className="px-4 py-3 flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">&quot;Best CRM for small B2B teams&quot;</p>
+                      </div>
+                      <div className="hidden md:flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">GPT</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">CLAUDE</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">PPLX</span>
+                        <span className="px-2 py-0.5 bg-slate-500/20 text-slate-500 text-[10px] font-bold rounded">GROK</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400 shrink-0">CITED 3/4</span>
+                    </div>
+                    {/* Row 2 */}
+                    <div className="px-4 py-3 flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">&quot;How to automate sales outreach&quot;</p>
+                      </div>
+                      <div className="hidden md:flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">GPT</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">CLAUDE</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">PPLX</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">GROK</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400 shrink-0">CITED 4/4</span>
+                    </div>
+                    {/* Row 3 */}
+                    <div className="px-4 py-3 flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">&quot;Acme Corp vs HubSpot for startups&quot;</p>
+                      </div>
+                      <div className="hidden md:flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded">GPT</span>
+                        <span className="px-2 py-0.5 bg-slate-500/20 text-slate-500 text-[10px] font-bold rounded">CLAUDE</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">PPLX</span>
+                        <span className="px-2 py-0.5 bg-slate-500/20 text-slate-500 text-[10px] font-bold rounded">GROK</span>
+                      </div>
+                      <span className="text-xs font-bold text-amber-400 shrink-0">CITED 1/4</span>
+                    </div>
+                    {/* Row 4 */}
+                    <div className="px-4 py-3 flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">&quot;Best pipeline management software 2026&quot;</p>
+                      </div>
+                      <div className="hidden md:flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded">GPT</span>
+                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded">CLAUDE</span>
+                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded">PPLX</span>
+                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded">GROK</span>
+                      </div>
+                      <span className="text-xs font-bold text-red-400 shrink-0">GAP — MEMO READY</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -233,7 +361,7 @@ export default async function Home() {
               </div>
               <h3 className="font-black text-lg mb-3">SCAN</h3>
               <p className="text-slate-400 text-sm">
-                Daily automated scans across ChatGPT, Claude, Perplexity, Grok, and Google AI Overviews. See exactly where your brand gets cited — and where it doesn&apos;t.
+                Recurring automated scans across ChatGPT, Claude, Perplexity, and Grok. See exactly where your brand gets cited — and where it doesn&apos;t.
               </p>
             </div>
             
@@ -285,7 +413,7 @@ export default async function Home() {
           {/* Automation Note */}
           <div className="mt-8 flex items-center justify-center gap-3 text-slate-500 font-semibold">
             <RefreshCw className="h-5 w-5" />
-            <span>RUNS AUTOMATICALLY — DAILY SCANS, CONTINUOUS OPTIMIZATION, REVENUE PROOF</span>
+            <span>RUNS AUTOMATICALLY — RECURRING SCANS, CONTINUOUS OPTIMIZATION, REVENUE PROOF</span>
           </div>
         </div>
       </section>
@@ -310,7 +438,7 @@ export default async function Home() {
               </p>
               <ul className="space-y-3">
                 {[
-                  "Daily scans across 4 AI models + Google AI Overviews",
+                  "Recurring scans across 4 AI models",
                   "Visibility score with historical trend tracking",
                   "Per-prompt citation status and streak tracking",
                   "Win/loss alerts when you gain or lose citations",
@@ -710,7 +838,7 @@ export default async function Home() {
               <ul className="space-y-3 text-left">
                 {[
                   "150 prompts tracked", 
-                  "4 AI models + AI Overviews", 
+                  "4 AI models", 
                   "Unlimited memos", 
                   "3 brands", 
                   "Competitive intelligence",
