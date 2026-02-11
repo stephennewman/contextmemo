@@ -103,7 +103,7 @@ export default function PricingPage() {
           
           {/* Discount Banner */}
           <div className="inline-flex items-center gap-2 px-6 py-3 bg-[#10B981]/20 border border-[#10B981]/30 text-[#10B981] font-bold tracking-wide mt-4">
-            GET UP TO 90% OFF — REQUEST EARLY ACCESS FOR CUSTOM PRICING
+            GENEROUS DISCOUNTS FOR EARLY ACCESS — REQUEST CUSTOM PRICING
           </div>
         </div>
       </section>
@@ -148,7 +148,7 @@ export default function PricingPage() {
                           <span className="text-slate-500 font-semibold">/mo</span>
                         </div>
                         <p className="text-xs text-[#10B981] font-bold mt-1">
-                          EARLY ACCESS: AS LOW AS ${Math.round(plan.price * 0.1)}/MO
+                          EARLY ACCESS DISCOUNTS AVAILABLE
                         </p>
                       </div>
                     ) : (
@@ -222,7 +222,7 @@ export default function PricingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-bold text-sm mb-1">REQUEST A DISCOUNT</p>
-                  <p className="text-xs text-slate-500">Up to 90% off</p>
+                  <p className="text-xs text-slate-500">Flexible pricing available</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-[#10B981] group-hover:translate-x-1 transition-transform" />
               </div>
@@ -278,10 +278,10 @@ export default function PricingPage() {
               </p>
             </div>
             <div>
-              <h3 className="font-bold mb-2">How does the 90% discount work?</h3>
+              <h3 className="font-bold mb-2">How does early access pricing work?</h3>
               <p className="text-slate-400 text-sm">
-                Early access members receive significant discounts based on timing, use case, and commitment level. 
-                Request access and mention your situation — we&apos;ll work with you on pricing.
+                We offer generous discounts and flexible pricing for early access members based on use case, team size, and commitment level. 
+                Request access and tell us about your situation — we&apos;ll work with you.
               </p>
             </div>
             <div>

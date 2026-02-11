@@ -128,7 +128,7 @@ export default function RequestAccessPage() {
             <div className="p-4 border-2 border-[#0EA5E9]/30 bg-[#0EA5E9]/10">
               <p className="text-sm font-bold text-[#0EA5E9] mb-1">EARLY ACCESS PRICING</p>
               <p className="text-slate-400 text-sm">
-                Early access members are eligible for up to <strong className="text-white">90% off</strong> standard pricing. 
+                We offer generous discounts and pricing flexibility for early access members. 
                 Mention your use case and team size for a custom quote.
               </p>
             </div>

@@ -522,7 +522,7 @@ export default async function Home() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">PREMIUM AI VISIBILITY</h2>
           <p className="text-xl text-slate-400 mb-12">
-            Transparent pricing. Flexible options. Request early access for up to 90% off.
+            Transparent pricing. Generous discounts and flexibility for early access members.
           </p>
           
           {/* Pricing Cards */}
@@ -571,9 +571,9 @@ export default async function Home() {
 
           {/* Discount Banner */}
           <div className="border-2 border-[#0EA5E9] bg-[#0EA5E9]/10 p-6 mb-10">
-            <p className="font-black text-lg mb-2">GET UP TO 90% OFF</p>
+            <p className="font-black text-lg mb-2">EARLY ACCESS PRICING</p>
             <p className="text-slate-400 text-sm">
-              Early access members receive significant discounts. Request access and mention your use case for a custom quote.
+              We offer generous discounts and pricing flexibility for early access members. Request access and tell us about your use case.
             </p>
           </div>
 
@@ -639,7 +639,7 @@ export default async function Home() {
             <div className="flex items-center gap-4">
               <div className="font-bold text-lg">
                 <span className="text-white">INVITE-ONLY</span>
-                <span className="text-[#0EA5E9]"> · UP TO 90% OFF</span>
+                <span className="text-[#0EA5E9]"> · FLEXIBLE PRICING</span>
               </div>
             </div>
             <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
