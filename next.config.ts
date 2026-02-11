@@ -11,11 +11,6 @@ const nextConfig: NextConfig = {
         destination: '/request-access',
         permanent: true,
       },
-      {
-        source: '/signup',
-        destination: '/request-access',
-        permanent: true,
-      },
     ]
   },
   async headers() {
