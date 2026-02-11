@@ -16,7 +16,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const MEMO_TYPE = 'response'
+const MEMO_TYPES = ['response', 'citation_response']
 const ROUTE = '/resources'
 const PAGE_TITLE = 'Resources'
 const PAGE_DESCRIPTION = 'In-depth guides and resources to help you succeed with AI-powered content'
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from('memos')
     .select('title, meta_description, schema_json')
     .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
-    .eq('memo_type', MEMO_TYPE)
+    .in('memo_type', MEMO_TYPES)
     .in('slug', possibleSlugs)
     .eq('status', 'published')
     .single()
@@ -99,7 +99,7 @@ export default async function ResourcesPage({ params }: Props) {
       .from('memos')
       .select('id, title, slug, memo_type, meta_description, published_at')
       .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
-      .eq('memo_type', MEMO_TYPE)
+      .in('memo_type', MEMO_TYPES)
       .eq('status', 'published')
       .order('published_at', { ascending: false })
 
@@ -190,7 +190,7 @@ export default async function ResourcesPage({ params }: Props) {
     .from('memos')
     .select('*')
     .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
-    .eq('memo_type', MEMO_TYPE)
+    .in('memo_type', MEMO_TYPES)
     .in('slug', possibleSlugs)
     .eq('status', 'published')
     .single()

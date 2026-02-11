@@ -1,9 +1,10 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
 import { 
   CONTEXT_MEMO_BRAND_ID, 
+  MEMO_TYPE_TO_ROUTE,
   BrandedMemoPageContent, 
   BrandedMemoListCard,
   markdownToHtml
@@ -182,6 +183,33 @@ export default async function ToolsPage({ params }: Props) {
     .single()
 
   if (memoError || !memo) {
+    // Check if this slug exists under a different memo type and redirect
+    const allPossibleSlugs = [
+      slugPath,
+      `gap/${slugPath}`,
+      `guides/${slugPath}`,
+      `resources/${slugPath}`,
+      `compare/${slugPath}`,
+      `alternatives/${slugPath}`,
+      `for/${slugPath}`,
+    ]
+
+    const { data: mismatchedMemo } = await supabase
+      .from('memos')
+      .select('slug, memo_type')
+      .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
+      .in('slug', allPossibleSlugs)
+      .eq('status', 'published')
+      .single()
+
+    if (mismatchedMemo) {
+      const correctRoute = MEMO_TYPE_TO_ROUTE[mismatchedMemo.memo_type] || '/tools'
+      if (correctRoute !== ROUTE) {
+        const cleanSlug = mismatchedMemo.slug.replace(/^(gap|guides|resources|compare|alternatives|for)\//, '')
+        redirect(`${correctRoute}/${cleanSlug}`)
+      }
+    }
+
     notFound()
   }
 

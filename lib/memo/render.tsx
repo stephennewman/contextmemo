@@ -22,6 +22,7 @@ export const MEMO_TYPE_TO_ROUTE: Record<string, string> = {
   industry: '/for',
   resource: '/resources',
   response: '/resources',
+  citation_response: '/resources',
 }
 
 // Human-readable labels for memo types (used in breadcrumbs)
