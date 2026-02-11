@@ -390,6 +390,15 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**AI search optimization: dynamic llms.txt, JSON-LD, semantic HTML** (a0cc789)
+- Replaced static `public/llms.txt` with dynamic `app/llms.txt/route.ts` — queries brands + published memos from database, always current
+- Created `app/llms-full.txt/route.ts` — full memo content inline for AI crawlers to ingest without following links
+- Added Organization + WebSite JSON-LD structured data to landing page
+- Added FAQPage JSON-LD to pricing page (5 FAQ items)
+- Added `<main>` semantic wrapper to landing page and memos index
+- Updated `robots.ts` to allow AI crawlers on `/llms-full.txt`
+- 9 files changed, 307 insertions, 89 deletions
+
 **Fix infinite redirect loop — site down** (26c2dfd)
 - Root cause: Vercel domain config redirects `contextmemo.com` → `www.contextmemo.com` (307), but proxy middleware was redirecting `www` → non-www (301), creating an infinite loop
 - Removed the www→non-www redirect from proxy middleware (let Vercel handle domain routing)
