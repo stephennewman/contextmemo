@@ -94,6 +94,30 @@ interface Entity {
   is_partner_candidate?: boolean
 }
 
+interface EntityProfile {
+  platformId: string
+  platformName: string
+  shortName: string
+  icon: string
+  color: string
+  bgColor: string
+  category: string
+  urls: string[]
+  citationCount: number
+}
+
+interface PlatformSummaryItem {
+  platformId: string
+  platformName: string
+  shortName: string
+  icon: string
+  color: string
+  bgColor: string
+  category: string
+  totalCitations: number
+  uniqueUrls: number
+}
+
 interface EntityListProps {
   brandId: string
   entities: Entity[]
@@ -101,6 +125,8 @@ interface EntityListProps {
   citationUrls: Record<string, string[]>
   mentionCounts?: Record<string, number>
   uniqueQueryCounts?: Record<string, number>
+  entityProfiles?: Record<string, EntityProfile[]>
+  platformSummary?: PlatformSummaryItem[]
 }
 
 export function EntityList({ 
@@ -110,6 +136,8 @@ export function EntityList({
   citationUrls,
   mentionCounts = {},
   uniqueQueryCounts = {},
+  entityProfiles = {},
+  platformSummary = [],
 }: EntityListProps) {
   const [entities, setEntities] = useState(initialEntities)
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -568,6 +596,42 @@ export function EntityList({
           )}
         </div>
 
+        {/* External Profiles Summary — which review platforms AI models cite most */}
+        {platformSummary.length > 0 && (
+          <div className="bg-slate-50 border rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-[#0F172A] mb-1 flex items-center gap-2">
+              <Store className="h-4 w-4 text-[#0EA5E9]" />
+              External Profiles Cited by AI
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Review sites and directories that AI models reference when answering prompts about these entities.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {platformSummary.map((p) => (
+                <div
+                  key={p.platformId}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium"
+                  style={{ 
+                    backgroundColor: p.bgColor, 
+                    borderColor: p.color + '40',
+                    color: p.color,
+                  }}
+                  title={`${p.platformName}: ${p.totalCitations} citations from ${p.uniqueUrls} unique URLs`}
+                >
+                  <span>{p.icon}</span>
+                  <span>{p.shortName}</span>
+                  <span 
+                    className="ml-0.5 px-1.5 py-0 rounded-full text-[10px] font-bold"
+                    style={{ backgroundColor: p.color + '20' }}
+                  >
+                    {p.totalCitations}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Tracked Entities */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -736,6 +800,38 @@ export function EntityList({
                       </div>
                     </div>
                     
+                    {/* External review/marketplace profiles for this entity */}
+                    {entityProfiles[entity.id] && entityProfiles[entity.id].length > 0 && (
+                      <div className="mt-2 ml-11 flex flex-wrap gap-1.5">
+                        {entityProfiles[entity.id]
+                          .sort((a, b) => b.citationCount - a.citationCount)
+                          .map((profile) => (
+                          <a
+                            key={profile.platformId}
+                            href={profile.urls[0]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors hover:opacity-80"
+                            style={{
+                              backgroundColor: profile.bgColor,
+                              borderColor: profile.color + '30',
+                              color: profile.color,
+                            }}
+                            title={`${profile.platformName}: cited ${profile.citationCount}x — click to view`}
+                          >
+                            <span className="text-xs">{profile.icon}</span>
+                            <span>{profile.shortName}</span>
+                            <span 
+                              className="px-1 rounded-full text-[9px]"
+                              style={{ backgroundColor: profile.color + '18' }}
+                            >
+                              {profile.citationCount}x
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Expanded citations list */}
                     {isExpanded && citations.length > 0 && (
                       <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto ml-11">
@@ -898,6 +994,27 @@ export function EntityList({
                                   </Badge>
                                 )}
                               </div>
+                              {/* External profiles for discovered entity */}
+                              {entityProfiles[entity.id] && entityProfiles[entity.id].length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {entityProfiles[entity.id]
+                                    .sort((a, b) => b.citationCount - a.citationCount)
+                                    .slice(0, 4)
+                                    .map((profile) => (
+                                    <span
+                                      key={profile.platformId}
+                                      className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium"
+                                      style={{
+                                        backgroundColor: profile.bgColor,
+                                        color: profile.color,
+                                      }}
+                                      title={`${profile.platformName}: cited ${profile.citationCount}x`}
+                                    >
+                                      {profile.icon} {profile.shortName}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                           

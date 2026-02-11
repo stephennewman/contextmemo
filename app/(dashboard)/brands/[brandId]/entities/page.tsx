@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { EntityList } from '@/components/dashboard/entity-list'
 import { AutomationStatusBar } from '@/components/dashboard/automation-status-bar'
+import { detectProfilesFromUrls, aggregatePlatformPresence } from '@/lib/utils/review-platforms'
 
 interface Props {
   params: Promise<{ brandId: string }>
@@ -108,6 +109,61 @@ export default async function EntitiesPage({ params }: Props) {
     uniqueQueryCountsByEntity[id] = queryIds.size
   }
 
+  // Detect external review/marketplace profiles per entity from citation URLs
+  const entityProfiles: Record<string, ReturnType<typeof detectProfilesFromUrls>> = {}
+  for (const [entityId, urls] of Object.entries(citationsByEntity)) {
+    const profiles = detectProfilesFromUrls(urls)
+    if (profiles.size > 0) {
+      entityProfiles[entityId] = profiles
+    }
+  }
+
+  // Serialize profiles for client component (Map -> Record)
+  const serializedEntityProfiles: Record<string, Array<{
+    platformId: string
+    platformName: string
+    shortName: string
+    icon: string
+    color: string
+    bgColor: string
+    category: string
+    urls: string[]
+    citationCount: number
+  }>> = {}
+  for (const [entityId, profileMap] of Object.entries(entityProfiles)) {
+    serializedEntityProfiles[entityId] = Array.from(profileMap.values()).map(p => ({
+      platformId: p.platform.id,
+      platformName: p.platform.name,
+      shortName: p.platform.shortName,
+      icon: p.platform.icon,
+      color: p.platform.color,
+      bgColor: p.platform.bgColor,
+      category: p.platform.category,
+      urls: p.urls,
+      citationCount: p.citationCount,
+    }))
+  }
+
+  // Aggregate: which review platforms are cited most across ALL scan citations
+  const allCitationUrls: string[] = []
+  for (const scan of (allScans || [])) {
+    if (!scan.citations) continue
+    for (const citation of scan.citations as string[]) {
+      allCitationUrls.push(citation)
+    }
+  }
+  const platformSummary = aggregatePlatformPresence(allCitationUrls).map(p => ({
+    platformId: p.platform.id,
+    platformName: p.platform.name,
+    shortName: p.platform.shortName,
+    icon: p.platform.icon,
+    color: p.platform.color,
+    bgColor: p.platform.bgColor,
+    category: p.platform.category,
+    totalCitations: p.totalCitations,
+    uniqueUrls: p.uniqueUrls,
+  }))
+
   return (
     <div className="space-y-4">
       <AutomationStatusBar items={[
@@ -121,6 +177,8 @@ export default async function EntitiesPage({ params }: Props) {
         citationUrls={citationsByEntity}
         mentionCounts={mentionCountsByEntity}
         uniqueQueryCounts={uniqueQueryCountsByEntity}
+        entityProfiles={serializedEntityProfiles}
+        platformSummary={platformSummary}
       />
     </div>
   )

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { SortableBrandsTable, type BrandRow } from '@/components/admin/sortable-brands-table'
+import { SortableTenantsTable, type TenantRow } from '@/components/admin/sortable-tenants-table'
 
 async function getCount(
   serviceClient: ReturnType<typeof createServiceRoleClient>,
@@ -82,6 +83,7 @@ export default async function AdminDashboardPage() {
     perfResult,
     crawlResult,
     recentScansResult,
+    tenantStatsResult,
   ] = await Promise.all([
     getCount(serviceClient, 'tenants'),
     getCount(serviceClient, 'brands'),
@@ -94,6 +96,7 @@ export default async function AdminDashboardPage() {
     serviceClient.rpc('get_admin_brand_performance'),
     serviceClient.rpc('get_admin_brand_crawl_stats'),
     serviceClient.from('scan_results').select('brand_id, scanned_at').gte('scanned_at', last24h),
+    serviceClient.rpc('get_admin_tenant_stats'),
   ])
 
   const allBrands = allBrandsResult.data || []
@@ -101,6 +104,26 @@ export default async function AdminDashboardPage() {
   const perfData = (perfResult.data || []) as Array<{ brand_id: string; prompts: number; cited_prompts: number; total_scans: number; mention_rate: number; citation_rate: number; competitors: number; published_memos: number; total_memos: number; last_scanned: string | null }>
   const crawlData = (crawlResult.data || []) as Array<{ brand_subdomain: string; total_crawls: number; ai_crawls: number; search_crawls: number; ai_training_crawls: number; ai_search_crawls: number; ai_user_crawls: number; unique_bots: number; last_crawl: string | null }>
   const recentScans = recentScansResult.data || []
+  const tenantStatsRaw = (tenantStatsResult.data || []) as Array<{
+    tenant_id: string; email: string; name: string | null; plan: string;
+    created_at: string; last_sign_in_at: string | null; brand_count: number;
+    total_spend: number; spend_7d: number; last_scan: string | null;
+    last_memo_created: string | null; last_activity: string | null;
+  }>
+  const tenantRows: TenantRow[] = tenantStatsRaw.map(t => ({
+    tenantId: t.tenant_id,
+    email: t.email,
+    name: t.name,
+    plan: t.plan,
+    createdAt: t.created_at,
+    lastSignIn: t.last_sign_in_at,
+    lastActivity: t.last_activity,
+    lastScan: t.last_scan,
+    lastMemoCreated: t.last_memo_created,
+    brandCount: Number(t.brand_count),
+    totalSpend: Number(t.total_spend),
+    spend7d: Number(t.spend_7d),
+  }))
 
   // Build lookups from RPC results
   const spendMap = new Map(spendData.map(s => [s.brand_id, s]))
@@ -251,6 +274,9 @@ export default async function AdminDashboardPage() {
           <div className="mt-2 text-2xl font-semibold text-[#0F172A]">{trafficCount24h}</div>
         </div>
       </div>
+
+      {/* Tenants Table */}
+      <SortableTenantsTable tenants={tenantRows} />
 
       {/* All Brands Table (sortable) */}
       <SortableBrandsTable brands={brandStats.map(b => ({
