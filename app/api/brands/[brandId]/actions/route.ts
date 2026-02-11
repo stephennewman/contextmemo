@@ -326,7 +326,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return NextResponse.json({ error: 'memoType required' }, { status: 400 })
         }
         // Validate memoType is one of allowed values
-        const allowedMemoTypes = ['comparison', 'industry', 'how_to', 'alternative', 'response', 'gap_fill'] as const
+        const allowedMemoTypes = ['comparison', 'industry', 'how_to', 'alternative', 'response', 'gap_fill', 'product_deploy'] as const
         if (!allowedMemoTypes.includes(body.memoType)) {
           return NextResponse.json({ error: 'Invalid memoType' }, { status: 400 })
         }

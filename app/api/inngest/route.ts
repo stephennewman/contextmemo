@@ -51,6 +51,7 @@ import { topicUniverseGenerate, topicUniverseRefresh } from '@/lib/inngest/funct
 import { competitorEnrich, competitorEnrichBatch } from '@/lib/inngest/functions/competitor-enrich'
 import { memoVerifyContent } from '@/lib/inngest/functions/memo-verify'
 import { citationRespond } from '@/lib/inngest/functions/citation-respond'
+import { deployAnalyze } from '@/lib/inngest/functions/deploy-analyze'
 import { uptimeCheck } from '@/lib/inngest/functions/uptime-check'
 
 export const { GET, POST, PUT } = serve({
@@ -139,6 +140,9 @@ export const { GET, POST, PUT } = serve({
     
     // Citation response - strategic variations of cited competitor content
     citationRespond,         // Fetch cited URL, generate better version with brand's perspective
+    
+    // Deploy analysis - GitHub webhook → classify → generate product_deploy memos
+    deployAnalyze,           // Analyze git commits, classify as publish-worthy, trigger memo gen
     
     // Uptime monitoring - 5-min health checks with email alerts
     uptimeCheck,             // Check Supabase + Redis, email admins on failure/recovery

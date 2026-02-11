@@ -48,7 +48,7 @@ export async function updateSession(request: NextRequest) {
     user = data.user
   }
 
-  const csrfBypassPaths = ['/api/billing/webhook', '/api/inngest', '/api/track']
+  const csrfBypassPaths = ['/api/billing/webhook', '/api/inngest', '/api/track', '/api/webhooks/github']
   const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
   const isApiRoute = request.nextUrl.pathname.startsWith('/api')
   const isBypassed = csrfBypassPaths.some(path => request.nextUrl.pathname.startsWith(path))

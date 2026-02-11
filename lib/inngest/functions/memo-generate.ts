@@ -304,6 +304,7 @@ export const memoGenerate = inngest.createFunction(
           break
         }
 
+        case 'product_deploy':
         case 'gap_fill': {
           const queryText = query?.query_text || topicTitle || ''
           memoTopics = [
@@ -323,9 +324,9 @@ export const memoGenerate = inngest.createFunction(
 
       const overlap = checkTopicOverlap(memoType, memoTopics, competitorName, existingPages)
 
-      // Skip redundancy check for gap_fill memos — these respond to cited competitor content
-      // and should always be generated even if the brand's website covers the same broad topic
-      if (memoType !== 'gap_fill' && overlap.hasOverlap && overlap.matchingPage) {
+      // Skip redundancy check for gap_fill and product_deploy memos — these respond to cited
+      // competitor content or product changes and should always be generated
+      if (memoType !== 'gap_fill' && memoType !== 'product_deploy' && overlap.hasOverlap && overlap.matchingPage) {
         console.log(`Redundancy detected: memo type "${memoType}" overlaps with existing page "${overlap.matchingPage.url}" (score: ${overlap.overlapScore})`)
         return {
           shouldSkip: true,
@@ -492,6 +493,7 @@ export const memoGenerate = inngest.createFunction(
           break
         }
 
+        case 'product_deploy':
         case 'gap_fill': {
           // Response memo: answers a buyer's question where competitors are being cited
           const queryText = query?.query_text || topicTitle || 'industry solutions'
@@ -534,8 +536,9 @@ export const memoGenerate = inngest.createFunction(
             .replace(/\{\{date\}\}/g, today)
           
           // Create a clean slug from the query text
+          const slugPrefix = memoType === 'product_deploy' ? 'insights' : 'gap'
           const gapSlug = sanitizeSlug(queryText)
-          slug = `gap/${gapSlug}`
+          slug = `${slugPrefix}/${gapSlug}`
           
           // Use the query as the title, cleaned up
           title = queryText

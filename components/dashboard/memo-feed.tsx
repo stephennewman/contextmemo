@@ -233,6 +233,7 @@ export function MemoFeed({
         alternative: '/memos/compare',
         how_to: '/memos/how-to',
         response: '/memos/how-to',
+        product_deploy: '/memos/insights',
       }
       const route = typeToRoute[memo.memo_type] || '/memos/how-to'
       const cleanSlug = memo.slug.replace(/^(guides|compare|how-to|resources)\//, '')

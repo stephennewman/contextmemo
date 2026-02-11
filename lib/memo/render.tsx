@@ -18,6 +18,7 @@ export const MEMO_TYPE_TO_ROUTE: Record<string, string> = {
   alternative: '/alternatives',
   how_to: '/guides',
   gap_fill: '/tools',
+  product_deploy: '/insights',
   industry: '/for',
   resource: '/resources',
   response: '/resources',
@@ -29,6 +30,7 @@ export const MEMO_TYPE_LABELS: Record<string, string> = {
   alternative: 'Alternatives',
   how_to: 'Guides',
   gap_fill: 'Guides',
+  product_deploy: 'Insights',
   industry: 'Industry',
   resource: 'Resources',
   response: 'Resources',
@@ -40,6 +42,7 @@ export const OLD_SLUG_PREFIX_MAP: Record<string, string> = {
   'alternatives-to/': '/alternatives/',
   'how/': '/guides/',
   'gap/': '/tools/',
+  'insights/': '/insights/',
   'for/': '/for/',
   'resources/': '/resources/',
 }

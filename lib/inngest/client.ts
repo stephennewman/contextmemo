@@ -187,6 +187,24 @@ export type InngestEvents = {
       memoIds?: string[] // Specific memos to verify, or all published if omitted
     }
   }
+  // Deploy analysis - GitHub webhook → analyze → memo
+  'deploy/analyze': {
+    data: {
+      repo: string
+      branch: string
+      commits: Array<{
+        sha: string
+        message: string
+        added: string[]
+        removed: string[]
+        modified: string[]
+        timestamp: string
+        author: string
+      }>
+      compareUrl: string
+      pushedAt: string
+    }
+  }
   // Citation response - create strategic variation of cited content
   'citation/respond': {
     data: {
