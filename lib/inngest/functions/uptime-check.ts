@@ -171,7 +171,7 @@ export const uptimeCheck = inngest.createFunction(
         name: 'Health Endpoint',
         error: ('error' in healthResult ? healthResult.error : null) || 'Unreachable',
       })
-    } else if (healthResult.data) {
+    } else if ('data' in healthResult && healthResult.data) {
       const { services } = healthResult.data
       for (const [name, check] of Object.entries(services) as [string, { status: string; error?: string; latencyMs?: number }][]) {
         if (check.status === 'error') {
