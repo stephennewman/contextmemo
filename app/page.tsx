@@ -672,38 +672,83 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Trust Section */}
+      {/* Memos Section */}
       <section className="py-24 bg-[#0F172A]">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="flex items-start gap-6 mb-10">
-            <div className="w-16 h-16 bg-[#0EA5E9] flex items-center justify-center shrink-0">
-              <Shield className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h3 className="font-black text-2xl tracking-tight mb-3">NOT ANOTHER BLOG POST</h3>
-              <p className="text-xl text-slate-400">
-                Memos are structured for how AI actually reads — fresh, properly formatted, and cross-referenced with your brand data for accuracy. 
-                No hallucinations. No filler. Every claim is traceable to a source.
-              </p>
-              <p className="text-lg text-slate-500 mt-3">
-                After publish, we re-scan to verify AI now cites your content. If it doesn&apos;t, you know immediately.
-              </p>
-            </div>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">NOT ANOTHER BLOG POST</h2>
+            <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+              Memos aren&apos;t blog posts rewritten by AI. They&apos;re structured reference documents — 
+              built for how AI models actually read, cite, and recommend. Every claim is cross-referenced 
+              with your brand data. Every source is traceable. Every memo is verified.
+            </p>
           </div>
-          
-          <div className="grid sm:grid-cols-2 gap-4">
+
+          {/* Memo Types Grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
             {[
-              "Cross-referenced with your brand data",
-              "Structured for people, AI, and search engines",
-              "Transparent about AI generation",
-              "Every claim traceable to a source",
-              "Verified with closed-loop re-scanning",
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 p-5 bg-white/5 border border-white/10">
-                <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />
-                <span className="font-semibold">{item}</span>
+              { 
+                icon: "vs", 
+                title: "COMPARISONS", 
+                desc: "Side-by-side breakdowns of your brand vs. competitors. Structured so AI can recommend you when buyers ask \"X vs Y.\"",
+              },
+              { 
+                icon: "alt", 
+                title: "ALTERNATIVES", 
+                desc: "Position your brand as the alternative. When buyers search for competitors, AI surfaces your memo instead.",
+              },
+              { 
+                icon: "how", 
+                title: "HOW-TO GUIDES", 
+                desc: "Step-by-step guides that answer the questions your buyers actually ask. Built to be cited as the authoritative answer.",
+              },
+              { 
+                icon: "ind", 
+                title: "INDUSTRY MEMOS", 
+                desc: "Landscape overviews for your market. AI uses these to understand where your brand fits in the bigger picture.",
+              },
+              { 
+                icon: "gap", 
+                title: "GAP FILLS", 
+                desc: "Content created specifically for queries where competitors get cited and you don't. Targeted, surgical, effective.",
+              },
+              { 
+                icon: "res", 
+                title: "CITATION RESPONSES", 
+                desc: "When a competitor gets cited with a specific URL, we analyze it and generate a strategic counter-memo in your voice.",
+              },
+            ].map((type, i) => (
+              <div key={i} className="p-6 bg-white/5 border border-white/10 hover:border-[#0EA5E9]/30 hover:bg-white/[0.07] transition-all text-center">
+                <div className="w-12 h-12 bg-[#0EA5E9]/15 border border-[#0EA5E9]/25 flex items-center justify-center mx-auto mb-4 rounded-lg">
+                  <span className="text-[#0EA5E9] text-xs font-black tracking-wider">{type.icon.toUpperCase()}</span>
+                </div>
+                <h3 className="font-black text-base tracking-tight mb-2">{type.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{type.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Quality Guarantees */}
+          <div className="border-2 border-white/10 p-8 md:p-10">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <Shield className="h-6 w-6 text-[#0EA5E9]" />
+              <h3 className="font-black text-xl tracking-tight">EVERY MEMO IS VERIFIED</h3>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                "Cross-referenced with your brand data",
+                "Structured for people, AI, and search",
+                "Transparent about AI generation",
+                "Every claim traceable to a source",
+                "Re-scanned 24-72h after publish",
+                "Brand voice matched to your site",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-center gap-3 p-4 bg-white/5">
+                  <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
+                  <span className="text-sm font-semibold">{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
