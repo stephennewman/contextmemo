@@ -20,39 +20,10 @@ import {
   UserPlus,
   Briefcase,
   Trophy,
+  BarChart3,
 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
-import { CONTEXT_MEMO_BRAND_ID, getMemoUrl } from "@/lib/memo/render";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-export const revalidate = 3600 // ISR: regenerate at most once per hour
-
-export default async function Home() {
-  // Fetch featured memos for popular content section
-  // Wrapped in try-catch with timeout so homepage still renders if DB is down
-  let featuredMemos: { id: string; title: string; slug: string; memo_type: string; meta_description: string | null }[] | null = null;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const { data } = await supabase
-      .from('memos')
-      .select('id, title, slug, memo_type, meta_description')
-      .eq('brand_id', CONTEXT_MEMO_BRAND_ID)
-      .eq('status', 'published')
-      .eq('featured', true)
-      .order('sort_order', { ascending: true })
-      .limit(6)
-      .abortSignal(controller.signal);
-    clearTimeout(timeout);
-    featuredMemos = data;
-  } catch {
-    // DB unavailable — render page without featured memos
-    featuredMemos = null;
-  }
+export default function Home() {
 
   const organizationJsonLd = {
     '@context': 'https://schema.org',
@@ -753,64 +724,99 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Popular Content */}
-      {featuredMemos && featuredMemos.length > 0 && (
-        <section className="py-24 bg-white text-[#0F172A]">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 text-[#0EA5E9] text-sm font-bold tracking-wide mb-6">
-                <TrendingUp className="h-4 w-4" />
-                FEATURED MEMOS
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight">LEARN AI VISIBILITY</h2>
-              <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
-                Everything you need to understand how AI search works and how to get your brand cited.
-              </p>
+      {/* Featured Memos */}
+      <section className="py-24 bg-white text-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 text-[#0EA5E9] text-sm font-bold tracking-wide mb-6">
+              <TrendingUp className="h-4 w-4" />
+              FEATURED MEMOS
             </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredMemos.map((memo) => {
-                const url = getMemoUrl(memo.slug, memo.memo_type);
-                
-                return (
-                  <Link
-                    key={memo.id}
-                    href={url}
-                    className="p-6 border-2 border-[#0F172A] group hover:bg-slate-50 hover:border-[#0EA5E9] transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <BookOpen className="h-4 w-4 text-[#0EA5E9]" />
-                      <span className="text-xs font-bold text-[#0EA5E9] uppercase tracking-wide">
-                        {memo.memo_type.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <h3 className="font-black text-lg tracking-tight mb-3 group-hover:text-[#0EA5E9] transition-colors line-clamp-2">
-                      {memo.title}
-                    </h3>
-                    {memo.meta_description && (
-                      <p className="text-slate-600 text-sm line-clamp-2">
-                        {memo.meta_description}
-                      </p>
-                    )}
-                    <div className="mt-4 flex items-center gap-1 text-sm font-bold text-[#0EA5E9] opacity-0 group-hover:opacity-100 transition-opacity">
-                      Read more <ArrowRight className="h-4 w-4" />
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-            
-            <div className="mt-8 text-center">
-              <Button asChild variant="outline" className="border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white text-[#0F172A] font-bold rounded-none px-8">
-                <Link href="/memos">
-                  VIEW ALL MEMOS
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">LEARN AI VISIBILITY</h2>
+            <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
+              Everything you need to understand how AI search works and how to get your brand cited.
+            </p>
           </div>
-        </section>
-      )}
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                type: "GUIDE",
+                icon: <BookOpen className="h-4 w-4" />,
+                title: "What is GEO (Generative Engine Optimization)? The Complete Guide",
+                desc: "Complete guide to Generative Engine Optimization (GEO) — the practice of optimizing your brand to be discovered and cited by AI assistants.",
+                href: "/guides/what-is-geo-generative-engine-optimization",
+              },
+              {
+                type: "HOW TO",
+                icon: <Sparkles className="h-4 w-4" />,
+                title: "How to Get Your Brand Mentioned by ChatGPT: A Practical Guide",
+                desc: "Practical guide for B2B brands on how to get mentioned by ChatGPT through content optimization, authority building, and AI-friendly structure.",
+                href: "/guides/how-to-get-brand-mentioned-by-chatgpt",
+              },
+              {
+                type: "COMPARISON",
+                icon: <Target className="h-4 w-4" />,
+                title: "Best AI Visibility Tools 2026: How to Track Brand Citations in ChatGPT, Claude, and Perplexity",
+                desc: "Comparison of the best AI visibility tools in 2026 for tracking brand citations across AI models.",
+                href: "/compare/best-ai-visibility-tools-2026",
+              },
+              {
+                type: "COMPARISON",
+                icon: <BarChart3 className="h-4 w-4" />,
+                title: "GEO vs SEO: What Marketers Need to Know About AI Search Optimization",
+                desc: "Complete comparison of GEO vs SEO — when to prioritize each, how they overlap, and practical recommendations for B2B marketers.",
+                href: "/compare/geo-vs-seo-ai-search-optimization",
+              },
+              {
+                type: "HOW TO",
+                icon: <Eye className="h-4 w-4" />,
+                title: "How to Optimize Content for Perplexity AI: Get Your Brand Cited",
+                desc: "How Perplexity AI selects sources and practical steps to increase your brand citation rate in AI-powered search.",
+                href: "/guides/how-to-optimize-content-for-perplexity-ai",
+              },
+              {
+                type: "GUIDE",
+                icon: <FileText className="h-4 w-4" />,
+                title: "How to Optimize Your Site for LLM Training Data and AI Search",
+                desc: "A practical guide to making your website citable by ChatGPT, Claude, Perplexity, and Gemini. Covers llms.txt, JSON-LD, and semantic HTML.",
+                href: "/guides/optimize-site-for-llm-training-data-ai-search",
+              },
+            ].map((memo, i) => (
+              <Link
+                key={i}
+                href={memo.href}
+                className="p-6 border-2 border-[#0F172A] group hover:bg-slate-50 hover:border-[#0EA5E9] transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[#0EA5E9]">{memo.icon}</span>
+                  <span className="text-xs font-bold text-[#0EA5E9] uppercase tracking-wide">
+                    {memo.type}
+                  </span>
+                </div>
+                <h3 className="font-black text-lg tracking-tight mb-3 group-hover:text-[#0EA5E9] transition-colors line-clamp-2">
+                  {memo.title}
+                </h3>
+                <p className="text-slate-600 text-sm line-clamp-2">
+                  {memo.desc}
+                </p>
+                <div className="mt-4 flex items-center gap-1 text-sm font-bold text-[#0EA5E9] opacity-0 group-hover:opacity-100 transition-opacity">
+                  Read more <ArrowRight className="h-4 w-4" />
+                </div>
+              </Link>
+            ))}
+          </div>
+          
+          <div className="mt-10 text-center">
+            <Button asChild variant="outline" className="border-2 border-[#0F172A] hover:bg-[#0F172A] hover:text-white text-[#0F172A] font-bold rounded-none px-8">
+              <Link href="/memos">
+                VIEW ALL MEMOS
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
 
       {/* Use Cases */}
       <section className="py-24 bg-slate-100 text-[#0F172A]">
