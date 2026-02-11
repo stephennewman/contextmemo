@@ -221,8 +221,18 @@ Respond ONLY with the JSON object, no other text.`
       }
     }
 
-    // Step 4: Trigger memo generation
+    // Step 4: Trigger memo generation with commit context
     await step.run('trigger-memo', async () => {
+      // Build a commit summary so the memo generator has real context
+      const commitSummary = candidates
+        .filter(c => classification.source_commits?.includes(c.sha) || !classification.source_commits)
+        .slice(0, 5)
+        .map(c => {
+          const files = [...c.added.map(f => `+ ${f}`), ...c.modified.map(f => `~ ${f}`)].slice(0, 10)
+          return `- ${c.message.split('\n')[0]}${files.length > 0 ? `\n  Files: ${files.join(', ')}` : ''}`
+        })
+        .join('\n')
+
       await inngest.send({
         name: 'memo/generate',
         data: {
@@ -230,6 +240,7 @@ Respond ONLY with the JSON object, no other text.`
           memoType: 'product_deploy',
           topicTitle: classification.topic_title!,
           topicDescription: classification.topic_description || '',
+          deployCommitSummary: commitSummary,
         },
       })
     })

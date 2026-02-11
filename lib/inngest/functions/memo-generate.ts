@@ -8,6 +8,7 @@ import {
   HOW_TO_MEMO_PROMPT,
   ALTERNATIVE_MEMO_PROMPT,
   GAP_FILL_MEMO_PROMPT,
+  PRODUCT_DEPLOY_MEMO_PROMPT,
   generateToneInstructions,
   formatVoiceInsightsForPrompt,
   formatBrandContextForPrompt,
@@ -19,6 +20,7 @@ import { emitFeedEvent } from '@/lib/feed/emit'
 import { sanitizeContentForHubspot, formatHtmlForHubspot } from '@/lib/hubspot/content-sanitizer'
 import { logSingleUsage } from '@/lib/utils/usage-logger'
 import { selectImageForMemo } from '@/lib/hubspot/image-selector'
+import { fetchUrlAsMarkdown } from '@/lib/utils/jina-reader'
 
 const supabase = createServiceRoleClient()
 
@@ -167,7 +169,7 @@ export const memoGenerate = inngest.createFunction(
   },
   { event: 'memo/generate' },
   async ({ event, step }) => {
-    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription, citedUrls } = event.data
+    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription, citedUrls, deployCommitSummary } = event.data
 
     // Step 1: Get brand, query, related data, voice insights, and existing memo IDs
     const { brand, query, competitor, competitors, voiceInsights, existingMemoIds } = await step.run('get-data', async () => {
@@ -493,14 +495,58 @@ export const memoGenerate = inngest.createFunction(
           break
         }
 
-        case 'product_deploy':
+        case 'product_deploy': {
+          // Product update memo: explains what was shipped and why it matters
+          const deployTitle = topicTitle || 'Product Update'
+          const deployDescription = topicDescription || ''
+          
+          // Build commit context if available
+          let commitBlock = ''
+          if (deployCommitSummary) {
+            commitBlock = `\nRecent changes:\n${deployCommitSummary}`
+          }
+
+          prompt = PRODUCT_DEPLOY_MEMO_PROMPT
+            .replace('{{tone_instructions}}', toneInstructions)
+            .replace('{{verified_insights}}', verifiedInsights)
+            .replace('{{cta_section}}', ctaSection)
+            .replace('{{brand_context}}', formatBrandContextForPrompt(brandContext))
+            .replace('{{deploy_title}}', deployTitle)
+            .replace('{{deploy_description}}', deployDescription)
+            .replace('{{deploy_commits}}', commitBlock)
+            .replace(/\{\{brand_name\}\}/g, brand.name)
+            .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
+            .replace(/\{\{date\}\}/g, today)
+          
+          slug = `insights/${sanitizeSlug(deployTitle)}`
+          title = deployTitle
+            .replace(/^\w/, (c: string) => c.toUpperCase())
+          break
+        }
+
         case 'gap_fill': {
           // Response memo: answers a buyer's question where competitors are being cited
           const queryText = query?.query_text || topicTitle || 'industry solutions'
           
-          // Build cited content summary from citedUrls or competitor data
+          // Fetch actual content from the top cited URL to give AI real context
+          // This is what makes citation-respond memos much better — actual source content
           let citedContentSummary = ''
+          let fetchedSourceContent = ''
+          
           if (citedUrls && Array.isArray(citedUrls) && citedUrls.length > 0) {
+            // Try to fetch the top cited URL's actual content
+            const topUrl = citedUrls[0]
+            try {
+              const fetched = await fetchUrlAsMarkdown(topUrl)
+              if (fetched.content && fetched.content.length > 300) {
+                // Cap at 15k chars for gap fill (enough context without overwhelming)
+                fetchedSourceContent = fetched.content.slice(0, 15000)
+              }
+            } catch (e) {
+              console.log(`Could not fetch cited URL ${topUrl}, using domain-only context`)
+            }
+            
+            // Build domain summary for remaining URLs
             citedContentSummary = citedUrls.map((url: string) => {
               try {
                 const domain = new URL(url).hostname.replace(/^www\./, '')
@@ -513,6 +559,11 @@ export const memoGenerate = inngest.createFunction(
             citedContentSummary = competitors.slice(0, 5).map(c => 
               `- ${c.name} (${c.domain || 'no domain'})`
             ).join('\n')
+          }
+          
+          // If we fetched source content, prepend it to the cited content summary
+          if (fetchedSourceContent) {
+            citedContentSummary = `TOP CITED CONTENT (what AI models currently reference for this query):\n\n${fetchedSourceContent}\n\nOTHER CITED SOURCES:\n${citedContentSummary}`
           }
 
           // Determine if the query is a question to pick the right section heading
@@ -535,12 +586,7 @@ export const memoGenerate = inngest.createFunction(
             .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
             .replace(/\{\{date\}\}/g, today)
           
-          // Create a clean slug from the query text
-          const slugPrefix = memoType === 'product_deploy' ? 'insights' : 'gap'
-          const gapSlug = sanitizeSlug(queryText)
-          slug = `${slugPrefix}/${gapSlug}`
-          
-          // Use the query as the title, cleaned up
+          slug = `gap/${sanitizeSlug(queryText)}`
           title = queryText
             .replace(/^\w/, (c: string) => c.toUpperCase()) // Capitalize first letter
             .replace(/\?$/, '') // Remove trailing question mark

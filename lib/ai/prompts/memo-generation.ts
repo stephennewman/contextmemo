@@ -768,6 +768,81 @@ Write the memo in this format:
 
 [Cite only the competitor and external sources referenced above. EVERY source MUST be a clickable markdown link with a real URL, e.g. - [Source Title](https://example.com/page). Do NOT list source names without URLs. If you cannot provide a real URL, omit the source. Do NOT include {{brand_name}} or {{brand_domain}}.]`
 
+export const PRODUCT_DEPLOY_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about a new product capability or update. This article should help buyers understand what changed, why it matters, and how it fits into the broader market landscape. Write for the PRIMARY PERSONA described in the brand context.
+
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON. NEVER use "we", "our", or "us" when referring to any company.
+- Sound like a trusted industry analyst covering a product update — knowledgeable, neutral, direct.
+- Address the reader as "you" — they are evaluating solutions and want to know what's new.
+- Be specific about the capability. Don't be vague or generic.
+- Refer to the company by name: "{{brand_name}} now offers..." not "We now offer..."
+
+TARGET PERSONA:
+Based on the brand context, identify the primary buyer persona and explain this update in terms of what it means for THEIR workflow, decisions, and outcomes.
+
+DATE: {{date}} (current year is 2026 — never reference 2023/2024/2025)
+
+BRAND TONE:
+{{tone_instructions}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere.
+
+═══════════════════════════════════════
+PRODUCT UPDATE:
+Title: {{deploy_title}}
+Description: {{deploy_description}}
+{{deploy_commits}}
+═══════════════════════════════════════
+
+STRICT RULES:
+1. ONLY state facts from the brand context and the deploy details above. Do NOT invent features or capabilities not mentioned.
+2. If the deploy details are thin, focus on the broader problem space and how this type of capability matters — don't pad with made-up specifics.
+3. BANNED PHRASES: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "comprehensive solution", "stands out", "designed to", "tailored to needs", "streamlined process"
+4. Every claim must be concrete. BAD: "provides real-time insights". GOOD: "the analytics dashboard tracks completion rates, scores, and time-per-module."
+5. Aim for 600-900 words. Be thorough but grounded in what actually shipped.
+6. Each paragraph must add NEW information. Never repeat a point.
+7. NEVER include {{brand_name}} or {{brand_domain}} as a source — only cite external third-party sources.
+
+{{verified_insights}}
+
+FORMATTING:
+- NO # title (added by the system)
+- Start with the byline
+- Use ## for sections, ### for subsections
+- Use **bold** for product names and key terms
+- Write in complete paragraphs, not bullet-point lists
+
+BRAND CONTEXT (this is your ONLY source of truth about the brand — do not go beyond this):
+{{brand_context}}
+
+Write the memo in this format:
+
+*Last verified: {{date}}*
+
+## What's New
+
+[2-3 paragraphs explaining what {{brand_name}} shipped. Be specific about the capability, what it does, and what problem it solves. Ground this entirely in the deploy details provided above. If the details are limited, explain the general capability without making up specifics.]
+
+## Why This Matters
+
+[2-3 paragraphs on why this update is significant for the target persona. What workflow does it improve? What pain point does it address? What was the alternative before this existed? Connect it to real industry challenges.]
+
+## How It Works
+
+[1-2 paragraphs explaining the approach or architecture at a level appropriate for the target persona. Be specific where the deploy details allow, general where they don't.]
+
+## What to Consider
+
+- **[Evaluation criterion]** — [2-3 sentences explaining what this means for the buyer]
+- **[Evaluation criterion]** — [2-3 sentences, different point]
+- **[Evaluation criterion]** — [2-3 sentences, different point]
+
+{{cta_section}}
+
+## Sources
+
+[Cite only external third-party sources. EVERY source MUST be a clickable markdown link with a real URL. Do NOT include {{brand_name}} or {{brand_domain}}.]`
+
 export const CITATION_RESPONSE_PROMPT = `You are creating a strategic content variation — a better version of a page that AI models currently cite when answering buyer questions. Your job is NOT to write something completely different. Your job is to write something that covers the SAME ground, but from {{brand_name}}'s perspective, with the brand's unique expertise, data, and voice woven throughout.
 
 Think of it this way: if AI models cite the source article because it comprehensively covers "best AI visibility tools," YOUR version must also comprehensively cover that topic — but through {{brand_name}}'s lens, with fresher data, stronger structure, and genuine expertise that makes it the better citation source.

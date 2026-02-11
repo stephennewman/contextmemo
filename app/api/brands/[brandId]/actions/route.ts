@@ -464,6 +464,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const { generateText } = await import('ai')
         const { openai } = await import('@ai-sdk/openai')
         const { GAP_FILL_MEMO_PROMPT, formatBrandContextForPrompt, generateToneInstructions } = await import('@/lib/ai/prompts/memo-generation')
+        const { fetchUrlAsMarkdown } = await import('@/lib/utils/jina-reader')
         
         const memoLimit = Math.min(body.limit || 5, 10)
         
@@ -558,7 +559,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                   citedDomains.set(domain, (citedDomains.get(domain) || 0) + 1)
                 } catch { /* skip */ }
               }
-              const citedContent = [...citedDomains.entries()]
+              const domainSummary = [...citedDomains.entries()]
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 6)
                 .map(([domain, count]) => {
@@ -575,10 +576,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 })
                 .join('\n')
               
+              // Fetch actual content from the top cited URL for richer context
+              let citedContent = domainSummary || 'No specific citations found for this query.'
+              if (uniqueUrls.length > 0) {
+                try {
+                  const topUrl = uniqueUrls[0]
+                  const fetched = await fetchUrlAsMarkdown(topUrl)
+                  if (fetched.content && fetched.content.length > 300) {
+                    const sourceSnippet = fetched.content.slice(0, 15000)
+                    citedContent = `TOP CITED CONTENT (what AI models currently reference for this query):\n\n${sourceSnippet}\n\nOTHER CITED SOURCES:\n${domainSummary}`
+                  }
+                } catch {
+                  // Fall back to domain-only summary
+                }
+              }
+              
+              // Determine section headings based on query type
+              const isQuestion = /\?$/.test(gap.query_text.trim()) || /^(how|what|why|which|where|when|who|can|does|do|is|are|should|will|would)\s/i.test(gap.query_text.trim())
+              const shortAnswerHeading = isQuestion ? 'The Short Answer' : 'Overview'
+              const shortAnswerInstruction = isQuestion
+                ? 'answering the buyer\'s question directly and concisely'
+                : 'providing a concise overview of the topic'
+              
               // Build prompt
               const prompt = GAP_FILL_MEMO_PROMPT
                 .replace('{{query_text}}', gap.query_text)
-                .replace('{{cited_content}}', citedContent || 'No specific citations found for this query.')
+                .replace('{{cited_content}}', citedContent)
+                .replace('{{short_answer_heading}}', shortAnswerHeading)
+                .replace('{{short_answer_instruction}}', shortAnswerInstruction)
                 .replace('{{tone_instructions}}', toneInstructions)
                 .replace('{{verified_insights}}', '')
                 .replace('{{brand_context}}', brandContextText)
@@ -655,28 +680,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       case 'regenerate_memos': {
-        // Regenerate all existing gap_fill memos through the updated prompt
+        // Regenerate all existing gap_fill and product_deploy memos through improved prompts
         const { generateText: genText } = await import('ai')
         const { openai: openaiProvider } = await import('@ai-sdk/openai')
-        const { GAP_FILL_MEMO_PROMPT: regenPromptTemplate, formatBrandContextForPrompt: formatCtx, generateToneInstructions: genTone } = await import('@/lib/ai/prompts/memo-generation')
+        const { GAP_FILL_MEMO_PROMPT: regenPromptTemplate, PRODUCT_DEPLOY_MEMO_PROMPT: regenDeployTemplate, formatBrandContextForPrompt: formatCtx, generateToneInstructions: genTone } = await import('@/lib/ai/prompts/memo-generation')
+        const { fetchUrlAsMarkdown: fetchUrl } = await import('@/lib/utils/jina-reader')
         
-        // Fetch all gap_fill memos for this brand
+        // Fetch all gap_fill AND product_deploy memos for this brand
         const { data: existingMemos } = await supabase
           .from('memos')
           .select('id, slug, title, source_query_id, memo_type, status, version')
           .eq('brand_id', brandId)
-          .eq('memo_type', 'gap_fill')
+          .in('memo_type', ['gap_fill', 'product_deploy'])
         
         if (!existingMemos || existingMemos.length === 0) {
-          return NextResponse.json({ success: true, regenerated: 0, reason: 'no_gap_fill_memos' })
+          return NextResponse.json({ success: true, regenerated: 0, reason: 'no_memos_to_regenerate' })
         }
         
         // Fetch source queries for these memos
         const queryIds = existingMemos.map(m => m.source_query_id).filter(Boolean)
-        const { data: sourceQueries } = await supabase
-          .from('queries')
-          .select('id, query_text, funnel_stage')
-          .in('id', queryIds)
+        const { data: sourceQueries } = queryIds.length > 0 
+          ? await supabase
+              .from('queries')
+              .select('id, query_text, funnel_stage')
+              .in('id', queryIds)
+          : { data: [] }
         const queryMap = new Map((sourceQueries || []).map(q => [q.id, q]))
         
         // Fetch scan data for citations
@@ -694,7 +722,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
         
         // Prepare brand context
-        const regenBrandCtx = brand.context as Record<string, unknown> & { brand_tone?: unknown; brand_personality?: unknown }
+        const regenBrandCtx = brand.context as Record<string, unknown> & { brand_tone?: unknown; brand_personality?: unknown; offers?: unknown }
         const regenTone = genTone(
           regenBrandCtx.brand_tone as Parameters<typeof genTone>[0],
           regenBrandCtx.brand_personality as Parameters<typeof genTone>[1]
@@ -712,14 +740,53 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           if (e.domain) regenDomainMap.set(e.domain.replace(/^www\./, '').toLowerCase(), { name: e.name, type: e.entity_type || 'other' })
         }
         
-        // Regenerate in batches of 3
-        const regenResults: Array<{ memoId: string; title: string; success: boolean }> = []
+        // Regenerate in batches of 2 (reduced from 3 since we now fetch URLs)
+        const regenResults: Array<{ memoId: string; title: string; memoType: string; success: boolean }> = []
         
-        for (let i = 0; i < existingMemos.length; i += 3) {
-          const batch = existingMemos.slice(i, i + 3)
+        for (let i = 0; i < existingMemos.length; i += 2) {
+          const batch = existingMemos.slice(i, i + 2)
           
           const batchResults = await Promise.allSettled(
             batch.map(async (memo) => {
+              if (memo.memo_type === 'product_deploy') {
+                // Product deploy: use the dedicated deploy prompt
+                const prompt = regenDeployTemplate
+                  .replace('{{deploy_title}}', memo.title)
+                  .replace('{{deploy_description}}', '')
+                  .replace('{{deploy_commits}}', '')
+                  .replace('{{tone_instructions}}', regenTone)
+                  .replace('{{verified_insights}}', '')
+                  .replace('{{cta_section}}', '')
+                  .replace('{{brand_context}}', regenCtxText)
+                  .replace(/\{\{brand_name\}\}/g, brand.name)
+                  .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
+                  .replace(/\{\{date\}\}/g, regenDate)
+                
+                const { text: content } = await genText({
+                  model: openaiProvider('gpt-4o'),
+                  prompt,
+                  temperature: 0.4,
+                })
+                
+                if (!content || content.length < 400) {
+                  throw new Error('Generated content too short')
+                }
+                
+                const { error } = await supabase
+                  .from('memos')
+                  .update({
+                    content_markdown: content,
+                    last_verified_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    version: (memo.version || 1) + 1,
+                  })
+                  .eq('id', memo.id)
+                
+                if (error) throw error
+                return { memoId: memo.id, title: memo.title, memoType: memo.memo_type, success: true }
+              }
+              
+              // Gap fill: use improved flow with fetched content
               const query = queryMap.get(memo.source_query_id)
               if (!query) throw new Error(`No source query for memo ${memo.id}`)
               
@@ -733,7 +800,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                   citedDomains.set(domain, (citedDomains.get(domain) || 0) + 1)
                 } catch { /* skip */ }
               }
-              const citedContent = [...citedDomains.entries()]
+              const domainSummary = [...citedDomains.entries()]
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 6)
                 .map(([domain, count]) => {
@@ -750,12 +817,36 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 })
                 .join('\n')
               
+              // Fetch actual content from top cited URL for richer context
+              let citedContent = domainSummary || 'No specific citations found for this query.'
+              if (uniqueUrls.length > 0) {
+                try {
+                  const fetched = await fetchUrl(uniqueUrls[0])
+                  if (fetched.content && fetched.content.length > 300) {
+                    const sourceSnippet = fetched.content.slice(0, 15000)
+                    citedContent = `TOP CITED CONTENT (what AI models currently reference for this query):\n\n${sourceSnippet}\n\nOTHER CITED SOURCES:\n${domainSummary}`
+                  }
+                } catch {
+                  // Fall back to domain-only summary
+                }
+              }
+              
+              // Determine section headings
+              const isQuestion = /\?$/.test(query.query_text.trim()) || /^(how|what|why|which|where|when|who|can|does|do|is|are|should|will|would)\s/i.test(query.query_text.trim())
+              const shortAnswerHeading = isQuestion ? 'The Short Answer' : 'Overview'
+              const shortAnswerInstruction = isQuestion
+                ? 'answering the buyer\'s question directly and concisely'
+                : 'providing a concise overview of the topic'
+              
               // Build prompt
               const prompt = regenPromptTemplate
                 .replace('{{query_text}}', query.query_text)
-                .replace('{{cited_content}}', citedContent || 'No specific citations found for this query.')
+                .replace('{{cited_content}}', citedContent)
+                .replace('{{short_answer_heading}}', shortAnswerHeading)
+                .replace('{{short_answer_instruction}}', shortAnswerInstruction)
                 .replace('{{tone_instructions}}', regenTone)
                 .replace('{{verified_insights}}', '')
+                .replace('{{cta_section}}', '')
                 .replace('{{brand_context}}', regenCtxText)
                 .replace(/\{\{brand_name\}\}/g, brand.name)
                 .replace(/\{\{brand_domain\}\}/g, brand.domain || '')
@@ -785,7 +876,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               
               if (error) throw error
               
-              return { memoId: memo.id, title: memo.title, success: true }
+              return { memoId: memo.id, title: memo.title, memoType: memo.memo_type, success: true }
             })
           )
           
@@ -793,7 +884,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             if (result.status === 'fulfilled') {
               regenResults.push(result.value)
             } else {
-              regenResults.push({ memoId: '', title: '', success: false })
+              regenResults.push({ memoId: '', title: '', memoType: '', success: false })
             }
           }
         }
