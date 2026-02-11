@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 8, 2026  
-> **Version:** 0.20.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit
+> **Last Updated:** February 11, 2026  
+> **Version:** 0.21.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning
 
 ---
 
@@ -389,6 +389,22 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 11, 2026
+
+**Premium positioning: invite-only access, no free signup** (4696d9d)
+- Repositioned product as invite-only premium platform — no self-service signups
+- Added invite code gate to signup form (validates against predefined codes: AMAZING2026, BRAVO2026, CUSTOMERS2026, DEALS2026, FUNNEL2026)
+- Created `/request-access` page with lead capture form for early access requests
+- Created `access_requests` table in Supabase for tracking inbound requests
+- Added `/api/auth/validate-invite` route for invite code validation
+- Added `/api/access-request` route for form submissions
+- Redesigned pricing page: $499/$999/Custom tiers with "up to 90% off" early access messaging
+- Three CTA options on pricing: Request Early Access, Request a Demo, Request a Discount
+- Replaced all "START FREE" / "FREE TRIAL" CTAs site-wide with "REQUEST ACCESS" / "REQUEST EARLY ACCESS"
+- Updated landing page pricing section from "FREE FOR LIFE" tranches to premium tier cards
+- Replaced sticky pricing bar with invite-only + discount messaging
+- Updated login page, changelog, calculator, all public memo pages, memo render header CTAs
+- Updated sitemap: replaced /signup with /request-access
+- 19 files changed across the codebase
 
 **Admin: add Tenants table with last login, last activity, spend tracking** (ac98693)
 - Created `get_admin_tenant_stats` RPC joining tenants with `auth.users` for real `last_sign_in_at` data
