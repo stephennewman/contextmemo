@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -1351,6 +1352,7 @@ function MemoGenerationModal({
   const lineIdRef = useRef(0)
   const baselineCountRef = useRef(0)
   const isCompleteRef = useRef(false)
+  const router = useRouter()
 
   // Auto-scroll
   useEffect(() => {
@@ -1470,6 +1472,8 @@ function MemoGenerationModal({
                 setGeneratedMemo(latest)
                 isCompleteRef.current = true
                 setIsComplete(true)
+                // Refresh page data behind the modal so "Gap" flips to "Covered"
+                router.refresh()
               }
             }
           } catch {
