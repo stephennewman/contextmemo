@@ -393,6 +393,20 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Homepage redesign: full closed-loop value proposition** (bbff400)
+- Complete rewrite of `app/page.tsx` (451 insertions, 262 deletions)
+- Reframed hero from "GET CITED IN AI SEARCH" to "MONITOR, WIN, AND PROVE ROI IN AI SEARCH"
+- Expanded How It Works from 4 steps to 5-step closed loop: Scan → Discover → Generate → Verify → Attribute
+- Added Revenue Attribution section with full pipeline flow (AI traffic → HubSpot contact → pipeline → closed-won revenue)
+- Added Integrations section (HubSpot, Google Search Console, Bing Webmaster, IndexNow)
+- Reorganized features from 6 equal cards into 3 pillars: Visibility Intelligence, Competitive Engine, Content That Gets Cited
+- Added RevOps as 4th use case alongside Demand Gen, Product Marketing, Content
+- Corrected model count from "6 AI models" to actual 4 (ChatGPT, Claude, Perplexity, Grok) + Google AI Overviews
+- Removed unbuilt claims from Enterprise tier (SSO/SAML, API access) — replaced with Custom onboarding, Priority feature requests
+- Added HubSpot integration and Revenue attribution to Growth tier
+- Added closed-loop verification language to Trust section
+- Updated tagline to "The full closed loop for AI visibility"
+
 **Fix: gap_fill and product_deploy memo quality overhaul** (092cae1)
 - Root cause analysis identified 3 structural problems causing poor/generic/redundant memos:
   1. Gap fill memos received only domain names as context (e.g., "competitor.com — cited 3x") while the citation-respond system fetches 50k chars of actual page content. Fixed: gap_fill now fetches top cited URL via Jina Reader for real competitive context.
