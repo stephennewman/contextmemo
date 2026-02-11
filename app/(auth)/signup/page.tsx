@@ -4,38 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getEmailDomain } from '@/lib/utils/domain-verification'
-import { Loader2, Mail, CheckCircle, Users, Sparkles } from 'lucide-react'
-
-// Pricing tranches - users lock in their price forever
-const PRICING_TRANCHES = [
-  { min: 1, max: 10, price: 0 },
-  { min: 11, max: 25, price: 1 },
-  { min: 26, max: 50, price: 3 },
-  { min: 51, max: 100, price: 5 },
-  { min: 101, max: 175, price: 9 },
-  { min: 176, max: 275, price: 15 },
-  { min: 276, max: 400, price: 19 },
-  { min: 401, max: 575, price: 29 },
-  { min: 576, max: 800, price: 39 },
-  { min: 801, max: 1100, price: 49 },
-  { min: 1101, max: 1500, price: 65 },
-  { min: 1501, max: 2000, price: 79 },
-  { min: 2001, max: Infinity, price: 99 },
-];
-
-function getCurrentTranche(userCount: number) {
-  return PRICING_TRANCHES.find(t => userCount >= t.min && userCount <= t.max) || PRICING_TRANCHES[PRICING_TRANCHES.length - 1];
-}
-
-// TODO: Replace with actual user count from database
-const CURRENT_USER_COUNT = 7;
+import { Loader2, Mail, CheckCircle, Shield, Lock } from 'lucide-react'
 
 export default function SignupPage() {
-  const currentTranche = getCurrentTranche(CURRENT_USER_COUNT);
-  const spotsLeft = currentTranche.max - CURRENT_USER_COUNT + 1;
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -45,7 +20,33 @@ export default function SignupPage() {
     setError(null)
     setLoading(true)
 
-    // Basic validation
+    // Validate invite code first
+    if (!inviteCode.trim()) {
+      setError('Invite code is required')
+      setLoading(false)
+      return
+    }
+
+    try {
+      const inviteRes = await fetch('/api/auth/validate-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: inviteCode }),
+      })
+
+      if (!inviteRes.ok) {
+        const { error: inviteError } = await inviteRes.json()
+        setError(inviteError || 'Invalid invite code')
+        setLoading(false)
+        return
+      }
+    } catch {
+      setError('Failed to validate invite code. Please try again.')
+      setLoading(false)
+      return
+    }
+
+    // Password validation
     const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{12,}$/
     if (!passwordPolicy.test(password)) {
       setError('Password must be 12+ chars and include upper, lower, number, and symbol')
@@ -105,7 +106,6 @@ export default function SignupPage() {
       }
 
       // Tenant record will be created in auth callback after email verification
-      // (RLS requires authenticated user, which only happens after confirmation)
       setEmailSent(true)
     } catch {
       setError('An unexpected error occurred')
@@ -131,14 +131,6 @@ export default function SignupPage() {
           <p className="text-sm text-zinc-500 text-center font-medium">
             Click the link in your email to verify your account and get started.
           </p>
-          <div className="p-4 bg-[#10B981] text-white">
-            <div className="flex items-center justify-center gap-2 font-bold">
-              <Sparkles className="h-4 w-4" />
-              <span>
-                Your price: {currentTranche.price === 0 ? 'FREE' : `$${currentTranche.price}/mo`} locked in forever
-              </span>
-            </div>
-          </div>
           <div className="p-4 border-[3px] border-[#0F172A] bg-[#F8FAFC]">
             <div className="flex items-center justify-center gap-2 text-sm font-medium">
               <CheckCircle className="h-4 w-4 text-[#10B981]" strokeWidth={2.5} />
@@ -169,25 +161,17 @@ export default function SignupPage() {
 
   return (
     <div className="space-y-4">
-      {/* Pricing Tier Banner - Bold Electric Style */}
-      <div className="p-4 bg-[#10B981] text-white" style={{ borderLeft: '8px solid #0F172A' }}>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center bg-white">
-              <Sparkles className="h-5 w-5 text-[#10B981]" />
-            </div>
-            <div>
-              <div className="font-bold">
-                {currentTranche.price === 0 ? 'LOCK IN FREE FOREVER' : `LOCK IN $${currentTranche.price}/MO FOREVER`}
-              </div>
-              <div className="text-sm text-white/80 font-medium">
-                You&apos;re user #{CURRENT_USER_COUNT + 1} · {spotsLeft} spots left at this price
-              </div>
-            </div>
+      {/* Premium Access Banner */}
+      <div className="p-4 bg-[#0F172A] text-white" style={{ borderLeft: '8px solid #0EA5E9' }}>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center bg-[#0EA5E9]">
+            <Shield className="h-5 w-5 text-white" />
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-white/80">
-            <Users className="h-3.5 w-3.5" />
-            <span>{CURRENT_USER_COUNT} signed up</span>
+          <div>
+            <div className="font-bold">INVITE-ONLY ACCESS</div>
+            <div className="text-sm text-white/70 font-medium">
+              Enter your invite code to create an account
+            </div>
           </div>
         </div>
       </div>
@@ -196,7 +180,7 @@ export default function SignupPage() {
         {/* Header */}
         <div className="p-6 border-b-[3px] border-[#0F172A]">
           <h1 className="text-2xl font-bold text-[#0F172A]">CREATE YOUR ACCOUNT</h1>
-          <p className="text-zinc-500 font-medium mt-1">Get started with Context Memo using your work email</p>
+          <p className="text-zinc-500 font-medium mt-1">Use your invite code and work email to get started</p>
         </div>
         
         {/* Form */}
@@ -207,6 +191,31 @@ export default function SignupPage() {
                 {error}
               </div>
             )}
+
+            {/* Invite Code - First and Prominent */}
+            <div className="space-y-2">
+              <label htmlFor="inviteCode" className="text-xs font-bold tracking-widest text-zinc-500">
+                INVITE CODE
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                <input
+                  id="inviteCode"
+                  type="text"
+                  placeholder="e.g. AMAZING2026"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  required
+                  className="w-full pl-10 pr-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-bold placeholder:text-zinc-400 placeholder:font-medium focus:outline-none focus:border-[#0EA5E9] uppercase tracking-widest"
+                />
+              </div>
+              <p className="text-xs text-zinc-500 font-medium">
+                Don&apos;t have one?{' '}
+                <Link href="/request-access" className="text-[#0EA5E9] hover:underline font-bold">
+                  REQUEST AN INVITE CODE
+                </Link>
+              </p>
+            </div>
             
             <div className="space-y-2">
               <label htmlFor="name" className="text-xs font-bold tracking-widest text-zinc-500">
@@ -250,14 +259,17 @@ export default function SignupPage() {
               <input
                 id="password"
                 type="password"
-                placeholder="Minimum 8 characters"
+                placeholder="Minimum 12 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
+                minLength={12}
                 autoComplete="new-password"
                 className="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
               />
+              <p className="text-xs text-zinc-500 font-medium">
+                12+ chars with upper, lower, number, and symbol
+              </p>
             </div>
           </div>
           

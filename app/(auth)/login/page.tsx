@@ -121,8 +121,8 @@ export default function LoginPage() {
           
           <p className="text-sm text-zinc-500 text-center mt-4 font-medium">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-[#0EA5E9] hover:underline font-bold">
-              SIGN UP
+            <Link href="/request-access" className="text-[#0EA5E9] hover:underline font-bold">
+              REQUEST AN INVITE CODE
             </Link>
           </p>
         </div>

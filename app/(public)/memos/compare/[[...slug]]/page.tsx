@@ -104,10 +104,10 @@ export default async function ComparePage({ params }: Props) {
               <span className="font-black text-lg tracking-tight">CONTEXT MEMO</span>
             </a>
             <a 
-              href="/signup" 
+              href="/request-access" 
               className="hidden sm:block bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-sm px-4 py-2 transition-colors"
             >
-              START FREE
+              REQUEST ACCESS
             </a>
           </div>
         </header>

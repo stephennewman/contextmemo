@@ -1,23 +1,27 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Check, Loader2, Zap, Building2, Rocket } from 'lucide-react'
-import { toast } from 'sonner'
+import { 
+  Check, 
+  Zap, 
+  Building2, 
+  Rocket, 
+  ArrowRight, 
+  Shield,
+  Lock
+} from 'lucide-react'
 
 const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
-    description: 'For small companies monitoring brand visibility',
-    price: 79,
+    description: 'For companies starting to monitor AI visibility',
+    price: 499,
     icon: Zap,
     features: [
       '50 prompts tracked',
-      '3 AI engines (GPT, Claude, Perplexity)',
+      '3 AI models (GPT, Claude, Perplexity)',
       '5 memos per month',
       '1 brand',
       'CSV exports',
@@ -28,18 +32,18 @@ const PLANS = [
     id: 'growth',
     name: 'Growth',
     description: 'For growing companies optimizing AI visibility',
-    price: 199,
+    price: 999,
     popular: true,
     icon: Rocket,
     features: [
       '150 prompts tracked',
-      '7 AI engines + AI Overviews',
+      '7 AI models + AI Overviews',
       'Unlimited memos',
       '3 brands',
       'Competitor intelligence',
       'AI traffic attribution',
       'CSV/JSON exports',
-      'Priority email support',
+      'Priority support',
     ],
   },
   {
@@ -50,7 +54,7 @@ const PLANS = [
     icon: Building2,
     features: [
       'Unlimited prompts',
-      'All AI engines',
+      'All AI models',
       'Unlimited memos',
       'Unlimited brands',
       'API access',
@@ -62,217 +66,265 @@ const PLANS = [
 ]
 
 export default function PricingPage() {
-  const [loading, setLoading] = useState<string | null>(null)
-
-  const handleSubscribe = async (planId: string) => {
-    if (planId === 'enterprise') {
-      window.location.href = 'mailto:sales@contextmemo.com?subject=Enterprise%20Inquiry'
-      return
-    }
-
-    setLoading(planId)
-    try {
-      const response = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
-      })
-
-      const data = await response.json()
-
-      if (data.error) {
-        toast.error(data.error)
-        return
-      }
-
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
-      toast.error('Failed to start checkout')
-    } finally {
-      setLoading(null)
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-[#0F172A] text-white">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <nav className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <span className="text-[#0F172A]">Context</span>
-              <span className="text-[#0EA5E9]">Memo</span>
+      <header className="sticky top-0 bg-[#0F172A]/95 backdrop-blur-sm z-40 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Zap className="h-8 w-8 text-[#0EA5E9]" />
+            <span className="font-black text-xl tracking-tight">CONTEXT MEMO</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">
+              SIGN IN
             </Link>
-            <div className="flex items-center gap-4">
-              <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900">
-                Log in
-              </Link>
-              <Button asChild size="sm" className="bg-[#0EA5E9] hover:bg-[#0284C7]">
-                <Link href="/signup">Get Started</Link>
-              </Button>
-            </div>
-          </nav>
+            <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
+              <Link href="/request-access">REQUEST ACCESS</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="py-16 px-6">
+      <section className="py-16 md:py-24 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#0F172A] mb-4">
-            Simple, transparent pricing
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/20 border border-[#0EA5E9]/30 text-[#0EA5E9] text-sm font-bold tracking-wide mb-8">
+            <Shield className="h-4 w-4" />
+            TRANSPARENT PRICING
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4">
+            PREMIUM AI VISIBILITY
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Start free, upgrade when you need more. No hidden fees, cancel anytime.
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-4">
+            The most comprehensive AI visibility platform on the market. 
+            Built for B2B teams that take AI search seriously.
           </p>
-          <p className="mt-4">
-            <Link href="/pricing/calculator" className="text-[#0EA5E9] hover:underline font-medium">
-              Or try our flexible usage-based pricing →
-            </Link>
-          </p>
+          
+          {/* Discount Banner */}
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-[#10B981]/20 border border-[#10B981]/30 text-[#10B981] font-bold tracking-wide mt-4">
+            GET UP TO 90% OFF — REQUEST EARLY ACCESS FOR CUSTOM PRICING
+          </div>
         </div>
       </section>
 
       {/* Pricing Cards */}
       <section className="pb-20 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-0 border-2 border-white/20">
             {PLANS.map((plan) => {
               const Icon = plan.icon
               return (
-                <Card
+                <div
                   key={plan.id}
-                  className={`relative overflow-hidden ${
-                    plan.popular
-                      ? 'border-[#0EA5E9] border-2 shadow-lg shadow-[#0EA5E9]/10'
-                      : 'border-slate-200'
+                  className={`p-8 ${plan.popular ? 'relative' : ''} ${
+                    plan.id !== 'enterprise' ? 'border-b-2 md:border-b-0 md:border-r-2 border-white/20' : ''
                   }`}
                 >
                   {plan.popular && (
-                    <div className="absolute top-0 right-0">
-                      <Badge className="rounded-none rounded-bl-lg bg-[#0EA5E9] text-white">
-                        Most Popular
-                      </Badge>
-                    </div>
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-[#0EA5E9]" />
                   )}
                   
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`p-2 rounded-lg ${
-                        plan.popular ? 'bg-[#0EA5E9]/10' : 'bg-slate-100'
-                      }`}>
-                        <Icon className={`h-5 w-5 ${
-                          plan.popular ? 'text-[#0EA5E9]' : 'text-slate-600'
-                        }`} />
-                      </div>
-                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`p-2 ${plan.popular ? 'bg-[#0EA5E9]/20' : 'bg-white/10'}`}>
+                      <Icon className={`h-5 w-5 ${plan.popular ? 'text-[#0EA5E9]' : 'text-slate-400'}`} />
                     </div>
-                    <CardDescription>{plan.description}</CardDescription>
-                  </CardHeader>
+                    <div>
+                      <h3 className="font-black text-lg tracking-tight">{plan.name.toUpperCase()}</h3>
+                      {plan.popular && (
+                        <span className="text-xs font-bold text-[#0EA5E9] tracking-wider">MOST POPULAR</span>
+                      )}
+                    </div>
+                  </div>
                   
-                  <CardContent className="space-y-6">
-                    {/* Price */}
-                    <div className="pb-4 border-b">
-                      {plan.price !== null ? (
+                  <p className="text-sm text-slate-400 mb-6">{plan.description}</p>
+                  
+                  {/* Price */}
+                  <div className="mb-6 pb-6 border-b border-white/10">
+                    {plan.price !== null ? (
+                      <div>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-bold text-[#0F172A]">
-                            ${plan.price}
-                          </span>
-                          <span className="text-slate-500">/month</span>
+                          <span className="text-4xl font-black">${plan.price}</span>
+                          <span className="text-slate-500 font-semibold">/mo</span>
                         </div>
-                      ) : (
-                        <div className="text-4xl font-bold text-[#0F172A]">
-                          Custom
-                        </div>
-                      )}
-                    </div>
+                        <p className="text-xs text-[#10B981] font-bold mt-1">
+                          EARLY ACCESS: AS LOW AS ${Math.round(plan.price * 0.1)}/MO
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-4xl font-black">CUSTOM</span>
+                        <p className="text-xs text-slate-500 font-bold mt-1">TAILORED TO YOUR NEEDS</p>
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Features */}
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <Check className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                            plan.popular ? 'text-[#0EA5E9]' : 'text-green-500'
-                          }`} />
-                          <span className="text-sm text-slate-600">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  {/* Features */}
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Check className={`h-4 w-4 mt-0.5 shrink-0 ${
+                          plan.popular ? 'text-[#0EA5E9]' : 'text-[#10B981]'
+                        }`} />
+                        <span className="text-sm text-slate-400">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
 
-                    {/* CTA */}
-                    <Button
-                      onClick={() => handleSubscribe(plan.id)}
-                      disabled={loading !== null}
-                      className={`w-full ${
-                        plan.popular
-                          ? 'bg-[#0EA5E9] hover:bg-[#0284C7]'
-                          : 'bg-[#0F172A] hover:bg-[#1E293B]'
-                      }`}
-                    >
-                      {loading === plan.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : plan.price !== null ? (
-                        'Get Started'
-                      ) : (
-                        'Contact Sales'
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
+                  {/* CTA */}
+                  <Button 
+                    asChild
+                    className={`w-full rounded-none font-bold ${
+                      plan.popular
+                        ? 'bg-[#0EA5E9] hover:bg-[#0284C7]'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                  >
+                    <Link href="/request-access">
+                      {plan.price !== null ? 'REQUEST ACCESS' : 'CONTACT US'}
+                    </Link>
+                  </Button>
+                </div>
               )
             })}
+          </div>
+
+          {/* Additional CTAs */}
+          <div className="mt-10 grid sm:grid-cols-3 gap-4">
+            <Link 
+              href="/request-access" 
+              className="p-5 border-2 border-[#0EA5E9]/30 bg-[#0EA5E9]/5 hover:bg-[#0EA5E9]/10 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-sm mb-1">REQUEST EARLY ACCESS</p>
+                  <p className="text-xs text-slate-500">Get your invite code</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-[#0EA5E9] group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+            <Link 
+              href="/request-access" 
+              className="p-5 border-2 border-white/10 hover:border-white/20 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-sm mb-1">REQUEST A DEMO</p>
+                  <p className="text-xs text-slate-500">See it in action</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+            <Link 
+              href="/request-access" 
+              className="p-5 border-2 border-[#10B981]/30 bg-[#10B981]/5 hover:bg-[#10B981]/10 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-sm mb-1">REQUEST A DISCOUNT</p>
+                  <p className="text-xs text-slate-500">Up to 90% off</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-[#10B981] group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Calculator Link */}
+      <section className="px-6 pb-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="p-8 border-2 border-white/10 bg-white/5 text-center">
+            <p className="font-black text-lg mb-2">WANT TO ESTIMATE YOUR COST?</p>
+            <p className="text-slate-400 text-sm mb-4">
+              Use our consumption calculator to model pricing based on your exact usage.
+            </p>
+            <Button asChild variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-none font-bold">
+              <Link href="/pricing/calculator">
+                OPEN CALCULATOR
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-16 px-6 bg-slate-50 border-t">
+      <section className="py-16 px-6 border-t border-white/10">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Frequently Asked Questions
+          <h2 className="text-2xl font-black text-center mb-10 tracking-tight">
+            FREQUENTLY ASKED QUESTIONS
           </h2>
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h3 className="font-semibold mb-2">What AI engines do you track?</h3>
-              <p className="text-slate-600 text-sm">
+              <h3 className="font-bold mb-2">Why is Context Memo invite-only?</h3>
+              <p className="text-slate-400 text-sm">
+                We work closely with each client to ensure they get maximum value from AI visibility monitoring. 
+                Invite-only access lets us provide white-glove onboarding and custom pricing.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">How do I get an invite code?</h3>
+              <p className="text-slate-400 text-sm">
+                Submit a request through our <Link href="/request-access" className="text-[#0EA5E9] hover:underline">early access form</Link>. 
+                We review every request and typically respond within 24 hours.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">What AI models do you track?</h3>
+              <p className="text-slate-400 text-sm">
                 We track GPT-4o, Claude, Gemini, Perplexity, DeepSeek, Llama, and Mistral. 
                 Growth plans also include Google AI Overviews monitoring.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">Can I cancel anytime?</h3>
-              <p className="text-slate-600 text-sm">
+              <h3 className="font-bold mb-2">How does the 90% discount work?</h3>
+              <p className="text-slate-400 text-sm">
+                Early access members receive significant discounts based on timing, use case, and commitment level. 
+                Request access and mention your situation — we&apos;ll work with you on pricing.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">Can I cancel anytime?</h3>
+              <p className="text-slate-400 text-sm">
                 Yes, you can cancel your subscription at any time. You&apos;ll continue to have 
                 access until the end of your billing period.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">What happens if I exceed my limits?</h3>
-              <p className="text-slate-600 text-sm">
-                We&apos;ll notify you when you&apos;re approaching your limits. You can upgrade 
-                at any time, and we&apos;ll prorate the difference.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Do you offer annual billing?</h3>
-              <p className="text-slate-600 text-sm">
-                Yes, annual billing with 2 months free is available for all plans. 
-                Contact us for annual pricing.
               </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Have a code? */}
+      <section className="py-10 px-6 border-t border-white/10">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+            <Lock className="h-4 w-4" />
+            <span>Already have an invite code?{' '}
+              <Link href="/signup" className="text-[#0EA5E9] hover:underline font-bold">
+                CREATE YOUR ACCOUNT
+              </Link>
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-8 px-6 border-t">
-        <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-slate-500">
-          <div>© 2026 ContextMemo. All rights reserved.</div>
-          <div className="flex gap-4">
-            <Link href="/about" className="hover:text-slate-700">About</Link>
-            <Link href="/changelog" className="hover:text-slate-700">Changelog</Link>
+      <footer className="py-12 bg-[#0F172A] border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <Zap className="h-6 w-6 text-[#0EA5E9]" />
+              <span className="font-black tracking-tight">CONTEXT MEMO</span>
+            </div>
+            <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
+              <Link href="/memos" className="hover:text-white transition-colors">MEMOS</Link>
+              <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
+              <Link href="/request-access" className="hover:text-white transition-colors">REQUEST ACCESS</Link>
+            </div>
+            <p className="text-sm text-slate-500 font-semibold">
+              &copy; 2026 CONTEXT MEMO
+            </p>
           </div>
         </div>
       </footer>

@@ -34,7 +34,7 @@ export default async function ChangelogPage() {
               SIGN IN
             </Link>
             <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
-              <Link href="/signup">START FREE</Link>
+              <Link href="/request-access">REQUEST ACCESS</Link>
             </Button>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default async function ChangelogPage() {
             </div>
             <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
               <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
-              <Link href="/signup" className="hover:text-white transition-colors">SIGN UP</Link>
+              <Link href="/request-access" className="hover:text-white transition-colors">REQUEST ACCESS</Link>
               <Link href="/changelog" className="hover:text-white transition-colors">CHANGELOG</Link>
               <Link href="/about/editorial" className="hover:text-white transition-colors">EDITORIAL</Link>
             </div>

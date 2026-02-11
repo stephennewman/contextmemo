@@ -120,7 +120,7 @@ export default function PricingCalculatorPage() {
                 Fixed Plans
               </Link>
               <Button asChild size="sm" className="bg-[#0EA5E9] hover:bg-[#0284C7]">
-                <Link href="/signup">Get Started</Link>
+                <Link href="/request-access">Request Access</Link>
               </Button>
             </div>
           </nav>
@@ -283,13 +283,13 @@ export default function PricingCalculatorPage() {
 
                   {/* CTA */}
                   <Button asChild className="w-full bg-[#0EA5E9] hover:bg-[#0284C7] mt-4" size="sm">
-                    <Link href="/signup">
-                      Start Free Trial
+                    <Link href="/request-access">
+                      Request Access
                       <ArrowRight className="ml-1 h-3 w-3" />
                     </Link>
                   </Button>
                   <p className="text-center text-[10px] text-slate-400 mt-2">
-                    14-day free trial • No credit card
+                    Invite-only • Custom pricing available
                   </p>
                 </CardContent>
               </Card>
@@ -299,8 +299,8 @@ export default function PricingCalculatorPage() {
           {/* Mobile CTA */}
           <div className="lg:hidden mt-4">
             <Button asChild className="w-full bg-[#0EA5E9] hover:bg-[#0284C7]">
-              <Link href="/signup">
-                Start Free Trial — {formatPrice(consumptionPrice)}/mo
+              <Link href="/request-access">
+                Request Access — {formatPrice(consumptionPrice)}/mo
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>

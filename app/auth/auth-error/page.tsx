@@ -22,7 +22,7 @@ export default function AuthErrorPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
             <Button asChild className="w-full">
-              <Link href="/signup">Try Again</Link>
+              <Link href="/request-access">Request Access</Link>
             </Button>
             <Button variant="ghost" asChild className="w-full">
               <Link href="/login">Back to Login</Link>

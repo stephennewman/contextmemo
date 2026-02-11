@@ -25,35 +25,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Pricing tranches - users lock in their price forever
-const PRICING_TRANCHES = [
-  { min: 1, max: 10, price: 0 },
-  { min: 11, max: 25, price: 1 },
-  { min: 26, max: 50, price: 3 },
-  { min: 51, max: 100, price: 5 },
-  { min: 101, max: 175, price: 9 },
-  { min: 176, max: 275, price: 15 },
-  { min: 276, max: 400, price: 19 },
-  { min: 401, max: 575, price: 29 },
-  { min: 576, max: 800, price: 39 },
-  { min: 801, max: 1100, price: 49 },
-  { min: 1101, max: 1500, price: 65 },
-  { min: 1501, max: 2000, price: 79 },
-  { min: 2001, max: Infinity, price: 99 },
-];
-
-function getCurrentTranche(userCount: number) {
-  return PRICING_TRANCHES.find(t => userCount >= t.min && userCount <= t.max) || PRICING_TRANCHES[PRICING_TRANCHES.length - 1];
-}
-
-function getNextTranche(userCount: number) {
-  const currentIndex = PRICING_TRANCHES.findIndex(t => userCount >= t.min && userCount <= t.max);
-  if (currentIndex < PRICING_TRANCHES.length - 1) {
-    return PRICING_TRANCHES[currentIndex + 1];
-  }
-  return null;
-}
-
 export const revalidate = 3600 // ISR: regenerate at most once per hour
 
 export default async function Home() {
@@ -99,7 +70,7 @@ export default async function Home() {
               SIGN IN
             </Link>
             <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
-              <Link href="/signup">START FREE</Link>
+              <Link href="/request-access">REQUEST ACCESS</Link>
             </Button>
           </div>
         </div>
@@ -128,13 +99,13 @@ export default async function Home() {
           
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-8 py-6 h-auto">
-              <Link href="/signup">
-                START FREE TRIAL
+              <Link href="/request-access">
+                REQUEST EARLY ACCESS
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-2 border-white/20 hover:border-white/40 bg-transparent text-white font-bold text-lg rounded-none px-8 py-6 h-auto">
-              <Link href="#how-it-works">SEE HOW IT WORKS</Link>
+              <Link href="/pricing">VIEW PRICING</Link>
             </Button>
           </div>
           
@@ -549,58 +520,77 @@ export default async function Home() {
       {/* Pricing */}
       <section id="pricing" className="py-24 bg-[#0F172A]">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">EARLY ADOPTER PRICING</h2>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">PREMIUM AI VISIBILITY</h2>
           <p className="text-xl text-slate-400 mb-12">
-            Lock in your price forever. Price goes up as we grow — yours never changes.
+            Transparent pricing. Flexible options. Request early access for up to 90% off.
           </p>
           
-          {/* Current Price - Big and Bold */}
-          <div className="border-2 border-[#0EA5E9] bg-[#0EA5E9]/10 p-10 mb-8">
-            <p className="text-[#0EA5E9] font-bold text-sm tracking-wider mb-2">SIGN UP NOW</p>
-            <div className="text-7xl md:text-8xl font-black">FREE</div>
-            <p className="text-slate-400 font-semibold mt-2">FOR LIFE</p>
-            <p className="text-slate-500 text-sm mt-4">First 10 brands — 4 spots remaining</p>
-          </div>
-          
-          {/* Price Progression - Simplified */}
-          <div className="flex items-center justify-center gap-2 mb-12 text-sm font-semibold overflow-x-auto pb-2">
-            <span className="px-3 py-2 bg-[#0EA5E9] text-white whitespace-nowrap">FREE</span>
-            <span className="text-slate-600">→</span>
-            <span className="px-3 py-2 border border-white/20 text-slate-400 whitespace-nowrap">$5</span>
-            <span className="text-slate-600">→</span>
-            <span className="px-3 py-2 border border-white/20 text-slate-400 whitespace-nowrap">$19</span>
-            <span className="text-slate-600">→</span>
-            <span className="px-3 py-2 border border-white/20 text-slate-400 whitespace-nowrap">$49</span>
-            <span className="text-slate-600">→</span>
-            <span className="px-3 py-2 border border-white/20 text-slate-500 whitespace-nowrap">$99 MAX</span>
-          </div>
-
-          {/* What's Included */}
-          <div className="border-2 border-white/20 p-8 mb-10">
-            <p className="font-black text-lg mb-6">EVERYTHING INCLUDED:</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-left max-w-lg mx-auto">
-              {[
-                "6 AI model scans",
-                "Unlimited memos",
-                "Competitor tracking",
-                "Search console sync",
-                "Daily automation",
-                "Competitive watch"
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-[#0EA5E9] shrink-0" />
-                  <span className="font-semibold text-sm">{item}</span>
-                </div>
-              ))}
+          {/* Pricing Cards */}
+          <div className="grid md:grid-cols-3 gap-0 border-2 border-white/20 mb-10">
+            <div className="p-8 border-b-2 md:border-b-0 md:border-r-2 border-white/20">
+              <p className="text-sm font-bold text-slate-500 tracking-wider mb-3">STARTER</p>
+              <div className="text-4xl font-black mb-1">$499</div>
+              <p className="text-slate-500 text-sm font-semibold mb-6">/month</p>
+              <ul className="space-y-3 text-left">
+                {["50 prompts tracked", "3 AI models", "5 memos/month", "1 brand"].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
+                    <span className="text-slate-400">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-8 border-b-2 md:border-b-0 md:border-r-2 border-white/20 relative">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[#0EA5E9]" />
+              <p className="text-sm font-bold text-[#0EA5E9] tracking-wider mb-3">GROWTH</p>
+              <div className="text-4xl font-black mb-1">$999</div>
+              <p className="text-slate-500 text-sm font-semibold mb-6">/month</p>
+              <ul className="space-y-3 text-left">
+                {["150 prompts tracked", "7 AI models + Overviews", "Unlimited memos", "3 brands", "Competitor intelligence"].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
+                    <span className="text-slate-400">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-8">
+              <p className="text-sm font-bold text-slate-500 tracking-wider mb-3">ENTERPRISE</p>
+              <div className="text-4xl font-black mb-1">CUSTOM</div>
+              <p className="text-slate-500 text-sm font-semibold mb-6">talk to us</p>
+              <ul className="space-y-3 text-left">
+                {["Unlimited everything", "All AI models", "API access", "SSO/SAML", "Dedicated support"].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] shrink-0" />
+                    <span className="text-slate-400">{f}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          
-          <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
-            <Link href="/signup">
-              CLAIM YOUR FREE SPOT
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+
+          {/* Discount Banner */}
+          <div className="border-2 border-[#0EA5E9] bg-[#0EA5E9]/10 p-6 mb-10">
+            <p className="font-black text-lg mb-2">GET UP TO 90% OFF</p>
+            <p className="text-slate-400 text-sm">
+              Early access members receive significant discounts. Request access and mention your use case for a custom quote.
+            </p>
+          </div>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
+              <Link href="/request-access">
+                REQUEST EARLY ACCESS
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="border-2 border-white/20 hover:border-white/40 bg-transparent text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
+              <Link href="/pricing">
+                VIEW FULL PRICING
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -614,8 +604,8 @@ export default async function Home() {
             Don&apos;t let them own the conversation.
           </p>
           <Button size="lg" asChild className="bg-[#0F172A] hover:bg-[#0F172A]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
-            <Link href="/signup">
-              START YOUR FREE TRIAL
+            <Link href="/request-access">
+              REQUEST EARLY ACCESS
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
@@ -632,8 +622,8 @@ export default async function Home() {
             </div>
             <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
               <Link href="/memos" className="hover:text-white transition-colors">MEMOS</Link>
+              <Link href="/pricing" className="hover:text-white transition-colors">PRICING</Link>
               <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
-              <Link href="/signup" className="hover:text-white transition-colors">SIGN UP</Link>
             </div>
             <p className="text-sm text-slate-500 font-semibold">
               &copy; 2026 CONTEXT MEMO
@@ -642,45 +632,23 @@ export default async function Home() {
         </div>
       </footer>
 
-      {/* Sticky Pricing Bar */}
-      <PricingBar currentUserCount={7} />
-    </div>
-  );
-}
-
-function PricingBar({ currentUserCount }: { currentUserCount: number }) {
-  const currentTranche = getCurrentTranche(currentUserCount);
-  const spotsLeft = currentTranche.max - currentUserCount + 1;
-  
-  return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#0F172A] border-t-2 border-[#0EA5E9] z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
-          {/* Current Status */}
-          <div className="flex items-center gap-4">
-            <div className="font-bold text-lg">
-              <span className="text-white">
-                {currentTranche.price === 0 ? 'FREE' : `$${currentTranche.price}/MO`}
-              </span>
-              <span className="text-[#0EA5E9]"> FOR LIFE</span>
+      {/* Sticky Access Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0F172A] border-t-2 border-[#0EA5E9] z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="font-bold text-lg">
+                <span className="text-white">INVITE-ONLY</span>
+                <span className="text-[#0EA5E9]"> · UP TO 90% OFF</span>
+              </div>
             </div>
-            {spotsLeft <= 10 && (
-              <>
-                <div className="hidden sm:block h-5 w-px bg-white/20" />
-                <div className="hidden sm:block font-bold text-sm">
-                  <span className="text-amber-400">{spotsLeft} SPOTS LEFT</span>
-                </div>
-              </>
-            )}
+            <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
+              <Link href="/request-access">
+                REQUEST ACCESS
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
-
-          {/* CTA */}
-          <Button asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold rounded-none px-6">
-            <Link href="/signup">
-              {currentTranche.price === 0 ? 'START FREE' : `LOCK IN $${currentTranche.price}/MO`}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
         </div>
       </div>
     </div>
