@@ -393,6 +393,46 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* White-Glove Service */}
+      <section className="py-24 bg-[#0EA5E9]">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">WHITE-GLOVE ONBOARDING</h2>
+          <p className="text-xl text-white/80 max-w-2xl mx-auto mb-12">
+            Every account gets hands-on setup. We don&apos;t hand you a login and wish you luck.
+          </p>
+          
+          <div className="grid sm:grid-cols-3 gap-0 border-2 border-white/30">
+            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-white/30">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">DEDICATED SETUP</h3>
+              <p className="text-white/70 text-sm">
+                We configure your brand, competitors, and prompts with you — not for you to figure out alone.
+              </p>
+            </div>
+            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-white/30">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">STRATEGY REVIEW</h3>
+              <p className="text-white/70 text-sm">
+                Your first scan results come with a walkthrough of findings, gaps, and recommended next steps.
+              </p>
+            </div>
+            <div className="p-8">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-lg mb-2">ONGOING SUPPORT</h3>
+              <p className="text-white/70 text-sm">
+                Priority access to the team. Questions answered within hours, not days.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Trust Section */}
       <section className="py-24 bg-[#0F172A]">
         <div className="max-w-4xl mx-auto px-6">
@@ -493,21 +533,27 @@ export default async function Home() {
           
           <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
             <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <div className="text-5xl mb-6">📊</div>
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <LineChart className="h-7 w-7 text-white" />
+              </div>
               <h3 className="font-black text-xl mb-3">DEMAND GEN LEADERS</h3>
               <p className="text-slate-600">
                 Track AI as a discovery channel alongside SEO and paid. Understand where buyers find you in the AI-first research journey.
               </p>
             </div>
             <div className="p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
-              <div className="text-5xl mb-6">🎯</div>
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Target className="h-7 w-7 text-white" />
+              </div>
               <h3 className="font-black text-xl mb-3">PRODUCT MARKETERS</h3>
               <p className="text-slate-600">
                 See how AI positions you vs competitors. Identify messaging gaps where competitors win recommendations.
               </p>
             </div>
             <div className="p-10">
-              <div className="text-5xl mb-6">✍️</div>
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <FileText className="h-7 w-7 text-white" />
+              </div>
               <h3 className="font-black text-xl mb-3">CONTENT TEAMS</h3>
               <p className="text-slate-600">
                 Replace the blog grind with structured memos. Auto-generated, brand-accurate, and built for AI discovery.
@@ -613,20 +659,58 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 pb-28 bg-[#0F172A] border-t border-white/10">
+      <footer className="py-16 pb-28 bg-[#0F172A] border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <Zap className="h-6 w-6 text-[#0EA5E9]" />
-              <span className="font-black tracking-tight">CONTEXT MEMO</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="h-7 w-7 text-[#0EA5E9]" />
+                <span className="font-black text-lg tracking-tight">CONTEXT MEMO</span>
+              </div>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                The AI visibility platform for B2B teams. Get cited in ChatGPT, Claude, Perplexity, and more.
+              </p>
             </div>
-            <div className="flex items-center gap-8 text-sm font-semibold text-slate-400">
-              <Link href="/memos" className="hover:text-white transition-colors">MEMOS</Link>
-              <Link href="/pricing" className="hover:text-white transition-colors">PRICING</Link>
-              <Link href="/login" className="hover:text-white transition-colors">SIGN IN</Link>
+            
+            {/* Product */}
+            <div>
+              <h4 className="text-xs font-bold tracking-widest text-slate-400 mb-4">PRODUCT</h4>
+              <ul className="space-y-3">
+                <li><Link href="#features" className="text-sm text-slate-500 hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="/pricing" className="text-sm text-slate-500 hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/pricing/calculator" className="text-sm text-slate-500 hover:text-white transition-colors">Calculator</Link></li>
+                <li><Link href="/changelog" className="text-sm text-slate-500 hover:text-white transition-colors">Changelog</Link></li>
+              </ul>
             </div>
-            <p className="text-sm text-slate-500 font-semibold">
-              &copy; 2026 CONTEXT MEMO
+            
+            {/* Resources */}
+            <div>
+              <h4 className="text-xs font-bold tracking-widest text-slate-400 mb-4">RESOURCES</h4>
+              <ul className="space-y-3">
+                <li><Link href="/memos" className="text-sm text-slate-500 hover:text-white transition-colors">Memos</Link></li>
+                <li><Link href="/about/editorial" className="text-sm text-slate-500 hover:text-white transition-colors">Editorial Policy</Link></li>
+                <li><Link href="/request-access" className="text-sm text-slate-500 hover:text-white transition-colors">Request Access</Link></li>
+              </ul>
+            </div>
+            
+            {/* Account */}
+            <div>
+              <h4 className="text-xs font-bold tracking-widest text-slate-400 mb-4">ACCOUNT</h4>
+              <ul className="space-y-3">
+                <li><Link href="/login" className="text-sm text-slate-500 hover:text-white transition-colors">Sign In</Link></li>
+                <li><Link href="/request-access" className="text-sm text-slate-500 hover:text-white transition-colors">Request Invite Code</Link></li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* Bottom bar */}
+          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-slate-600 font-semibold">
+              &copy; 2026 CONTEXT MEMO. ALL RIGHTS RESERVED.
+            </p>
+            <p className="text-xs text-slate-600">
+              Built for how AI actually reads.
             </p>
           </div>
         </div>
