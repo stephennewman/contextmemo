@@ -163,12 +163,18 @@ export default function RequestAccessPage() {
                     Want to learn more while you wait?
                   </p>
                   <div className="mt-3 flex gap-3 justify-center">
-                    <Button asChild variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 rounded-none">
-                      <Link href="/memos">READ MEMOS</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10 rounded-none">
-                      <Link href="/pricing">VIEW PRICING</Link>
-                    </Button>
+                    <Link 
+                      href="/memos" 
+                      className="px-4 py-2 border-2 border-white/20 text-sm font-bold text-white hover:bg-white/10 transition-colors"
+                    >
+                      READ MEMOS
+                    </Link>
+                    <Link 
+                      href="/pricing" 
+                      className="px-4 py-2 border-2 border-white/20 text-sm font-bold text-white hover:bg-white/10 transition-colors"
+                    >
+                      VIEW PRICING
+                    </Link>
                   </div>
                 </div>
               </div>
