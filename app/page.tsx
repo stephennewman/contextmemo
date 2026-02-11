@@ -818,49 +818,78 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Use Cases */}
+      {/* Revenue Alignment */}
       <section className="py-24 bg-slate-100 text-[#0F172A]">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">BUILT FOR B2B TEAMS</h2>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">BUILT FOR REVENUE ALIGNMENT</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              AI visibility isn&apos;t a marketing silo. It touches every team that drives revenue.
+            </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
-            <div className="p-8 border-b-2 sm:border-b-2 lg:border-b-0 sm:border-r-2 border-[#0F172A]">
+          <div className="grid md:grid-cols-3 gap-0 border-2 border-[#0F172A]">
+            {/* Marketing */}
+            <div className="p-8 md:p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
               <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <LineChart className="h-7 w-7 text-white" />
+                <TrendingUp className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-black text-lg mb-3">DEMAND GEN LEADERS</h3>
-              <p className="text-slate-600 text-sm">
-                Track AI as a revenue channel, not a vanity metric. See AI-sourced traffic, contacts, pipeline, and closed revenue in one dashboard.
-              </p>
+              <h3 className="font-black text-xl mb-4">MARKETING</h3>
+              <ul className="space-y-3">
+                {[
+                  "Track AI as a discovery channel alongside SEO and paid",
+                  "Generate citation-ready content in your brand voice",
+                  "Daily digest of wins, losses, and competitive moves",
+                  "Prove AI-sourced pipeline to your CMO",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <Target className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-lg mb-3">PRODUCT MARKETERS</h3>
-              <p className="text-slate-600 text-sm">
-                See how AI positions you vs. competitors in real time. Identify messaging gaps where competitors win recommendations you should own.
-              </p>
-            </div>
-            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-[#0F172A]">
-              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
-                <FileText className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="font-black text-lg mb-3">CONTENT TEAMS</h3>
-              <p className="text-slate-600 text-sm">
-                Replace the blog grind with structured, verifiable memos. 9 content types, auto-generated in your brand voice, built for AI discovery.
-              </p>
-            </div>
-            <div className="p-8">
+
+            {/* Sales */}
+            <div className="p-8 md:p-10 border-b-2 md:border-b-0 md:border-r-2 border-[#0F172A]">
               <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
                 <DollarSign className="h-7 w-7 text-white" />
               </div>
-              <h3 className="font-black text-lg mb-3">REVENUE OPS</h3>
-              <p className="text-slate-600 text-sm">
-                Attribute AI-sourced pipeline in HubSpot. Connect the dots from AI citation to closed-won deal. Give your CMO a number, not a theory.
-              </p>
+              <h3 className="font-black text-xl mb-4">SALES</h3>
+              <ul className="space-y-3">
+                {[
+                  "Know which prospects found you through AI before the call",
+                  "Comparison memos as competitive battle cards",
+                  "AI-attributed deals tracked in HubSpot automatically",
+                  "Shorter cycles when buyers arrive pre-educated by AI",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Product */}
+            <div className="p-8 md:p-10">
+              <div className="w-14 h-14 bg-[#0EA5E9] flex items-center justify-center mb-6">
+                <Target className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="font-black text-xl mb-4">PRODUCT</h3>
+              <ul className="space-y-3">
+                {[
+                  "See how AI positions your product vs. competitors",
+                  "Identify messaging gaps AI exposes in your positioning",
+                  "Track which features AI recommends you for — and which it doesn't",
+                  "Competitive intelligence from real AI responses, not surveys",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                    <CheckCircle2 className="h-4 w-4 text-[#0EA5E9] mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
