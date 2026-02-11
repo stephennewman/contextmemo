@@ -393,6 +393,17 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Landing page: Memo concept intro + features grid + monitors expansion** (f5a59d8)
+- Replaced "The Problem" section with "Not a Blog Post. A Memo." section introducing the Memo concept (structured for AI, verified & sourced, generated from gaps)
+- Added 8-cell Platform Features grid: Multi-Model Scanning, Visibility Scoring, Competitor Intelligence, Memo Generation, Citation Verification, Revenue Attribution, Daily Automation, HubSpot Integration
+- Changed hero subtitle from "4 AI models" to "multiple AI models"
+- Added +MORE badge to monitors row (ChatGPT, Claude, Perplexity, Grok, +MORE)
+- Updated dashboard mockup model count label to match
+- Removed "What's the best project management tool..." copy
+
+**Files changed:**
+- `app/page.tsx` — 100 insertions, 23 deletions
+
 **Homepage: dashboard mockup + copy corrections** (14fd302)
 - Added code-based dashboard mockup to hero section — shows a realistic product preview with visibility score (72), citation rate (64%), memos published (18), AI revenue ($47K), and a scan results table with per-model citation badges (GPT/CLAUDE/PPLX/GROK)
 - Removed all Google AI Overviews references from homepage
