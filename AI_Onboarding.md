@@ -390,6 +390,19 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Fix Google Search Console indexing issues** (6542c63)
+- Added 301 redirect: `www.contextmemo.com` → `contextmemo.com` (fixes 12 "duplicate without user-selected canonical" pages)
+- Added 301 redirects for deleted pages: `/hubspot` → `/request-access`, `/signup` → `/request-access` (fixes 6 404s)
+- Removed `/login` from sitemap (has noindex, wastes crawl budget)
+- Added `/memos` index and content category pages (`/memos/compare`, `/memos/guides`, `/memos/how-to`, `/tools`, `/resources`) to sitemap
+- 3 files changed: `lib/supabase/middleware.ts`, `next.config.ts`, `app/sitemap.ts`
+
+**Send email notifications on new access requests** (d506431)
+- Admin notification to stephen@krezzo.com with requester details (name, email, company, message)
+- Confirmation email to requester: "We got your request" with next steps and link to explore memos
+- Both emails sent via Resend in parallel, non-blocking
+- Clean HTML email templates matching Context Memo branding
+
 **Add SEO metadata across all public pages** (ec8a010)
 - Root layout: Open Graph, Twitter Cards, canonical URL, `metadataBase`, title template (`%s | Context Memo`), stronger default title/description
 - Added metadata layouts for `/pricing`, `/pricing/calculator`, `/request-access` (all client components)
