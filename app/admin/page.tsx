@@ -109,6 +109,9 @@ export default async function AdminDashboardPage() {
     created_at: string; last_sign_in_at: string | null; brand_count: number;
     total_spend: number; spend_7d: number; last_scan: string | null;
     last_memo_created: string | null; last_activity: string | null;
+    published_memos: number; total_memos: number; memos_crawled: number;
+    ai_search_hits: number; ai_training_hits: number;
+    total_queries: number; cited_queries: number;
   }>
   const tenantRows: TenantRow[] = tenantStatsRaw.map(t => ({
     tenantId: t.tenant_id,
@@ -123,6 +126,13 @@ export default async function AdminDashboardPage() {
     brandCount: Number(t.brand_count),
     totalSpend: Number(t.total_spend),
     spend7d: Number(t.spend_7d),
+    publishedMemos: Number(t.published_memos),
+    totalMemos: Number(t.total_memos),
+    memosCrawled: Number(t.memos_crawled),
+    aiSearchHits: Number(t.ai_search_hits),
+    aiTrainingHits: Number(t.ai_training_hits),
+    totalQueries: Number(t.total_queries),
+    citedQueries: Number(t.cited_queries),
   }))
 
   // Build lookups from RPC results

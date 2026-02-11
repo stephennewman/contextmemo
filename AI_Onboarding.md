@@ -388,6 +388,16 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 11, 2026
+
+**Admin: add Tenants table with last login, last activity, spend tracking** (ac98693)
+- Created `get_admin_tenant_stats` RPC joining tenants with `auth.users` for real `last_sign_in_at` data
+- New `SortableTenantsTable` component with sortable columns: tenant name/email, plan, brands, all-time spend, 7d spend, last login, last activity, signed up date
+- Activity timestamps shown as relative time (e.g. "2h ago") with color coding: green (<24h active), neutral (1-7d), amber (>7d inactive)
+- Hover over any time value to see exact date/time
+- "Last Activity" computed as the most recent of: last login, last scan, last memo created, or last API usage
+- Files changed: `app/admin/page.tsx`, `components/admin/sortable-tenants-table.tsx` (new)
+
 ### February 10, 2026
 
 **Fix brand self-promotion + diversify images** (5fa1f0c)

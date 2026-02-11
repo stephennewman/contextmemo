@@ -15,6 +15,13 @@ export type TenantRow = {
   brandCount: number
   totalSpend: number
   spend7d: number
+  publishedMemos: number
+  totalMemos: number
+  memosCrawled: number
+  aiSearchHits: number
+  aiTrainingHits: number
+  totalQueries: number
+  citedQueries: number
 }
 
 type SortKey = keyof TenantRow
@@ -50,6 +57,10 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right'; tooltip?:
   { key: 'name', label: 'Tenant', align: 'left' },
   { key: 'plan', label: 'Plan', align: 'left' },
   { key: 'brandCount', label: 'Brands', align: 'right' },
+  { key: 'publishedMemos', label: 'Memos', align: 'right', tooltip: 'Published memos / total memos created' },
+  { key: 'memosCrawled', label: 'Crawled', align: 'right', tooltip: 'Unique memos that have been fetched by any bot (out of published)' },
+  { key: 'aiSearchHits', label: 'AI Search', align: 'right', tooltip: 'Bot crawl events where AI search platforms (Perplexity, ChatGPT, Claude) fetched their memos to answer queries' },
+  { key: 'citedQueries', label: 'Cited', align: 'right', tooltip: 'Queries where AI models cite the brand (out of total tracked queries)' },
   { key: 'totalSpend', label: 'All-Time $', align: 'right', tooltip: 'Total AI API spend' },
   { key: 'spend7d', label: '7d $', align: 'right', tooltip: 'AI API spend in the last 7 days' },
   { key: 'lastSignIn', label: 'Last Login', align: 'right', tooltip: 'Last time user signed in via Supabase Auth' },
@@ -134,6 +145,57 @@ export function SortableTenantsTable({ tenants }: { tenants: TenantRow[] }) {
                 <td className="py-3 pr-4 text-right font-mono text-xs text-slate-600">
                   {tenant.brandCount > 0 ? tenant.brandCount : <span className="text-slate-300">0</span>}
                 </td>
+                {/* Memos */}
+                <td className="py-3 pr-4 text-right text-xs text-slate-600">
+                  {tenant.publishedMemos > 0 ? (
+                    <span>
+                      <span className="font-medium">{tenant.publishedMemos}</span>
+                      {tenant.totalMemos > tenant.publishedMemos && (
+                        <span className="text-slate-400">/{tenant.totalMemos}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* Memos Crawled */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {tenant.memosCrawled > 0 ? (
+                    <span className={tenant.memosCrawled >= 10 ? 'font-medium text-emerald-600' : 'text-emerald-500'}>
+                      {tenant.memosCrawled}
+                      {tenant.publishedMemos > 0 && (
+                        <span className="ml-0.5 text-[10px] text-slate-400">
+                          /{tenant.publishedMemos}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* AI Search Hits */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {tenant.aiSearchHits > 0 ? (
+                    <span className={tenant.aiSearchHits >= 5 ? 'font-semibold text-emerald-600' : 'text-emerald-500'}>
+                      {tenant.aiSearchHits}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* Cited Queries */}
+                <td className="py-3 pr-4 text-right text-xs">
+                  {tenant.citedQueries > 0 ? (
+                    <span>
+                      <span className="font-semibold text-emerald-600">{tenant.citedQueries}</span>
+                      <span className="text-slate-400">/{tenant.totalQueries}</span>
+                    </span>
+                  ) : tenant.totalQueries > 0 ? (
+                    <span className="text-slate-400">0/{tenant.totalQueries}</span>
+                  ) : (
+                    <span className="text-slate-300">—</span>
+                  )}
+                </td>
                 {/* All-Time $ */}
                 <td className="py-3 pr-4 text-right font-mono text-xs">
                   {tenant.totalSpend > 0 ? (
@@ -176,7 +238,7 @@ export function SortableTenantsTable({ tenants }: { tenants: TenantRow[] }) {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-sm text-slate-400">No tenants yet.</td>
+                <td colSpan={12} className="py-8 text-center text-sm text-slate-400">No tenants yet.</td>
               </tr>
             )}
           </tbody>
