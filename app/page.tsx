@@ -970,19 +970,12 @@ export default function Home() {
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
-              <Link href="/request-access">
-                REQUEST EARLY ACCESS
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild className="border-2 border-white/20 hover:border-white/40 bg-transparent text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
-              <Link href="/pricing">
-                VIEW FULL PRICING
-              </Link>
-            </Button>
-          </div>
+          <Button size="lg" asChild className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
+            <Link href="/request-access">
+              REQUEST EARLY ACCESS
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
         </div>
       </section>
 
