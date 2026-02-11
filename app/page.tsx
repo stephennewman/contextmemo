@@ -20,9 +20,6 @@ import {
   UserPlus,
   Briefcase,
   Trophy,
-  Search,
-  Link2,
-  BarChart3,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { CONTEXT_MEMO_BRAND_ID, getMemoUrl } from "@/lib/memo/render";
@@ -619,91 +616,56 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Integrations */}
-      <section className="py-24 bg-white text-[#0F172A]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">FITS YOUR STACK</h2>
-            <p className="mt-4 text-xl text-slate-600">
-              Connect once. Everything syncs automatically.
+      {/* Partnership Section */}
+      <section className="py-24 bg-[#0EA5E9]">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-6">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">RELATIONSHIPS OVER REVENUE</h2>
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+              We don&apos;t hand you a login and wish you luck. Every account is a design partnership — 
+              we&apos;re building this with you, not just for you.
             </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-[#0F172A]">
-            <div className="p-8 border-b-2 sm:border-b-2 lg:border-b-0 sm:border-r-2 border-[#0F172A]">
-              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
-                <Link2 className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-lg mb-2">HUBSPOT</h3>
-              <p className="text-slate-600 text-sm">
-                OAuth integration. Auto-publish memos as blog posts. Match AI traffic to contacts, deals, and revenue.
-              </p>
-            </div>
-            <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-[#0F172A]">
-              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
-                <Search className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-lg mb-2">GOOGLE SEARCH CONSOLE</h3>
-              <p className="text-slate-600 text-sm">
-                Correlate search queries with AI prompts. See the full discovery pathway from Google into AI.
-              </p>
-            </div>
-            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-[#0F172A]">
-              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-lg mb-2">BING WEBMASTER</h3>
-              <p className="text-slate-600 text-sm">
-                Sync Bing data to understand how ChatGPT discovers and crawls your content.
-              </p>
-            </div>
-            <div className="p-8">
-              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-lg mb-2">INDEXNOW</h3>
-              <p className="text-slate-600 text-sm">
-                Every published memo instantly submitted to search engines — so AI models with web search find your content faster.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* White-Glove Service */}
-      <section className="py-24 bg-[#0EA5E9]">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">WHITE-GLOVE ONBOARDING</h2>
-          <p className="text-xl text-white/80 max-w-2xl mx-auto mb-12">
-            Every account gets hands-on setup. We don&apos;t hand you a login and wish you luck.
-          </p>
-          
-          <div className="grid sm:grid-cols-3 gap-0 border-2 border-white/30">
-            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-white/30">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mx-auto mb-4">
+          <div className="grid sm:grid-cols-2 gap-0 border-2 border-white/30 mt-12">
+            <div className="p-8 sm:p-10 border-b-2 sm:border-b-0 sm:border-r-2 border-white/30">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
                 <Users className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-black text-lg mb-2">DEDICATED SETUP</h3>
-              <p className="text-white/70 text-sm">
-                We configure your brand, competitors, and prompts with you — not for you to figure out alone.
+              <h3 className="font-black text-xl mb-3">PERSONALIZED ONBOARDING</h3>
+              <p className="text-white/70 text-sm leading-relaxed">
+                We set up your brand, configure your competitive landscape, and run your first scan together. 
+                No self-serve guesswork. You walk away understanding exactly where you stand.
               </p>
             </div>
-            <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 border-white/30">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mx-auto mb-4">
+            <div className="p-8 sm:p-10 border-b-2 sm:border-b-0 border-white/30">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
                 <MessageSquare className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-black text-lg mb-2">STRATEGY REVIEW</h3>
-              <p className="text-white/70 text-sm">
-                Your first scan results come with a walkthrough of findings, gaps, and recommended next steps.
+              <h3 className="font-black text-xl mb-3">TEXT-BASED ACCESS</h3>
+              <p className="text-white/70 text-sm leading-relaxed">
+                No ticket queues. No 3-day SLAs. You get direct access to the team — text us a question, 
+                get an answer. We move at the speed you need.
               </p>
             </div>
-            <div className="p-8">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-6 w-6 text-white" />
+            <div className="p-8 sm:p-10 border-t-0 sm:border-t-2 sm:border-r-2 border-white/30">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
+                <Eye className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-black text-lg mb-2">ONGOING SUPPORT</h3>
-              <p className="text-white/70 text-sm">
-                Priority access to the team. Questions answered within hours, not days.
+              <h3 className="font-black text-xl mb-3">INTIMATE FEEDBACK REVIEWS</h3>
+              <p className="text-white/70 text-sm leading-relaxed">
+                Your scan results aren&apos;t a dashboard you check alone. We walk through findings with you — 
+                what&apos;s working, what&apos;s not, and what to do next.
+              </p>
+            </div>
+            <div className="p-8 sm:p-10 border-t-2 border-white/30">
+              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-black text-xl mb-3">DESIGN PARTNERSHIP</h3>
+              <p className="text-white/70 text-sm leading-relaxed">
+                Your feedback shapes the product. Early access members aren&apos;t just users — you&apos;re co-building 
+                the platform with us. Features you request get prioritized.
               </p>
             </div>
           </div>
