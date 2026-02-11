@@ -393,6 +393,12 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Homepage: dashboard mockup + copy corrections** (14fd302)
+- Added code-based dashboard mockup to hero section — shows a realistic product preview with visibility score (72), citation rate (64%), memos published (18), AI revenue ($47K), and a scan results table with per-model citation badges (GPT/CLAUDE/PPLX/GROK)
+- Removed all Google AI Overviews references from homepage
+- Changed "daily scans" to "recurring scans" for scan frequency claims
+- Kept "daily" for digest email and competitor RSS monitoring (those are genuinely daily)
+
 **Homepage redesign: full closed-loop value proposition** (bbff400)
 - Complete rewrite of `app/page.tsx` (451 insertions, 262 deletions)
 - Reframed hero from "GET CITED IN AI SEARCH" to "MONITOR, WIN, AND PROVE ROI IN AI SEARCH"
