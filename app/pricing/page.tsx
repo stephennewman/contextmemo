@@ -273,24 +273,6 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Calculator Link */}
-      <section className="px-6 pb-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="p-8 border-2 border-white/10 bg-white/5 text-center">
-            <p className="font-black text-lg mb-2">WANT TO ESTIMATE YOUR COST?</p>
-            <p className="text-slate-400 text-sm mb-4">
-              Use our consumption calculator to model pricing based on your exact usage.
-            </p>
-            <Button asChild variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-none font-bold">
-              <Link href="/pricing/calculator">
-                OPEN CALCULATOR
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section className="py-16 px-6 border-t border-white/10">
         <div className="max-w-3xl mx-auto">

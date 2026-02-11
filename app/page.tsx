@@ -713,7 +713,6 @@ export default async function Home() {
               <ul className="space-y-3">
                 <li><Link href="#features" className="text-sm text-slate-500 hover:text-white transition-colors">Features</Link></li>
                 <li><Link href="/pricing" className="text-sm text-slate-500 hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link href="/pricing/calculator" className="text-sm text-slate-500 hover:text-white transition-colors">Calculator</Link></li>
                 <li><Link href="/changelog" className="text-sm text-slate-500 hover:text-white transition-colors">Changelog</Link></li>
               </ul>
             </div>

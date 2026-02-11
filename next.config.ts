@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         destination: '/request-access',
         permanent: true,
       },
+      {
+        source: '/pricing/calculator',
+        destination: '/pricing',
+        permanent: true,
+      },
     ]
   },
   async headers() {
