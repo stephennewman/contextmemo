@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 12, 2026  
-> **Version:** 0.23.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding
+> **Version:** 0.24.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course
 
 ---
 
@@ -897,6 +897,32 @@ _Most recent deploys first_
 - `lib/inngest/client.ts` — Added topic/universe-generate + topic/universe-refresh event types
 - `lib/inngest/functions/scan-run.ts` — Emit topic refresh when new competitors discovered
 - `lib/supabase/types.ts` — Added TopicUniverse, SitePageEntry, CoverageScore types
+
+---
+
+**Add AI Search Mastery Course** (fdb56b9) — February 12, 2026
+- Complete course platform at `/course` for marketers to learn AI search optimization
+- 25-question timed assessment (20s per question, auto-advance to prevent cheating)
+- 10 comprehensive modules: AI Search Fundamentals, Buyer Behavior Changes, AI vs SEO, AI vs PPC, Best Practices, Things to Avoid, Technical Components, Content Strategy, Future of AI Search, Measuring AI Search
+- Baseline assessment flow: shows score only (no correct/wrong answers)
+- Final assessment flow: unlocked after all modules complete, shows full breakdown with explanations and improvement delta
+- Lightweight email enrollment with cookie-based session (no full Supabase auth needed)
+- Module progress tracking with completion gating
+- Supabase tables: course_enrollments, course_assessments, course_assessment_answers, course_module_progress
+
+**Files changed:**
+- `app/course/page.tsx` — Course landing page with enrollment form
+- `app/course/layout.tsx` — Course layout with branded header
+- `app/course/assessment/page.tsx` — Timed assessment with countdown timer and auto-advance
+- `app/course/results/page.tsx` — Results page (score-only for baseline, full breakdown for final)
+- `app/course/learn/page.tsx` — Module overview with progress tracking
+- `app/course/learn/[moduleSlug]/page.tsx` — Individual module content pages
+- `app/api/course/enroll/route.ts` — Enrollment API with returning user detection
+- `app/api/course/assessment/route.ts` — Assessment lifecycle (start, answer, complete)
+- `app/api/course/progress/route.ts` — Module completion tracking
+- `lib/course/types.ts` — TypeScript types for course data
+- `lib/course/questions.ts` — 25 assessment questions across all AI search topics
+- `lib/course/modules.ts` — 10 course modules with comprehensive content
 
 ---
 
