@@ -393,6 +393,14 @@ _Most recent deploys first_
 
 ### February 12, 2026
 
+**Custom Domain Preferred Everywhere** (49ad9e1)
+- When a brand has a verified custom domain (e.g. `ai.crezzo.com`), it is now used as the primary URL everywhere instead of `subdomain.contextmemo.com`
+- Updated 25+ files across dashboard UI, memo feed, brand headers, brand switcher, memo editor, citation insights, content performance, IndexNow submissions, memo generation alerts, search console sync, Bing sync, activity logger, and admin tables
+- Created shared utility `lib/utils/brand-url.ts` for consistent URL construction
+- Updated `buildMemoUrl()` in indexnow.ts to accept optional custom domain params
+- Schema JSON `mainEntityOfPage` in generated memos now uses custom domain
+- All "View Live" links, URL previews in SEO editor, and alert messages respect custom domain
+
 **Reverse Proxy Support for Path-Based Memo Embedding** (4877009)
 - Added `assetPrefix` support via `NEXT_PUBLIC_ASSET_PREFIX` env var so assets load from contextmemo.com when pages are served through a reverse proxy on a customer's domain (avoids `/_next` asset conflicts)
 - Updated CSP headers to allow `https://contextmemo.com` in script-src, style-src, font-src for cross-origin asset loading
