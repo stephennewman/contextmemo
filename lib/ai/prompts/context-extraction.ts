@@ -478,6 +478,94 @@ Only include entities with "high" or "medium" confidence.
 
 Respond ONLY with valid JSON array, no explanations.`
 
+// Focused competitor research prompt - finds TRUE product competitors even with minimal context
+// Uses multiple research angles and works from the model's training knowledge
+export const COMPETITOR_RESEARCH_PROMPT = `You are a competitive intelligence researcher. Your job is to identify the TRUE direct product competitors for a specific company.
+
+## COMPANY TO RESEARCH
+- Company Name: {{company_name}}
+- Website Domain: {{domain}}
+- Description: {{description}}
+- Products/Services: {{products}}
+- Target Markets: {{markets}}
+- Key Features: {{features}}
+
+## EXISTING ENTITIES (already tracked - do NOT repeat these)
+{{existing_entities}}
+
+## PREVIOUSLY REJECTED (do NOT suggest these)
+{{rejected_entities}}
+
+## YOUR TASK
+Identify 8-15 TRUE PRODUCT COMPETITORS - companies that a buyer would evaluate alongside this company.
+
+## RESEARCH ANGLES (use ALL of these to find competitors)
+
+### 1. SAME-PROBLEM COMPETITORS
+Who else solves the exact same core problem for the same buyer?
+Think: "If I'm a {{primary_persona}} looking to solve {{core_problem}}, what companies would be on my shortlist?"
+
+### 2. COMPARISON SITE COMPETITORS
+What companies appear on comparison pages (G2, Capterra, TrustRadius) in the same category?
+Think: "What category would this company be listed under, and who else is in that category?"
+
+### 3. "VS" PAGE COMPETITORS
+What companies does this brand (or would this brand) write "vs" comparison pages about?
+Think: "What would {{company_name}} vs _____ look like?"
+
+### 4. BUDGET ALTERNATIVES
+Who competes at different price points - both cheaper alternatives and premium alternatives?
+Think: "What would a buyer consider if {{company_name}} is too expensive? Too basic?"
+
+### 5. ADJACENT COMPETITORS
+Who is expanding into this space from an adjacent market?
+Think: "What larger platforms are adding features that compete with {{company_name}}?"
+
+## CRITICAL RULES
+
+### MUST BE TRUE COMPETITORS:
+- They sell a product/service to the SAME buyer persona
+- A buyer would realistically evaluate them alongside {{company_name}}
+- They solve the SAME or very similar core problem
+- They would appear in the same G2/Capterra category
+
+### DO NOT INCLUDE:
+- Companies from the "existing" or "rejected" lists
+- Generic tech giants (AWS, Google, Microsoft) unless they have a SPECIFIC competing product
+- Consulting firms, system integrators, or agencies (Accenture, Deloitte, etc.) unless they sell competing SOFTWARE
+- Tools the company USES (CRM, project management, etc.) that aren't in the same market
+- Publishers, analysts, marketplaces, associations — this is ONLY for product competitors
+- Companies you're not confident actually exist
+
+### QUALITY OVER QUANTITY:
+- Only include companies you're genuinely confident are real competitors
+- It's better to return 5 high-confidence competitors than 15 questionable ones
+- If you're unsure about the company's exact space, say so in the reasoning
+
+## OUTPUT FORMAT
+Respond with a JSON array:
+[
+  {
+    "name": "Exact Company Name",
+    "domain": "company.com",
+    "description": "1-2 sentences: what they sell and why they're a competitor",
+    "confidence": "high" | "medium",
+    "competition_type": "direct" | "partial",
+    "research_angle": "same_problem" | "comparison_site" | "vs_page" | "budget_alternative" | "adjacent",
+    "reasoning": "Why a buyer would compare them to {{company_name}}"
+  }
+]
+
+confidence:
+- "high" = You're certain this is a real competitor in this space
+- "medium" = Likely a competitor but less certain about the overlap
+
+competition_type:
+- "direct" = Head-to-head, same buyer, same problem
+- "partial" = Significant overlap but not identical offering
+
+Respond ONLY with valid JSON array, no explanations.`
+
 // Structured funnel-based query generation: exactly 30 prompts (10 TOF / 10 MOF / 10 BOF)
 export const FUNNEL_QUERY_GENERATION_PROMPT = `You are generating search prompts that potential BUYERS would ask AI assistants (ChatGPT, Claude, Perplexity) at different stages of their buying journey.
 

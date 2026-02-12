@@ -240,33 +240,28 @@ export default async function MemoPage({ params }: Props) {
         
         {/* Footer */}
         <footer className="border-t bg-slate-50 mt-auto">
-          <div className="max-w-3xl mx-auto px-6 py-8">
-            <div className="flex items-center justify-between text-sm text-slate-500">
+          <div className="max-w-3xl mx-auto px-6 py-6">
+            <div className="flex items-center justify-between text-sm text-slate-400">
               <div className="flex items-center gap-2">
                 {theme?.logo_url ? (
-                  <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+                  <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto opacity-60" />
                 ) : (
                   <span className="font-medium" style={theme?.primary_text ? { color: theme.primary_text } : undefined}>
                     {theme?.site_name || brand.name}
                   </span>
                 )}
-              </div>
-              <div className="flex items-center gap-4">
-                {theme?.cta_url && (
-                  <a href={theme.cta_url} className="hover:text-slate-700 transition-colors" style={theme?.primary_color ? { color: theme.primary_color } : undefined}>
-                    {theme.cta_text || 'Learn more'}
-                  </a>
-                )}
                 {theme?.site_url && (
-                  <a href={theme.site_url} className="hover:text-slate-700 transition-colors">
-                    {new URL(theme.site_url).hostname}
-                  </a>
+                  <>
+                    <span className="text-slate-300">·</span>
+                    <a href={theme.site_url} className="hover:text-slate-500 transition-colors">
+                      {new URL(theme.site_url).hostname}
+                    </a>
+                  </>
                 )}
-                <span className="text-slate-300">·</span>
-                <a href="https://contextmemo.com" className="text-slate-400 hover:text-slate-500 transition-colors text-xs">
-                  Powered by Context Memo
-                </a>
               </div>
+              <a href="https://contextmemo.com" className="hover:text-slate-500 transition-colors text-xs">
+                Powered by Context Memo
+              </a>
             </div>
           </div>
         </footer>
@@ -488,7 +483,7 @@ export default async function MemoPage({ params }: Props) {
             [&>ul>li]:relative [&>ul>li]:pl-7 [&>ul>li]:leading-relaxed
             [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-1.5 [&>ul>li]:before:h-1.5 [&>ul>li]:before:bg-blue-500 [&>ul>li]:before:rounded-full
             [&>ol]:my-8 [&>ol]:pl-6 [&>ol]:space-y-4
-            [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline hover:[&_a]:underline
+            [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline [&_a:hover]:underline
             [&>table]:w-full [&>table]:my-10 [&>table]:border-collapse [&>table]:text-[0.9375rem] [&>table]:rounded-lg [&>table]:overflow-hidden [&>table]:border [&>table]:border-slate-200
             [&_thead]:bg-slate-50
             [&_th]:p-4 [&_th]:text-left [&_th]:border-b [&_th]:border-slate-200 [&_th]:font-semibold [&_th]:text-slate-800
@@ -527,33 +522,28 @@ export default async function MemoPage({ params }: Props) {
       
       {/* Footer */}
       <footer className="border-t bg-slate-50">
-        <div className="max-w-3xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+        <div className="max-w-3xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between text-sm text-slate-400">
             <div className="flex items-center gap-2">
               {theme?.logo_url ? (
-                <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+                <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto opacity-60" />
               ) : (
                 <span className="font-medium" style={theme?.primary_text ? { color: theme.primary_text } : undefined}>
                   {theme?.site_name || brand.name}
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-4">
-              {theme?.cta_url && (
-                <a href={theme.cta_url} className="hover:text-slate-700 transition-colors" style={theme?.primary_color ? { color: theme.primary_color } : undefined}>
-                  {theme.cta_text || 'Learn more'}
-                </a>
-              )}
               {theme?.site_url && (
-                <a href={theme.site_url} className="hover:text-slate-700 transition-colors">
-                  {new URL(theme.site_url).hostname}
-                </a>
+                <>
+                  <span className="text-slate-300">·</span>
+                  <a href={theme.site_url} className="hover:text-slate-500 transition-colors">
+                    {new URL(theme.site_url).hostname}
+                  </a>
+                </>
               )}
-              <span className="text-slate-300">·</span>
-              <a href="https://contextmemo.com" className="text-slate-400 hover:text-slate-500 transition-colors text-xs">
-                Powered by Context Memo
-              </a>
             </div>
+            <a href="https://contextmemo.com" className="hover:text-slate-500 transition-colors text-xs">
+              Powered by Context Memo
+            </a>
           </div>
         </div>
       </footer>

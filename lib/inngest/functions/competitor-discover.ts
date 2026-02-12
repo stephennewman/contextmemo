@@ -245,6 +245,9 @@ export const competitorDiscover = inngest.createFunction(
         // New entity classification fields
         entity_type: c.entity_type || 'product_competitor',
         is_partner_candidate: c.is_partner_candidate || false,
+        // Source attribution
+        source_model: 'gpt-4o',
+        source_method: 'onboarding_discovery',
         // Store additional metadata in context field
         context: {
           confidence: c.confidence || 'medium',

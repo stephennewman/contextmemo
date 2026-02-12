@@ -329,6 +329,8 @@ export const promptEnrich = inngest.createFunction(
             description: c.context,
             auto_discovered: true,
             is_active: true,
+            source_model: 'gpt-4o-mini',
+            source_method: 'prompt_extraction' as const,
           }))
 
           const { data, error } = await supabase

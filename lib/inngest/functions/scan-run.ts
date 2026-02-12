@@ -1102,6 +1102,8 @@ Only return the JSON array, nothing else.`
           is_active: c.entityType === 'product_competitor', // Only auto-activate actual competitors
           entity_type: c.entityType,
           description: `Cited ${c.citations}x across ${c.queryCount} prompts`,
+          source_model: 'gpt-4o-mini',
+          source_method: 'scan_citation',
           context: {
             discovered_from: 'citations',
             citation_count: c.citations,
