@@ -39,6 +39,8 @@ interface Brand {
   verified: boolean
   auto_publish: boolean
   context: BrandContext
+  custom_domain: string | null
+  domain_verified: boolean
 }
 
 // Navigation sections
@@ -52,6 +54,7 @@ const NAV_SECTIONS = [
   { id: 'expert-insights', label: 'Expert Insights', icon: Mic, highlight: true },
   { id: 'brand-voice', label: 'Brand Voice', icon: MessageSquare },
   { id: 'content', label: 'Memo Settings', icon: FileText },
+  { id: 'custom-domain', label: 'Custom Domain', icon: Globe },
   { id: 'personas', label: 'Target Personas', icon: Users },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'privacy', label: 'Data & Privacy', icon: Link2 },
@@ -210,6 +213,14 @@ export default function BrandSettingsPage() {
   const [newCompetitor, setNewCompetitor] = useState({ name: '', domain: '' })
   const [addingCompetitor, setAddingCompetitor] = useState(false)
 
+  // Custom domain state
+  const [customDomain, setCustomDomain] = useState('')
+  const [customDomainInput, setCustomDomainInput] = useState('')
+  const [domainVerified, setDomainVerified] = useState(false)
+  const [domainSaving, setDomainSaving] = useState(false)
+  const [domainVerifying, setDomainVerifying] = useState(false)
+  const [domainRemoving, setDomainRemoving] = useState(false)
+
   // Offers state
   const [offers, setOffers] = useState<BrandOffers>({})
   const defaultOffer: BrandOffer = { type: 'demo', label: '' }
@@ -284,6 +295,9 @@ export default function BrandSettingsPage() {
       setBrand(data)
       setName(data.name)
       setAutoPublish(data.auto_publish)
+      setCustomDomain(data.custom_domain || '')
+      setCustomDomainInput(data.custom_domain || '')
+      setDomainVerified(data.domain_verified || false)
       
       const context = data.context as BrandContext
       if (context) {
@@ -674,6 +688,73 @@ export default function BrandSettingsPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to delete account')
     } finally {
       setDeletingAccount(false)
+    }
+  }
+
+  // Custom domain handlers
+  const handleSetCustomDomain = async () => {
+    const domain = customDomainInput.trim().toLowerCase()
+    if (!domain) {
+      toast.error('Please enter a domain')
+      return
+    }
+    setDomainSaving(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/custom-domain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to set domain')
+      setCustomDomain(data.custom_domain)
+      setDomainVerified(false)
+      toast.success('Custom domain configured. Set up DNS, then click Verify.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to set domain')
+    } finally {
+      setDomainSaving(false)
+    }
+  }
+
+  const handleVerifyDomain = async () => {
+    setDomainVerifying(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/custom-domain`, {
+        method: 'PUT',
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Verification failed')
+      if (data.domain_verified) {
+        setDomainVerified(true)
+        toast.success('Domain verified! Your custom domain is now live.')
+      } else {
+        toast.error(data.message || 'DNS not yet configured. Please check your CNAME record.')
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Verification failed')
+    } finally {
+      setDomainVerifying(false)
+    }
+  }
+
+  const handleRemoveDomain = async () => {
+    if (!window.confirm('Remove custom domain? Your memos will still be accessible via the subdomain URL.')) return
+    setDomainRemoving(true)
+    try {
+      const response = await fetch(`/api/brands/${brandId}/custom-domain`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to remove domain')
+      setCustomDomain('')
+      setCustomDomainInput('')
+      setDomainVerified(false)
+      toast.success('Custom domain removed')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove domain')
+    } finally {
+      setDomainRemoving(false)
     }
   }
 
@@ -1657,6 +1738,146 @@ export default function BrandSettingsPage() {
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Custom Domain Section */}
+        <section id="custom-domain" ref={(el) => { sectionRefs.current['custom-domain'] = el }} className="scroll-mt-24">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Custom Domain
+              </CardTitle>
+              <CardDescription>
+                Serve your memos from your own domain instead of {brand.subdomain}.contextmemo.com
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {customDomain ? (
+                <>
+                  {/* Current domain display */}
+                  <div className={`flex items-center gap-3 p-4 rounded-lg border ${domainVerified ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                    {domainVerified ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{customDomain}</p>
+                        {domainVerified && <Badge className="bg-green-600 text-xs">Live</Badge>}
+                        {!domainVerified && <Badge variant="outline" className="text-amber-700 border-amber-300 text-xs">Pending DNS</Badge>}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {domainVerified
+                          ? `Your memos are live at https://${customDomain}`
+                          : 'DNS verification pending — add the CNAME record below'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {domainVerified && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`https://${customDomain}`} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                            Visit
+                          </a>
+                        </Button>
+                      )}
+                      {!domainVerified && (
+                        <Button variant="outline" size="sm" onClick={handleVerifyDomain} disabled={domainVerifying}>
+                          {domainVerifying ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                          Verify
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={handleRemoveDomain} disabled={domainRemoving} className="text-muted-foreground hover:text-destructive">
+                        {domainRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* DNS Instructions */}
+                  {!domainVerified && (
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <p className="text-sm font-medium">DNS Configuration Required</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add a CNAME record in your DNS provider:
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 text-sm font-mono bg-white p-3 rounded border">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Type</p>
+                          <p className="font-medium">CNAME</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Name</p>
+                          <p className="font-medium">{customDomain.split('.')[0]}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Value</p>
+                          <p className="font-medium">cname.vercel-dns.com</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        DNS changes can take up to 48 hours to propagate. Click &quot;Verify&quot; once configured.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Change domain */}
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label>Change Domain</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={customDomainInput}
+                        onChange={(e) => setCustomDomainInput(e.target.value)}
+                        placeholder="ai.yourdomain.com"
+                      />
+                      <Button
+                        onClick={handleSetCustomDomain}
+                        disabled={domainSaving || customDomainInput.trim().toLowerCase() === customDomain}
+                        variant="outline"
+                      >
+                        {domainSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update'}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* No domain set — setup form */}
+                  <div className="space-y-4">
+                    <div className="p-4 bg-slate-50 rounded-lg border text-center">
+                      <Globe className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                      <p className="font-medium mb-1">No custom domain configured</p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Your memos are currently served at <a href={`https://${brand.subdomain}.contextmemo.com`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{brand.subdomain}.contextmemo.com</a>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Add a custom domain like <span className="font-mono">ai.{brand.domain || 'yourdomain.com'}</span> to serve memos from your own brand.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Custom Domain</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={customDomainInput}
+                          onChange={(e) => setCustomDomainInput(e.target.value)}
+                          placeholder={`ai.${brand.domain || 'yourdomain.com'}`}
+                        />
+                        <Button onClick={handleSetCustomDomain} disabled={domainSaving || !customDomainInput.trim()}>
+                          {domainSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Set Domain
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Use a subdomain like <span className="font-mono">ai.yourdomain.com</span> or <span className="font-mono">resources.yourdomain.com</span>. You&apos;ll need to add a CNAME record in your DNS.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </section>
