@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -26,10 +27,23 @@ import {
   Sparkles,
   ArrowUpDown,
   FileText,
-  Globe
+  Globe,
+  Ban,
+  Trash2,
+  RefreshCw,
+  Loader2,
+  CheckSquare,
+  Square,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-import type { ScanResult, Query, PromptPersona, PromptTheme, FunnelStage } from '@/lib/supabase/types'
+import type { ScanResult, Query, PromptPersona, PromptTheme, FunnelStage, QueryExcludedReason } from '@/lib/supabase/types'
 import { FUNNEL_STAGE_META } from '@/lib/supabase/types'
 import { QueryDetail } from './query-detail'
 import { ScanButton } from '@/components/dashboard/brand-actions'
@@ -995,6 +1009,66 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
   const [sortOption, setSortOption] = useState<SortOption>('default')
   const router = useRouter()
 
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+
+  const toggleSelect = useCallback((id: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Don't open the detail drawer
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
+
+  const handleBulkAction = async (
+    action: 'exclude' | 'delete' | 'rescan' | 'regenerate',
+    reason?: QueryExcludedReason,
+  ) => {
+    if (!brandId || selectedIds.size === 0) return
+    setBulkLoading(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/prompts/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, promptIds: Array.from(selectedIds), reason }),
+      })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `Failed to ${action}`)
+      }
+      const data = await res.json()
+      switch (action) {
+        case 'exclude':
+          toast.success(`Excluded ${data.count} prompt${data.count > 1 ? 's' : ''}`)
+          break
+        case 'delete':
+          toast.success(`Deleted ${data.count} prompt${data.count > 1 ? 's' : ''}`)
+          break
+        case 'rescan':
+          toast.success(`Scan queued for ${data.count} prompt${data.count > 1 ? 's' : ''}`, {
+            description: 'Results will appear once the scan completes',
+          })
+          break
+        case 'regenerate':
+          toast.success('New prompt generation queued', {
+            description: 'New prompts will appear after generation completes',
+          })
+          break
+      }
+      clearSelection()
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Failed to ${action}`)
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
   const addPrompt = async () => {
     if (!newPrompt.trim() || !brandId) return
     
@@ -1336,6 +1410,39 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
             </div>
           )}
 
+          {/* Select all toggle */}
+          {brandId && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const visibleIds = filteredPrompts.filter(p => !p.isBranded).map(p => p.query.id)
+                  if (selectedIds.size > 0 && selectedIds.size === visibleIds.length) {
+                    clearSelection()
+                  } else {
+                    setSelectedIds(new Set(visibleIds))
+                  }
+                }}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {selectedIds.size > 0 && selectedIds.size === filteredPrompts.filter(p => !p.isBranded).length ? (
+                  <CheckSquare className="h-3.5 w-3.5 text-[#0EA5E9]" />
+                ) : (
+                  <Square className="h-3.5 w-3.5" />
+                )}
+                {selectedIds.size > 0 ? (
+                  <span className="text-[#0EA5E9] font-medium">{selectedIds.size} selected</span>
+                ) : (
+                  <span>Select</span>
+                )}
+              </button>
+              {selectedIds.size > 0 && (
+                <button onClick={clearSelection} className="text-[10px] text-muted-foreground hover:text-foreground">
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Status filters */}
           <div className="flex flex-wrap gap-2 items-center">
             {statusFilters.map(({ key, label, color, activeColor }) => {
@@ -1471,11 +1578,20 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
                     p.isBranded ? 'opacity-50 border-dashed' :
                     p.isOpportunity ? 'border-orange-300 bg-orange-50/30' :
                     p.query.current_status === 'lost_citation' ? 'border-red-200 bg-red-50/20' : ''
-                  }`}
+                  } ${selectedIds.has(p.query.id) ? 'ring-2 ring-[#0EA5E9] border-[#0EA5E9]/50' : ''}`}
                   onClick={() => setSelectedQuery(p.query)}
                 >
                   {/* Row 1: Prompt text + status + rate */}
                   <div className="flex items-start justify-between gap-3">
+                    {/* Checkbox */}
+                    {brandId && !p.isBranded && (
+                      <div className="pt-0.5 shrink-0" onClick={(e) => toggleSelect(p.query.id, e)}>
+                        <Checkbox
+                          checked={selectedIds.has(p.query.id)}
+                          className="data-[state=checked]:bg-[#0EA5E9] data-[state=checked]:border-[#0EA5E9]"
+                        />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-[#0F172A] leading-snug">
                         &quot;{p.query.query_text}&quot;
@@ -1651,6 +1767,104 @@ export function PromptVisibilityList({ queries, scanResults, brandName, brandId,
             scanResults={scanResults}
             isBranded={selectedQuery ? queryContainsBrand(selectedQuery.query_text, brandName) : false}
           />
+
+          {/* Floating Bulk Action Bar */}
+          {selectedIds.size > 0 && brandId && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+              <div className="bg-[#0F172A] text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-3">
+                <span className="text-sm font-medium whitespace-nowrap">
+                  {selectedIds.size} prompt{selectedIds.size > 1 ? 's' : ''}
+                </span>
+
+                <div className="w-px h-6 bg-white/20" />
+
+                {/* Rescan */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/10 hover:text-white h-8 text-xs"
+                  disabled={bulkLoading}
+                  onClick={() => handleBulkAction('rescan')}
+                >
+                  {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+                  Re-scan
+                </Button>
+
+                {/* Exclude with reason */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-white hover:bg-white/10 hover:text-white h-8 text-xs"
+                      disabled={bulkLoading}
+                    >
+                      {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Ban className="h-3.5 w-3.5 mr-1.5" />}
+                      Exclude
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" side="top" className="mb-2">
+                    <DropdownMenuItem onClick={() => handleBulkAction('exclude', 'irrelevant')}>
+                      Irrelevant
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkAction('exclude', 'duplicate')}>
+                      Duplicate
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkAction('exclude', 'low_value')}>
+                      Low Value
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleBulkAction('exclude', 'manual')}>
+                      Other
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Delete */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-400 hover:bg-red-500/20 hover:text-red-300 h-8 text-xs"
+                  disabled={bulkLoading}
+                  onClick={() => {
+                    if (confirm(`Permanently delete ${selectedIds.size} prompt${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) {
+                      handleBulkAction('delete')
+                    }
+                  }}
+                >
+                  {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+                  Delete
+                </Button>
+
+                <div className="w-px h-6 bg-white/20" />
+
+                {/* Generate New */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 h-8 text-xs"
+                  disabled={bulkLoading}
+                  onClick={() => handleBulkAction('regenerate')}
+                >
+                  {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+                  Generate New
+                </Button>
+
+                <div className="w-px h-6 bg-white/20" />
+
+                {/* Dismiss */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/60 hover:bg-white/10 hover:text-white h-8 text-xs"
+                  onClick={clearSelection}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
