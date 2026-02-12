@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 12, 2026  
-> **Version:** 0.22.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support
+> **Version:** 0.23.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding
 
 ---
 
@@ -390,6 +390,28 @@ When the AI assistant deploys changes, it should:
 ## Deploy Log
 
 _Most recent deploys first_
+
+### February 12, 2026
+
+**Reverse Proxy Support for Path-Based Memo Embedding** (4877009)
+- Added `assetPrefix` support via `NEXT_PUBLIC_ASSET_PREFIX` env var so assets load from contextmemo.com when pages are served through a reverse proxy on a customer's domain (avoids `/_next` asset conflicts)
+- Updated CSP headers to allow `https://contextmemo.com` in script-src, style-src, font-src for cross-origin asset loading
+- Added `proxy_base_path` column to brands table — when set, internal links use that prefix (e.g., `/memos/vs/okrs-vs-kpis`) instead of `/memo/{subdomain}/...`
+- Moved brand fetch earlier in MemoPage to access `proxy_base_path` before computing `linkPrefix`
+- Set `proxy_base_path = '/memos'` for Krezzo brand
+- Added Vercel rewrites on outcomeview.com to proxy `/memos/*` → `contextmemo.com/memo/krezzo/*`
+- Verified end-to-end: `outcomeview.com/memos/` renders Krezzo memos, deep links work, assets load cross-origin, existing outcomeview.com pages unaffected
+
+**Files changed:**
+- `next.config.ts` — assetPrefix + CSP update
+- `app/memo/[subdomain]/[[...slug]]/page.tsx` — proxy_base_path link prefix support
+
+**Database changes:**
+- Migration: `add_proxy_base_path_to_brands` — added `proxy_base_path TEXT` column to brands table
+
+**External changes:**
+- Set `NEXT_PUBLIC_ASSET_PREFIX=https://contextmemo.com` on Vercel production env
+- Deployed outcomeview Vercel project with rewrite rules in `vercel.json`
 
 ### February 11, 2026
 

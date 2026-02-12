@@ -16,10 +16,10 @@ import {
   Settings, Building2, MessageSquare, FileText, Users, Target,
   Plug, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Plus, X, Sparkles, RefreshCw,
   Crown, User, Mic, Swords, ToggleLeft, ToggleRight, Globe, DollarSign,
-  Tag, Percent
+  Tag, Percent, Palette
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { BrandContext, BrandTone, HubSpotConfig, SearchConsoleConfig, TargetPersona, PersonaSeniority, PromptTheme, MarketFocus, BrandOffer, BrandOffers } from '@/lib/supabase/types'
+import { BrandContext, BrandTone, BrandTheme, HubSpotConfig, SearchConsoleConfig, TargetPersona, PersonaSeniority, PromptTheme, MarketFocus, BrandOffer, BrandOffers } from '@/lib/supabase/types'
 import { VoiceInsightsSection } from '@/components/voice-insights-section'
 import {
   Dialog,
@@ -55,6 +55,7 @@ const NAV_SECTIONS = [
   { id: 'brand-voice', label: 'Brand Voice', icon: MessageSquare },
   { id: 'content', label: 'Memo Settings', icon: FileText },
   { id: 'custom-domain', label: 'Custom Domain', icon: Globe },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'personas', label: 'Target Personas', icon: Users },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'privacy', label: 'Data & Privacy', icon: Link2 },
@@ -221,6 +222,10 @@ export default function BrandSettingsPage() {
   const [domainVerifying, setDomainVerifying] = useState(false)
   const [domainRemoving, setDomainRemoving] = useState(false)
 
+  // Appearance / theme state
+  const [brandTheme, setBrandTheme] = useState<BrandTheme>({})
+  const [themeSaving, setThemeSaving] = useState(false)
+
   // Offers state
   const [offers, setOffers] = useState<BrandOffers>({})
   const defaultOffer: BrandOffer = { type: 'demo', label: '' }
@@ -316,6 +321,7 @@ export default function BrandSettingsPage() {
         setDisabledPersonas(context.disabled_personas || [])
         setThemes(context.prompt_themes || [])
         setOffers(context.offers || {})
+        setBrandTheme(context.theme || {})
         
         // Initialize market focus from existing markets if not already set
         if (context.market_focus && context.market_focus.length > 0) {
@@ -576,6 +582,7 @@ export default function BrandSettingsPage() {
       disabled_personas: disabledPersonas,
       prompt_themes: themes,
       offers: (offers.primary || offers.secondary || offers.pricing_model) ? offers : undefined,
+      theme: Object.values(brandTheme).some(v => v) ? brandTheme : undefined,
     }
 
     const { error } = await supabase
@@ -689,6 +696,43 @@ export default function BrandSettingsPage() {
     } finally {
       setDeletingAccount(false)
     }
+  }
+
+  // Appearance / theme save handler
+  const handleSaveTheme = async () => {
+    if (!brand) return
+    setThemeSaving(true)
+    const supabase = createClient()
+    
+    // Merge theme into existing context
+    const existingContext = brand.context as Record<string, unknown>
+    const cleanTheme = Object.fromEntries(
+      Object.entries(brandTheme).filter(([, v]) => v !== undefined && v !== '')
+    )
+    
+    const { error } = await supabase
+      .from('brands')
+      .update({
+        context: { ...existingContext, theme: Object.keys(cleanTheme).length > 0 ? cleanTheme : undefined },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', brand.id)
+
+    setThemeSaving(false)
+    if (error) {
+      toast.error('Failed to save appearance settings')
+    } else {
+      // Update local brand state so subsequent main saves don't overwrite
+      setBrand(prev => prev ? { ...prev, context: { ...existingContext, theme: cleanTheme } as BrandContext } : prev)
+      toast.success('Appearance settings saved')
+    }
+  }
+
+  // Auto-generate Google Fonts URL from font family name
+  const generateFontUrl = (fontFamily: string) => {
+    if (!fontFamily.trim()) return ''
+    const encoded = fontFamily.trim().replace(/\s+/g, '+')
+    return `https://fonts.googleapis.com/css2?family=${encoded}:wght@400;500;600;700;800&display=swap`
   }
 
   // Custom domain handlers
@@ -1878,6 +1922,215 @@ export default function BrandSettingsPage() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Appearance Section */}
+        <section id="appearance" ref={(el) => { sectionRefs.current['appearance'] = el }} className="scroll-mt-24">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Appearance
+              </CardTitle>
+              <CardDescription>
+                Customize how your branded memo pages look on {customDomain || `${brand.subdomain}.contextmemo.com`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Color Settings */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Colors</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Primary Color</Label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={brandTheme.primary_color || '#0F4C81'}
+                        onChange={(e) => setBrandTheme(prev => ({ ...prev, primary_color: e.target.value }))}
+                        className="h-9 w-12 rounded border cursor-pointer"
+                      />
+                      <Input
+                        value={brandTheme.primary_color || ''}
+                        onChange={(e) => setBrandTheme(prev => ({ ...prev, primary_color: e.target.value }))}
+                        placeholder="#0F4C81"
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Links, accents, CTA buttons</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Light Variant</Label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={brandTheme.primary_light || '#E8F0F8'}
+                        onChange={(e) => setBrandTheme(prev => ({ ...prev, primary_light: e.target.value }))}
+                        className="h-9 w-12 rounded border cursor-pointer"
+                      />
+                      <Input
+                        value={brandTheme.primary_light || ''}
+                        onChange={(e) => setBrandTheme(prev => ({ ...prev, primary_light: e.target.value }))}
+                        placeholder="#E8F0F8"
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Background highlights, hover states</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Text Color</Label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={brandTheme.primary_text || '#0F4C81'}
+                        onChange={(e) => setBrandTheme(prev => ({ ...prev, primary_text: e.target.value }))}
+                        className="h-9 w-12 rounded border cursor-pointer"
+                      />
+                      <Input
+                        value={brandTheme.primary_text || ''}
+                        onChange={(e) => setBrandTheme(prev => ({ ...prev, primary_text: e.target.value }))}
+                        placeholder="#0F4C81"
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Headings and emphasis text</p>
+                  </div>
+                </div>
+                {/* Color preview */}
+                {brandTheme.primary_color && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-slate-50">
+                    <div className="flex gap-1.5">
+                      <div className="h-8 w-8 rounded" style={{ backgroundColor: brandTheme.primary_color }} title="Primary" />
+                      {brandTheme.primary_light && <div className="h-8 w-8 rounded border" style={{ backgroundColor: brandTheme.primary_light }} title="Light" />}
+                      {brandTheme.primary_text && <div className="h-8 w-8 rounded" style={{ backgroundColor: brandTheme.primary_text }} title="Text" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Preview of your brand colors</p>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Typography */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Typography</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Font Family</Label>
+                    <Input
+                      value={brandTheme.font_family || ''}
+                      onChange={(e) => {
+                        const fontFamily = e.target.value
+                        setBrandTheme(prev => ({
+                          ...prev,
+                          font_family: fontFamily,
+                          font_url: generateFontUrl(fontFamily),
+                        }))
+                      }}
+                      placeholder="Plus Jakarta Sans"
+                    />
+                    <p className="text-xs text-muted-foreground">Google Fonts name — URL auto-generated</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Font URL <span className="text-muted-foreground font-normal">(auto)</span></Label>
+                    <Input
+                      value={brandTheme.font_url || ''}
+                      onChange={(e) => setBrandTheme(prev => ({ ...prev, font_url: e.target.value }))}
+                      placeholder="https://fonts.googleapis.com/css2?family=..."
+                      className="text-xs"
+                    />
+                    <p className="text-xs text-muted-foreground">Override if using a custom font source</p>
+                  </div>
+                </div>
+                {brandTheme.font_family && (
+                  <p className="text-sm" style={{ fontFamily: `'${brandTheme.font_family}', system-ui, sans-serif` }}>
+                    The quick brown fox jumps over the lazy dog — <strong>{brandTheme.font_family}</strong>
+                  </p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Branding */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Branding</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Logo URL</Label>
+                    <Input
+                      value={brandTheme.logo_url || ''}
+                      onChange={(e) => setBrandTheme(prev => ({ ...prev, logo_url: e.target.value }))}
+                      placeholder="https://yourdomain.com/logo.svg"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Site Name</Label>
+                    <Input
+                      value={brandTheme.site_name || ''}
+                      onChange={(e) => setBrandTheme(prev => ({ ...prev, site_name: e.target.value }))}
+                      placeholder={brand.name}
+                    />
+                    <p className="text-xs text-muted-foreground">Displayed in header if no logo</p>
+                  </div>
+                </div>
+                {brandTheme.logo_url && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-slate-50">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={brandTheme.logo_url} alt="Logo preview" className="h-8 max-w-[200px] object-contain" />
+                    <p className="text-xs text-muted-foreground">Logo preview</p>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Site URL</Label>
+                  <Input
+                    value={brandTheme.site_url || ''}
+                    onChange={(e) => setBrandTheme(prev => ({ ...prev, site_url: e.target.value }))}
+                    placeholder={`https://${brand.domain || 'yourdomain.com'}`}
+                  />
+                  <p className="text-xs text-muted-foreground">Where the logo/site name links to</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* CTA */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Call to Action</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>CTA Button Text</Label>
+                    <Input
+                      value={brandTheme.cta_text || ''}
+                      onChange={(e) => setBrandTheme(prev => ({ ...prev, cta_text: e.target.value }))}
+                      placeholder="Request Access"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CTA Button URL</Label>
+                    <Input
+                      value={brandTheme.cta_url || ''}
+                      onChange={(e) => setBrandTheme(prev => ({ ...prev, cta_url: e.target.value }))}
+                      placeholder={`https://${brand.domain || 'yourdomain.com'}/#contact`}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Adds a branded CTA button in the header and at the bottom of each memo page.
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Save */}
+              <div className="flex justify-end">
+                <Button onClick={handleSaveTheme} disabled={themeSaving}>
+                  {themeSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Appearance
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </section>

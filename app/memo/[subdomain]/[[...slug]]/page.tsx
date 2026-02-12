@@ -13,6 +13,7 @@ import { headers } from 'next/headers'
 import { AITrafficTracker } from '@/components/tracking/ai-traffic-tracker'
 import { GtagBrandPageView } from '@/components/tracking/google-analytics'
 import { MEMO_TYPE_LABELS } from '@/lib/memo/render'
+import { BrandTheme } from '@/lib/supabase/types'
 
 // Use service role client for public access
 const supabase = createClient(
@@ -72,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // If no slug, return brand homepage metadata
   if (!slugPath) {
     return {
-      title: `${brand.name} - Context Memos`,
+      title: `${brand.name} Knowledge Base`,
       description: `Factual reference memos about ${brand.name}`,
     }
   }
@@ -92,7 +93,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: memo.title,
-    description: memo.meta_description || `${memo.title} - Context Memo for ${brand.name}`,
+    description: memo.meta_description || `${memo.title} - ${brand.name}`,
     openGraph: {
       title: memo.title,
       description: memo.meta_description || '',
@@ -105,7 +106,13 @@ export default async function MemoPage({ params }: Props) {
   const { subdomain, slug } = await params
   const slugPath = slug?.join('/') || ''
 
-  // Get brand (fetch early so we can check proxy_base_path for link generation)
+  // Detect if accessed via subdomain for correct link generation
+  const viaSubdomain = await isSubdomainAccess(subdomain)
+  
+  // Generate link prefix based on access method
+  const linkPrefix = viaSubdomain ? '' : `/memo/${subdomain}`
+
+  // Get brand
   const { data: brand, error: brandError } = await supabase
     .from('brands')
     .select('*')
@@ -116,14 +123,9 @@ export default async function MemoPage({ params }: Props) {
     notFound()
   }
 
-  // Detect if accessed via subdomain or custom domain for correct link generation
-  const viaSubdomain = await isSubdomainAccess(subdomain)
-  
-  // Generate link prefix based on access method:
-  // - Subdomain/custom domain: no prefix (e.g., /vs/okrs-vs-kpis)
-  // - Reverse proxy with proxy_base_path: use that path (e.g., /memos/vs/okrs-vs-kpis)
-  // - Direct path access: /memo/{subdomain} prefix
-  const linkPrefix = viaSubdomain ? '' : (brand.proxy_base_path || `/memo/${subdomain}`)
+  // Extract brand theme from context (if configured)
+  const brandContext = brand.context as Record<string, unknown> | null
+  const theme = (brandContext?.theme as BrandTheme) || null
 
   // If no slug, show brand memo index
   if (!slugPath) {
@@ -136,19 +138,37 @@ export default async function MemoPage({ params }: Props) {
       .order('published_at', { ascending: false })
 
     return (
-      <div className="min-h-screen bg-linear-to-b from-slate-50 to-white">
+      <div className="min-h-screen bg-linear-to-b from-slate-50 to-white" style={theme?.font_family ? { fontFamily: `'${theme.font_family}', system-ui, sans-serif` } : undefined}>
+        {/* Brand font */}
+        {theme?.font_url && (
+          <link rel="stylesheet" href={theme.font_url} />
+        )}
+        {/* Brand CSS variables */}
+        {theme?.primary_color && (
+          <style dangerouslySetInnerHTML={{ __html: `
+            :root {
+              --brand-primary: ${theme.primary_color};
+              --brand-primary-light: ${theme.primary_light || theme.primary_color + '1a'};
+              --brand-primary-text: ${theme.primary_text || theme.primary_color};
+            }
+          `}} />
+        )}
         {/* Header */}
         <header className="bg-white border-b">
           <div className="max-w-3xl mx-auto px-6 py-12">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-xl bg-linear-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                <span className="text-white font-bold text-xl">
-                  {brand.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
+              {theme?.logo_url ? (
+                <img src={theme.logo_url} alt={brand.name} className="h-10 w-auto" />
+              ) : (
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: theme?.primary_color ? `linear-gradient(135deg, ${theme.primary_color}, ${theme.primary_text || theme.primary_color})` : 'linear-gradient(135deg, #334155, #0f172a)' }}>
+                  <span className="text-white font-bold text-xl">
+                    {brand.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">{brand.name}</h1>
-                <p className="text-slate-500">Context Memos</p>
+                <h1 className="text-2xl font-bold text-slate-900">{theme?.site_name || brand.name}</h1>
+                <p className="text-slate-500">Knowledge Base</p>
               </div>
             </div>
             <p className="text-slate-600 mt-4 max-w-xl">
@@ -165,11 +185,13 @@ export default async function MemoPage({ params }: Props) {
           {memos && memos.length > 0 ? (
             <div className="space-y-4">
               {memos.map((memo) => (
-                <a
-                  key={memo.id}
-                  href={`${linkPrefix}/${memo.slug}`}
-                  className="block p-6 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-md transition-all group"
-                >
+                  <a
+                    key={memo.id}
+                    href={`${linkPrefix}/${memo.slug}`}
+                    className="block p-6 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all group"
+                    style={theme?.primary_color ? { ['--hover-border' as string]: theme.primary_color } : undefined}
+                    onMouseOver={undefined}
+                  >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
@@ -221,14 +243,30 @@ export default async function MemoPage({ params }: Props) {
           <div className="max-w-3xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between text-sm text-slate-500">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>Context Memo</span>
+                {theme?.logo_url ? (
+                  <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+                ) : (
+                  <span className="font-medium" style={theme?.primary_text ? { color: theme.primary_text } : undefined}>
+                    {theme?.site_name || brand.name}
+                  </span>
+                )}
               </div>
-              <a href="https://contextmemo.com" className="hover:text-slate-700 transition-colors">
-                Learn more
-              </a>
+              <div className="flex items-center gap-4">
+                {theme?.cta_url && (
+                  <a href={theme.cta_url} className="hover:text-slate-700 transition-colors" style={theme?.primary_color ? { color: theme.primary_color } : undefined}>
+                    {theme.cta_text || 'Learn more'}
+                  </a>
+                )}
+                {theme?.site_url && (
+                  <a href={theme.site_url} className="hover:text-slate-700 transition-colors">
+                    {new URL(theme.site_url).hostname}
+                  </a>
+                )}
+                <span className="text-slate-300">·</span>
+                <a href="https://contextmemo.com" className="text-slate-400 hover:text-slate-500 transition-colors text-xs">
+                  Powered by Context Memo
+                </a>
+              </div>
             </div>
           </div>
         </footer>
@@ -313,7 +351,23 @@ export default async function MemoPage({ params }: Props) {
   })
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white" style={theme?.font_family ? { fontFamily: `'${theme.font_family}', system-ui, sans-serif` } : undefined}>
+      {/* Brand font */}
+      {theme?.font_url && (
+        <link rel="stylesheet" href={theme.font_url} />
+      )}
+      {/* Brand CSS variables */}
+      {theme?.primary_color && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --brand-primary: ${theme.primary_color};
+            --brand-primary-light: ${theme.primary_light || theme.primary_color + '1a'};
+            --brand-primary-text: ${theme.primary_text || theme.primary_color};
+          }
+          .memo-content a { color: var(--brand-primary) !important; }
+          .memo-content blockquote { border-left-color: var(--brand-primary) !important; }
+        `}} />
+      )}
       {/* Schema.org JSON-LD */}
       {memo.schema_json && (
         <script
@@ -324,17 +378,22 @@ export default async function MemoPage({ params }: Props) {
       
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-4">
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <nav className="flex items-center gap-2 text-sm">
-            <a 
-              href={`${linkPrefix}/`} 
-              className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
-            >
-              {brand.name}
+            <a href={`${linkPrefix}/`} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium transition-colors">
+              {theme?.logo_url && (
+                <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+              )}
+              <span>{brand.name}</span>
             </a>
             <span className="text-slate-300">/</span>
             <span className="text-slate-400 capitalize">{MEMO_TYPE_LABELS[memo.memo_type] || memo.memo_type.replace('_', ' ')}</span>
           </nav>
+          {theme?.cta_url && (
+            <a href={theme.cta_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium transition-colors" style={{ color: theme.primary_color || '#3b82f6' }}>
+              {theme.cta_text || `Visit ${brand.name}`}
+            </a>
+          )}
         </div>
       </header>
       
@@ -348,7 +407,7 @@ export default async function MemoPage({ params }: Props) {
           <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: theme?.primary_color ? `linear-gradient(135deg, ${theme.primary_color}, ${theme.primary_text || theme.primary_color})` : 'linear-gradient(135deg, #3b82f6, #4f46e5)' }}>
                   <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
@@ -451,12 +510,13 @@ export default async function MemoPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 pb-12">
           <div className="border-t border-slate-200 pt-8">
             <a 
-              href={`https://${brand.domain}`}
+              href={theme?.cta_url || `https://${brand.domain}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+              style={{ color: theme?.primary_color || '#2563eb' }}
             >
-              Learn more at {brand.domain}
+              {theme?.cta_text || `Learn more at ${brand.domain}`}
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -470,18 +530,28 @@ export default async function MemoPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>Context Memo</span>
+              {theme?.logo_url ? (
+                <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+              ) : (
+                <span className="font-medium" style={theme?.primary_text ? { color: theme.primary_text } : undefined}>
+                  {theme?.site_name || brand.name}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4">
-              <a href="https://contextmemo.com" className="hover:text-slate-700 transition-colors">
-                About
-              </a>
+              {theme?.cta_url && (
+                <a href={theme.cta_url} className="hover:text-slate-700 transition-colors" style={theme?.primary_color ? { color: theme.primary_color } : undefined}>
+                  {theme.cta_text || 'Learn more'}
+                </a>
+              )}
+              {theme?.site_url && (
+                <a href={theme.site_url} className="hover:text-slate-700 transition-colors">
+                  {new URL(theme.site_url).hostname}
+                </a>
+              )}
               <span className="text-slate-300">·</span>
-              <a href="mailto:support@contextmemo.com" className="hover:text-slate-700 transition-colors">
-                Report Issue
+              <a href="https://contextmemo.com" className="text-slate-400 hover:text-slate-500 transition-colors text-xs">
+                Powered by Context Memo
               </a>
             </div>
           </div>

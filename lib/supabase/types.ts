@@ -812,6 +812,22 @@ export interface BrandContext {
   // Existing pages on brand's website - used to prevent memo redundancy
   // Populated during context extraction to track what content already exists
   existing_pages?: ExistingPage[]
+  // Visual theme for custom domain / hosted memo pages
+  theme?: BrandTheme
+}
+
+// Visual theme configuration for branded memo pages (custom domains)
+export interface BrandTheme {
+  primary_color?: string      // Hex color e.g. "#0F4C81"
+  primary_light?: string      // Lighter variant for backgrounds
+  primary_text?: string       // Text color variant of primary
+  font_family?: string        // Google Font name e.g. "Plus Jakarta Sans"
+  font_url?: string           // Google Fonts CSS URL
+  logo_url?: string           // Brand logo image URL
+  site_name?: string          // Display name on hosted pages
+  site_url?: string           // Link back to main website
+  cta_text?: string           // Call-to-action button text
+  cta_url?: string            // Call-to-action button URL
 }
 
 // Brand offers/CTAs extracted from website
