@@ -151,6 +151,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Competitor discovery started' 
         })
 
+      case 'research_competitors':
+        // Deep competitor research - focused on TRUE product competitors only
+        // Uses gpt-4o-mini with multi-angle research (same-problem, comparison sites, vs pages, etc.)
+        await inngest.send({
+          name: 'competitor/research',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Deep competitor research started (focused on true product competitors)' 
+        })
+
       case 'generate_queries':
         await inngest.send({
           name: 'query/generate',

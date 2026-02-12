@@ -158,18 +158,23 @@ export default async function MemoPage({ params }: Props) {
           <div className="max-w-3xl mx-auto px-6 py-12">
             <div className="flex items-center gap-4 mb-4">
               {theme?.logo_url ? (
-                <img src={theme.logo_url} alt={brand.name} className="h-10 w-auto" />
+                <>
+                  <img src={theme.logo_url} alt={brand.name} className="h-10 w-auto" />
+                  <p className="text-slate-500 text-lg">Knowledge Base</p>
+                </>
               ) : (
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: theme?.primary_color ? `linear-gradient(135deg, ${theme.primary_color}, ${theme.primary_text || theme.primary_color})` : 'linear-gradient(135deg, #334155, #0f172a)' }}>
-                  <span className="text-white font-bold text-xl">
-                    {brand.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                <>
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: theme?.primary_color ? `linear-gradient(135deg, ${theme.primary_color}, ${theme.primary_text || theme.primary_color})` : 'linear-gradient(135deg, #334155, #0f172a)' }}>
+                    <span className="text-white font-bold text-xl">
+                      {brand.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-slate-900">{theme?.site_name || brand.name}</h1>
+                    <p className="text-slate-500">Knowledge Base</p>
+                  </div>
+                </>
               )}
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">{theme?.site_name || brand.name}</h1>
-                <p className="text-slate-500">Knowledge Base</p>
-              </div>
             </div>
             <p className="text-slate-600 mt-4 max-w-xl">
               Factual reference documents about {brand.name} for AI assistants and search engines.
@@ -376,10 +381,11 @@ export default async function MemoPage({ params }: Props) {
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <nav className="flex items-center gap-2 text-sm">
             <a href={`${linkPrefix}/`} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium transition-colors">
-              {theme?.logo_url && (
+              {theme?.logo_url ? (
                 <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+              ) : (
+                <span>{brand.name}</span>
               )}
-              <span>{brand.name}</span>
             </a>
             <span className="text-slate-300">/</span>
             <span className="text-slate-400 capitalize">{MEMO_TYPE_LABELS[memo.memo_type] || memo.memo_type.replace('_', ' ')}</span>

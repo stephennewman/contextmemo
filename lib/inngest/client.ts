@@ -155,6 +155,12 @@ export type InngestEvents = {
       competitorId?: string
     }
   }
+  // Deep competitor research - focused product competitor identification
+  'competitor/research': {
+    data: {
+      brandId: string
+    }
+  }
   // Competitor enrichment - deep profile extraction
   'competitor/enrich': {
     data: {
