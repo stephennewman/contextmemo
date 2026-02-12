@@ -195,28 +195,40 @@ export const competitorResearch = inngest.createFunction(
             totalOutputTokens += result.usage.completionTokens
           }
           
-          // Extract company names from the response text
-          // Look for patterns like "- CompanyName (domain.com)" or "**CompanyName**" or "CompanyName -"
+          // Extract company names from the response text using multiple patterns
+          // Sonar output varies: bullet lists, numbered lists, bold text, inline mentions
           const lines = result.text.split('\n')
           for (const line of lines) {
-            // Pattern: "- Name (domain.com): description" or "- **Name**: description"
-            const listMatch = line.match(/^[-•*]\s+\*?\*?([A-Z][A-Za-z0-9. ]+?)(?:\*\*)?(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?\s*[:\-–—]/)
-            if (listMatch) {
-              const name = listMatch[1].trim().replace(/\*+/g, '')
-              const domain = listMatch[2] || null
-              
-              if (name.length >= 2 && name.length <= 50) {
-                const key = name.toLowerCase()
-                if (!allMentions.has(key)) {
-                  allMentions.set(key, { count: 0, sourceUrls: new Set(), snippets: [] })
+            const patterns = [
+              // "- Name (domain.com): description" or "- **Name**: description"
+              /^[-•*]\s+\*?\*?([A-Z][A-Za-z0-9. ]+?)(?:\*\*)?(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?\s*[:\-–—]/,
+              // "1. Name (domain.com)" or "1. **Name**"
+              /^\d+[.)]\s+\*?\*?([A-Z][A-Za-z0-9. ]+?)(?:\*\*)?(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?\s*[:\-–—]/,
+              // "**Name** (domain.com)" at start of line
+              /^\*\*([A-Z][A-Za-z0-9. ]+?)\*\*(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?/,
+              // "Name (domain.com) -" without leading bullet
+              /^([A-Z][A-Za-z0-9. ]{2,40}?)(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?\s*[-–—:]/,
+            ]
+            
+            for (const pattern of patterns) {
+              const match = line.match(pattern)
+              if (match) {
+                const name = match[1].trim().replace(/\*+/g, '')
+                const domain = match[2] || null
+                
+                if (name.length >= 2 && name.length <= 50) {
+                  const key = name.toLowerCase()
+                  if (!allMentions.has(key)) {
+                    allMentions.set(key, { count: 0, sourceUrls: new Set(), snippets: [] })
+                  }
+                  const entry = allMentions.get(key)!
+                  entry.count++
+                  if (domain) entry.snippets.push(domain)
+                  for (const url of result.citations) {
+                    entry.sourceUrls.add(url)
+                  }
                 }
-                const entry = allMentions.get(key)!
-                entry.count++
-                if (domain) entry.snippets.push(domain) // Store domain in snippets temporarily
-                // Add citation URLs as sources
-                for (const url of result.citations) {
-                  entry.sourceUrls.add(url)
-                }
+                break // First match wins for this line
               }
             }
           }
@@ -230,6 +242,8 @@ export const competitorResearch = inngest.createFunction(
                 'wikipedia.org', 'youtube.com', 'linkedin.com', 'twitter.com', 'reddit.com',
                 'medium.com', 'hubspot.com', 'salesforce.com', 'google.com', 'bing.com',
                 'trustradius.com', 'getapp.com', 'softwareadvice.com', 'pcmag.com',
+                'crozdesk.com', 'selecthub.com', 'slashdot.org', 'sourceforge.net',
+                'producthunt.com', 'alternativeto.net', 'stackshare.io',
                 brand.domain?.replace('www.', '').toLowerCase() || '']
               if (skipDomains.some(d => urlDomain.includes(d))) continue
               if (urlDomain.endsWith('.gov') || urlDomain.endsWith('.edu')) continue
@@ -311,8 +325,16 @@ export const competitorResearch = inngest.createFunction(
           'Validate each one - confirm if they are TRUE product competitors, and include them in your output if so:\n' +
           sonarFindings.findings.map(f => 
             `- ${f.name}${f.inferredDomain ? ` (${f.inferredDomain})` : ''} — mentioned ${f.mentionCount}x`
-          ).join('\n')
-        : ''
+          ).join('\n') +
+          '\n\n## IMPORTANT: FILL GAPS FROM YOUR OWN KNOWLEDGE\n' +
+          'The web search above may have missed competitors. You MUST also add any competitors ' +
+          'you know of from your training data that are NOT in the web search findings or existing entities list. ' +
+          'Think about: well-known market leaders, mid-market players, niche/emerging tools, and ' +
+          'products from larger companies (e.g. Microsoft Viva Goals from Ally.io acquisition). ' +
+          'Do NOT limit yourself to only what the web search found.'
+        : '\n\n## IMPORTANT: USE YOUR TRAINING KNOWLEDGE\n' +
+          'No web search findings are available. You must rely entirely on your training knowledge ' +
+          'to identify ALL competitors in this space. Be thorough.'
 
       const prompt = COMPETITOR_RESEARCH_PROMPT
         .replace(/\{\{company_name\}\}/g, context?.company_name || brand.name)
