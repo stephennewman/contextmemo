@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import robots from '@/app/robots'
 
-interface RobotsRule {
-  userAgent: string | string[]
-  allow?: string | string[]
-  disallow?: string | string[]
-  crawlDelay?: number
+type RobotRule = {
+  userAgent?: string | string[] | undefined
+  allow?: string | string[] | undefined
+  disallow?: string | string[] | undefined
+  crawlDelay?: number | undefined
 }
 
 describe('robots', () => {
@@ -17,8 +17,8 @@ describe('robots', () => {
     expect(config.sitemap).toBe('https://contextmemo.com/sitemap.xml')
 
     // Check for the default rules
-    const rules = config.rules as RobotsRule[]
-    const defaultRules = rules.find((rule) => rule.userAgent === '*')
+    const rules = Array.isArray(config.rules) ? config.rules : [config.rules]
+    const defaultRules = rules.find((rule: RobotRule) => rule.userAgent === '*')
     expect(defaultRules).toBeDefined()
     expect(defaultRules?.allow).toContain('/')
     expect(defaultRules?.disallow).toEqual([
@@ -31,7 +31,7 @@ describe('robots', () => {
     ])
 
     // Check for AI-specific rules (example: GPTBot)
-    const gptBotRules = rules.find((rule) => rule.userAgent === 'GPTBot')
+    const gptBotRules = rules.find((rule: RobotRule) => rule.userAgent === 'GPTBot')
     expect(gptBotRules).toBeDefined()
     expect(gptBotRules?.allow).toEqual(['/memo/', '/llms.txt'])
 

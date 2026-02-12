@@ -54,16 +54,17 @@ export default function SignupPage() {
       return
     }
 
-    // Check for work email (not free providers)
-    const freeEmailProviders = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']
-    const emailDomain = getEmailDomain(email)
-    
-    if (freeEmailProviders.includes(emailDomain.toLowerCase())) {
-      setError('Please use your work email address to sign up')
+  // Check for work email (not free providers)
+  const freeEmailProviders = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']
+  const emailDomain = getEmailDomain(email)
+  console.log('Email:', email, 'Domain:', emailDomain, 'Free providers:', freeEmailProviders.includes(emailDomain.toLowerCase()))
+  
+  if (freeEmailProviders.includes(emailDomain.toLowerCase())) {
+    setError('Please use your work email address to sign up')
 
-      setLoading(false)
-      return
-    }
+    setLoading(false)
+    return
+  }
 
     try {
       const rateLimitResponse = await fetch('/api/auth/rate-limit', {
@@ -115,7 +116,8 @@ export default function SignupPage() {
       // Tenant record will be created in auth callback after email verification
       // (RLS requires authenticated user, which only happens after confirmation)
       setEmailSent(true)
-    } catch {
+    } catch (error) {
+      console.error('Signup error:', error)
       setError('An unexpected error occurred')
 
     } finally {

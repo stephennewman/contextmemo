@@ -1,0 +1,988 @@
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 17 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/unit/supabase-clients.test.ts > supabase/middleware.ts > basic functionality > should create a server client with cookies
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/supabase-clients.test.ts:328:5
+    326|
+    327|   describe('basic functionality', () => {
+    328|     it('should create a server client with cookies', async () => {
+       |     ^
+    329|       const { updateSession } = await import('@/lib/supabase/middleware')
+    330|       const request = createMockRequest({ pathname: '/public' })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/17]⎯
+
+ FAIL  test/unit/app/sitemap.test.ts > sitemap > should throw error if SUPABASE_SERVICE_ROLE_KEY is not set
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/sitemap.test.ts:197:3
+    195|   })
+    196|
+    197|   it('should throw error if SUPABASE_SERVICE_ROLE_KEY is not set', async () => {
+       |   ^
+    198|     vi.restoreAllMocks(); // Restore all mocks to unmock service
+    199|     vi.doUnmock('@/lib/supabase/service'); // Ensure the real module is loaded
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/17]⎯
+
+ FAIL  test/unit/app/(auth)/login/page.test.tsx > LoginPage > handles email and password input changes
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/login/page.test.tsx:64:3
+     62|   });
+     63|
+     64|   it('handles email and password input changes', async () => {
+       |   ^
+     65|     render(<LoginPage />);
+     66|     const user = userEvent.setup();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/17]⎯
+
+ FAIL  test/unit/app/(auth)/login/page.test.tsx > LoginPage > shows loading state on form submission
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/login/page.test.tsx:78:3
+     76|   });
+     77|
+     78|   it('shows loading state on form submission', async () => {
+       |   ^
+     79|     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+     80|     // Mock successful login for the Supabase call
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/17]⎯
+
+ FAIL  test/unit/app/(auth)/login/page.test.tsx > LoginPage > shows rate limit error
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/login/page.test.tsx:99:3
+     97|   });
+     98|
+     99|   it('shows rate limit error', async () => {
+       |   ^
+    100|     mockFetch.mockResolvedValueOnce({ ok: false, status: 429 });
+    101|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/17]⎯
+
+ FAIL  test/unit/app/(auth)/login/page.test.tsx > LoginPage > shows Supabase login error
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/login/page.test.tsx:120:3
+    118|   });
+    119|
+    120|   it('shows Supabase login error', async () => {
+       |   ^
+    121|     mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+    122|     mockSignInWithPassword.mockResolvedValueOnce({ error: { message: 'Invalid credentials' } });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/17]⎯
+
+ FAIL  test/unit/app/(auth)/login/page.test.tsx > LoginPage > redirects to dashboard on successful login
+AssertionError: expected "spy" to be called with arguments: [ '/dashboard' ]
+
+Number of calls: 0
+
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body>
+    <div>
+      <div
+        class="border-[3px] border-[#0F172A] bg-white"
+      >
+        <div
+          class="p-6 border-b-[3px] border-[#0F172A]"
+        >
+          <h1
+            class="text-2xl font-bold text-[#0F172A]"
+          >
+            WELCOME BACK
+          </h1>
+          <p
+            class="text-zinc-500 font-medium mt-1"
+          >
+            Sign in to your Context Memo account
+          </p>
+        </div>
+        <form>
+          <div
+            class="p-6 space-y-5"
+          >
+            <div
+              class="p-4 bg-red-50 border-[3px] border-red-500 text-red-700 font-medium"
+            >
+              Invalid credentials
+            </div>
+            <div
+              class="space-y-2"
+            >
+              <label
+                class="text-xs font-bold tracking-widest text-zinc-500"
+                for="email"
+              >
+                EMAIL
+              </label>
+              <input
+                autocomplete="email"
+                class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                id="email"
+                placeholder="you@company.com"
+                required=""
+                type="email"
+                value="test@example.com"
+              />
+            </div>
+            <div
+              class="space-y-2"
+            >
+              <label
+                class="text-xs font-bold tracking-widest text-zinc-500"
+                for="password"
+              >
+                PASSWORD
+              </label>
+              <input
+                autocomplete="current-password"
+                class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                id="password"
+                required=""
+                type="password"
+                value="password123"
+              />
+            </div>
+          </div>
+          <div
+            class="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]"
+          >
+            <button
+              class="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              type="submit"
+            >
+              SIGN IN
+            </button>
+            <p
+              class="text-sm text-zinc-500 text-center mt-4 font-medium"
+            >
+              Don't have an account?
+
+              <a
+                class="text-[#0EA5E9] hover:underline font-bold"
+                href="/signup"
+              >
+                SIGN UP
+              </a>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
+ ❯ test/unit/app/(auth)/login/page.test.tsx:159:24
+    157|
+    158|     await waitFor(() => {
+    159|       expect(mockPush).toHaveBeenCalledWith('/dashboard');
+       |                        ^
+    160|     });
+    161|     expect(mockRefresh).toHaveBeenCalledTimes(1);
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/17]⎯
+
+ FAIL  test/unit/app/(auth)/login/page.test.tsx > LoginPage > shows unexpected error if Supabase update fails
+TestingLibraryElementError: Unable to find an element with the text: An unexpected error occurred. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="border-[3px] border-[#0F172A] bg-white"
+    >
+      <div
+        class="p-6 border-b-[3px] border-[#0F172A]"
+      >
+        <h1
+          class="text-2xl font-bold text-[#0F172A]"
+        >
+          WELCOME BACK
+        </h1>
+        <p
+          class="text-zinc-500 font-medium mt-1"
+        >
+          Sign in to your Context Memo account
+        </p>
+      </div>
+      <form>
+        <div
+          class="p-6 space-y-5"
+        >
+          <div
+            class="space-y-2"
+          >
+            <label
+              class="text-xs font-bold tracking-widest text-zinc-500"
+              for="email"
+            >
+              EMAIL
+            </label>
+            <input
+              autocomplete="email"
+              class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              id="email"
+              placeholder="you@company.com"
+              required=""
+              type="email"
+              value="test@example.com"
+            />
+          </div>
+          <div
+            class="space-y-2"
+          >
+            <label
+              class="text-xs font-bold tracking-widest text-zinc-500"
+              for="password"
+            >
+              PASSWORD
+            </label>
+            <input
+              autocomplete="current-password"
+              class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              id="password"
+              required=""
+              type="password"
+              value="password123"
+            />
+          </div>
+        </div>
+        <div
+          class="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]"
+        >
+          <button
+            class="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled=""
+            type="submit"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-loader-circle mr-2 h-4 w-4 animate-spin"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 12a9 9 0 1 1-6.219-8.56"
+              />
+            </svg>
+            SIGN IN
+          </button>
+          <p
+            class="text-sm text-zinc-500 text-center mt-4 font-medium"
+          >
+            Don't have an account?
+
+            <a
+              class="text-[#0EA5E9] hover:underline font-bold"
+              href="/signup"
+            >
+              SIGN UP
+            </a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="border-[3px] border-[#0F172A] bg-white"
+    >
+      <div
+        class="p-6 border-b-[3px] border-[#0F172A]"
+      >
+        <h1
+          class="text-2xl font-bold text-[#0F172A]"
+        >
+          WELCOME BACK
+        </h1>
+        <p
+          class="text-zinc-500 font-medium mt-1"
+        >
+          Sign in to your Context Memo account
+        </p>
+      </div>
+      <form>
+        <div
+          class="p-6 space-y-5"
+        >
+          <div
+            class="space-y-2"
+          >
+            <label
+              class="text-xs font-bold tracking-widest text-zinc-500"
+              for="email"
+            >
+              EMAIL
+            </label>
+            <input
+              autocomplete="email"
+              class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              id="email"
+              placeholder="you@company.com"
+              required=""
+              type="email"
+              value="test@example.com"
+            />
+          </div>
+          <div
+            class="space-y-2"
+          >
+            <label
+              class="text-xs font-bold tracking-widest text-zinc-500"
+              for="password"
+            >
+              PASSWORD
+            </label>
+            <input
+              autocomplete="current-password"
+              class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+              id="password"
+              required=""
+              type="password"
+              value="password123"
+            />
+          </div>
+        </div>
+        <div
+          class="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]"
+        >
+          <button
+            class="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled=""
+            type="submit"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-loader-circle mr-2 h-4 w-4 animate-spin"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 12a9 9 0 1 1-6.219-8.56"
+              />
+            </svg>
+            SIGN IN
+          </button>
+          <p
+            class="text-sm text-zinc-500 text-center mt-4 font-medium"
+          >
+            Don't have an account?
+
+            <a
+              class="text-[#0EA5E9] hover:underline font-bold"
+              href="/signup"
+            >
+              SIGN UP
+            </a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ test/unit/app/(auth)/login/page.test.tsx:201:18
+    199|     fireEvent.click(signInButton);
+    200|
+    201|     await screen.findByText('An unexpected error occurred'); // Explicitly wait for the error message
+       |                  ^
+    202|     expect(signInButton).not.toBeDisabled();
+    203|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > handles input changes
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:45:3
+     43|   })
+     44|
+     45|   it('handles input changes', async () => {
+       |   ^
+     46|     render(<SignupPage />)
+     47|     const user = userEvent.setup()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows password policy error
+TestingLibraryElementError: Unable to find an element by: [data-testid="error-message"]
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="space-y-4"
+    >
+      <div
+        class="p-4 bg-[#10B981] text-white"
+        style="border-left: 8px solid rgb(15, 23, 42);"
+      >
+        <div
+          class="flex items-center justify-between gap-4"
+        >
+          <div
+            class="flex items-center gap-3"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center bg-white"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-sparkles h-5 w-5 text-[#10B981]"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+                />
+                <path
+                  d="M20 2v4"
+                />
+                <path
+                  d="M22 4h-4"
+                />
+                <circle
+                  cx="4"
+                  cy="20"
+                  r="2"
+                />
+              </svg>
+            </div>
+            <div>
+              <div
+                class="font-bold"
+              >
+                LOCK IN FREE FOREVER
+              </div>
+              <div
+                class="text-sm text-white/80 font-medium"
+              >
+                You're user #
+                8
+                 ·
+                4
+                 spots left at this price
+              </div>
+            </div>
+          </div>
+          <div
+            class="hidden sm:flex items-center gap-1.5 text-xs font-bold text-white/80"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-users h-3.5 w-3.5"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+              />
+              <path
+                d="M16 3.128a4 4 0 0 1 0 7.744"
+              />
+              <path
+                d="M22 21v-2a4 4 0 0 0-3-3.87"
+              />
+              <circle
+                cx="9"
+                cy="7"
+                r="4"
+              />
+            </svg>
+            <span>
+              7
+               signed up
+            </span>
+          </div>
+        </div>
+      </div>
+      <div
+        class="border-[3px] border-[#0F172A] bg-white"
+      >
+        <div
+          class="p-6 border-b-[3px] border-[#0F172A]"
+        >
+          <h1
+            class="text-2xl font-bold text-[#0F172A]"
+          >
+            CREATE YOUR ACCOUNT
+          </h1>
+          <p
+            class="text-zinc-500 font-medium mt-1"
+          >
+            Get started with Context Memo using your work email
+          </p>
+        </div>
+        <form>
+          <div
+            class="p-6 space-y-5"
+          >
+            <div
+              class="space-y-2"
+            >
+              <label
+                class="text-xs font-bold tracking-widest text-zinc-500"
+                for="name"
+              >
+                FULL NAME
+              </label>
+              <input
+                autocomplete="name"
+                class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                id="name"
+                placeholder="Jane Smith"
+                required=""
+                type="text"
+                value=""
+              />
+            </div>
+            <div
+              class="space-y-2"
+            >
+              <label
+                class="text-xs font-bold tracking-widest text-zinc-500"
+                for="email"
+              >
+                WORK EMAIL
+              </label>
+              <input
+                autocomplete="email"
+                class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                id="email"
+                placeholder="you@company.com"
+                required=""
+                type="email"
+                value="janeP@acsosmwpoarndy1.2c3o!m"
+              />
+              <p
+                class="text-xs text-zinc-500 font-medium"
+              >
+                Use your work email to verify brand ownership
+              </p>
+            </div>
+            <div
+              class="space-y-2"
+            >
+              <label
+                class="text-xs font-bold tracking-widest text-zinc-500"
+                for="password"
+              >
+                PASSWORD
+              </label>
+              <input
+                autocomplete="new-password"
+                class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                id="password"
+                minlength="8"
+                placeholder="Minimum 8 characters"
+                required=""
+                type="password"
+                value="short"
+              />
+            </div>
+          </div>
+          <div
+            class="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]"
+          >
+            <button
+              class="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              type="submit"
+            >
+              CREATE ACCOUNT
+            </button>
+            <p
+              class="text-sm text-zinc-500 text-center mt-4 font-medium"
+            >
+              Already have an account?
+
+              <a
+                class="text-[#0EA5E9] hover:underline font-bold"
+                href="/login"
+              >
+                SIGN IN
+              </a>
+            </p>
+            <p
+              class="text-xs text-zinc-400 text-center mt-2"
+            >
+              By signing up, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body>
+    <div>
+      <div
+        class="space-y-4"
+      >
+        <div
+          class="p-4 bg-[#10B981] text-white"
+          style="border-left: 8px solid rgb(15, 23, 42);"
+        >
+          <div
+            class="flex items-center justify-between gap-4"
+          >
+            <div
+              class="flex items-center gap-3"
+            >
+              <div
+                class="flex h-10 w-10 items-center justify-center bg-white"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-sparkles h-5 w-5 text-[#10B981]"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+                  />
+                  <path
+                    d="M20 2v4"
+                  />
+                  <path
+                    d="M22 4h-4"
+                  />
+                  <circle
+                    cx="4"
+                    cy="20"
+                    r="2"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div
+                  class="font-bold"
+                >
+                  LOCK IN FREE FOREVER
+                </div>
+                <div
+                  class="text-sm text-white/80 font-medium"
+                >
+                  You're user #
+                  8
+                   ·
+                  4
+                   spots left at this price
+                </div>
+              </div>
+            </div>
+            <div
+              class="hidden sm:flex items-center gap-1.5 text-xs font-bold text-white/80"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-users h-3.5 w-3.5"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                />
+                <path
+                  d="M16 3.128a4 4 0 0 1 0 7.744"
+                />
+                <path
+                  d="M22 21v-2a4 4 0 0 0-3-3.87"
+                />
+                <circle
+                  cx="9"
+                  cy="7"
+                  r="4"
+                />
+              </svg>
+              <span>
+                7
+                 signed up
+              </span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="border-[3px] border-[#0F172A] bg-white"
+        >
+          <div
+            class="p-6 border-b-[3px] border-[#0F172A]"
+          >
+            <h1
+              class="text-2xl font-bold text-[#0F172A]"
+            >
+              CREATE YOUR ACCOUNT
+            </h1>
+            <p
+              class="text-zinc-500 font-medium mt-1"
+            >
+              Get started with Context Memo using your work email
+            </p>
+          </div>
+          <form>
+            <div
+              class="p-6 space-y-5"
+            >
+              <div
+                class="space-y-2"
+              >
+                <label
+                  class="text-xs font-bold tracking-widest text-zinc-500"
+                  for="name"
+                >
+                  FULL NAME
+                </label>
+                <input
+                  autocomplete="name"
+                  class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                  id="name"
+                  placeholder="Jane Smith"
+                  required=""
+                  type="text"
+                  value=""
+                />
+              </div>
+              <div
+                class="space-y-2"
+              >
+                <label
+                  class="text-xs font-bold tracking-widest text-zinc-500"
+                  for="email"
+                >
+                  WORK EMAIL
+                </label>
+                <input
+                  autocomplete="email"
+                  class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                  id="email"
+                  placeholder="you@company.com"
+                  required=""
+                  type="email"
+                  value="janeP@acsosmwpoarndy1.2c3o!m"
+                />
+                <p
+                  class="text-xs text-zinc-500 font-medium"
+                >
+                  Use your work email to verify brand ownership
+                </p>
+              </div>
+              <div
+                class="space-y-2"
+              >
+                <label
+                  class="text-xs font-bold tracking-widest text-zinc-500"
+                  for="password"
+                >
+                  PASSWORD
+                </label>
+                <input
+                  autocomplete="new-password"
+                  class="w-full px-4 py-3 border-[3px] border-[#0F172A] bg-white text-[#0F172A] font-medium placeholder:text-zinc-400 focus:outline-none focus:border-[#0EA5E9]"
+                  id="password"
+                  minlength="8"
+                  placeholder="Minimum 8 characters"
+                  required=""
+                  type="password"
+                  value="short"
+                />
+              </div>
+            </div>
+            <div
+              class="p-6 border-t-[3px] border-[#0F172A] bg-[#F8FAFC]"
+            >
+              <button
+                class="w-full px-6 py-3 bg-[#0EA5E9] text-white font-bold text-sm tracking-wide hover:bg-[#0284C7] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                type="submit"
+              >
+                CREATE ACCOUNT
+              </button>
+              <p
+                class="text-sm text-zinc-500 text-center mt-4 font-medium"
+              >
+                Already have an account?
+
+                <a
+                  class="text-[#0EA5E9] hover:underline font-bold"
+                  href="/login"
+                >
+                  SIGN IN
+                </a>
+              </p>
+              <p
+                class="text-xs text-zinc-400 text-center mt-2"
+              >
+                By signing up, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+ ❯ Proxy.waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:68:11
+     66|     await user.type(passwordInput, 'short') // Invalid password
+     67|     await user.click(createAccountButton)
+     68|     await waitFor(() => {
+       |           ^
+     69|       expect(screen.getByTestId('error-message')).toBeInTheDocument()
+     70|     })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows free email provider error
+ReferenceError: getEmailDomain is not defined
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:76:15
+     74|
+     75|   it('shows free email provider error', async () => {
+     76|     vi.mocked(getEmailDomain).mockReturnValue('gmail.com') // Mock only for this test
+       |               ^
+     77|     render(<SignupPage />)
+     78|     const user = userEvent.setup()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows rate limit error
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:92:3
+     90|   })
+     91|
+     92|   it('shows rate limit error', async () => {
+       |   ^
+     93|     global.fetch = vi.fn(() => Promise.resolve({
+     94|       ok: false,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows Supabase signup error
+ReferenceError: signUp is not defined
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:120:5
+    118|
+    119|   it('shows Supabase signup error', async () => {
+    120|     signUp.mockResolvedValueOnce({ data: { user: null }, error: { message: 'Email already registered' } }) // Mock only for this test
+       |     ^
+    121|     render(<SignupPage />)
+    122|     const user = userEvent.setup()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows "Failed to create account" if no user in authData
+ReferenceError: signUp is not defined
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:149:5
+    147|
+    148|   it('shows "Failed to create account" if no user in authData', async () => {
+    149|     signUp.mockResolvedValueOnce({ data: { user: null }, error: null }) // Mock only for this test
+       |     ^
+    150|     render(<SignupPage />)
+    151|     const user = userEvent.setup()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows unexpected error if fetch fails
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:164:3
+    162|   })
+    163|
+    164|   it('shows unexpected error if fetch fails', async () => {
+       |   ^
+    165|     global.fetch = vi.fn(() => Promise.reject(new Error('Network error'))) // Mock only for this test
+    166|     render(<SignupPage />)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > shows email sent confirmation on successful signup
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:180:3
+    178|   })
+    179|
+    180|   it('shows email sent confirmation on successful signup', async () => {
+       |   ^
+    181|     render(<SignupPage />)
+    182|     const user = userEvent.setup()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/17]⎯
+
+ FAIL  test/unit/app/(auth)/signup/page.test.tsx > SignupPage > allows retrying email confirmation
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ test/unit/app/(auth)/signup/page.test.tsx:200:3
+    198|   })
+    199|
+    200|   it('allows retrying email confirmation', async () => {
+       |   ^
+    201|     render(<SignupPage />)
+    202|     const user = userEvent.setup()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/17]⎯
+
+
+ Test Files  4 failed | 29 passed (33)
+      Tests  17 failed | 427 passed (444)
+   Start at  16:28:33
+   Duration  187.56s (transform 82.23s, setup 142.02s, collect 147.59s, tests 121.85s, environment 255.61s, prepare 80.05s)
