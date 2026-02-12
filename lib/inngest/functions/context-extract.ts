@@ -502,10 +502,18 @@ Respond ONLY with valid JSON array, no explanations.`,
       }
     })
 
-    // Step 5: Trigger query generation directly (skip competitor discovery during onboarding)
+    // Step 5: Trigger query generation directly (skip broad competitor discovery during onboarding)
     // Competitors/entities will be discovered later from scan results
     await step.sendEvent('trigger-query-generation', {
       name: 'query/generate',
+      data: { brandId },
+    })
+
+    // Step 5b: Trigger deep competitor research in parallel (non-blocking)
+    // This runs Sonar web search + GPT classification to find true product competitors
+    // while queries and scans proceed independently
+    await step.sendEvent('trigger-competitor-research', {
+      name: 'competitor/research',
       data: { brandId },
     })
 

@@ -473,13 +473,23 @@ export const dailyBrandUpdate = inngest.createFunction(
       return data
     })
 
-    // If we need new competitors, trigger discovery (which chains to queries → scan)
+    // If we need new competitors, trigger both discovery pipelines
     if (discoverCompetitors) {
       await step.sendEvent('discover-competitors', {
         name: 'competitor/discover',
         data: { brandId },
       })
-      // This chains to query/generate → scan/run
+      // Also run deep competitor research (Sonar + GPT-4o-mini)
+      await step.sendEvent('research-competitors', {
+        name: 'competitor/research',
+        data: { brandId },
+      })
+      // Revalidate existing entities (deactivate non-competitors)
+      await step.sendEvent('revalidate-entities', {
+        name: 'competitor/revalidate',
+        data: { brandId },
+      })
+      // discover chains to query/generate → scan/run
     } else if (generateQueries) {
       // Just generate new queries (which chains to scan)
       await step.sendEvent('generate-queries', {

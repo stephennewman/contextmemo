@@ -161,6 +161,12 @@ export type InngestEvents = {
       brandId: string
     }
   }
+  // Entity revalidation - pressure-test existing entity classifications
+  'competitor/revalidate': {
+    data: {
+      brandId: string
+    }
+  }
   // Competitor enrichment - deep profile extraction
   'competitor/enrich': {
     data: {

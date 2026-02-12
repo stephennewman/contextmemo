@@ -163,6 +163,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Deep competitor research started (focused on true product competitors)' 
         })
 
+      case 'revalidate_entities':
+        // Re-classify all active entities - deactivates non-competitors, fixes entity types
+        // Uses GPT-4o-mini to pressure-test each entity against brand context
+        await inngest.send({
+          name: 'competitor/revalidate',
+          data: { brandId },
+        })
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Entity revalidation started — classifying all entities against brand context' 
+        })
+
       case 'generate_queries':
         await inngest.send({
           name: 'query/generate',

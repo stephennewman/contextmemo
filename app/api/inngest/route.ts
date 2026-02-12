@@ -50,6 +50,7 @@ import { dailyDigest } from '@/lib/inngest/functions/daily-digest'
 import { topicUniverseGenerate, topicUniverseRefresh } from '@/lib/inngest/functions/topic-universe'
 import { competitorEnrich, competitorEnrichBatch } from '@/lib/inngest/functions/competitor-enrich'
 import { competitorResearch } from '@/lib/inngest/functions/competitor-research'
+import { competitorRevalidate } from '@/lib/inngest/functions/competitor-revalidate'
 import { memoVerifyContent } from '@/lib/inngest/functions/memo-verify'
 import { citationRespond } from '@/lib/inngest/functions/citation-respond'
 import { deployAnalyze } from '@/lib/inngest/functions/deploy-analyze'
@@ -134,6 +135,7 @@ export const { GET, POST, PUT } = serve({
     
     // Deep competitor research - focused product competitor identification
     competitorResearch,      // Find true product competitors using gpt-4o-mini (multi-angle research)
+    competitorRevalidate,    // Pressure-test existing entity classifications
     
     // Topic Universe - Content Coverage Audit
     topicUniverseGenerate,   // Generate full topic universe for a brand

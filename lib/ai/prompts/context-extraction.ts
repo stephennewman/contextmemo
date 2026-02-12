@@ -566,6 +566,86 @@ competition_type:
 
 Respond ONLY with valid JSON array, no explanations.`
 
+// Entity revalidation prompt - pressure-tests whether existing entities are TRUE competitors
+// Used to clean up noisy entity lists after initial discovery
+export const ENTITY_REVALIDATION_PROMPT = `You are an entity classification expert. Your job is to audit a list of entities tracked as "competitors" for a specific company and determine which ones are ACTUALLY relevant.
+
+## THE COMPANY
+- Company Name: {{company_name}}
+- Website Domain: {{domain}}
+- Description: {{description}}
+- Products/Services: {{products}}
+- Target Markets: {{markets}}
+- Key Features: {{features}}
+
+## THE CORE QUESTION FOR EACH ENTITY
+"Would a buyer evaluating {{company_name}} also evaluate this entity as an alternative solution?"
+
+If YES → it's a true product_competitor.
+If NO → classify it correctly or mark it as irrelevant.
+
+## ENTITIES TO EVALUATE
+{{entities_list}}
+
+## CLASSIFICATION RULES
+
+### product_competitor (keep active)
+- Sells a product/service that solves the SAME core problem
+- A buyer would realistically compare them to {{company_name}}
+- Would appear in the same G2/Capterra/TrustRadius category
+- Examples for an OKR tool: other OKR software, goal-setting platforms, performance management tools with OKR features
+
+### technology (deactivate)
+- Tech companies that are NOT in the same market
+- Tools the company might USE, but not compete with
+- Cloud providers, dev tools, APIs, etc. that serve a completely different buyer
+- Examples: AWS, Docker, Postman, Stripe
+
+### consultant (deactivate)
+- Consulting firms, system integrators, professional services
+- Examples: Accenture, Deloitte, Infosys, TCS, Wipro
+
+### publisher (deactivate)
+- Media, blogs, news outlets, content sites
+- Examples: TechCrunch, Forbes, PCMag
+
+### marketplace (deactivate)
+- Review sites, directories, comparison platforms
+- Examples: G2, Capterra, TrustRadius
+
+### infrastructure (deactivate)
+- Cloud platforms, hosting, DevOps tools
+- Examples: AWS, Azure, Google Cloud Platform
+
+### irrelevant (deactivate)
+- No meaningful connection to the company's market
+- Misclassified during initial discovery
+- Generic terms that aren't real products
+
+## CRITICAL: BE STRICT
+- A company writing ABOUT a topic does NOT make them a competitor IN that space
+- Example: Postman writing about APIs doesn't make them an API analytics competitor
+- Example: Slack having OKR integrations doesn't make them an OKR competitor
+- Large platforms (Salesforce, Microsoft) are ONLY competitors if they have a SPECIFIC product that directly competes
+- "Adjacent" or "could theoretically compete" is NOT enough — they must ACTUALLY be in the market today
+
+## OUTPUT FORMAT
+Respond with a JSON array, one entry per entity:
+[
+  {
+    "name": "Entity Name",
+    "recommended_type": "product_competitor" | "technology" | "consultant" | "publisher" | "marketplace" | "infrastructure" | "irrelevant",
+    "should_be_active": true | false,
+    "confidence": "high" | "medium",
+    "reasoning": "One sentence explaining your classification"
+  }
+]
+
+Only set should_be_active=true for genuine product_competitor entities.
+All other types should have should_be_active=false.
+
+Respond ONLY with valid JSON array, no explanations.`
+
 // Structured funnel-based query generation: exactly 30 prompts (10 TOF / 10 MOF / 10 BOF)
 export const FUNNEL_QUERY_GENERATION_PROMPT = `You are generating search prompts that potential BUYERS would ask AI assistants (ChatGPT, Claude, Perplexity) at different stages of their buying journey.
 

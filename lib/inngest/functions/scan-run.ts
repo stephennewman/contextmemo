@@ -1044,16 +1044,26 @@ export const scanRun = inngest.createFunction(
 
 Brand description: ${(brandContext.description as string) || 'Not available'}
 Brand products: ${(brandContext.products as string[])?.join(', ') || 'Not available'}
+Brand markets: ${(brandContext.markets as string[])?.join(', ') || 'Not available'}
 
 These domains were cited when AI models answered buyer questions about this brand's industry. Classify each one:
 
 ${entityList}
 
+CRITICAL CLASSIFICATION RULE for "product_competitor":
+A product_competitor MUST sell a product/service that a buyer would evaluate ALONGSIDE ${brand.name}.
+They must be in the SAME product category and solve the SAME core problem for the SAME buyer.
+Being cited in the same search results does NOT make them a competitor.
+Writing about the same topic does NOT make them a competitor.
+Being a large tech company does NOT make them a competitor unless they have a SPECIFIC competing product.
+
 For each entity, return a JSON array with objects containing:
 - "domain": the domain
 - "name": the proper company/site name (fix capitalization, e.g., "hubspot.com" → "HubSpot")
-- "entity_type": one of: "product_competitor", "publisher", "analyst", "marketplace", "association", "news_outlet", "research_institution", "other"
+- "entity_type": one of: "product_competitor", "publisher", "analyst", "marketplace", "association", "news_outlet", "research_institution", "technology", "consultant", "other"
 - "reasoning": one sentence why
+
+When in doubt, classify as "other" rather than "product_competitor". Be strict.
 
 Only return the JSON array, nothing else.`
 
