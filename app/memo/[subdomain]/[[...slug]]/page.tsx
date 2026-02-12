@@ -20,7 +20,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Helper to detect if accessed via subdomain
+// Helper to detect if accessed via subdomain or custom domain
 async function isSubdomainAccess(subdomain: string): Promise<boolean> {
   const headersList = await headers()
   const host = headersList.get('x-forwarded-host') || headersList.get('host') || ''
@@ -33,6 +33,18 @@ async function isSubdomainAccess(subdomain: string): Promise<boolean> {
   // Local dev: checkit.localhost:3000
   if (hostParts.length === 2 && hostParts[0] === subdomain && hostParts[1].startsWith('localhost')) {
     return true
+  }
+  // Custom domain: check if host matches brand's custom_domain (e.g., ai.krezzo.com)
+  if (!host.includes('contextmemo.com') && !host.includes('localhost')) {
+    const { data: brand } = await supabase
+      .from('brands')
+      .select('subdomain')
+      .eq('custom_domain', host)
+      .eq('domain_verified', true)
+      .single()
+    if (brand?.subdomain === subdomain) {
+      return true
+    }
   }
   return false
 }

@@ -110,6 +110,24 @@ export async function updateSession(request: NextRequest) {
   // Do NOT add a redirect here — it conflicts with Vercel's domain-level redirect
   // and causes an infinite redirect loop.
 
+  // Custom domain check: if hostname is NOT contextmemo.com and NOT localhost,
+  // look it up as a brand's custom_domain (e.g., ai.krezzo.com → krezzo brand)
+  if (!hostname.includes('contextmemo.com') && !hostname.includes('localhost')) {
+    const { data: customBrand } = await supabase
+      .from('brands')
+      .select('subdomain')
+      .eq('custom_domain', hostname)
+      .eq('domain_verified', true)
+      .single()
+
+    if (customBrand) {
+      const url = request.nextUrl.clone()
+      const originalPath = request.nextUrl.pathname === '/' ? '' : request.nextUrl.pathname
+      url.pathname = `/memo/${customBrand.subdomain}${originalPath}`
+      return NextResponse.rewrite(url)
+    }
+  }
+
   // Determine if this is a subdomain request
   // Valid subdomain patterns: checkit.contextmemo.com (3+ parts) or checkit.localhost:3000 (2+ parts for local)
   let subdomain: string | null = null

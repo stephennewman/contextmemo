@@ -393,6 +393,13 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Add citation columns to admin brands table + batch citation responses** (78851e2)
+- Added Cit. Memos, Comp. URLs, and Covered columns to /admin brands table
+- Updated `get_admin_brand_performance` RPC with citation_memos, unique_cited_urls, covered_urls
+- Batch-triggered 13 citation response memos for uncovered competitor URLs (Context Memo brand)
+- Added 18 citation-mining queries designed to surface more competitor URLs
+- Context Memo brand: 11 → 24 citation response memos, 61 → 79 active queries
+
 **Landing page: remove redundant sections, tighten page** (c6173f6)
 - Removed Platform Features 8-cell grid (redundant with Three Pillars)
 - Removed Revenue Alignment Marketing/Sales/Product section (reframes existing info without adding value)
