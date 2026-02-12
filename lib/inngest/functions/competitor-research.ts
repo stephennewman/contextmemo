@@ -5,6 +5,7 @@ import { openai } from '@ai-sdk/openai'
 import { COMPETITOR_RESEARCH_PROMPT } from '@/lib/ai/prompts/context-extraction'
 import { BrandContext } from '@/lib/supabase/types'
 import { logSingleUsage } from '@/lib/utils/usage-logger'
+import { queryPerplexity } from '@/lib/utils/perplexity'
 import { 
   isBlockedCompetitorName, 
   validateCompetitor,
@@ -20,6 +21,7 @@ interface ResearchedCompetitor {
   competition_type?: 'direct' | 'partial'
   research_angle?: string
   reasoning?: string
+  source_urls?: string[]  // URLs where this competitor was found (from Sonar)
 }
 
 // Simple domain validation
@@ -31,19 +33,60 @@ function isValidDomain(domain: string | null): boolean {
 }
 
 /**
- * Competitor Research - Deep, focused competitor identification
+ * Build targeted search queries for Sonar based on brand context.
+ * Returns 3-5 queries designed to surface real competitors from live web data.
+ */
+function buildSonarQueries(brandName: string, context: BrandContext | null): string[] {
+  const queries: string[] = []
+  
+  // Always include direct competitor/alternative searches
+  queries.push(`${brandName} competitors and alternatives 2025 2026`)
+  queries.push(`${brandName} vs comparison`)
+  
+  // Category-based search if we know the products/market
+  const products = context?.products || []
+  const markets = context?.markets || []
+  const description = context?.description || ''
+  
+  if (products.length > 0) {
+    // Use the first product to find category competitors
+    const productTerm = typeof products[0] === 'string' ? products[0] : (products[0] as { name?: string })?.name || ''
+    if (productTerm) {
+      queries.push(`best ${productTerm} software tools comparison`)
+    }
+  } else if (description) {
+    // Infer category from description
+    const shortDesc = description.slice(0, 100).replace(/[^a-zA-Z0-9 ]/g, '')
+    queries.push(`${shortDesc} software alternatives comparison`)
+  }
+  
+  // Market-specific search
+  if (markets.length > 0) {
+    const market = typeof markets[0] === 'string' ? markets[0] : ''
+    if (market) {
+      queries.push(`${market} ${brandName} alternatives`)
+    }
+  }
+  
+  // G2/Capterra category search
+  queries.push(`${brandName} G2 Capterra reviews category competitors`)
+  
+  return queries.slice(0, 5) // Cap at 5 queries
+}
+
+/**
+ * Competitor Research - Two-stage pipeline:
  * 
- * Unlike the broad "competitor/discover" which finds mixed entity types,
- * this function ONLY finds true product competitors using multiple research angles.
+ * Stage 1 (Sonar): Real-time web search for competitors with source URLs
+ *   - Searches for "[brand] competitors", "[brand] vs", category comparisons
+ *   - Returns competitor names + the actual URLs where they were found
  * 
- * Uses gpt-4o-mini for cost efficiency - competitor identification doesn't need
- * the full power of gpt-4o since it's leveraging training knowledge, not analyzing
- * complex documents.
+ * Stage 2 (GPT-4o-mini): Validate, classify, and enrich Sonar findings
+ *   - Filters out non-competitors (tools, publishers, etc.)
+ *   - Adds competition_type, confidence, reasoning
+ *   - Supplements with training knowledge if Sonar missed any
  * 
- * Can be run:
- * - Retroactively on brands with poor competitor data
- * - After context extraction improves (e.g., homepage was initially blank)
- * - On a schedule to discover new market entrants
+ * Total cost per brand: ~1-2 cents
  */
 export const competitorResearch = inngest.createFunction(
   { 
@@ -94,8 +137,130 @@ export const competitorResearch = inngest.createFunction(
       (context?.homepage_content ? context.homepage_content.slice(0, 3000) : 
         `Company: ${brand.name}, Domain: ${brand.domain || 'unknown'}`)
 
-    // Step 2: Run focused competitor research with gpt-4o-mini
-    const researchResults = await step.run('research-competitors', async () => {
+    // ================================================================
+    // STAGE 1: Sonar web search - find competitors from live web data
+    // ================================================================
+    const sonarFindings = await step.run('sonar-web-search', async () => {
+      const searchQueries = buildSonarQueries(brand.name, context)
+      
+      const allMentions = new Map<string, { 
+        count: number
+        sourceUrls: Set<string>
+        snippets: string[]
+      }>()
+      
+      let totalInputTokens = 0
+      let totalOutputTokens = 0
+      
+      for (const query of searchQueries) {
+        try {
+          const result = await queryPerplexity(query, 
+            `You are researching competitors for ${brand.name} (${brand.domain || 'unknown domain'}). ` +
+            `List every company, product, or tool mentioned as a competitor, alternative, or comparable solution. ` +
+            `For each one, provide the company name and domain if known. ` +
+            `Format: "- CompanyName (domain.com): brief description"`,
+            {
+              model: 'sonar',
+              searchContextSize: 'low',
+              temperature: 0.2,
+            }
+          )
+          
+          // Track usage
+          if (result.usage) {
+            totalInputTokens += result.usage.promptTokens
+            totalOutputTokens += result.usage.completionTokens
+          }
+          
+          // Extract company names from the response text
+          // Look for patterns like "- CompanyName (domain.com)" or "**CompanyName**" or "CompanyName -"
+          const lines = result.text.split('\n')
+          for (const line of lines) {
+            // Pattern: "- Name (domain.com): description" or "- **Name**: description"
+            const listMatch = line.match(/^[-•*]\s+\*?\*?([A-Z][A-Za-z0-9. ]+?)(?:\*\*)?(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?\s*[:\-–—]/)
+            if (listMatch) {
+              const name = listMatch[1].trim().replace(/\*+/g, '')
+              const domain = listMatch[2] || null
+              
+              if (name.length >= 2 && name.length <= 50) {
+                const key = name.toLowerCase()
+                if (!allMentions.has(key)) {
+                  allMentions.set(key, { count: 0, sourceUrls: new Set(), snippets: [] })
+                }
+                const entry = allMentions.get(key)!
+                entry.count++
+                if (domain) entry.snippets.push(domain) // Store domain in snippets temporarily
+                // Add citation URLs as sources
+                for (const url of result.citations) {
+                  entry.sourceUrls.add(url)
+                }
+              }
+            }
+          }
+          
+          // Also extract from citations - if a domain appears in citations, it might be a competitor
+          for (const url of result.citations) {
+            try {
+              const urlDomain = new URL(url).hostname.replace('www.', '').toLowerCase()
+              // Skip known non-competitor domains
+              const skipDomains = ['g2.com', 'capterra.com', 'gartner.com', 'forbes.com', 'techcrunch.com',
+                'wikipedia.org', 'youtube.com', 'linkedin.com', 'twitter.com', 'reddit.com',
+                'medium.com', 'hubspot.com', 'salesforce.com', 'google.com', 'bing.com',
+                'trustradius.com', 'getapp.com', 'softwareadvice.com', 'pcmag.com',
+                brand.domain?.replace('www.', '').toLowerCase() || '']
+              if (skipDomains.some(d => urlDomain.includes(d))) continue
+              if (urlDomain.endsWith('.gov') || urlDomain.endsWith('.edu')) continue
+              
+              // Infer company name from domain
+              const baseName = urlDomain.split('.')[0]
+                .split('-')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join('')
+              
+              if (baseName.length >= 2) {
+                const key = baseName.toLowerCase()
+                if (!allMentions.has(key)) {
+                  allMentions.set(key, { count: 0, sourceUrls: new Set(), snippets: [] })
+                }
+                const entry = allMentions.get(key)!
+                entry.count++
+                entry.sourceUrls.add(url)
+                entry.snippets.push(urlDomain)
+              }
+            } catch { /* skip invalid URLs */ }
+          }
+        } catch (e) {
+          console.log(`[Research] Sonar query failed (non-critical): "${query}" -`, (e as Error).message)
+        }
+      }
+      
+      // Log Sonar usage
+      if (totalInputTokens > 0 || totalOutputTokens > 0) {
+        await logSingleUsage(
+          brand.tenant_id, brandId, 'competitor_research_sonar',
+          'perplexity-sonar', totalInputTokens, totalOutputTokens
+        )
+      }
+      
+      // Convert to array, sorted by mention count
+      const findings = Array.from(allMentions.entries())
+        .map(([key, data]) => ({
+          name: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize
+          mentionCount: data.count,
+          sourceUrls: Array.from(data.sourceUrls).slice(0, 5), // Cap at 5 URLs
+          inferredDomain: data.snippets.find(s => s.includes('.')) || null,
+        }))
+        .sort((a, b) => b.mentionCount - a.mentionCount)
+        .slice(0, 25) // Top 25 candidates for GPT to classify
+      
+      console.log(`[Research] Sonar found ${findings.length} candidate competitors for ${brand.name}`)
+      return { findings, queriesRun: searchQueries.length }
+    })
+
+    // ================================================================
+    // STAGE 2: GPT-4o-mini validation + classification + gap filling
+    // ================================================================
+    const researchResults = await step.run('classify-and-research', async () => {
       // Format existing entities list
       const existingList = existingEntities.length > 0
         ? existingEntities.map(e => `- ${e.name}${e.domain ? ` (${e.domain})` : ''} [${e.entity_type}]`).join('\n')
@@ -116,6 +281,16 @@ export const competitorResearch = inngest.createFunction(
         context?.description || 
         `the core problem that ${brand.name} solves`
 
+      // Build Sonar findings context for the prompt
+      const sonarContext = sonarFindings.findings.length > 0
+        ? '\n\n## WEB SEARCH FINDINGS (from live search - validate these)\n' +
+          'The following companies were found via web search as potential competitors. ' +
+          'Validate each one - confirm if they are TRUE product competitors, and include them in your output if so:\n' +
+          sonarFindings.findings.map(f => 
+            `- ${f.name}${f.inferredDomain ? ` (${f.inferredDomain})` : ''} — mentioned ${f.mentionCount}x`
+          ).join('\n')
+        : ''
+
       const prompt = COMPETITOR_RESEARCH_PROMPT
         .replace(/\{\{company_name\}\}/g, context?.company_name || brand.name)
         .replace('{{domain}}', brand.domain || 'Not specified')
@@ -127,6 +302,7 @@ export const competitorResearch = inngest.createFunction(
         .replace('{{rejected_entities}}', rejectedList)
         .replace('{{primary_persona}}', String(primaryPersona))
         .replace('{{core_problem}}', String(coreProblem))
+        + sonarContext
 
       const { text, usage } = await generateText({
         model: openai('gpt-4o-mini'),
@@ -144,7 +320,21 @@ export const competitorResearch = inngest.createFunction(
         if (!jsonMatch) {
           throw new Error('No JSON array found in response')
         }
-        return JSON.parse(jsonMatch[0]) as ResearchedCompetitor[]
+        const parsed = JSON.parse(jsonMatch[0]) as ResearchedCompetitor[]
+        
+        // Attach Sonar source URLs to matching competitors
+        for (const competitor of parsed) {
+          const sonarMatch = sonarFindings.findings.find(f => 
+            f.name.toLowerCase() === competitor.name.toLowerCase() ||
+            (competitor.domain && f.inferredDomain && 
+             f.inferredDomain.includes(competitor.domain.replace('www.', '')))
+          )
+          if (sonarMatch) {
+            competitor.source_urls = sonarMatch.sourceUrls
+          }
+        }
+        
+        return parsed
       } catch {
         console.error('Failed to parse competitor research results:', text)
         return []
@@ -211,15 +401,17 @@ export const competitorResearch = inngest.createFunction(
         domain: c.domain,
         description: c.description,
         auto_discovered: true,
-        is_active: true, // All results from research are product competitors, auto-activate
+        is_active: true,
         entity_type: 'product_competitor' as const,
-        source_model: 'gpt-4o-mini',
+        source_model: 'perplexity-sonar+gpt-4o-mini',
         source_method: 'competitor_research' as const,
         context: {
           confidence: c.confidence || 'medium',
           competition_type: c.competition_type || 'direct',
           research_angle: c.research_angle || null,
           reasoning: c.reasoning || null,
+          source_urls: c.source_urls || [],
+          sonar_queries: sonarFindings.queriesRun,
           discovered_at: new Date().toISOString(),
         },
       }))
@@ -270,6 +462,8 @@ export const competitorResearch = inngest.createFunction(
 
     return {
       success: true,
+      sonarCandidates: sonarFindings.findings.length,
+      sonarQueries: sonarFindings.queriesRun,
       researched: researchResults.length,
       validated: validated.length,
       saved: saved.length,
