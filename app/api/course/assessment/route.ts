@@ -197,9 +197,13 @@ export async function POST(request: NextRequest) {
 
       // Update enrollment
       const updateData: Record<string, unknown> = {}
+      const percentage = Math.round((score / courseQuestions.length) * 100)
+
       if (assessment.assessment_type === 'baseline') {
         updateData.baseline_completed = true
         updateData.baseline_score = score
+        // Assign course track based on baseline score
+        updateData.course_track = percentage >= 80 ? 'advanced' : 'standard'
       } else {
         updateData.final_completed = true
         updateData.final_score = score
@@ -214,6 +218,9 @@ export async function POST(request: NextRequest) {
         score,
         totalQuestions: courseQuestions.length,
         assessmentType: assessment.assessment_type,
+        courseTrack: assessment.assessment_type === 'baseline'
+          ? (percentage >= 80 ? 'advanced' : 'standard')
+          : undefined,
       })
     }
 

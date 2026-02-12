@@ -134,18 +134,40 @@ function ResultsContent() {
           )}
         </div>
 
-        {/* Baseline: Just show score and CTA to start course */}
+        {/* Baseline: Show score, track assignment, and CTA to start course */}
         {type === 'baseline' && (
           <div className="text-center">
-            <p className="text-slate-600 mb-8 max-w-md mx-auto">
-              This is your starting point. Take the course to learn about AI search optimization, 
-              then retake the assessment to see how much you&apos;ve improved.
-            </p>
+            {percentage >= 80 ? (
+              <div className="mb-8 max-w-md mx-auto">
+                <div className="p-4 bg-purple-50 border-2 border-purple-400 mb-6">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="font-bold text-purple-700">Advanced Track Unlocked</span>
+                  </div>
+                  <p className="text-sm text-purple-800">
+                    You clearly know the fundamentals. Your course includes the standard modules 
+                    <strong> plus 4 advanced deep-dives</strong> on retrieval systems, competitive intelligence, 
+                    AI attribution, and agent commerce.
+                  </p>
+                </div>
+                <p className="text-slate-600">
+                  Even experts have blind spots. The course will fill gaps and give you the 
+                  advanced frameworks that go beyond the basics.
+                </p>
+              </div>
+            ) : (
+              <p className="text-slate-600 mb-8 max-w-md mx-auto">
+                This is your starting point. Take the course to learn about AI search optimization, 
+                then retake the assessment to see how much you&apos;ve improved.
+              </p>
+            )}
             <button
               onClick={() => router.push('/course/learn')}
               className="bg-[#0EA5E9] text-white font-semibold py-3 px-8 hover:bg-[#0284C7] transition-colors text-lg"
             >
-              Start the Course
+              {percentage >= 80 ? 'Start Advanced Course' : 'Start the Course'}
             </button>
           </div>
         )}

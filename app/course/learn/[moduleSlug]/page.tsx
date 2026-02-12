@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { courseModules } from '@/lib/course/modules'
+import { advancedModules } from '@/lib/course/advanced-modules'
+import type { CourseModule } from '@/lib/course/types'
 
 export default function ModulePage() {
   const router = useRouter()
@@ -12,13 +14,14 @@ export default function ModulePage() {
   const [completing, setCompleting] = useState(false)
   const [completed, setCompleted] = useState(false)
   const [allComplete, setAllComplete] = useState(false)
+  const [allModules, setAllModules] = useState<CourseModule[]>(courseModules)
 
-  const currentModule = courseModules.find(m => m.slug === moduleSlug)
-  const currentIndex = courseModules.findIndex(m => m.slug === moduleSlug)
-  const nextModule = currentIndex < courseModules.length - 1 ? courseModules[currentIndex + 1] : null
-  const prevModule = currentIndex > 0 ? courseModules[currentIndex - 1] : null
+  // Determine which module list this slug belongs to
+  const allPossibleModules = [...courseModules, ...advancedModules]
+  const currentModule = allPossibleModules.find(m => m.slug === moduleSlug)
+  const isAdvancedModule = moduleSlug.startsWith('adv-')
 
-  // Check if already completed
+  // Check if already completed and determine module list
   useEffect(() => {
     async function checkProgress() {
       try {
@@ -31,6 +34,12 @@ export default function ModulePage() {
           return
         }
         const data = await res.json()
+        const track = data.courseTrack || data.enrollment?.course_track || 'standard'
+        const mods = track === 'advanced'
+          ? [...courseModules, ...advancedModules]
+          : courseModules
+        setAllModules(mods)
+
         const moduleProgress = data.moduleProgress || []
         const isCompleted = moduleProgress.some(
           (p: { module_slug: string; completed: boolean }) => p.module_slug === moduleSlug && p.completed
@@ -43,6 +52,11 @@ export default function ModulePage() {
     }
     checkProgress()
   }, [moduleSlug, router])
+
+  // Compute navigation based on allModules (which updates when track is fetched)
+  const currentIndex = allModules.findIndex(m => m.slug === moduleSlug)
+  const nextModule = currentIndex >= 0 && currentIndex < allModules.length - 1 ? allModules[currentIndex + 1] : null
+  const prevModule = currentIndex > 0 ? allModules[currentIndex - 1] : null
 
   if (!currentModule) {
     return (
@@ -99,13 +113,18 @@ export default function ModulePage() {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-8 h-8 flex items-center justify-center font-bold text-sm ${
-              completed ? 'bg-emerald-500 text-white' : 'bg-[#0EA5E9] text-white'
+              completed ? 'bg-emerald-500 text-white' : isAdvancedModule ? 'bg-purple-600 text-white' : 'bg-[#0EA5E9] text-white'
             }`}>
               {completed ? '✓' : currentModule.order}
             </div>
             <span className="text-xs text-slate-500 uppercase tracking-wider">
-              Module {currentModule.order} of {courseModules.length}
+              {isAdvancedModule ? 'Advanced' : 'Core'} Module {currentModule.order} of {allModules.length}
             </span>
+            {isAdvancedModule && (
+              <span className="text-xs font-bold tracking-widest uppercase px-2 py-0.5 bg-purple-100 text-purple-700 border border-purple-300">
+                Advanced
+              </span>
+            )}
           </div>
           <h1 className="text-3xl font-bold text-[#0F172A] mb-2">{currentModule.title}</h1>
           <p className="text-slate-600">{currentModule.description}</p>

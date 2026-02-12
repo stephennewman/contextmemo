@@ -91,10 +91,10 @@ export default function CourseLandingPage() {
               <div className="w-12 h-12 bg-[#0F172A] text-white flex items-center justify-center font-bold text-lg mx-auto mb-4">
                 2
               </div>
-              <h3 className="font-semibold text-[#0F172A] mb-2">Complete the Course</h3>
+              <h3 className="font-semibold text-[#0F172A] mb-2">Adaptive Course</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Work through {courseModules.length} modules covering everything from AI search 
-                fundamentals to future trends. Practical, no-fluff content you can act on.
+                Your baseline score determines your track. Score 80%+ and you get {courseModules.length} core modules 
+                <strong> plus 4 advanced deep-dives</strong>. Practical, no-fluff content you can act on.
               </p>
             </div>
             <div className="text-center">

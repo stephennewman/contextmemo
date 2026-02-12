@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { courseModules } from '@/lib/course/modules'
+import { advancedModules } from '@/lib/course/advanced-modules'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,10 +37,17 @@ export async function GET() {
       .select('*')
       .eq('enrollment_id', enrollmentId)
 
+    // Determine which modules to show based on course track
+    const track = enrollment.course_track || 'standard'
+    const activeModules = track === 'advanced'
+      ? [...courseModules, ...advancedModules]
+      : courseModules
+
     return NextResponse.json({
       enrollment,
       moduleProgress: moduleProgress || [],
-      totalModules: courseModules.length,
+      totalModules: activeModules.length,
+      courseTrack: track,
     })
   } catch (err) {
     console.error('Progress error:', err)
@@ -61,8 +69,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Module slug is required' }, { status: 400 })
     }
 
-    // Verify module exists
-    const moduleExists = courseModules.some(m => m.slug === moduleSlug)
+    // Verify module exists in either standard or advanced modules
+    const allModules = [...courseModules, ...advancedModules]
+    const moduleExists = allModules.some(m => m.slug === moduleSlug)
     if (!moduleExists) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 })
     }
@@ -84,7 +93,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update progress' }, { status: 500 })
     }
 
-    // Check if all modules are now complete
+    // Check if all modules for the user's track are now complete
+    const { data: enrollment } = await supabase
+      .from('course_enrollments')
+      .select('course_track')
+      .eq('id', enrollmentId)
+      .single()
+
+    const track = enrollment?.course_track || 'standard'
+    const requiredModules = track === 'advanced'
+      ? [...courseModules, ...advancedModules]
+      : courseModules
+
     const { data: allProgress } = await supabase
       .from('course_module_progress')
       .select('module_slug')
@@ -92,7 +112,7 @@ export async function POST(request: NextRequest) {
       .eq('completed', true)
 
     const completedSlugs = new Set(allProgress?.map(p => p.module_slug) || [])
-    const allComplete = courseModules.every(m => completedSlugs.has(m.slug))
+    const allComplete = requiredModules.every(m => completedSlugs.has(m.slug))
 
     if (allComplete) {
       await supabase

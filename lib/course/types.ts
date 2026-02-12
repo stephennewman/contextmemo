@@ -21,6 +21,10 @@ export interface ModuleSection {
   content: string // markdown
 }
 
+export type CourseTrack = 'standard' | 'advanced'
+
+export const ADVANCED_THRESHOLD = 80 // Score % that triggers advanced track
+
 export interface Enrollment {
   id: string
   email: string
@@ -31,6 +35,7 @@ export interface Enrollment {
   course_completed: boolean
   final_completed: boolean
   final_score: number | null
+  course_track: CourseTrack | null
 }
 
 export interface Assessment {
