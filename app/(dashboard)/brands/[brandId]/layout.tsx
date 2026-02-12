@@ -37,7 +37,7 @@ export default async function BrandLayout({ params, children }: Props) {
   ] = await Promise.all([
     supabase
       .from('brands')
-      .select('id, name, domain, subdomain, verified, is_paused, last_scan_at, context')
+      .select('id, name, domain, subdomain, custom_domain, domain_verified, verified, is_paused, last_scan_at, context')
       .eq('id', brandId)
       .single(),
     supabase
@@ -106,12 +106,12 @@ export default async function BrandLayout({ params, children }: Props) {
               )}
               <span className="text-zinc-400">·</span>
               <a
-                href={`/memo/${brand.subdomain}`}
+                href={brand.custom_domain && brand.domain_verified ? `https://${brand.custom_domain}` : `/memo/${brand.subdomain}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
               >
-                {brand.subdomain}.contextmemo.com
+                {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -169,12 +169,12 @@ export default async function BrandLayout({ params, children }: Props) {
               )}
               <span className="text-zinc-400">·</span>
               <a
-                href={`/memo/${brand.subdomain}`}
+                href={brand.custom_domain && brand.domain_verified ? `https://${brand.custom_domain}` : `/memo/${brand.subdomain}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
               >
-                {brand.subdomain}.contextmemo.com
+                {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>

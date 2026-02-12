@@ -48,12 +48,12 @@ export default async function V2Layout({
   const orgIds = memberships?.map(m => m.organization_id).filter(Boolean) || []
 
   // Query brands the user has access to
-  let brands: { id: string; name: string; subdomain: string }[] = []
+  let brands: { id: string; name: string; subdomain: string; custom_domain?: string | null; domain_verified?: boolean | null }[] = []
   
   if (orgIds.length > 0) {
     const { data: orgBrands } = await serviceClient
       .from('brands')
-      .select('id, name, subdomain')
+      .select('id, name, subdomain, custom_domain, domain_verified')
       .in('organization_id', orgIds)
       .order('created_at', { ascending: false })
     brands = orgBrands || []
@@ -62,7 +62,7 @@ export default async function V2Layout({
   // Also get brands owned by user's tenant
   const { data: tenantBrands } = await serviceClient
     .from('brands')
-    .select('id, name, subdomain')
+    .select('id, name, subdomain, custom_domain, domain_verified')
     .eq('tenant_id', user.id)
     .order('created_at', { ascending: false })
   

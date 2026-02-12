@@ -23,7 +23,7 @@ export default async function CitationsPage({ params }: Props) {
   ] = await Promise.all([
     supabase
       .from('brands')
-      .select('name, domain, subdomain')
+      .select('name, domain, subdomain, custom_domain, domain_verified')
       .eq('id', brandId)
       .single(),
     supabase
@@ -61,6 +61,8 @@ export default async function CitationsPage({ params }: Props) {
         brandName={brand.name}
         brandDomain={brand.domain}
         brandSubdomain={brand.subdomain}
+        brandCustomDomain={brand.custom_domain}
+        brandDomainVerified={brand.domain_verified}
         scanResults={allScans || []}
         queries={allQueries || []}
         memos={memos || []}

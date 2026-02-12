@@ -9,6 +9,8 @@ export type MemoRow = {
   memoType: string
   brandName: string
   brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
   memoCreatedAt: string
   totalCrawls: number
   aiSearch: number
@@ -183,7 +185,9 @@ export function SortableMemosTable({ memos }: { memos: MemoRow[] }) {
           <tbody>
             {sorted.map(memo => {
               const typeInfo = TYPE_LABELS[memo.memoType] || { label: memo.memoType, color: 'bg-slate-100 text-slate-600' }
-              const memoUrl = `https://${memo.brandSubdomain}.contextmemo.com/memo/${memo.slug}`
+              const memoUrl = memo.brandCustomDomain && memo.brandDomainVerified
+                ? `https://${memo.brandCustomDomain}/${memo.slug}`
+                : `https://${memo.brandSubdomain}.contextmemo.com/memo/${memo.slug}`
               return (
                 <tr key={memo.memoId} className="border-b border-slate-50 hover:bg-slate-50">
                   {/* Title */}

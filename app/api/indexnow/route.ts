@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { submitUrlsToIndexNow, buildMemoUrl } from '@/lib/utils/indexnow'
+import { submitUrlsToIndexNow, buildMemoUrl, buildBrandUrl } from '@/lib/utils/indexnow'
 import { z } from 'zod'
 
 const supabase = createServiceRoleClient()
@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get brand subdomain
+    // Get brand subdomain and custom domain
     const { data: brand, error: brandError } = await supabase
       .from('brands')
-      .select('subdomain, tenant_id, organization_id')
+      .select('subdomain, custom_domain, domain_verified, tenant_id, organization_id')
       .eq('id', brandId)
       .single()
 
@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No published memos found' }, { status: 404 })
     }
 
-    // Build URLs
+    // Build URLs — prefer custom domain when verified
     const urls = [
       // Brand index page
-      `https://contextmemo.com/memo/${brand.subdomain}`,
+      buildBrandUrl(brand.subdomain, brand.custom_domain, brand.domain_verified),
       // All memo pages
-      ...memos.map(memo => buildMemoUrl(brand.subdomain, memo.slug)),
+      ...memos.map(memo => buildMemoUrl(brand.subdomain, memo.slug, brand.custom_domain, brand.domain_verified)),
     ]
 
     // Submit to IndexNow

@@ -145,24 +145,41 @@ export default async function AdminDashboardPage() {
     ai_user: number; search_engine: number; seo_tool: number;
     unique_bots: number; last_crawl: string | null; human_visits: number;
   }>
-  const memoRows: MemoRow[] = memoActivityRaw.map(m => ({
-    memoId: m.memo_id,
-    slug: m.slug,
-    title: m.title,
-    memoType: m.memo_type,
-    brandName: m.brand_name,
-    brandSubdomain: m.brand_subdomain,
-    memoCreatedAt: m.memo_created_at,
-    totalCrawls: Number(m.total_crawls),
-    aiSearch: Number(m.ai_search),
-    aiTraining: Number(m.ai_training),
-    aiUser: Number(m.ai_user),
-    searchEngine: Number(m.search_engine),
-    seoTool: Number(m.seo_tool),
-    uniqueBots: Number(m.unique_bots),
-    lastCrawl: m.last_crawl,
-    humanVisits: Number(m.human_visits),
-  }))
+
+  // Build a map of subdomain -> custom domain info for URL construction
+  const subdomains = [...new Set(memoActivityRaw.map(m => m.brand_subdomain).filter(Boolean))]
+  const { data: brandDomains } = subdomains.length > 0
+    ? await serviceClient
+        .from('brands')
+        .select('subdomain, custom_domain, domain_verified')
+        .in('subdomain', subdomains)
+        .not('custom_domain', 'is', null)
+    : { data: [] }
+  const domainMap = new Map((brandDomains || []).map(b => [b.subdomain, b]))
+
+  const memoRows: MemoRow[] = memoActivityRaw.map(m => {
+    const domainInfo = domainMap.get(m.brand_subdomain)
+    return {
+      memoId: m.memo_id,
+      slug: m.slug,
+      title: m.title,
+      memoType: m.memo_type,
+      brandName: m.brand_name,
+      brandSubdomain: m.brand_subdomain,
+      brandCustomDomain: domainInfo?.custom_domain,
+      brandDomainVerified: domainInfo?.domain_verified,
+      memoCreatedAt: m.memo_created_at,
+      totalCrawls: Number(m.total_crawls),
+      aiSearch: Number(m.ai_search),
+      aiTraining: Number(m.ai_training),
+      aiUser: Number(m.ai_user),
+      searchEngine: Number(m.search_engine),
+      seoTool: Number(m.seo_tool),
+      uniqueBots: Number(m.unique_bots),
+      lastCrawl: m.last_crawl,
+      humanVisits: Number(m.human_visits),
+    }
+  })
 
   // Build lookups from RPC results
   const spendMap = new Map(spendData.map(s => [s.brand_id, s]))

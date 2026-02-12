@@ -105,12 +105,12 @@ export default async function V2BrandPage({ params }: Props) {
               )}
               <span className="text-muted-foreground">·</span>
               <a 
-                href={`https://${brand.subdomain}.contextmemo.com`}
+                href={brand.custom_domain && brand.domain_verified ? `https://${brand.custom_domain}` : `https://${brand.subdomain}.contextmemo.com`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-muted-foreground hover:text-[#0EA5E9] flex items-center gap-1"
               >
-                {brand.subdomain}.contextmemo.com
+                {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>

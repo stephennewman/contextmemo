@@ -16,7 +16,7 @@ export default async function PerformancePage({ params }: Props) {
   // First fetch brand to get subdomain for crawl event filtering
   const { data: brand, error } = await supabase
     .from('brands')
-    .select('name, subdomain')
+    .select('name, subdomain, custom_domain, domain_verified')
     .eq('id', brandId)
     .single()
 
@@ -55,6 +55,8 @@ export default async function PerformancePage({ params }: Props) {
       brandId={brandId}
       brandName={brand.name}
       brandSubdomain={brand.subdomain}
+      brandCustomDomain={brand.custom_domain}
+      brandDomainVerified={brand.domain_verified}
       memos={(memos || []) as Array<{
         id: string
         title: string

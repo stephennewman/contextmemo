@@ -65,7 +65,9 @@ export const bingSync = inngest.createFunction(
       }
     }
 
-    const siteUrl = bingConfig.site_url || `https://${brand.subdomain}.contextmemo.com`
+    const siteUrl = bingConfig.site_url || (brand.custom_domain && brand.domain_verified
+      ? `https://${brand.custom_domain}`
+      : `https://${brand.subdomain}.contextmemo.com`)
 
     // Step 2: Fetch data from Bing Webmaster API
     const queryStats = await step.run('fetch-bing-data', async () => {

@@ -18,9 +18,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { 
   Mic, Plus, Loader2, Quote, Info, Sparkles, 
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, HelpCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -185,6 +191,16 @@ export function VoiceInsightsSection({ brandId }: VoiceInsightsSectionProps) {
             <div className="flex items-center gap-2">
               <Mic className="h-5 w-5 text-purple-600" />
               <CardTitle>Expert Insights</CardTitle>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-sm">
+                    <p>Add quotes and knowledge from real people. When memos are generated, the most relevant insights are automatically included as attributed quotes — giving your content real human credibility.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Badge variant="secondary" className="gap-1">
                 <Sparkles className="h-3 w-3" />
                 Primary Source

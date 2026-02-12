@@ -25,6 +25,8 @@ interface Brand {
   id: string
   name: string
   subdomain: string
+  custom_domain?: string | null
+  domain_verified?: boolean | null
 }
 
 interface BrandSwitcherProps {
@@ -75,7 +77,7 @@ export function BrandSwitcher({ brands, currentBrandId }: BrandSwitcherProps) {
                 {isAllBrands ? 'All Brands' : currentBrand?.name}
               </p>
               <p className="text-xs text-slate-400">
-                {isAllBrands ? `${brands.length} brands` : `${currentBrand?.subdomain}.contextmemo.com`}
+                {isAllBrands ? `${brands.length} brands` : (currentBrand?.custom_domain && currentBrand?.domain_verified ? currentBrand.custom_domain : `${currentBrand?.subdomain}.contextmemo.com`)}
               </p>
             </div>
           </div>
@@ -119,7 +121,7 @@ export function BrandSwitcher({ brands, currentBrandId }: BrandSwitcherProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{brand.name}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {brand.subdomain}.contextmemo.com
+                      {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}
                     </p>
                   </div>
                   {brand.id === currentBrandId && (

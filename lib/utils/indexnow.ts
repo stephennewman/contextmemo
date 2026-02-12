@@ -99,10 +99,34 @@ export async function submitUrlsToIndexNow(urls: string[]): Promise<IndexNowResp
 }
 
 /**
- * Build memo URL from brand subdomain and slug
+ * Build memo URL from brand subdomain and slug.
+ * Prefers custom domain when provided and verified.
  */
-export function buildMemoUrl(subdomain: string, slug: string): string {
+export function buildMemoUrl(
+  subdomain: string,
+  slug: string,
+  customDomain?: string | null,
+  domainVerified?: boolean | null
+): string {
+  if (customDomain && domainVerified) {
+    return `https://${customDomain}/${slug}`
+  }
   return `https://${SITE_HOST}/memo/${subdomain}/${slug}`
+}
+
+/**
+ * Build the brand index page URL.
+ * Prefers custom domain when provided and verified.
+ */
+export function buildBrandUrl(
+  subdomain: string,
+  customDomain?: string | null,
+  domainVerified?: boolean | null
+): string {
+  if (customDomain && domainVerified) {
+    return `https://${customDomain}`
+  }
+  return `https://${SITE_HOST}/memo/${subdomain}`
 }
 
 /**

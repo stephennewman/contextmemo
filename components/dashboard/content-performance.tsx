@@ -60,6 +60,8 @@ interface ContentPerformanceProps {
   brandId: string
   brandName: string
   brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
   memos: Memo[]
   traffic: TrafficEvent[]
   crawlEvents?: CrawlEvent[]
@@ -103,7 +105,7 @@ function isAICategory(cat: string) {
   return cat === 'ai_training' || cat === 'ai_search' || cat === 'ai_user_browse'
 }
 
-export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, traffic, crawlEvents = [] }: ContentPerformanceProps) {
+export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCustomDomain, brandDomainVerified, memos, traffic, crawlEvents = [] }: ContentPerformanceProps) {
   const published = memos.filter(m => m.status === 'published')
   const drafts = memos.filter(m => m.status === 'draft')
   const onHubSpot = memos.filter(m => m.schema_json?.hubspot_post_id)
@@ -314,7 +316,9 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
                 {sortedMemos.map(memo => {
                     const views = viewsByMemo[memo.id] || { total: 0, ai: 0, organic: 0 }
                     const isOnHubSpot = !!memo.schema_json?.hubspot_post_id
-                    const memoUrl = `/memo/${brandSubdomain}/${memo.slug}`
+                    const memoUrl = brandCustomDomain && brandDomainVerified
+                      ? `https://${brandCustomDomain}/${memo.slug}`
+                      : `/memo/${brandSubdomain}/${memo.slug}`
                     const mc = memoCrawls[memo.id] || { training: 0, searches: 0, clicks: 0 }
                     return (
                       <tr key={memo.id} className="border-b border-zinc-50 hover:bg-zinc-50/50 group">
@@ -443,7 +447,7 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, memos, 
       <div className="mx-6 border-t border-zinc-200" />
       <div className="px-6 pb-5 text-[11px] text-zinc-400">
         <span className="font-semibold text-zinc-500">Tracking:</span>{' '}
-        Bot crawls detected server-side. Human views tracked via referrer on {brandSubdomain}.contextmemo.com.
+        Bot crawls detected server-side. Human views tracked via referrer on {brandCustomDomain && brandDomainVerified ? brandCustomDomain : `${brandSubdomain}.contextmemo.com`}.
         HubSpot content tracked in HubSpot analytics.
       </div>
     </Card>

@@ -148,14 +148,15 @@ export const ActivityLoggers = {
   async memoPublished(
     brandId: string,
     tenantId: string,
-    memo: { id: string; title: string; slug: string; subdomain: string }
+    memo: { id: string; title: string; slug: string; subdomain: string; custom_domain?: string | null; domain_verified?: boolean | null }
   ) {
+    const host = memo.custom_domain && memo.domain_verified ? memo.custom_domain : `${memo.subdomain}.contextmemo.com`
     return logActivity({
       brandId,
       tenantId,
       activityType: 'memo_published',
       title: 'Memo Published',
-      description: `"${memo.title}" is now live at ${memo.subdomain}.contextmemo.com/${memo.slug}`,
+      description: `"${memo.title}" is now live at ${host}/${memo.slug}`,
       linkUrl: `/brands/${brandId}/memos/${memo.id}`,
       linkLabel: 'View Memo',
       metadata: { slug: memo.slug },

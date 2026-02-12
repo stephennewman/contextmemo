@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { 
   Search,
   TrendingUp,
@@ -31,11 +32,17 @@ import {
   ToggleLeft,
   ToggleRight,
   ArrowUpDown,
+  Trash2,
+  RefreshCw,
+  Sparkles,
+  CheckSquare,
+  Square,
 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -105,9 +112,123 @@ export function PromptsListClient({
   const [sortOption, setSortOption] = useState<V2SortOption>('default')
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set())
   
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+  
+  // Excluded multi-select state
+  const [selectedExcludedIds, setSelectedExcludedIds] = useState<Set<string>>(new Set())
+  
   // Competitor drawer state
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorData | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Selection helpers
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleSelectExcluded = useCallback((id: string) => {
+    setSelectedExcludedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+    setSelectedExcludedIds(new Set())
+  }, [])
+
+  // Bulk action handler
+  const handleBulkAction = async (
+    action: 'exclude' | 'delete' | 'reenable' | 'rescan' | 'regenerate',
+    ids: string[],
+    reason?: QueryExcludedReason,
+  ) => {
+    if (ids.length === 0) return
+    setBulkLoading(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/prompts/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, promptIds: ids, reason }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `Failed to ${action}`)
+      }
+
+      const data = await res.json()
+
+      // Update local state based on action
+      switch (action) {
+        case 'exclude': {
+          const idSet = new Set(ids)
+          const moved = activePrompts.filter(p => idSet.has(p.id))
+          setActivePrompts(prev => prev.filter(p => !idSet.has(p.id)))
+          setExcludedPrompts(prev => [
+            ...moved.map(p => ({
+              ...p,
+              is_active: false as const,
+              excluded_at: new Date().toISOString(),
+              excluded_reason: (reason || 'manual') as QueryExcludedReason,
+            })),
+            ...prev,
+          ])
+          toast.success(`Excluded ${data.count} prompt${data.count > 1 ? 's' : ''}`)
+          break
+        }
+        case 'delete': {
+          const idSet = new Set(ids)
+          setActivePrompts(prev => prev.filter(p => !idSet.has(p.id)))
+          setExcludedPrompts(prev => prev.filter(p => !idSet.has(p.id)))
+          toast.success(`Deleted ${data.count} prompt${data.count > 1 ? 's' : ''}`)
+          break
+        }
+        case 'reenable': {
+          const idSet = new Set(ids)
+          const moved = excludedPrompts.filter(p => idSet.has(p.id))
+          setExcludedPrompts(prev => prev.filter(p => !idSet.has(p.id)))
+          setActivePrompts(prev => [
+            ...moved.map(p => ({
+              ...p,
+              is_active: true as const,
+              excluded_at: null,
+              excluded_reason: null,
+            })),
+            ...prev,
+          ])
+          toast.success(`Re-enabled ${data.count} prompt${data.count > 1 ? 's' : ''}`)
+          break
+        }
+        case 'rescan':
+          toast.success(`Scan queued for ${data.count} prompt${data.count > 1 ? 's' : ''}`, {
+            description: 'Results will appear once the scan completes',
+          })
+          break
+        case 'regenerate':
+          toast.success('New prompt generation queued', {
+            description: 'New prompts will appear after generation completes',
+          })
+          break
+      }
+
+      clearSelection()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Failed to ${action}`)
+    } finally {
+      setBulkLoading(false)
+    }
+  }
 
   const toggleSources = (promptId: string) => {
     setExpandedSources(prev => {
@@ -366,7 +487,42 @@ export function PromptsListClient({
       ) : (
         <div className="space-y-6">
           {/* Filters */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Select all toggle */}
+            <button
+              onClick={() => {
+                if (selectedIds.size === filteredPrompts.length && filteredPrompts.length > 0) {
+                  setSelectedIds(new Set())
+                } else {
+                  setSelectedIds(new Set(filteredPrompts.map(p => p.id)))
+                }
+              }}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              title={selectedIds.size === filteredPrompts.length ? 'Deselect all' : 'Select all visible'}
+            >
+              {selectedIds.size > 0 && selectedIds.size === filteredPrompts.length ? (
+                <CheckSquare className="h-4 w-4 text-[#0EA5E9]" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+              {selectedIds.size > 0 ? (
+                <span className="text-[#0EA5E9] font-medium">{selectedIds.size} selected</span>
+              ) : (
+                <span>Select</span>
+              )}
+            </button>
+
+            {selectedIds.size > 0 && (
+              <button
+                onClick={clearSelection}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+
+            <div className="w-px h-5 bg-slate-200" />
+
             {/* Filter buttons */}
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -437,9 +593,19 @@ export function PromptsListClient({
             {filteredPrompts.map(prompt => (
               <div 
                 key={prompt.id}
-                className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow"
+                className={`bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow ${
+                  selectedIds.has(prompt.id) ? 'ring-2 ring-[#0EA5E9] border-[#0EA5E9]/50' : ''
+                }`}
               >
                 <div className="flex items-start justify-between gap-4">
+                  {/* Checkbox */}
+                  <div className="pt-1 shrink-0">
+                    <Checkbox
+                      checked={selectedIds.has(prompt.id)}
+                      onCheckedChange={() => toggleSelect(prompt.id)}
+                      className="data-[state=checked]:bg-[#0EA5E9] data-[state=checked]:border-[#0EA5E9]"
+                    />
+                  </div>
                   <div className="flex-1 min-w-0">
                     {/* Prompt text */}
                     <p className="font-medium text-[#0F172A] mb-2">
@@ -656,27 +822,84 @@ export function PromptsListClient({
               
               {showExcluded && (
                 <div className="space-y-2 pl-6 border-l-2 border-slate-200">
+                  {/* Select all excluded + bulk actions */}
+                  <div className="flex items-center justify-between mb-2">
+                    <button
+                      onClick={() => {
+                        if (selectedExcludedIds.size === excludedPrompts.length) {
+                          setSelectedExcludedIds(new Set())
+                        } else {
+                          setSelectedExcludedIds(new Set(excludedPrompts.map(p => p.id)))
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {selectedExcludedIds.size > 0 && selectedExcludedIds.size === excludedPrompts.length ? (
+                        <CheckSquare className="h-3.5 w-3.5 text-[#0EA5E9]" />
+                      ) : (
+                        <Square className="h-3.5 w-3.5" />
+                      )}
+                      {selectedExcludedIds.size > 0 ? `${selectedExcludedIds.size} selected` : 'Select all'}
+                    </button>
+                    {selectedExcludedIds.size > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={bulkLoading}
+                          onClick={() => handleBulkAction('reenable', Array.from(selectedExcludedIds))}
+                        >
+                          {bulkLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                          Re-enable
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={bulkLoading}
+                          onClick={() => {
+                            if (confirm(`Permanently delete ${selectedExcludedIds.size} prompt${selectedExcludedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) {
+                              handleBulkAction('delete', Array.from(selectedExcludedIds))
+                            }
+                          }}
+                        >
+                          {bulkLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   {excludedPrompts.map(prompt => (
                     <div 
                       key={prompt.id}
-                      className="bg-slate-50 border rounded-lg p-3 opacity-60 hover:opacity-100 transition-opacity"
+                      className={`bg-slate-50 border rounded-lg p-3 opacity-60 hover:opacity-100 transition-opacity ${
+                        selectedExcludedIds.has(prompt.id) ? 'ring-2 ring-[#0EA5E9] opacity-100' : ''
+                      }`}
                     >
                       <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-slate-600 line-through">
-                            "{prompt.query_text}"
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {prompt.excluded_reason && (
-                              <Badge variant="outline" className="text-xs">
-                                {prompt.excluded_reason}
-                              </Badge>
-                            )}
-                            {prompt.excluded_at && (
-                              <span className="text-xs text-muted-foreground">
-                                Excluded {formatDistanceToNow(new Date(prompt.excluded_at), { addSuffix: true })}
-                              </span>
-                            )}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Checkbox
+                            checked={selectedExcludedIds.has(prompt.id)}
+                            onCheckedChange={() => toggleSelectExcluded(prompt.id)}
+                            className="shrink-0 data-[state=checked]:bg-[#0EA5E9] data-[state=checked]:border-[#0EA5E9]"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-slate-600 line-through">
+                              "{prompt.query_text}"
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              {prompt.excluded_reason && (
+                                <Badge variant="outline" className="text-xs">
+                                  {prompt.excluded_reason}
+                                </Badge>
+                              )}
+                              {prompt.excluded_at && (
+                                <span className="text-xs text-muted-foreground">
+                                  Excluded {formatDistanceToNow(new Date(prompt.excluded_at), { addSuffix: true })}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
@@ -705,6 +928,104 @@ export function PromptsListClient({
         </div>
       )}
       
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="bg-[#0F172A] text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-3">
+            <span className="text-sm font-medium whitespace-nowrap">
+              {selectedIds.size} prompt{selectedIds.size > 1 ? 's' : ''} selected
+            </span>
+            
+            <div className="w-px h-6 bg-white/20" />
+
+            {/* Rescan */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/10 hover:text-white h-8 text-xs"
+              disabled={bulkLoading}
+              onClick={() => handleBulkAction('rescan', Array.from(selectedIds))}
+            >
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+              Re-scan
+            </Button>
+
+            {/* Exclude with reason dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/10 hover:text-white h-8 text-xs"
+                  disabled={bulkLoading}
+                >
+                  {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Ban className="h-3.5 w-3.5 mr-1.5" />}
+                  Exclude
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" side="top" className="mb-2">
+                <DropdownMenuItem onClick={() => handleBulkAction('exclude', Array.from(selectedIds), 'irrelevant')}>
+                  Irrelevant
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkAction('exclude', Array.from(selectedIds), 'duplicate')}>
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkAction('exclude', Array.from(selectedIds), 'low_value')}>
+                  Low Value
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleBulkAction('exclude', Array.from(selectedIds), 'manual')}>
+                  Other
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Delete */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:bg-red-500/20 hover:text-red-300 h-8 text-xs"
+              disabled={bulkLoading}
+              onClick={() => {
+                if (confirm(`Permanently delete ${selectedIds.size} prompt${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) {
+                  handleBulkAction('delete', Array.from(selectedIds))
+                }
+              }}
+            >
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+              Delete
+            </Button>
+
+            <div className="w-px h-6 bg-white/20" />
+
+            {/* Generate New */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 h-8 text-xs"
+              disabled={bulkLoading}
+              onClick={() => handleBulkAction('regenerate', Array.from(selectedIds))}
+            >
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+              Generate New
+            </Button>
+
+            <div className="w-px h-6 bg-white/20" />
+            
+            {/* Cancel */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white/60 hover:bg-white/10 hover:text-white h-8 text-xs"
+              onClick={clearSelection}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Competitor Detail Drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent className="w-[400px] sm:w-[540px]">

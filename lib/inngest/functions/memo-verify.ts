@@ -285,9 +285,11 @@ export const memoVerifyContent = inngest.createFunction(
 
     for (let mi = 0; mi < memos.length; mi++) {
       const memo = memos[mi]
-      const memoUrl = memo.subdomain
-        ? `${memo.subdomain}.contextmemo.com/${memo.slug}`
-        : `contextmemo.com/memo/${memo.slug}`
+      const memoUrl = brand.custom_domain && brand.domain_verified
+        ? `${brand.custom_domain}/${memo.slug}`
+        : memo.subdomain
+          ? `${memo.subdomain}.contextmemo.com/${memo.slug}`
+          : `contextmemo.com/memo/${memo.slug}`
 
       // Generate verification prompts from this memo
       const verificationPrompts = await step.run(`gen-prompts-${mi}`, async () => {

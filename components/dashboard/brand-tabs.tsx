@@ -24,6 +24,8 @@ interface BrandTabsProps {
   brandName: string
   brandDomain: string
   brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
   context: BrandContext | null
   contextExtractedAt: string | null
   hasContext: boolean
@@ -56,6 +58,8 @@ export function BrandTabs({
   brandName,
   brandDomain,
   brandSubdomain,
+  brandCustomDomain,
+  brandDomainVerified,
   context,
   contextExtractedAt,
   hasContext,
@@ -203,6 +207,9 @@ export function BrandTabs({
                         const cleanSlug = memo.slug.replace(/^(guides|compare|how-to|resources)\//, '')
                         liveUrl = `https://contextmemo.com${route}/${cleanSlug}`
                         displayUrl = `contextmemo.com${route}/${cleanSlug}`
+                      } else if (brandCustomDomain && brandDomainVerified) {
+                        liveUrl = `https://${brandCustomDomain}/${memo.slug}`
+                        displayUrl = `${brandCustomDomain}/${memo.slug}`
                       } else {
                         liveUrl = `https://${brandSubdomain}.contextmemo.com/${memo.slug}`
                         displayUrl = `${brandSubdomain}.contextmemo.com/${memo.slug}`

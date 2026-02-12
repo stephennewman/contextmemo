@@ -60,6 +60,8 @@ interface Brand {
   id: string
   name: string
   subdomain: string
+  custom_domain?: string | null
+  domain_verified?: boolean | null
 }
 
 export default function MemoEditPage() {
@@ -96,7 +98,7 @@ export default function MemoEditPage() {
           .single(),
         supabase
           .from('brands')
-          .select('id, name, subdomain')
+          .select('id, name, subdomain, custom_domain, domain_verified')
           .eq('id', brandId)
           .single()
       ])
@@ -393,6 +395,8 @@ export default function MemoEditPage() {
     const route = typeToRoute[memo.memo_type] || '/memos/how-to'
     const cleanSlug = slug.replace(/^(guides|compare|how-to|resources)\//, '')
     publicUrl = `https://contextmemo.com${route}/${cleanSlug}`
+  } else if (brand.custom_domain && brand.domain_verified) {
+    publicUrl = `https://${brand.custom_domain}/${slug}`
   } else {
     publicUrl = `https://${brand.subdomain}.contextmemo.com/${slug}`
   }
@@ -680,7 +684,7 @@ export default function MemoEditPage() {
                   placeholder="url-slug"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {brand.subdomain}.contextmemo.com/{slug}
+                  {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}/{slug}
                 </p>
               </div>
               

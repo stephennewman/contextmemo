@@ -51,7 +51,7 @@ export default async function V2MemosPage({ params }: Props) {
   // Get brand
   const { data: brand, error } = await serviceClient
     .from('brands')
-    .select('id, name, subdomain')
+    .select('id, name, subdomain, custom_domain, domain_verified')
     .eq('id', brandId)
     .single()
 
@@ -172,7 +172,7 @@ export default async function V2MemosPage({ params }: Props) {
                           {memo.status === 'published' && brand.subdomain && (
                             <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
                               <a 
-                                href={`https://${brand.subdomain}.contextmemo.com/${memo.slug}`}
+                                href={brand.custom_domain && brand.domain_verified ? `https://${brand.custom_domain}/${memo.slug}` : `https://${brand.subdomain}.contextmemo.com/${memo.slug}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="View live memo"

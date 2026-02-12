@@ -20,6 +20,8 @@ export default async function DashboardPage() {
       id,
       name,
       subdomain,
+      custom_domain,
+      domain_verified,
       domain,
       verified,
       created_at,
@@ -68,7 +70,7 @@ export default async function DashboardPage() {
                     <span className="px-2 py-1 text-xs font-bold border-2 border-[#0F172A] text-[#0F172A]">PENDING</span>
                   )}
                 </div>
-                <p className="text-sm text-zinc-500">{brand.subdomain}.contextmemo.com</p>
+                <p className="text-sm text-zinc-500">{brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}</p>
               </div>
               
               {/* Stats Grid - 2 columns */}

@@ -23,6 +23,8 @@ interface Brand {
   id: string
   name: string
   subdomain: string
+  custom_domain?: string | null
+  domain_verified?: boolean | null
 }
 
 interface V2SidebarProps {

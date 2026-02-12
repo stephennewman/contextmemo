@@ -21,7 +21,7 @@ export default async function MemosPage({ params }: Props) {
   ] = await Promise.all([
     supabase
       .from('brands')
-      .select('name, subdomain, context')
+      .select('name, subdomain, custom_domain, domain_verified, context')
       .eq('id', brandId)
       .single(),
     supabase
@@ -71,6 +71,8 @@ export default async function MemosPage({ params }: Props) {
             brandId={brandId}
             brandName={brand.name}
             brandSubdomain={brand.subdomain}
+            brandCustomDomain={brand.custom_domain}
+            brandDomainVerified={brand.domain_verified}
             initialMemos={(memos || []) as Array<{
               id: string
               brand_id: string

@@ -75,6 +75,8 @@ interface CitationInsightsProps {
   brandName: string
   brandDomain: string
   brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
   scanResults: ScanResult[]
   queries: Query[]
   memos?: Memo[]
@@ -113,7 +115,7 @@ function getPathFromUrl(url: string): string {
   }
 }
 
-export function CitationInsights({ brandId, brandName, brandDomain, brandSubdomain, scanResults, queries, memos = [] }: CitationInsightsProps) {
+export function CitationInsights({ brandId, brandName, brandDomain, brandSubdomain, brandCustomDomain, brandDomainVerified, scanResults, queries, memos = [] }: CitationInsightsProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('urls')
@@ -259,6 +261,7 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
       brandDomain.toLowerCase().replace(/^www\./, ''),
       `${brandSubdomain}.contextmemo.com`,
       'contextmemo.com',
+      ...(brandCustomDomain && brandDomainVerified ? [brandCustomDomain.toLowerCase()] : []),
     ]
     
     const brandCitedUrls = citationsByUrl.filter(entry => {
@@ -1285,6 +1288,8 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
           brandId={brandId}
           brandName={brandName}
           brandSubdomain={brandSubdomain}
+          brandCustomDomain={brandCustomDomain}
+          brandDomainVerified={brandDomainVerified}
           isOpen={genModal.isOpen}
           onClose={closeGenModal}
           citedUrl={genModal.citedUrl}
@@ -1319,6 +1324,8 @@ function MemoGenerationModal({
   brandId,
   brandName,
   brandSubdomain,
+  brandCustomDomain,
+  brandDomainVerified,
   isOpen,
   onClose,
   citedUrl,
@@ -1329,6 +1336,8 @@ function MemoGenerationModal({
   brandId: string
   brandName: string
   brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
   isOpen: boolean
   onClose: () => void
   citedUrl: string
@@ -1597,7 +1606,7 @@ function MemoGenerationModal({
                   Edit Memo
                 </a>
                 <a
-                  href={`/memo/${brandSubdomain}/${generatedMemo.slug}`}
+                  href={brandCustomDomain && brandDomainVerified ? `https://${brandCustomDomain}/${generatedMemo.slug}` : `/memo/${brandSubdomain}/${generatedMemo.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 text-white text-sm font-semibold rounded hover:bg-slate-600 transition-colors"

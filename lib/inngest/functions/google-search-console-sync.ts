@@ -115,7 +115,9 @@ export const googleSearchConsoleSync = inngest.createFunction(
     })
 
     // Determine site URL - use configured one or memo subdomain
-    const siteUrl = googleConfig.site_url || `https://${brand.subdomain}.contextmemo.com/`
+    const siteUrl = googleConfig.site_url || (brand.custom_domain && brand.domain_verified
+      ? `https://${brand.custom_domain}/`
+      : `https://${brand.subdomain}.contextmemo.com/`)
 
     // Step 3: Fetch search analytics data
     const analyticsData = await step.run('fetch-gsc-data', async () => {

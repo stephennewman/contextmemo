@@ -78,6 +78,8 @@ interface MemoFeedProps {
   brandId: string
   brandName: string
   brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
   initialMemos: Memo[]
   hubspotEnabled: boolean
   hubspotAutoPublish: boolean
@@ -103,6 +105,8 @@ export function MemoFeed({
   brandId, 
   brandName, 
   brandSubdomain,
+  brandCustomDomain,
+  brandDomainVerified,
   initialMemos,
   hubspotEnabled,
   hubspotAutoPublish,
@@ -238,6 +242,10 @@ export function MemoFeed({
       const route = typeToRoute[memo.memo_type] || '/memos/how-to'
       const cleanSlug = memo.slug.replace(/^(guides|compare|how-to|resources)\//, '')
       return `https://contextmemo.com${route}/${cleanSlug}`
+    }
+    // Prefer custom domain when verified
+    if (brandCustomDomain && brandDomainVerified) {
+      return `https://${brandCustomDomain}/${memo.slug}`
     }
     return `https://${brandSubdomain}.contextmemo.com/${memo.slug}`
   }
@@ -884,7 +892,7 @@ export function MemoFeed({
                     }))}
                     className="text-sm border-2"
                   />
-                  <p className="text-xs text-zinc-400">{brandSubdomain}.contextmemo.com/{state.editSlug[editorMemoId] ?? editorMemo.slug}</p>
+                  <p className="text-xs text-zinc-400">{brandCustomDomain && brandDomainVerified ? brandCustomDomain : `${brandSubdomain}.contextmemo.com`}/{state.editSlug[editorMemoId] ?? editorMemo.slug}</p>
                 </div>
 
                 <div className="space-y-2">
