@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
 > **Last Updated:** February 12, 2026  
-> **Version:** 0.24.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course
+> **Version:** 0.25.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course + Course Email Nurture System
 
 ---
 
@@ -392,6 +392,22 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 12, 2026
+
+**Course Email Nurture System** (c1c2fdc)
+- Adaptive email nurture drip sequences for the AI Search Mastery course
+- 3 segments based on baseline score: Beginner (0-39%), Developing (40-79%), Advanced (80%+)
+- 28 email templates across time-based sequences and behavioral triggers
+- Created `course_emails_sent` Supabase table (prevents duplicate sends via unique constraint)
+- Created `lib/course/nurture.ts` — segment logic, sequence definitions, behavioral triggers (stall detection, completion nudges)
+- Created `lib/course/emails.ts` — all email templates with shared wrapper matching existing Resend patterns
+- Created `lib/inngest/functions/course-nurture.ts`:
+  - **courseNurtureCheck** (cron every 6h) — processes all enrolled users, sends due sequence + behavioral emails
+  - **courseNurtureSend** (event-triggered) — sends immediate emails on enrollment, baseline completion, final completion
+- Added 4 course Inngest events: `course/enrolled`, `course/baseline-completed`, `course/module-completed`, `course/final-completed`
+- Emits events from `enroll`, `assessment`, and `progress` API routes
+- Behavioral triggers: `stall_no_start` (48h), `stall_halfway` (5+ modules, 5+ days idle), `nudge_final` (course done, no final for 3+ days)
+- Post-final behavioral: `final_improved` (5+ pt gain), `final_same` (no improvement)
+- Personalized with missed categories from assessment answers, score data, and module progress
 
 **Prompts Page: Multi-Select & Bulk Actions**
 - Added multi-select checkboxes to the V2 prompts page (`app/v2/brands/[brandId]/prompts/`)
