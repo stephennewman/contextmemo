@@ -34,44 +34,67 @@ function isValidDomain(domain: string | null): boolean {
 
 /**
  * Build targeted search queries for Sonar based on brand context.
- * Returns 3-5 queries designed to surface real competitors from live web data.
+ * Uses CATEGORY-FIRST queries (not just brand-name queries) because small brands
+ * won't have many "[brand] vs X" pages. The category searches surface the full
+ * competitive landscape even when the brand itself isn't well-known.
+ * Returns up to 8 queries for comprehensive coverage.
  */
 function buildSonarQueries(brandName: string, context: BrandContext | null): string[] {
   const queries: string[] = []
-  
-  // Always include direct competitor/alternative searches
-  queries.push(`${brandName} competitors and alternatives 2025 2026`)
-  queries.push(`${brandName} vs comparison`)
-  
-  // Category-based search if we know the products/market
   const products = context?.products || []
   const markets = context?.markets || []
   const description = context?.description || ''
   
-  if (products.length > 0) {
-    // Use the first product to find category competitors
-    const productTerm = typeof products[0] === 'string' ? products[0] : (products[0] as { name?: string })?.name || ''
-    if (productTerm) {
-      queries.push(`best ${productTerm} software tools comparison`)
+  // 1. Brand-specific searches (useful if the brand has any web presence)
+  queries.push(`${brandName} competitors and alternatives 2025 2026`)
+  
+  // 2. Category-first searches — these are the most important for finding the full landscape
+  // Use ALL product terms, not just the first
+  const productTerms: string[] = []
+  for (const p of products.slice(0, 3)) {
+    const term = typeof p === 'string' ? p : (p as { name?: string })?.name || ''
+    if (term && !productTerms.includes(term.toLowerCase())) {
+      productTerms.push(term.toLowerCase())
+    }
+  }
+  
+  if (productTerms.length > 0) {
+    // "best OKR software tools 2026" — the money query for finding competitors
+    queries.push(`best ${productTerms[0]} tools 2026 comparison list`)
+    // "top OKR platforms compared" — different phrasing catches different results
+    queries.push(`top ${productTerms[0]} platforms compared reviews`)
+    // Second product term if available
+    if (productTerms[1]) {
+      queries.push(`best ${productTerms[1]} tools software comparison 2026`)
     }
   } else if (description) {
-    // Infer category from description
-    const shortDesc = description.slice(0, 100).replace(/[^a-zA-Z0-9 ]/g, '')
-    queries.push(`${shortDesc} software alternatives comparison`)
+    const shortDesc = description.slice(0, 80).replace(/[^a-zA-Z0-9 ]/g, '')
+    queries.push(`best ${shortDesc} software tools comparison 2026`)
   }
   
-  // Market-specific search
-  if (markets.length > 0) {
-    const market = typeof markets[0] === 'string' ? markets[0] : ''
+  // 3. Market-specific searches
+  for (const m of markets.slice(0, 2)) {
+    const market = typeof m === 'string' ? m : ''
     if (market) {
-      queries.push(`${market} ${brandName} alternatives`)
+      queries.push(`${market} software tools market landscape 2026`)
+      break // One market query is enough
     }
   }
   
-  // G2/Capterra category search
-  queries.push(`${brandName} G2 Capterra reviews category competitors`)
+  // 4. Review site category searches — G2, Capterra lists are gold for competitor discovery
+  if (productTerms.length > 0) {
+    queries.push(`G2 best ${productTerms[0]} software category 2026`)
+    queries.push(`Capterra ${productTerms[0]} tools top rated`)
+  } else {
+    queries.push(`${brandName} G2 Capterra reviews category competitors`)
+  }
   
-  return queries.slice(0, 5) // Cap at 5 queries
+  // 5. Market map / landscape search
+  if (productTerms.length > 0) {
+    queries.push(`${productTerms[0]} market map vendors landscape complete list`)
+  }
+  
+  return queries.slice(0, 8) // Cap at 8 queries
 }
 
 /**
@@ -251,7 +274,7 @@ export const competitorResearch = inngest.createFunction(
           inferredDomain: data.snippets.find(s => s.includes('.')) || null,
         }))
         .sort((a, b) => b.mentionCount - a.mentionCount)
-        .slice(0, 25) // Top 25 candidates for GPT to classify
+        .slice(0, 40) // Top 40 candidates for GPT to classify
       
       console.log(`[Research] Sonar found ${findings.length} candidate competitors for ${brand.name}`)
       return { findings, queriesRun: searchQueries.length }

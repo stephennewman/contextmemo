@@ -497,7 +497,7 @@ export const COMPETITOR_RESEARCH_PROMPT = `You are a competitive intelligence re
 {{rejected_entities}}
 
 ## YOUR TASK
-Identify 8-15 TRUE PRODUCT COMPETITORS - companies that a buyer would evaluate alongside this company.
+Identify ALL TRUE PRODUCT COMPETITORS you know of in this space - every company that a buyer would evaluate alongside this company. Be comprehensive. Most software categories have 15-30+ competitors. Do not stop at 8.
 
 ## RESEARCH ANGLES (use ALL of these to find competitors)
 
@@ -537,9 +537,11 @@ Think: "What larger platforms are adding features that compete with {{company_na
 - Publishers, analysts, marketplaces, associations — this is ONLY for product competitors
 - Companies you're not confident actually exist
 
-### QUALITY OVER QUANTITY:
-- Only include companies you're genuinely confident are real competitors
-- It's better to return 5 high-confidence competitors than 15 questionable ones
+### BE COMPREHENSIVE BUT ACCURATE:
+- Include every company you're confident is a real competitor — do NOT artificially limit the list
+- Most software categories have 15-30+ vendors. If you can only think of 5, you're probably missing many.
+- Include both well-known leaders AND smaller/niche players
+- Include companies that have been acquired but whose products still exist (e.g. Ally.io → Microsoft Viva Goals)
 - If you're unsure about the company's exact space, say so in the reasoning
 
 ## OUTPUT FORMAT
