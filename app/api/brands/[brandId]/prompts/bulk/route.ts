@@ -6,9 +6,20 @@ import { z } from 'zod'
 
 const bulkActionSchema = z.object({
   action: z.enum(['exclude', 'delete', 'reenable', 'rescan', 'regenerate']),
-  promptIds: z.array(z.string().uuid()).min(1).max(500),
+  promptIds: z.array(z.string().uuid()).min(1).max(1000),
   reason: z.enum(['irrelevant', 'duplicate', 'low_value', 'other', 'manual']).optional(),
 })
+
+// Supabase .in() has URL length limits. Chunk into batches of 50 UUIDs.
+const CHUNK_SIZE = 50
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size))
+  }
+  return chunks
+}
 
 export async function POST(
   request: NextRequest,
@@ -56,35 +67,45 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 
-  // Verify all prompts belong to this brand
-  const { data: prompts, error: promptsError } = await serviceClient
-    .from('queries')
-    .select('id')
-    .eq('brand_id', brandId)
-    .in('id', promptIds)
+  // Verify prompts belong to this brand (chunked for large sets)
+  const idChunks = chunkArray(promptIds, CHUNK_SIZE)
+  const validIds: string[] = []
 
-  if (promptsError) {
-    return NextResponse.json({ error: 'Failed to verify prompts' }, { status: 500 })
+  for (const chunk of idChunks) {
+    const { data: prompts, error: promptsError } = await serviceClient
+      .from('queries')
+      .select('id')
+      .eq('brand_id', brandId)
+      .in('id', chunk)
+
+    if (promptsError) {
+      console.error('Failed to verify prompts chunk:', promptsError)
+      continue
+    }
+    validIds.push(...(prompts?.map(p => p.id) || []))
   }
 
-  const validIds = prompts?.map(p => p.id) || []
   if (validIds.length === 0) {
     return NextResponse.json({ error: 'No valid prompts found' }, { status: 404 })
   }
 
+  const validChunks = chunkArray(validIds, CHUNK_SIZE)
+
   try {
     switch (action) {
       case 'exclude': {
-        const { error: updateError } = await serviceClient
-          .from('queries')
-          .update({
-            is_active: false,
-            excluded_at: new Date().toISOString(),
-            excluded_reason: reason || 'manual',
-          })
-          .in('id', validIds)
+        for (const chunk of validChunks) {
+          const { error: updateError } = await serviceClient
+            .from('queries')
+            .update({
+              is_active: false,
+              excluded_at: new Date().toISOString(),
+              excluded_reason: reason || 'manual',
+            })
+            .in('id', chunk)
 
-        if (updateError) throw updateError
+          if (updateError) throw updateError
+        }
 
         return NextResponse.json({
           success: true,
@@ -94,12 +115,23 @@ export async function POST(
       }
 
       case 'delete': {
-        const { error: deleteError } = await serviceClient
-          .from('queries')
-          .delete()
-          .in('id', validIds)
+        // Nullify memos.source_query_id first (FK constraint is NO ACTION)
+        for (const chunk of validChunks) {
+          await serviceClient
+            .from('memos')
+            .update({ source_query_id: null })
+            .in('source_query_id', chunk)
+        }
 
-        if (deleteError) throw deleteError
+        // Now delete the queries (scan_results cascade, feed_events set null)
+        for (const chunk of validChunks) {
+          const { error: deleteError } = await serviceClient
+            .from('queries')
+            .delete()
+            .in('id', chunk)
+
+          if (deleteError) throw deleteError
+        }
 
         return NextResponse.json({
           success: true,
@@ -109,16 +141,18 @@ export async function POST(
       }
 
       case 'reenable': {
-        const { error: updateError } = await serviceClient
-          .from('queries')
-          .update({
-            is_active: true,
-            excluded_at: null,
-            excluded_reason: null,
-          })
-          .in('id', validIds)
+        for (const chunk of validChunks) {
+          const { error: updateError } = await serviceClient
+            .from('queries')
+            .update({
+              is_active: true,
+              excluded_at: null,
+              excluded_reason: null,
+            })
+            .in('id', chunk)
 
-        if (updateError) throw updateError
+          if (updateError) throw updateError
+        }
 
         return NextResponse.json({
           success: true,
@@ -128,6 +162,7 @@ export async function POST(
       }
 
       case 'rescan': {
+        // Inngest event data can handle large arrays, but limit to reasonable batch
         await inngest.send({
           name: 'scan/run',
           data: { brandId, queryIds: validIds, autoGenerateMemos: true },
