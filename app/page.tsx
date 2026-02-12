@@ -672,6 +672,82 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Memo Mockup */}
+          <div className="max-w-3xl mx-auto mb-16 relative">
+            <div className="absolute -inset-4 bg-[#0EA5E9]/5 blur-3xl rounded-3xl" />
+            <div className="relative bg-white rounded-xl overflow-hidden shadow-[0_20px_80px_-20px_rgba(14,165,233,0.2)] text-[#0F172A]">
+              {/* Memo header bar */}
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#0EA5E9] rounded flex items-center justify-center">
+                    <span className="text-white text-[9px] font-black">VS</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#0EA5E9] font-bold tracking-wider">COMPARISON MEMO</p>
+                    <p className="text-xs text-slate-400">Published Feb 10, 2026 · Auto-generated</p>
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-2">
+                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded border border-emerald-200 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    VERIFIED CITED
+                  </span>
+                </div>
+              </div>
+
+              {/* Memo content */}
+              <div className="px-6 py-6">
+                <h3 className="text-xl font-black tracking-tight mb-1">Acme Corp vs HubSpot for B2B Startups</h3>
+                <p className="text-xs text-slate-400 mb-5">Targeting: &quot;acme corp vs hubspot&quot; · &quot;hubspot alternatives for startups&quot;</p>
+                
+                {/* Mini comparison table */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden mb-5">
+                  <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-200">
+                    <div className="px-4 py-2.5 text-[10px] font-bold text-slate-400 tracking-wider">FEATURE</div>
+                    <div className="px-4 py-2.5 text-[10px] font-bold text-[#0EA5E9] tracking-wider text-center">ACME CORP</div>
+                    <div className="px-4 py-2.5 text-[10px] font-bold text-slate-400 tracking-wider text-center">HUBSPOT</div>
+                  </div>
+                  {[
+                    { feature: "Starting price", acme: "$29/mo", hub: "$800/mo", win: true },
+                    { feature: "Setup time", acme: "Same day", hub: "2-4 weeks", win: true },
+                    { feature: "Pipeline automation", acme: "Built-in", hub: "Add-on", win: true },
+                    { feature: "Enterprise features", acme: "Growing", hub: "Mature", win: false },
+                  ].map((row, i) => (
+                    <div key={i} className={`grid grid-cols-3 border-b border-slate-100 last:border-0 ${row.win ? 'bg-emerald-50/30' : ''}`}>
+                      <div className="px-4 py-2.5 text-xs text-slate-600 font-medium">{row.feature}</div>
+                      <div className={`px-4 py-2.5 text-xs font-semibold text-center ${row.win ? 'text-emerald-600' : 'text-slate-500'}`}>{row.acme}</div>
+                      <div className={`px-4 py-2.5 text-xs font-semibold text-center ${!row.win ? 'text-emerald-600' : 'text-slate-500'}`}>{row.hub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Excerpt paragraph */}
+                <div className="text-sm text-slate-600 leading-relaxed mb-5">
+                  <p>
+                    For B2B startups with lean teams, Acme Corp offers a faster path to value with lower upfront costs 
+                    and built-in pipeline automation. HubSpot remains the stronger choice for enterprise-scale operations 
+                    with complex workflows...
+                  </p>
+                </div>
+
+                {/* Sources */}
+                <div className="flex items-center gap-4 text-[10px] text-slate-400 font-semibold border-t border-slate-100 pt-4">
+                  <span className="flex items-center gap-1">
+                    <Shield className="h-3 w-3 text-[#0EA5E9]" />
+                    3 SOURCES VERIFIED
+                  </span>
+                  <span>·</span>
+                  <span>BRAND VOICE MATCHED</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1">
+                    <RefreshCw className="h-3 w-3" />
+                    RE-SCANNED 48H AFTER PUBLISH
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Memo Types Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
             {[

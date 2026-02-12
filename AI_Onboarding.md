@@ -393,6 +393,12 @@ _Most recent deploys first_
 
 ### February 11, 2026
 
+**Landing page: remove redundant sections, tighten page** (c6173f6)
+- Removed Platform Features 8-cell grid (redundant with Three Pillars)
+- Removed Revenue Alignment Marketing/Sales/Product section (reframes existing info without adding value)
+- Cleaned up unused LineChart import
+- Page reduced by 151 lines — tighter narrative flow
+
 **Landing page: full restructure — Problem → Solution → Pillars → Attribution → How It Works** (189e3cd)
 - Reordered all sections per new information architecture
 - Moved dashboard mockup from hero into dedicated Solution section with "CONTEXT MEMO GIVES YOU THE FULL PICTURE" heading

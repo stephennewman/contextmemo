@@ -104,7 +104,7 @@ export default async function AdminDashboardPage() {
 
   const allBrands = allBrandsResult.data || []
   const spendData = (usageEventsResult.data || []) as Array<{ brand_id: string; all_time_spend: number; spend_7d: number; last_active: string | null }>
-  const perfData = (perfResult.data || []) as Array<{ brand_id: string; prompts: number; cited_prompts: number; total_scans: number; mention_rate: number; citation_rate: number; competitors: number; published_memos: number; total_memos: number; last_scanned: string | null }>
+  const perfData = (perfResult.data || []) as Array<{ brand_id: string; prompts: number; cited_prompts: number; total_scans: number; mention_rate: number; citation_rate: number; competitors: number; published_memos: number; total_memos: number; last_scanned: string | null; citation_memos: number; unique_cited_urls: number; covered_urls: number }>
   const crawlData = (crawlResult.data || []) as Array<{ brand_subdomain: string; total_crawls: number; ai_crawls: number; search_crawls: number; ai_training_crawls: number; ai_search_crawls: number; ai_user_crawls: number; unique_bots: number; last_crawl: string | null }>
   const recentScans = recentScansResult.data || []
   const tenantStatsRaw = (tenantStatsResult.data || []) as Array<{
@@ -189,6 +189,9 @@ export default async function AdminDashboardPage() {
       competitors: Number(perf?.competitors) || 0,
       publishedMemos: Number(perf?.published_memos) || 0,
       totalMemos: Number(perf?.total_memos) || 0,
+      citationMemos: Number(perf?.citation_memos) || 0,
+      uniqueCitedUrls: Number(perf?.unique_cited_urls) || 0,
+      coveredUrls: Number(perf?.covered_urls) || 0,
       lastScanned: perf?.last_scanned || null,
       lastActivity: spend?.last_active || null,
       aiCrawls: Number(crawl?.ai_crawls) || 0,
@@ -333,6 +336,9 @@ export default async function AdminDashboardPage() {
         citationRate: b.citationRate,
         publishedMemos: b.publishedMemos,
         totalMemos: b.totalMemos,
+        citationMemos: b.citationMemos,
+        uniqueCitedUrls: b.uniqueCitedUrls,
+        coveredUrls: b.coveredUrls,
         aiCrawls: b.aiCrawls,
         aiSearchCrawls: b.aiSearchCrawls,
         aiTrainingCrawls: b.aiTrainingCrawls,

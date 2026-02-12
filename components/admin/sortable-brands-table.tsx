@@ -17,6 +17,9 @@ export type BrandRow = {
   citationRate: number
   publishedMemos: number
   totalMemos: number
+  citationMemos: number
+  uniqueCitedUrls: number
+  coveredUrls: number
   aiCrawls: number
   aiSearchCrawls: number
   aiTrainingCrawls: number
@@ -40,6 +43,9 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'right'; tooltip?:
   { key: 'mentionRate', label: 'Mention %', align: 'right', tooltip: 'Percentage of scans where the brand is mentioned by name' },
   { key: 'citationRate', label: 'Citation %', align: 'right', tooltip: 'Percentage of scans where the brand\'s domain appears in citations' },
   { key: 'publishedMemos', label: 'Memos', align: 'right', tooltip: 'Published memos on contextmemo.com' },
+  { key: 'citationMemos', label: 'Cit. Memos', align: 'right', tooltip: 'Citation response memos: content created to compete with specific competitor URLs being cited by AI' },
+  { key: 'uniqueCitedUrls', label: 'Comp. URLs', align: 'right', tooltip: 'Unique competitor URLs being cited by AI models (where brand is NOT cited). This is the opportunity landscape.' },
+  { key: 'coveredUrls', label: 'Covered', align: 'right', tooltip: 'Competitor URLs that have a citation response memo. Higher = more gaps addressed.' },
   { key: 'aiSearchCrawls', label: 'AI Search', align: 'right', tooltip: 'Total events: AI platforms fetching content to answer a user query (PerplexityBot, ChatGPT Search, Claude Search). Same page hit multiple times = multiple events. Directly leads to citations.' },
   { key: 'aiTrainingCrawls', label: 'AI Training', align: 'right', tooltip: 'Total events: Bots scraping for future model training data (GPTBot, ClaudeBot, Google AI). Content may appear in model outputs months later.' },
   { key: 'aiUserCrawls', label: 'AI User', align: 'right', tooltip: 'Total events: A human inside ChatGPT/Perplexity/Claude clicked to browse a page. Strongest signal of real engagement.' },
@@ -176,6 +182,34 @@ export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
                 <td className="py-3 pr-4 text-right text-xs text-slate-600">
                   {brand.publishedMemos || <span className="text-slate-300">0</span>}
                 </td>
+                {/* Citation Memos */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {brand.citationMemos > 0 ? (
+                    <span className={brand.citationMemos >= 10 ? 'font-semibold text-orange-600' : 'text-orange-500'}>
+                      {brand.citationMemos}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* Competitor URLs */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {brand.uniqueCitedUrls > 0 ? (
+                    <span className="text-slate-600">{brand.uniqueCitedUrls.toLocaleString()}</span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
+                {/* Covered URLs */}
+                <td className="py-3 pr-4 text-right font-mono text-xs">
+                  {brand.coveredUrls > 0 ? (
+                    <span className={brand.coveredUrls >= 10 ? 'font-semibold text-emerald-600' : 'text-emerald-500'}>
+                      {brand.coveredUrls}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">0</span>
+                  )}
+                </td>
                 {/* AI Search Crawls */}
                 <td className="py-3 pr-4 text-right font-mono text-xs">
                   {brand.aiSearchCrawls > 0 ? (
@@ -225,7 +259,7 @@ export function SortableBrandsTable({ brands }: { brands: BrandRow[] }) {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={14} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
+                <td colSpan={17} className="py-8 text-center text-sm text-slate-400">No brands yet.</td>
               </tr>
             )}
           </tbody>
