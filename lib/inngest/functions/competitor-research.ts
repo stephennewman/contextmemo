@@ -389,9 +389,73 @@ export const competitorResearch = inngest.createFunction(
       })
     })
 
+    // ================================================================
+    // STAGE 3: Per-competitor citation enrichment via Sonar
+    // Fires targeted "[brand] vs [competitor]" searches to get specific
+    // comparison URLs, review pages, and head-to-head content.
+    // ================================================================
+    const enrichedCompetitors = await step.run('enrich-citations', async () => {
+      const typed = validated as ResearchedCompetitor[]
+      if (typed.length === 0) return typed
+      
+      let totalInputTokens = 0
+      let totalOutputTokens = 0
+      
+      // Fire a targeted search per competitor (parallel, batched by 3)
+      for (let i = 0; i < typed.length; i += 3) {
+        const batch = typed.slice(i, i + 3)
+        
+        await Promise.allSettled(batch.map(async (competitor) => {
+          try {
+            const searchQuery = `${brand.name} vs ${competitor.name} comparison review`
+            
+            const result = await queryPerplexity(searchQuery,
+              `Find comparison pages, reviews, and head-to-head analyses between ${brand.name} and ${competitor.name}. ` +
+              `List the most relevant URLs that compare these two products.`,
+              {
+                model: 'sonar',
+                searchContextSize: 'low',
+                temperature: 0.1,
+              }
+            )
+            
+            if (result.usage) {
+              totalInputTokens += result.usage.promptTokens
+              totalOutputTokens += result.usage.completionTokens
+            }
+            
+            // Merge new citations with any existing source URLs
+            const existingUrls = new Set(competitor.source_urls || [])
+            for (const url of result.citations) {
+              existingUrls.add(url)
+            }
+            // Also grab URLs from search results
+            for (const sr of result.searchResults) {
+              if (sr.url) existingUrls.add(sr.url)
+            }
+            
+            competitor.source_urls = Array.from(existingUrls).slice(0, 10) // Cap at 10
+          } catch (e) {
+            console.log(`[Research] Citation enrichment failed for ${competitor.name} (non-critical):`, (e as Error).message)
+          }
+        }))
+      }
+      
+      // Log citation enrichment usage
+      if (totalInputTokens > 0 || totalOutputTokens > 0) {
+        await logSingleUsage(
+          brand.tenant_id, brandId, 'competitor_research_citations',
+          'perplexity-sonar', totalInputTokens, totalOutputTokens
+        )
+      }
+      
+      console.log(`[Research] Enriched citations for ${typed.length} competitors`)
+      return typed
+    })
+
     // Step 4: Save to database
     const saved = await step.run('save-competitors', async () => {
-      const typed = validated as ResearchedCompetitor[]
+      const typed = enrichedCompetitors as ResearchedCompetitor[]
       
       if (typed.length === 0) return []
 
@@ -466,6 +530,7 @@ export const competitorResearch = inngest.createFunction(
       sonarQueries: sonarFindings.queriesRun,
       researched: researchResults.length,
       validated: validated.length,
+      citationsEnriched: enrichedCompetitors.length,
       saved: saved.length,
       enriching: enrichEvents.length,
       competitors: (saved as Array<{ name: string; domain?: string }>).map(c => ({
