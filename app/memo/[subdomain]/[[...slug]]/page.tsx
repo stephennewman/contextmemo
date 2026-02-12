@@ -105,13 +105,7 @@ export default async function MemoPage({ params }: Props) {
   const { subdomain, slug } = await params
   const slugPath = slug?.join('/') || ''
 
-  // Detect if accessed via subdomain for correct link generation
-  const viaSubdomain = await isSubdomainAccess(subdomain)
-  
-  // Generate link prefix based on access method
-  const linkPrefix = viaSubdomain ? '' : `/memo/${subdomain}`
-
-  // Get brand
+  // Get brand (fetch early so we can check proxy_base_path for link generation)
   const { data: brand, error: brandError } = await supabase
     .from('brands')
     .select('*')
@@ -121,6 +115,15 @@ export default async function MemoPage({ params }: Props) {
   if (brandError || !brand) {
     notFound()
   }
+
+  // Detect if accessed via subdomain or custom domain for correct link generation
+  const viaSubdomain = await isSubdomainAccess(subdomain)
+  
+  // Generate link prefix based on access method:
+  // - Subdomain/custom domain: no prefix (e.g., /vs/okrs-vs-kpis)
+  // - Reverse proxy with proxy_base_path: use that path (e.g., /memos/vs/okrs-vs-kpis)
+  // - Direct path access: /memo/{subdomain} prefix
+  const linkPrefix = viaSubdomain ? '' : (brand.proxy_base_path || `/memo/${subdomain}`)
 
   // If no slug, show brand memo index
   if (!slugPath) {
