@@ -55,6 +55,7 @@ import { memoVerifyContent } from '@/lib/inngest/functions/memo-verify'
 import { citationRespond } from '@/lib/inngest/functions/citation-respond'
 import { deployAnalyze } from '@/lib/inngest/functions/deploy-analyze'
 import { uptimeCheck } from '@/lib/inngest/functions/uptime-check'
+import { courseNurtureCheck, courseNurtureSend } from '@/lib/inngest/functions/course-nurture'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -152,6 +153,10 @@ export const { GET, POST, PUT } = serve({
     
     // Uptime monitoring - 5-min health checks with email alerts
     uptimeCheck,             // Check Supabase + Redis, email admins on failure/recovery
+    
+    // Course nurture emails - adaptive drip sequences
+    courseNurtureCheck,       // Cron: check for due emails every 6 hours
+    courseNurtureSend,        // Event-triggered: immediate emails on enrollment/assessment
   ],
 })
 // Sync trigger Wed Feb 12 06:20:00 EST 2026

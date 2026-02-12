@@ -393,6 +393,19 @@ _Most recent deploys first_
 
 ### February 12, 2026
 
+**Prompts Page: Multi-Select & Bulk Actions**
+- Added multi-select checkboxes to the V2 prompts page (`app/v2/brands/[brandId]/prompts/`)
+- Floating action bar appears when prompts are selected with 5 bulk actions:
+  - **Re-scan** — triggers Inngest `scan/run` for selected prompt IDs
+  - **Exclude** — bulk disable with reason picker (irrelevant/duplicate/low_value/other)
+  - **Delete** — permanent hard delete with confirmation dialog
+  - **Generate New** — triggers Inngest `query/generate` for fresh prompts
+  - **Re-enable** — bulk restore excluded prompts (in excluded section)
+- Select All / Deselect All toggle in toolbar with live count
+- Excluded prompts section also gets multi-select with bulk re-enable and delete
+- New bulk API route: `POST /api/brands/[brandId]/prompts/bulk` with auth, ownership verification, and UUID validation
+- Installed shadcn Checkbox component (`components/ui/checkbox.tsx`)
+
 **Custom Domain Preferred Everywhere** (49ad9e1)
 - When a brand has a verified custom domain (e.g. `ai.crezzo.com`), it is now used as the primary URL everywhere instead of `subdomain.contextmemo.com`
 - Updated 25+ files across dashboard UI, memo feed, brand headers, brand switcher, memo editor, citation insights, content performance, IndexNow submissions, memo generation alerts, search console sync, Bing sync, activity logger, and admin tables

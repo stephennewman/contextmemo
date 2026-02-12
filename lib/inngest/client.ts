@@ -225,4 +225,39 @@ export type InngestEvents = {
       queryIds?: string[] // Optional: which queries this URL is cited for
     }
   }
+  // Course nurture email events
+  'course/enrolled': {
+    data: {
+      enrollmentId: string
+      email: string
+      name: string | null
+    }
+  }
+  'course/baseline-completed': {
+    data: {
+      enrollmentId: string
+      email: string
+      name: string | null
+      score: number
+      totalQuestions: number
+      courseTrack: 'standard' | 'advanced'
+    }
+  }
+  'course/module-completed': {
+    data: {
+      enrollmentId: string
+      moduleSlug: string
+      completedCount: number
+      totalRequired: number
+    }
+  }
+  'course/final-completed': {
+    data: {
+      enrollmentId: string
+      email: string
+      score: number
+      baselineScore: number | null
+      totalQuestions: number
+    }
+  }
 }

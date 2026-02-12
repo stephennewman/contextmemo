@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { courseModules } from '@/lib/course/modules'
 import { advancedModules } from '@/lib/course/advanced-modules'
+import { inngest } from '@/lib/inngest/client'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -120,6 +121,17 @@ export async function POST(request: NextRequest) {
         .update({ course_completed: true })
         .eq('id', enrollmentId)
     }
+
+    // Emit module-completed event for nurture tracking
+    inngest.send({
+      name: 'course/module-completed',
+      data: {
+        enrollmentId,
+        moduleSlug,
+        completedCount: completedSlugs.size,
+        totalRequired: requiredModules.length,
+      },
+    }).catch(err => console.error('[Course Progress] Failed to emit event:', err))
 
     return NextResponse.json({
       completed: true,

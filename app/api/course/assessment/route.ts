@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { courseQuestions } from '@/lib/course/questions'
+import { inngest } from '@/lib/inngest/client'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -213,6 +214,40 @@ export async function POST(request: NextRequest) {
         .from('course_enrollments')
         .update(updateData)
         .eq('id', enrollmentId)
+
+      // Emit nurture event
+      const { data: enrollmentData } = await supabase
+        .from('course_enrollments')
+        .select('email, name, baseline_score')
+        .eq('id', enrollmentId)
+        .single()
+
+      if (enrollmentData) {
+        if (assessment.assessment_type === 'baseline') {
+          inngest.send({
+            name: 'course/baseline-completed',
+            data: {
+              enrollmentId,
+              email: enrollmentData.email,
+              name: enrollmentData.name,
+              score,
+              totalQuestions: courseQuestions.length,
+              courseTrack: (percentage >= 80 ? 'advanced' : 'standard') as 'standard' | 'advanced',
+            },
+          }).catch(err => console.error('[Course Assessment] Failed to emit baseline event:', err))
+        } else {
+          inngest.send({
+            name: 'course/final-completed',
+            data: {
+              enrollmentId,
+              email: enrollmentData.email,
+              score,
+              baselineScore: enrollmentData.baseline_score,
+              totalQuestions: courseQuestions.length,
+            },
+          }).catch(err => console.error('[Course Assessment] Failed to emit final event:', err))
+        }
+      }
 
       return NextResponse.json({
         score,
