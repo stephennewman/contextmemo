@@ -152,4 +152,4 @@ export const { GET, POST, PUT } = serve({
     uptimeCheck,             // Check Supabase + Redis, email admins on failure/recovery
   ],
 })
-// Sync trigger Wed Feb  4 13:26:53 EST 2026
+// Sync trigger Wed Feb 12 06:20:00 EST 2026
