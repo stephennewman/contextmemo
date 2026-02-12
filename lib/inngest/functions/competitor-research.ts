@@ -184,7 +184,7 @@ export const competitorResearch = inngest.createFunction(
             `Format: "- CompanyName (domain.com): brief description"`,
             {
               model: 'sonar',
-              searchContextSize: 'low',
+              searchContextSize: 'medium',
               temperature: 0.2,
             }
           )
@@ -269,6 +269,58 @@ export const competitorResearch = inngest.createFunction(
         } catch (e) {
           console.log(`[Research] Sonar query failed (non-critical): "${query}" -`, (e as Error).message)
         }
+      }
+      
+      // Final query: comprehensive enumeration — ask Sonar to produce a complete vendor list
+      // This catches names that individual searches may have mentioned but our regex missed
+      const productTerms = (context?.products || []).slice(0, 2).map(
+        p => typeof p === 'string' ? p : (p as { name?: string })?.name || ''
+      ).filter(Boolean)
+      const categoryName = productTerms[0] || brand.name
+      
+      try {
+        const enumResult = await queryPerplexity(
+          `Complete list of all ${categoryName} vendors tools and platforms available in 2025 2026`,
+          `List EVERY ${categoryName} vendor, tool, and platform that exists in the market today. ` +
+          `Include market leaders, mid-market players, niche tools, and new entrants. ` +
+          `Be comprehensive — most software categories have 20-40+ vendors. ` +
+          `For each, provide: "- CompanyName (domain.com)" on its own line. Nothing else.`,
+          {
+            model: 'sonar',
+            searchContextSize: 'high',
+            temperature: 0.1,
+          }
+        )
+        
+        if (enumResult.usage) {
+          totalInputTokens += enumResult.usage.promptTokens
+          totalOutputTokens += enumResult.usage.completionTokens
+        }
+        
+        // Parse the enumeration response — should be a clean list
+        for (const line of enumResult.text.split('\n')) {
+          // Match "- Name (domain)" or "- Name" patterns
+          const match = line.match(/^[-•*\d.)]+\s*\*?\*?([A-Z][A-Za-z0-9. ]+?)(?:\*\*)?(?:\s*\(([a-z0-9.-]+\.[a-z]{2,})\))?(?:\s*[-:–—]|$)/)
+          if (match) {
+            const name = match[1].trim().replace(/\*+/g, '')
+            const domain = match[2] || null
+            if (name.length >= 2 && name.length <= 50) {
+              const key = name.toLowerCase()
+              if (!allMentions.has(key)) {
+                allMentions.set(key, { count: 0, sourceUrls: new Set(), snippets: [] })
+              }
+              const entry = allMentions.get(key)!
+              entry.count++
+              if (domain) entry.snippets.push(domain)
+              for (const url of enumResult.citations) {
+                entry.sourceUrls.add(url)
+              }
+            }
+          }
+        }
+        console.log(`[Research] Enumeration query found additional names, total candidates now: ${allMentions.size}`)
+      } catch (e) {
+        console.log(`[Research] Enumeration query failed (non-critical):`, (e as Error).message)
       }
       
       // Log Sonar usage
