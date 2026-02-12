@@ -347,7 +347,9 @@ export const competitorResearch = inngest.createFunction(
     })
 
     // ================================================================
-    // STAGE 2: GPT-4o-mini validation + classification + gap filling
+    // STAGE 2: GPT-4o validation + classification + gap filling
+    // Using GPT-4o (not mini) for better market knowledge and stricter
+    // classification. Cost: ~$0.03/brand vs $0.005 — worth it for accuracy.
     // ================================================================
     const researchResults = await step.run('classify-and-research', async () => {
       // Format existing entities list
@@ -402,14 +404,14 @@ export const competitorResearch = inngest.createFunction(
         + sonarContext
 
       const { text, usage } = await generateText({
-        model: openai('gpt-4o-mini'),
+        model: openai('gpt-4o'),
         prompt,
         temperature: 0.3,
       })
 
       await logSingleUsage(
         brand.tenant_id, brandId, 'competitor_research',
-        'gpt-4o-mini', usage?.inputTokens || 0, usage?.outputTokens || 0
+        'gpt-4o', usage?.inputTokens || 0, usage?.outputTokens || 0
       )
 
       try {
@@ -564,7 +566,7 @@ export const competitorResearch = inngest.createFunction(
         auto_discovered: true,
         is_active: true,
         entity_type: 'product_competitor' as const,
-        source_model: 'perplexity-sonar+gpt-4o-mini',
+        source_model: 'perplexity-sonar+gpt-4o',
         source_method: 'competitor_research' as const,
         context: {
           confidence: c.confidence || 'medium',
