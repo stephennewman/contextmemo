@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 11, 2026  
-> **Version:** 0.21.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning
+> **Last Updated:** February 12, 2026  
+> **Version:** 0.22.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support
 
 ---
 
@@ -1000,6 +1000,43 @@ Left untouched: "competitor content" references (legitimately about their blog p
 **Files changed:**
 - `app/page.tsx` - Added popular content section with featured memos query
 - `lib/supabase/types.ts` - Added `featured` and `sort_order` to memos types
+
+---
+
+### February 12, 2026
+
+**Feature: Custom Domain Support for Brand White-Labeling** (16f57da)
+- Added Vercel domains API utility (`lib/utils/vercel-domains.ts`) for programmatic domain management
+- Updated middleware to resolve custom domains (e.g., `ai.krezzo.com` → Krezzo brand) before subdomain routing
+- Updated memo page `isSubdomainAccess()` to detect custom domain access for correct internal link generation
+- Created full CRUD API for custom domain management (`/api/brands/[brandId]/custom-domain/`)
+- Applied RLS policy for public custom domain resolution in middleware (anon role access for verified domains)
+- Moved `ai.krezzo.com` from old Vercel project to contextmemo project, SSL provisioned and verified
+
+**Database changes:**
+- `brands.custom_domain` (TEXT UNIQUE) and `brands.domain_verified` (BOOLEAN) columns added
+- RLS policy "Public custom domain lookup" added for anonymous domain resolution
+- Krezzo brand configured: `custom_domain = 'ai.krezzo.com'`, `domain_verified = true`
+
+**OKR Memo Content Generation (Krezzo brand):**
+- Generated 16 OKR-focused memos across 4 types:
+  - **Comparison (4):** OKRs vs KPIs, OKRs vs SMART Goals, OKRs vs MBOs, OKRs vs Balanced Scorecard
+  - **How-to (4):** Write OKRs, Run OKR Check-ins, Score OKRs, Cascade OKRs
+  - **Industry (4):** OKRs for Startups, Engineering Teams, Sales Teams, Remote Teams
+  - **Gap fill (4):** What Are OKRs, What Are Key Results, OKR Examples, OKR Best Practices
+- All 16 memos published and verified live at `ai.krezzo.com`
+- Total Krezzo memos: 20 (4 existing + 16 new)
+
+**Files created/modified:**
+- `lib/utils/vercel-domains.ts` (NEW) — Vercel API utility
+- `lib/supabase/middleware.ts` — Custom domain resolution
+- `app/memo/[subdomain]/[[...slug]]/page.tsx` — Custom domain detection
+- `app/api/brands/[brandId]/custom-domain/route.ts` (NEW) — CRUD API
+
+**Verification:**
+- `ai.krezzo.com` → HTTP 200, all 20 memos rendering correctly
+- `krezzo.contextmemo.com` → continues working as before
+- Internal links use custom domain when accessed via `ai.krezzo.com`
 
 ---
 
