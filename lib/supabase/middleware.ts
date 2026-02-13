@@ -153,7 +153,19 @@ export async function updateSession(request: NextRequest) {
     // Preserve the original path
     const originalPath = request.nextUrl.pathname === '/' ? '' : request.nextUrl.pathname
     url.pathname = `/memo/${subdomain}${originalPath}`
-    return NextResponse.rewrite(url)
+    const response = NextResponse.rewrite(url)
+    
+    // If X-Forwarded-Prefix is present, this is a proxied request — add permissive CORS
+    const forwardedPrefix = request.headers.get('x-forwarded-prefix') || request.headers.get('x-cm-base-path')
+    if (forwardedPrefix) {
+      const origin = request.headers.get('origin')
+      if (origin) {
+        response.headers.set('Access-Control-Allow-Origin', origin)
+      }
+      response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    }
+    
+    return response
   }
 
   // Protected routes that require authentication

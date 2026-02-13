@@ -41,6 +41,8 @@ interface Brand {
   context: BrandContext
   custom_domain: string | null
   domain_verified: boolean
+  proxy_origin: string | null
+  proxy_base_path: string | null
 }
 
 // Navigation sections
@@ -55,6 +57,7 @@ const NAV_SECTIONS = [
   { id: 'brand-voice', label: 'Brand Voice', icon: MessageSquare },
   { id: 'content', label: 'Memo Settings', icon: FileText },
   { id: 'custom-domain', label: 'Custom Domain', icon: Globe },
+  { id: 'subfolder-proxy', label: 'Subfolder Proxy', icon: Link2, highlight: true },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'personas', label: 'Target Personas', icon: Users },
   { id: 'integrations', label: 'Integrations', icon: Plug },
@@ -222,6 +225,14 @@ export default function BrandSettingsPage() {
   const [domainVerifying, setDomainVerifying] = useState(false)
   const [domainRemoving, setDomainRemoving] = useState(false)
 
+  // Subfolder proxy state
+  const [proxyOrigin, setProxyOrigin] = useState('')
+  const [proxyBasePath, setProxyBasePath] = useState('')
+  const [proxyOriginInput, setProxyOriginInput] = useState('')
+  const [proxyBasePathInput, setProxyBasePathInput] = useState('/memos')
+  const [proxySaving, setProxySaving] = useState(false)
+  const [proxyRemoving, setProxyRemoving] = useState(false)
+
   // Appearance / theme state
   const [brandTheme, setBrandTheme] = useState<BrandTheme>({})
   const [themeSaving, setThemeSaving] = useState(false)
@@ -303,6 +314,10 @@ export default function BrandSettingsPage() {
       setCustomDomain(data.custom_domain || '')
       setCustomDomainInput(data.custom_domain || '')
       setDomainVerified(data.domain_verified || false)
+      setProxyOrigin(data.proxy_origin || '')
+      setProxyBasePath(data.proxy_base_path || '')
+      setProxyOriginInput(data.proxy_origin || '')
+      setProxyBasePathInput(data.proxy_base_path || '/memos')
       
       const context = data.context as BrandContext
       if (context) {
@@ -799,6 +814,78 @@ export default function BrandSettingsPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to remove domain')
     } finally {
       setDomainRemoving(false)
+    }
+  }
+
+  // Subfolder proxy handlers
+  const handleSaveProxy = async () => {
+    const origin = proxyOriginInput.trim()
+    const basePath = proxyBasePathInput.trim()
+
+    if (!origin) {
+      toast.error('Please enter your website URL (e.g., https://acme.com)')
+      return
+    }
+    if (!basePath || !basePath.startsWith('/')) {
+      toast.error('Base path must start with / (e.g., /memos)')
+      return
+    }
+
+    // Validate URL format
+    try {
+      new URL(origin)
+    } catch {
+      toast.error('Please enter a valid URL including https:// (e.g., https://acme.com)')
+      return
+    }
+
+    setProxySaving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('brands')
+        .update({
+          proxy_origin: origin.replace(/\/$/, ''),
+          proxy_base_path: basePath.replace(/\/$/, ''),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', brandId)
+
+      if (error) throw error
+      setProxyOrigin(origin.replace(/\/$/, ''))
+      setProxyBasePath(basePath.replace(/\/$/, ''))
+      toast.success('Subfolder proxy settings saved. Configure your proxy using the instructions below.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save proxy settings')
+    } finally {
+      setProxySaving(false)
+    }
+  }
+
+  const handleRemoveProxy = async () => {
+    if (!window.confirm('Remove subfolder proxy configuration? Memos will still be accessible via your subdomain or custom domain.')) return
+    setProxyRemoving(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('brands')
+        .update({
+          proxy_origin: null,
+          proxy_base_path: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', brandId)
+
+      if (error) throw error
+      setProxyOrigin('')
+      setProxyBasePath('')
+      setProxyOriginInput('')
+      setProxyBasePathInput('/memos')
+      toast.success('Subfolder proxy configuration removed')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove proxy settings')
+    } finally {
+      setProxyRemoving(false)
     }
   }
 
@@ -1917,6 +2004,272 @@ export default function BrandSettingsPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Use a subdomain like <span className="font-mono">ai.yourdomain.com</span> or <span className="font-mono">resources.yourdomain.com</span>. You&apos;ll need to add a CNAME record in your DNS.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Subfolder Proxy Section */}
+        <section id="subfolder-proxy" ref={(el) => { sectionRefs.current['subfolder-proxy'] = el }} className="scroll-mt-24">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                Subfolder Proxy
+                <Badge variant="outline" className="text-xs ml-1">Recommended for AI</Badge>
+              </CardTitle>
+              <CardDescription>
+                Serve memos from a subfolder on your main domain (e.g., {brand.domain || 'acme.com'}/memos/) for maximum AI search visibility. Content on your root domain inherits its full domain authority.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {proxyOrigin ? (
+                <>
+                  {/* Current proxy config display */}
+                  <div className="flex items-center gap-3 p-4 rounded-lg border bg-blue-50 border-blue-200">
+                    <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium font-mono text-sm truncate">{proxyOrigin}{proxyBasePath}/</p>
+                        <Badge className="bg-blue-600 text-xs">Configured</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Configure your reverse proxy using the instructions below to activate.
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleRemoveProxy} disabled={proxyRemoving} className="text-muted-foreground hover:text-destructive shrink-0">
+                      {proxyRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+
+                  {/* Setup instructions */}
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-5">
+                    <div>
+                      <p className="text-sm font-medium">Proxy Setup Instructions</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Add a reverse proxy rule on your site to forward <span className="font-mono font-medium">{proxyBasePath}/*</span> to Context Memo. Choose your platform below.
+                      </p>
+                    </div>
+
+                    {/* Vercel — Next.js */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Vercel &mdash; Next.js (next.config.js)</p>
+                      <p className="text-xs text-muted-foreground">Add the <span className="font-mono">rewrites()</span> function inside your <span className="font-mono">next.config.js</span> or <span className="font-mono">next.config.ts</span> in the root of your repo, then redeploy.</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`// next.config.js
+module.exports = {
+  async rewrites() {
+    return [
+      {
+        source: '${proxyBasePath}/:path*',
+        destination: 'https://${brand.subdomain}.contextmemo.com/:path*',
+      },
+    ]
+  },
+}`}
+                      </pre>
+                    </div>
+
+                    {/* Vercel — non-Next.js */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Vercel &mdash; Any framework (vercel.json)</p>
+                      <p className="text-xs text-muted-foreground">If your Vercel project isn&apos;t Next.js, add this to <span className="font-mono">vercel.json</span> in the root of your repo, then redeploy.</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`{
+  "rewrites": [
+    {
+      "source": "${proxyBasePath}/:path*",
+      "destination": "https://${brand.subdomain}.contextmemo.com/:path*"
+    }
+  ]
+}`}
+                      </pre>
+                    </div>
+
+                    {/* Netlify */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Netlify</p>
+                      <p className="text-xs text-muted-foreground">Add to <span className="font-mono">netlify.toml</span> in your repo root, or use the <span className="font-mono">_redirects</span> file in your publish directory. Then redeploy.</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`# netlify.toml
+[[redirects]]
+  from = "${proxyBasePath}/*"
+  to = "https://${brand.subdomain}.contextmemo.com/:splat"
+  status = 200
+  force = true
+
+# Or in _redirects file:
+${proxyBasePath}/*  https://${brand.subdomain}.contextmemo.com/:splat  200!`}
+                      </pre>
+                    </div>
+
+                    {/* Cloudflare */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Cloudflare Workers</p>
+                      <p className="text-xs text-muted-foreground">Go to your Cloudflare dashboard &rarr; Workers &amp; Pages &rarr; Create Worker. Add a route for <span className="font-mono">{new URL(proxyOrigin).hostname}{proxyBasePath}/*</span> in Settings &rarr; Triggers.</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`export default {
+  async fetch(request) {
+    const url = new URL(request.url)
+
+    // Only proxy requests under ${proxyBasePath}
+    if (!url.pathname.startsWith('${proxyBasePath}')) {
+      return fetch(request)
+    }
+
+    url.hostname = '${brand.subdomain}.contextmemo.com'
+    url.pathname = url.pathname.replace('${proxyBasePath}', '') || '/'
+
+    return fetch(url, {
+      headers: {
+        ...Object.fromEntries(request.headers),
+        'Host': '${brand.subdomain}.contextmemo.com',
+        'X-Forwarded-Prefix': '${proxyBasePath}',
+      },
+    })
+  },
+}`}
+                      </pre>
+                    </div>
+
+                    {/* Nginx */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Nginx</p>
+                      <p className="text-xs text-muted-foreground">Add this location block to your server config (usually <span className="font-mono">/etc/nginx/sites-available/your-site</span>), then run <span className="font-mono">sudo nginx -s reload</span>.</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`location ${proxyBasePath}/ {
+    proxy_pass https://${brand.subdomain}.contextmemo.com/;
+    proxy_set_header Host ${brand.subdomain}.contextmemo.com;
+    proxy_set_header X-Forwarded-Prefix ${proxyBasePath};
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_ssl_server_name on;
+}`}
+                      </pre>
+                    </div>
+
+                    {/* WordPress / Apache */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">WordPress / Apache (.htaccess)</p>
+                      <p className="text-xs text-muted-foreground">Add to the <span className="font-mono">.htaccess</span> file in your WordPress root directory. Requires <span className="font-mono">mod_proxy</span> and <span className="font-mono">mod_proxy_http</span> enabled on your Apache server.</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`# .htaccess — add BEFORE the WordPress rewrite rules
+RewriteEngine On
+RewriteRule ^${proxyBasePath.replace(/^\//, '')}(/.*)?$ https://${brand.subdomain}.contextmemo.com$1 [P,L]
+ProxyPassReverse ${proxyBasePath}/ https://${brand.subdomain}.contextmemo.com/
+RequestHeader set X-Forwarded-Prefix "${proxyBasePath}"`}
+                      </pre>
+                    </div>
+
+                    {/* AWS CloudFront */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">AWS CloudFront</p>
+                      <p className="text-xs text-muted-foreground">Add a new origin for <span className="font-mono">{brand.subdomain}.contextmemo.com</span> and a cache behavior for <span className="font-mono">{proxyBasePath}/*</span>. Use a CloudFront Function to strip the path prefix:</p>
+                      <pre className="text-xs font-mono bg-white p-3 rounded border overflow-x-auto whitespace-pre">
+{`// CloudFront Function (Viewer Request)
+function handler(event) {
+  var request = event.request
+  request.uri = request.uri.replace('${proxyBasePath}', '') || '/'
+  request.headers['x-forwarded-prefix'] = {
+    value: '${proxyBasePath}'
+  }
+  return request
+}`}
+                      </pre>
+                      <p className="text-xs text-muted-foreground">Steps: CloudFront &rarr; Distributions &rarr; your distribution &rarr; Origins &rarr; Create origin (<span className="font-mono">{brand.subdomain}.contextmemo.com</span>, HTTPS only) &rarr; Behaviors &rarr; Create behavior (path: <span className="font-mono">{proxyBasePath}/*</span>, origin: the new one, attach the function as Viewer Request).</p>
+                    </div>
+
+                    {/* Unsupported platforms note */}
+                    <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg space-y-1">
+                      <p className="text-xs font-medium text-slate-700">Webflow, Squarespace, Wix, or other hosted builders?</p>
+                      <p className="text-xs text-muted-foreground">
+                        These platforms don&apos;t support reverse proxying. Instead, use a <strong>Custom Domain</strong> (e.g., <span className="font-mono">ai.{brand.domain || 'yourdomain.com'}</span>) configured above, or publish memos to your blog via the <strong>HubSpot integration</strong>.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800">
+                        <strong>Tip:</strong> For the best internal link generation, your proxy should forward the <span className="font-mono">X-Forwarded-Prefix: {proxyBasePath}</span> header. Vercel and Netlify handle this automatically. For Nginx, Cloudflare Workers, and Apache the config above includes it.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Update config */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <Label>Update Configuration</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Website URL</p>
+                        <Input
+                          value={proxyOriginInput}
+                          onChange={(e) => setProxyOriginInput(e.target.value)}
+                          placeholder="https://acme.com"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Base Path</p>
+                        <Input
+                          value={proxyBasePathInput}
+                          onChange={(e) => setProxyBasePathInput(e.target.value)}
+                          placeholder="/memos"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleSaveProxy}
+                      disabled={proxySaving || (proxyOriginInput.replace(/\/$/, '') === proxyOrigin && proxyBasePathInput.replace(/\/$/, '') === proxyBasePath)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {proxySaving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}
+                      Update
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* No proxy set — setup form */}
+                  <div className="space-y-4">
+                    <div className="p-4 bg-slate-50 rounded-lg border text-center">
+                      <Link2 className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                      <p className="font-medium mb-1">Maximize AI Search Pickup</p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Serve memos from your main domain (e.g., <span className="font-mono">{brand.domain || 'acme.com'}/memos/</span>) instead of a subdomain.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Content on your root domain inherits its full domain authority, making it significantly more likely to be cited by AI models like ChatGPT, Claude, and Perplexity.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label>Website URL</Label>
+                          <Input
+                            value={proxyOriginInput}
+                            onChange={(e) => setProxyOriginInput(e.target.value)}
+                            placeholder={`https://${brand.domain || 'acme.com'}`}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label>Base Path</Label>
+                          <Input
+                            value={proxyBasePathInput}
+                            onChange={(e) => setProxyBasePathInput(e.target.value)}
+                            placeholder="/memos"
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={handleSaveProxy} disabled={proxySaving || !proxyOriginInput.trim()}>
+                        {proxySaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Configure Subfolder Proxy
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        After saving, you&apos;ll get platform-specific setup instructions (Vercel, Cloudflare, Nginx).
                       </p>
                     </div>
                   </div>

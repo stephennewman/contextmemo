@@ -21,37 +21,72 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Helper to detect if accessed via subdomain or custom domain
-async function isSubdomainAccess(subdomain: string): Promise<boolean> {
+// Helper to detect access method: subdomain, custom domain, or reverse proxy
+async function getAccessContext(subdomain: string): Promise<{
+  viaSubdomain: boolean
+  proxyBasePath: string | null
+}> {
   const headersList = await headers()
   const host = headersList.get('x-forwarded-host') || headersList.get('host') || ''
   const hostParts = host.split('.')
   
+  // Check for reverse proxy via X-Forwarded-Prefix header
+  // (set by customer's proxy to indicate the base path, e.g., /memos)
+  const forwardedPrefix = headersList.get('x-forwarded-prefix') || headersList.get('x-cm-base-path')
+  
   // Check if first part matches subdomain (e.g., checkit.contextmemo.com)
   if (hostParts.length >= 3 && hostParts[0] === subdomain) {
-    return true
+    return { viaSubdomain: true, proxyBasePath: forwardedPrefix }
   }
   // Local dev: checkit.localhost:3000
   if (hostParts.length === 2 && hostParts[0] === subdomain && hostParts[1].startsWith('localhost')) {
-    return true
+    return { viaSubdomain: true, proxyBasePath: forwardedPrefix }
   }
   // Custom domain: check if host matches brand's custom_domain (e.g., ai.krezzo.com)
   if (!host.includes('contextmemo.com') && !host.includes('localhost')) {
     const { data: brand } = await supabase
       .from('brands')
-      .select('subdomain')
+      .select('subdomain, proxy_base_path')
       .eq('custom_domain', host)
       .eq('domain_verified', true)
       .single()
     if (brand?.subdomain === subdomain) {
-      return true
+      return { viaSubdomain: true, proxyBasePath: forwardedPrefix || brand.proxy_base_path }
+    }
+    
+    // Could be a reverse proxy from the brand's main domain — check proxy_origin
+    // The proxy forwards with the original host, so we check if any brand has this as proxy_origin
+    const { data: proxyBrand } = await supabase
+      .from('brands')
+      .select('subdomain, proxy_base_path')
+      .eq('subdomain', subdomain)
+      .not('proxy_origin', 'is', null)
+      .single()
+    if (proxyBrand) {
+      return { viaSubdomain: true, proxyBasePath: forwardedPrefix || proxyBrand.proxy_base_path }
     }
   }
-  return false
+  return { viaSubdomain: false, proxyBasePath: forwardedPrefix }
 }
 
 interface Props {
   params: Promise<{ subdomain: string; slug?: string[] }>
+}
+
+// Helper to build canonical URL for a brand's memo
+function getCanonicalUrl(brand: { subdomain: string; custom_domain?: string | null; domain_verified?: boolean | null; proxy_origin?: string | null; proxy_base_path?: string | null }, slugPath?: string): string {
+  // Priority: proxy origin (subfolder on brand's domain) > custom domain > subdomain
+  if (brand.proxy_origin && brand.proxy_base_path) {
+    const base = brand.proxy_origin.replace(/\/$/, '')
+    const path = brand.proxy_base_path.replace(/\/$/, '')
+    return slugPath ? `${base}${path}/${slugPath}` : `${base}${path}`
+  }
+  if (brand.custom_domain && brand.domain_verified) {
+    return slugPath ? `https://${brand.custom_domain}/${slugPath}` : `https://${brand.custom_domain}`
+  }
+  return slugPath
+    ? `https://${brand.subdomain}.contextmemo.com/${slugPath}`
+    : `https://${brand.subdomain}.contextmemo.com`
 }
 
 // Generate metadata for SEO
@@ -59,10 +94,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { subdomain, slug } = await params
   const slugPath = slug?.join('/') || ''
   
-  // Get brand (include id for memo lookup)
+  // Get brand (include id and domain fields for canonical URL)
   const { data: brand } = await supabase
     .from('brands')
-    .select('id, name, domain')
+    .select('id, name, domain, subdomain, custom_domain, domain_verified, proxy_origin, proxy_base_path')
     .eq('subdomain', subdomain)
     .single()
 
@@ -72,9 +107,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // If no slug, return brand homepage metadata
   if (!slugPath) {
+    const canonical = getCanonicalUrl(brand)
     return {
       title: `${brand.name} Knowledge Base`,
       description: `Factual reference memos about ${brand.name}`,
+      alternates: { canonical },
+      openGraph: {
+        title: `${brand.name} Knowledge Base`,
+        description: `Factual reference memos about ${brand.name}`,
+        url: canonical,
+        type: 'website',
+      },
     }
   }
 
@@ -91,12 +134,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Not Found' }
   }
 
+  const canonical = getCanonicalUrl(brand, slugPath)
+
   return {
     title: memo.title,
     description: memo.meta_description || `${memo.title} - ${brand.name}`,
+    alternates: { canonical },
     openGraph: {
       title: memo.title,
       description: memo.meta_description || '',
+      url: canonical,
       type: 'article',
     },
   }
@@ -106,11 +153,16 @@ export default async function MemoPage({ params }: Props) {
   const { subdomain, slug } = await params
   const slugPath = slug?.join('/') || ''
 
-  // Detect if accessed via subdomain for correct link generation
-  const viaSubdomain = await isSubdomainAccess(subdomain)
+  // Detect access method: subdomain, custom domain, or reverse proxy
+  const { viaSubdomain, proxyBasePath } = await getAccessContext(subdomain)
   
   // Generate link prefix based on access method
-  const linkPrefix = viaSubdomain ? '' : `/memo/${subdomain}`
+  // Priority: proxy base path > subdomain (no prefix) > fallback path
+  const linkPrefix = proxyBasePath
+    ? proxyBasePath.replace(/\/$/, '')  // e.g., /memos
+    : viaSubdomain
+      ? ''
+      : `/memo/${subdomain}`
 
   // Get brand
   const { data: brand, error: brandError } = await supabase

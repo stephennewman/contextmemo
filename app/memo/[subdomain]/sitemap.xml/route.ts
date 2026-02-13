@@ -12,10 +12,10 @@ export async function GET(
 ) {
   const { subdomain } = await params
 
-  // Get brand + custom domain info
+  // Get brand + custom domain + proxy info
   const { data: brand } = await supabase
     .from('brands')
-    .select('id, name, custom_domain, domain_verified, updated_at')
+    .select('id, name, custom_domain, domain_verified, proxy_origin, proxy_base_path, updated_at')
     .eq('subdomain', subdomain)
     .single()
 
@@ -23,10 +23,15 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 })
   }
 
-  // Determine base URL: custom domain if verified, otherwise subdomain
-  const baseUrl = brand.custom_domain && brand.domain_verified
-    ? `https://${brand.custom_domain}`
-    : `https://${subdomain}.contextmemo.com`
+  // Determine base URL: proxy origin (subfolder) > custom domain > subdomain
+  let baseUrl: string
+  if (brand.proxy_origin && brand.proxy_base_path) {
+    baseUrl = `${brand.proxy_origin.replace(/\/$/, '')}${brand.proxy_base_path.replace(/\/$/, '')}`
+  } else if (brand.custom_domain && brand.domain_verified) {
+    baseUrl = `https://${brand.custom_domain}`
+  } else {
+    baseUrl = `https://${subdomain}.contextmemo.com`
+  }
 
   // Get all published memos for this brand
   const { data: memos } = await supabase
