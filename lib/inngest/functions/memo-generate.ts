@@ -771,9 +771,11 @@ ${memoContent.content.slice(0, 1000)}`,
       },
       mainEntityOfPage: {
         '@type': 'WebPage',
-        '@id': brand.custom_domain && brand.domain_verified
-          ? `https://${brand.custom_domain}/${memoContent.slug}`
-          : `https://${brand.subdomain}.contextmemo.com/${memoContent.slug}`,
+        '@id': brand.proxy_origin && brand.proxy_base_path
+          ? `${brand.proxy_origin.replace(/\/$/, '')}${brand.proxy_base_path.replace(/\/$/, '')}/${memoContent.slug}`
+          : brand.custom_domain && brand.domain_verified
+            ? `https://${brand.custom_domain}/${memoContent.slug}`
+            : `https://${brand.subdomain}.contextmemo.com/${memoContent.slug}`,
       },
       isAccessibleForFree: true,
       inLanguage: 'en-US',
@@ -861,7 +863,7 @@ ${memoContent.content.slice(0, 1000)}`,
         brand_id: brandId,
         alert_type: 'memo_published',
         title: 'New Memo Published',
-        message: `"${memoContent.title}" is now live at ${brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}/${memoContent.slug}`,
+        message: `"${memoContent.title}" is now live at ${brand.proxy_origin && brand.proxy_base_path ? `${brand.proxy_origin.replace(/\/$/, '')}${brand.proxy_base_path.replace(/\/$/, '')}` : brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}/${memoContent.slug}`,
         data: { memoId: memo.id, slug: memoContent.slug },
       })
       
@@ -873,7 +875,7 @@ ${memoContent.content.slice(0, 1000)}`,
         event_type: memo.status === 'published' ? 'scan_complete' : 'gap_identified', // Using available types
         title: `Memo ${memo.status === 'published' ? 'published' : 'drafted'}: "${memoContent.title}"`,
         description: memo.status === 'published' 
-          ? `Live at ${brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}/${memoContent.slug}`
+          ? `Live at ${brand.proxy_origin && brand.proxy_base_path ? `${brand.proxy_origin.replace(/\/$/, '')}${brand.proxy_base_path.replace(/\/$/, '')}` : brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}/${memoContent.slug}`
           : 'Memo saved as draft - review and publish when ready',
         severity: 'success',
         action_available: memo.status === 'published' ? ['view_memo'] : ['view_memo'],
@@ -903,11 +905,19 @@ ${memoContent.content.slice(0, 1000)}`,
 
     // Step 10: Submit to IndexNow for instant search engine indexing
     // This helps AI models with web search find our content faster
+    // Submits the canonical URL (proxy > custom domain > subdomain)
     if (memo.status === 'published' && brand.subdomain) {
       await step.run('submit-indexnow', async () => {
         try {
           const { submitUrlToIndexNow, buildMemoUrl } = await import('@/lib/utils/indexnow')
-          const memoUrl = buildMemoUrl(brand.subdomain, memoContent.slug, brand.custom_domain, brand.domain_verified)
+          const memoUrl = buildMemoUrl(
+            brand.subdomain, 
+            memoContent.slug, 
+            brand.custom_domain, 
+            brand.domain_verified,
+            brand.proxy_origin,
+            brand.proxy_base_path
+          )
           const results = await submitUrlToIndexNow(memoUrl)
           console.log(`IndexNow submission for ${memoUrl}:`, results)
           return results

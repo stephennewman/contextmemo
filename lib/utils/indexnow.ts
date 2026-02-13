@@ -100,14 +100,21 @@ export async function submitUrlsToIndexNow(urls: string[]): Promise<IndexNowResp
 
 /**
  * Build memo URL from brand subdomain and slug.
- * Prefers custom domain when provided and verified.
+ * Priority: proxy origin (subfolder) > custom domain > subdomain
  */
 export function buildMemoUrl(
   subdomain: string,
   slug: string,
   customDomain?: string | null,
-  domainVerified?: boolean | null
+  domainVerified?: boolean | null,
+  proxyOrigin?: string | null,
+  proxyBasePath?: string | null
 ): string {
+  if (proxyOrigin && proxyBasePath) {
+    const origin = proxyOrigin.replace(/\/$/, '')
+    const base = proxyBasePath.replace(/\/$/, '')
+    return `${origin}${base}/${slug}`
+  }
   if (customDomain && domainVerified) {
     return `https://${customDomain}/${slug}`
   }
@@ -116,17 +123,46 @@ export function buildMemoUrl(
 
 /**
  * Build the brand index page URL.
- * Prefers custom domain when provided and verified.
+ * Priority: proxy origin (subfolder) > custom domain > subdomain
  */
 export function buildBrandUrl(
   subdomain: string,
   customDomain?: string | null,
-  domainVerified?: boolean | null
+  domainVerified?: boolean | null,
+  proxyOrigin?: string | null,
+  proxyBasePath?: string | null
 ): string {
+  if (proxyOrigin && proxyBasePath) {
+    const origin = proxyOrigin.replace(/\/$/, '')
+    const base = proxyBasePath.replace(/\/$/, '')
+    return `${origin}${base}`
+  }
   if (customDomain && domainVerified) {
     return `https://${customDomain}`
   }
   return `https://${SITE_HOST}/memo/${subdomain}`
+}
+
+/**
+ * Get the host for IndexNow submissions based on where content is published.
+ * Returns the host that owns the URLs being submitted.
+ */
+export function getIndexNowHost(
+  proxyOrigin?: string | null,
+  customDomain?: string | null,
+  domainVerified?: boolean | null
+): string {
+  if (proxyOrigin) {
+    try {
+      return new URL(proxyOrigin).host
+    } catch {
+      return SITE_HOST
+    }
+  }
+  if (customDomain && domainVerified) {
+    return customDomain
+  }
+  return SITE_HOST
 }
 
 /**

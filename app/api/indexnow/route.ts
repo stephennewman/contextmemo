@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get brand subdomain and custom domain
+    // Get brand subdomain, custom domain, and proxy info
     const { data: brand, error: brandError } = await supabase
       .from('brands')
-      .select('subdomain, custom_domain, domain_verified, tenant_id, organization_id')
+      .select('subdomain, custom_domain, domain_verified, proxy_origin, proxy_base_path, tenant_id, organization_id')
       .eq('id', brandId)
       .single()
 
@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No published memos found' }, { status: 404 })
     }
 
-    // Build URLs — prefer custom domain when verified
+    // Build URLs — priority: proxy origin > custom domain > subdomain
     const urls = [
       // Brand index page
-      buildBrandUrl(brand.subdomain, brand.custom_domain, brand.domain_verified),
+      buildBrandUrl(brand.subdomain, brand.custom_domain, brand.domain_verified, brand.proxy_origin, brand.proxy_base_path),
       // All memo pages
-      ...memos.map(memo => buildMemoUrl(brand.subdomain, memo.slug, brand.custom_domain, brand.domain_verified)),
+      ...memos.map(memo => buildMemoUrl(brand.subdomain, memo.slug, brand.custom_domain, brand.domain_verified, brand.proxy_origin, brand.proxy_base_path)),
     ]
 
     // Submit to IndexNow
