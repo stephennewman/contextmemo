@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 12, 2026  
-> **Version:** 0.25.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course + Course Email Nurture System
+> **Last Updated:** February 13, 2026  
+> **Version:** 0.26.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course + Course Email Nurture System + AI Visibility Audit
 
 ---
 
@@ -392,6 +392,14 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 13, 2026
+
+**AI Visibility Audit Page — Trojan Horse** (45bdc98)
+- New public route `/audit/[slug]` for shareable AI visibility audit reports
+- Sample report live at `/audit/benchprep-sample` with real BenchPrep scan data
+- Components: radial score display, model breakdown cards, competitor bar chart, gap/strength cards, recommendations, CTA
+- Created `brand_reports` Supabase table for storing frozen report snapshots
+- TypeScript types in `lib/report/types.ts` for audit data structure
+- Designed as SDR lead magnet — prospect receives link, forwards to marketing, marketing converts to Context Memo customer
 
 **Synthesis Prompt Tuning — Longer Output + Anti-Fabrication** (06c8bfd)
 - Raised word count targets to 3,000-4,000 (overshoot to land ~2,000 from GPT-4o)
