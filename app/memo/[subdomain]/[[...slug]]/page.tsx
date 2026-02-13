@@ -108,13 +108,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // If no slug, return brand homepage metadata
   if (!slugPath) {
     const canonical = getCanonicalUrl(brand)
+    const brandDescription = `Explore in-depth resources, guides, and reference memos about ${brand.name}. Find expert insights, product comparisons, and answers to common questions about ${brand.domain ? brand.domain.replace('www.', '') : brand.name}.`
     return {
-      title: `${brand.name} Knowledge Base`,
-      description: `Factual reference memos about ${brand.name}`,
+      title: `${brand.name} — Resources, Guides & Expert Insights`,
+      description: brandDescription,
       alternates: { canonical },
       openGraph: {
-        title: `${brand.name} Knowledge Base`,
-        description: `Factual reference memos about ${brand.name}`,
+        title: `${brand.name} — Resources, Guides & Expert Insights`,
+        description: brandDescription,
         url: canonical,
         type: 'website',
       },
