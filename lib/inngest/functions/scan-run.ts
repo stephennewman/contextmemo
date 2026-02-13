@@ -722,11 +722,22 @@ export const scanRun = inngest.createFunction(
             .gte('created_at', `${today}T00:00:00Z`),
         ])
 
-        // Calculate daily cap from monthly limit
+        // Calculate daily cap — check brand_settings.daily_memo_cap first, fall back to plan limits
+        const { data: brandMemoSettings } = await supabase
+          .from('brand_settings')
+          .select('daily_memo_cap')
+          .eq('brand_id', brandId)
+          .single()
+        
         const monthlyLimit = tenantResult.data?.plan_limits?.memos_per_month ?? 30 // Default 30/month
-        const dailyCap = monthlyLimit === -1 
-          ? 10  // Unlimited plans still get a reasonable daily cap
+        const planDailyCap = monthlyLimit === -1 
+          ? 50  // Unlimited plans get high daily cap
           : Math.max(1, Math.ceil(monthlyLimit / 30)) // At least 1 per day
+        
+        // Brand-level cap takes priority if set and higher than plan cap
+        const dailyCap = brandMemoSettings?.daily_memo_cap 
+          ? Math.max(brandMemoSettings.daily_memo_cap, planDailyCap)
+          : planDailyCap
         
         const memosCreatedToday = todayMemoCount.count || 0
         const remainingCap = Math.max(0, dailyCap - memosCreatedToday)

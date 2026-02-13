@@ -38,25 +38,26 @@ export interface BrandAutomationSettings {
 }
 
 // Default settings — used when no brand_settings row exists
+// Optimized for "scan less, write more": Claude Haiku weekly + daily content generation
 const DEFAULTS: BrandAutomationSettings = {
   auto_scan_enabled: true,
   daily_scan_cap: 100,
-  scan_schedule: 'daily',
-  weekly_greenspace_enabled: false,
-  discovery_schedule: 'weekly',
+  scan_schedule: 'weekly',              // Weekly scanning is enough — citation landscapes change slowly
+  weekly_greenspace_enabled: true,
+  discovery_schedule: 'monthly',         // Monthly discovery — prompt landscape is stable
   competitor_content_enabled: true,
-  competitor_content_schedule: 'daily',
-  auto_respond_content: false,
-  content_generation_schedule: 'weekdays',
+  competitor_content_schedule: 'weekly',  // Weekly competitor intel
+  auto_respond_content: true,            // Auto-generate content for gaps
+  content_generation_schedule: 'weekdays', // Daily content creation on weekdays
   auto_verify_citations: true,
   verification_retry_days: 3,
   auto_expand_network: false,
   max_competitors_to_expand: 3,
   prompt_enrichment_enabled: true,
   prompt_intelligence_enabled: true,
-  auto_memo_enabled: false,
-  daily_memo_cap: 2,
-  memo_approval_required: true,
+  auto_memo_enabled: true,               // Auto-generate memos from gaps
+  daily_memo_cap: 3,                     // 3 memos/day per brand
+  memo_approval_required: false,          // Auto-publish for faster indexing
   monthly_credit_cap: null,
   pause_at_cap: true,
 }
