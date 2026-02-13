@@ -189,54 +189,63 @@ export default async function MemoPage({ params }: Props) {
       .eq('status', 'published')
       .order('published_at', { ascending: false })
 
+    // Determine if this is a dark theme
+    const isDark = !!theme?.bg_color
+    const bgColor = theme?.bg_color || '#f8fafc'
+    const textColor = theme?.text_color || (isDark ? '#e5e5e5' : '#475569')
+    const headingColor = isDark ? '#ffffff' : '#0f172a'
+    const mutedColor = isDark ? '#a3a3a3' : '#94a3b8'
+    const borderColor = isDark ? '#262626' : '#e2e8f0'
+    const cardBg = isDark ? '#171717' : '#ffffff'
+    const accentColor = theme?.primary_color || (isDark ? '#86efac' : '#3b82f6')
+
     return (
-      <div className="min-h-screen bg-linear-to-b from-slate-50 to-white" style={theme?.font_family ? { fontFamily: `'${theme.font_family}', system-ui, sans-serif` } : undefined}>
+      <div className="min-h-screen" style={{ background: bgColor, color: textColor, fontFamily: theme?.font_family ? `'${theme.font_family}', system-ui, sans-serif` : undefined }}>
         {/* Brand font */}
         {theme?.font_url && (
           <link rel="stylesheet" href={theme.font_url} />
         )}
-        {/* Brand CSS variables */}
-        {theme?.primary_color && (
-          <style dangerouslySetInnerHTML={{ __html: `
-            :root {
-              --brand-primary: ${theme.primary_color};
-              --brand-primary-light: ${theme.primary_light || theme.primary_color + '1a'};
-              --brand-primary-text: ${theme.primary_text || theme.primary_color};
-            }
-          `}} />
+        {/* External CSS */}
+        {theme?.external_css_url && (
+          <link rel="stylesheet" href={theme.external_css_url} />
         )}
-        {/* Header */}
-        <header className="bg-white border-b">
-          <div className="max-w-3xl mx-auto px-6 py-12">
-            <div className="flex items-center gap-4 mb-4">
-              {theme?.logo_url ? (
-                <>
-                  <img src={theme.logo_url} alt={brand.name} className="h-10 w-auto" />
-                  <p className="text-slate-500 text-lg">Knowledge Base</p>
-                </>
-              ) : (
-                <>
-                  <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: theme?.primary_color ? `linear-gradient(135deg, ${theme.primary_color}, ${theme.primary_text || theme.primary_color})` : 'linear-gradient(135deg, #334155, #0f172a)' }}>
-                    <span className="text-white font-bold text-xl">
-                      {brand.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-slate-900">{theme?.site_name || brand.name}</h1>
-                    <p className="text-slate-500">Knowledge Base</p>
-                  </div>
-                </>
-              )}
+
+        {/* Custom header or default */}
+        {theme?.header_html ? (
+          <div dangerouslySetInnerHTML={{ __html: theme.header_html }} />
+        ) : (
+          <header style={{ background: cardBg, borderBottom: `1px solid ${borderColor}` }}>
+            <div className="max-w-3xl mx-auto px-6 py-12">
+              <div className="flex items-center gap-4 mb-4">
+                {theme?.logo_url ? (
+                  <>
+                    <img src={theme.logo_url} alt={brand.name} className="h-10 w-auto" />
+                    <p style={{ color: mutedColor }} className="text-lg">Knowledge Base</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accentColor}, ${theme?.primary_text || accentColor})` }}>
+                      <span className="text-white font-bold text-xl">
+                        {brand.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold" style={{ color: headingColor }}>{theme?.site_name || brand.name}</h1>
+                      <p style={{ color: mutedColor }}>Knowledge Base</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <p style={{ color: mutedColor }} className="mt-4 max-w-xl">
+                Factual reference documents about {brand.name} for AI assistants and search engines.
+              </p>
             </div>
-            <p className="text-slate-600 mt-4 max-w-xl">
-              Factual reference documents about {brand.name} for AI assistants and search engines.
-            </p>
-          </div>
-        </header>
+          </header>
+        )}
         
         {/* Content */}
         <main className="max-w-3xl mx-auto px-6 py-12">
-          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-6">
+          <h2 className="text-sm font-medium uppercase tracking-wide mb-6" style={{ color: mutedColor }}>
             {memos?.length || 0} Published Memos
           </h2>
           {memos && memos.length > 0 ? (
@@ -245,36 +254,36 @@ export default async function MemoPage({ params }: Props) {
                   <a
                     key={memo.id}
                     href={`${linkPrefix}/${memo.slug}`}
-                    className="block p-6 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all group"
-                    style={theme?.primary_color ? { ['--hover-border' as string]: theme.primary_color } : undefined}
-                    onMouseOver={undefined}
+                    className="block p-6 rounded-xl transition-all group"
+                    style={{ background: cardBg, border: `1px solid ${borderColor}` }}
                   >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                        <span className="text-xs font-medium uppercase tracking-wide" style={{ color: mutedColor }}>
                           {memo.memo_type.replace('_', ' ')}
                         </span>
                         {memo.published_at && (
                           <>
-                            <span className="text-slate-300">·</span>
-                            <span className="text-xs text-slate-400">
+                            <span style={{ color: borderColor }}>·</span>
+                            <span className="text-xs" style={{ color: mutedColor }}>
                               {new Date(memo.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           </>
                         )}
                       </div>
-                      <h3 className="font-semibold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
+                      <h3 className="font-semibold text-lg transition-colors" style={{ color: headingColor }}>
                         {memo.title}
                       </h3>
                       {memo.meta_description && (
-                        <p className="text-slate-600 mt-2 text-sm line-clamp-2">
+                        <p className="mt-2 text-sm" style={{ color: textColor }}>
                           {memo.meta_description}
                         </p>
                       )}
                     </div>
                     <svg 
-                      className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all shrink-0 mt-1" 
+                      className="w-5 h-5 shrink-0 mt-1" 
+                      style={{ color: mutedColor }}
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
@@ -286,42 +295,46 @@ export default async function MemoPage({ params }: Props) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
-              <svg className="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-16 rounded-xl" style={{ background: cardBg, border: `1px solid ${borderColor}` }}>
+              <svg className="w-12 h-12 mx-auto mb-4" style={{ color: mutedColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="text-slate-500">No memos published yet.</p>
+              <p style={{ color: mutedColor }}>No memos published yet.</p>
             </div>
           )}
         </main>
         
-        {/* Footer */}
-        <footer className="border-t bg-slate-50 mt-auto">
-          <div className="max-w-3xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between text-sm text-slate-400">
-              <div className="flex items-center gap-2">
-                {theme?.logo_url ? (
-                  <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto opacity-60" />
-                ) : (
-                  <span className="font-medium" style={theme?.primary_text ? { color: theme.primary_text } : undefined}>
-                    {theme?.site_name || brand.name}
-                  </span>
-                )}
-                {theme?.site_url && (
-                  <>
-                    <span className="text-slate-300">·</span>
-                    <a href={theme.site_url} className="hover:text-slate-500 transition-colors">
-                      {new URL(theme.site_url).hostname}
-                    </a>
-                  </>
-                )}
+        {/* Custom footer or default */}
+        {theme?.footer_html ? (
+          <div dangerouslySetInnerHTML={{ __html: theme.footer_html }} />
+        ) : (
+          <footer className="mt-auto" style={{ borderTop: `1px solid ${borderColor}`, background: isDark ? '#0a0a0a' : '#f8fafc' }}>
+            <div className="max-w-3xl mx-auto px-6 py-6">
+              <div className="flex items-center justify-between text-sm" style={{ color: mutedColor }}>
+                <div className="flex items-center gap-2">
+                  {theme?.logo_url ? (
+                    <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto opacity-60" />
+                  ) : (
+                    <span className="font-medium" style={{ color: theme?.primary_text || mutedColor }}>
+                      {theme?.site_name || brand.name}
+                    </span>
+                  )}
+                  {theme?.site_url && (
+                    <>
+                      <span style={{ color: borderColor }}>·</span>
+                      <a href={theme.site_url} className="transition-colors hover:opacity-80" style={{ color: mutedColor }}>
+                        {new URL(theme.site_url).hostname}
+                      </a>
+                    </>
+                  )}
+                </div>
+                <a href="https://contextmemo.com" className="transition-colors hover:opacity-80 text-xs" style={{ color: mutedColor }}>
+                  Powered by Context Memo
+                </a>
               </div>
-              <a href="https://contextmemo.com" className="hover:text-slate-500 transition-colors text-xs">
-                Powered by Context Memo
-              </a>
             </div>
-          </div>
-        </footer>
+          </footer>
+        )}
         
         {/* AI Traffic Tracking */}
         <AITrafficTracker brandId={brand.id} />
@@ -402,24 +415,44 @@ export default async function MemoPage({ params }: Props) {
     day: 'numeric'
   })
 
+  // Determine if this is a dark theme
+  const isDark = !!theme?.bg_color
+  const bgColor = theme?.bg_color || '#f8fafc'
+  const textColor = theme?.text_color || (isDark ? '#e5e5e5' : '#475569')
+  const headingColor = isDark ? '#ffffff' : '#0f172a'
+  const mutedColor = isDark ? '#a3a3a3' : '#94a3b8'
+  const borderColor = isDark ? '#262626' : '#e2e8f0'
+  const cardBg = isDark ? '#171717' : '#ffffff'
+  const accentColor = theme?.primary_color || (isDark ? '#86efac' : '#3b82f6')
+
   return (
-    <div className="min-h-screen bg-linear-to-b from-slate-50 to-white" style={theme?.font_family ? { fontFamily: `'${theme.font_family}', system-ui, sans-serif` } : undefined}>
+    <div className="min-h-screen" style={{ background: bgColor, color: textColor, fontFamily: theme?.font_family ? `'${theme.font_family}', system-ui, sans-serif` : undefined }}>
       {/* Brand font */}
       {theme?.font_url && (
         <link rel="stylesheet" href={theme.font_url} />
       )}
-      {/* Brand CSS variables */}
-      {theme?.primary_color && (
-        <style dangerouslySetInnerHTML={{ __html: `
-          :root {
-            --brand-primary: ${theme.primary_color};
-            --brand-primary-light: ${theme.primary_light || theme.primary_color + '1a'};
-            --brand-primary-text: ${theme.primary_text || theme.primary_color};
-          }
-          .memo-content a { color: var(--brand-primary) !important; }
-          .memo-content blockquote { border-left-color: var(--brand-primary) !important; }
-        `}} />
+      {/* External CSS */}
+      {theme?.external_css_url && (
+        <link rel="stylesheet" href={theme.external_css_url} />
       )}
+      {/* Theme-aware styles for memo content */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .memo-content a { color: ${accentColor} !important; }
+        .memo-content blockquote { border-left-color: ${accentColor} !important; background: ${isDark ? '#1a1a2e' : '#eff6ff'} !important; }
+        .memo-content blockquote p { color: ${isDark ? '#d4d4d4' : '#1e3a5f'} !important; }
+        .memo-content h2 { color: ${headingColor} !important; border-bottom-color: ${borderColor} !important; }
+        .memo-content h3 { color: ${isDark ? '#e5e5e5' : '#1e293b'} !important; }
+        .memo-content strong { color: ${isDark ? '#e5e5e5' : '#1e293b'} !important; }
+        .memo-content em { color: ${mutedColor} !important; }
+        .memo-content code { background: ${isDark ? '#262626' : '#f1f5f9'} !important; color: ${isDark ? '#e5e5e5' : '#334155'} !important; }
+        .memo-content table { border-color: ${borderColor} !important; }
+        .memo-content thead { background: ${isDark ? '#1a1a1a' : '#f8fafc'} !important; }
+        .memo-content th { color: ${headingColor} !important; border-color: ${borderColor} !important; }
+        .memo-content td { border-color: ${isDark ? '#1a1a1a' : '#f1f5f9'} !important; }
+        .memo-content tr:nth-child(even) td { background: ${isDark ? '#0d0d0d' : '#fafbfc'} !important; }
+        .memo-content hr { border-color: ${borderColor} !important; }
+        .memo-content ul > li::before { background: ${accentColor} !important; }
+      `}} />
       {/* Schema.org JSON-LD */}
       {memo.schema_json && (
         <script
@@ -428,50 +461,54 @@ export default async function MemoPage({ params }: Props) {
         />
       )}
       
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <nav className="flex items-center gap-2 text-sm">
-            <a href={`${linkPrefix}/`} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium transition-colors">
-              {theme?.logo_url ? (
-                <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
-              ) : (
-                <span>{brand.name}</span>
-              )}
-            </a>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-400 capitalize">{MEMO_TYPE_LABELS[memo.memo_type] || memo.memo_type.replace('_', ' ')}</span>
-          </nav>
-          {theme?.cta_url && (
-            <a href={theme.cta_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium transition-colors" style={{ color: theme.primary_color || '#3b82f6' }}>
-              {theme.cta_text || `Visit ${brand.name}`}
-            </a>
-          )}
-        </div>
-      </header>
+      {/* Custom header or default */}
+      {theme?.header_html ? (
+        <div dangerouslySetInnerHTML={{ __html: theme.header_html }} />
+      ) : (
+        <header className="sticky top-0 z-10" style={{ background: isDark ? `${cardBg}ee` : `${cardBg}cc`, borderBottom: `1px solid ${borderColor}`, backdropFilter: 'blur(12px)' }}>
+          <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+            <nav className="flex items-center gap-2 text-sm">
+              <a href={`${linkPrefix}/`} className="flex items-center gap-2 font-medium transition-colors" style={{ color: isDark ? '#d4d4d4' : '#475569' }}>
+                {theme?.logo_url ? (
+                  <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto" />
+                ) : (
+                  <span>{brand.name}</span>
+                )}
+              </a>
+              <span style={{ color: borderColor }}>/</span>
+              <span className="capitalize" style={{ color: mutedColor }}>{MEMO_TYPE_LABELS[memo.memo_type] || memo.memo_type.replace('_', ' ')}</span>
+            </nav>
+            {theme?.cta_url && (
+              <a href={theme.cta_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium transition-colors" style={{ color: accentColor }}>
+                {theme.cta_text || `Visit ${brand.name}`}
+              </a>
+            )}
+          </div>
+        </header>
+      )}
       
       {/* Hero */}
-      <div className="bg-white border-b">
+      <div style={{ background: cardBg, borderBottom: `1px solid ${borderColor}` }}>
         <div className="max-w-3xl mx-auto px-6 py-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-6" style={{ color: headingColor }}>
             {memo.title}
           </h1>
           {/* Author and verification byline */}
-          <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
+          <div className="flex flex-col gap-4 pt-4" style={{ borderTop: `1px solid ${borderColor}` }}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: theme?.primary_color ? `linear-gradient(135deg, ${theme.primary_color}, ${theme.primary_text || theme.primary_color})` : 'linear-gradient(135deg, #3b82f6, #4f46e5)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accentColor}, ${theme?.primary_text || accentColor})` }}>
                   <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{brand.name}</p>
+                  <p className="text-sm font-medium" style={{ color: headingColor }}>{brand.name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-auto">
                 {memo.review_status === 'human_approved' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full" style={{ background: isDark ? '#052e16' : '#dcfce7', color: isDark ? '#86efac' : '#166534' }}>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -479,7 +516,7 @@ export default async function MemoPage({ params }: Props) {
                   </span>
                 )}
                 {memo.review_status === 'human_reviewed' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full" style={{ background: isDark ? '#0c1929' : '#dbeafe', color: isDark ? '#93c5fd' : '#1e40af' }}>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -488,14 +525,14 @@ export default async function MemoPage({ params }: Props) {
                   </span>
                 )}
                 {memo.review_status === 'human_edited' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full" style={{ background: isDark ? '#1c1507' : '#fef3c7', color: isDark ? '#fcd34d' : '#92400e' }}>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     Human Edited
                   </span>
                 )}
-                <span className="text-sm text-slate-500">
+                <span className="text-sm" style={{ color: mutedColor }}>
                   Verified {formattedDate}
                 </span>
               </div>
@@ -503,16 +540,16 @@ export default async function MemoPage({ params }: Props) {
             
             {/* Reviewer notes if present */}
             {memo.reviewer_notes && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="rounded-lg p-4" style={{ background: isDark ? '#0c1929' : '#eff6ff', border: `1px solid ${isDark ? '#1e3a5f' : '#bfdbfe'}` }}>
                 <div className="flex items-start gap-2">
-                  <svg className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: isDark ? '#93c5fd' : '#2563eb' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <p className="text-xs font-medium text-blue-800 mb-1">Editor&apos;s Note</p>
-                    <p className="text-sm text-blue-900">{memo.reviewer_notes}</p>
+                    <p className="text-xs font-medium mb-1" style={{ color: isDark ? '#93c5fd' : '#1e40af' }}>Editor&apos;s Note</p>
+                    <p className="text-sm" style={{ color: isDark ? '#d4d4d4' : '#1e3a5f' }}>{memo.reviewer_notes}</p>
                     {memo.reviewed_at && (
-                      <p className="text-xs text-blue-600 mt-2">
+                      <p className="text-xs mt-2" style={{ color: isDark ? '#60a5fa' : '#2563eb' }}>
                         Reviewed {new Date(memo.reviewed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </p>
                     )}
@@ -528,46 +565,45 @@ export default async function MemoPage({ params }: Props) {
       {/* Content */}
       <main className="max-w-3xl mx-auto px-6 py-12">
         <article 
-          className="memo-content text-slate-600 text-[1.0625rem] leading-7
+          className="memo-content text-[1.0625rem] leading-7
             [&>h1]:hidden
             [&>p:first-child]:hidden
-            [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-slate-900 [&>h2]:mt-14 [&>h2]:mb-5 [&>h2]:pb-3 [&>h2]:border-b [&>h2]:border-slate-200
+            [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-14 [&>h2]:mb-5 [&>h2]:pb-3 [&>h2]:border-b
             [&>h2:first-of-type]:mt-0
-            [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-slate-800 [&>h3]:mt-10 [&>h3]:mb-4
+            [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-10 [&>h3]:mb-4
             [&>h3+p]:mt-0
             [&>p]:mb-6 [&>p]:leading-relaxed
-            [&_strong]:text-slate-800 [&_strong]:font-semibold
+            [&_strong]:font-semibold
             [&>ul]:my-8 [&>ul]:space-y-3 [&>ul]:list-none [&>ul]:pl-0
             [&>ul>li]:relative [&>ul>li]:pl-7 [&>ul>li]:leading-relaxed
-            [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-1.5 [&>ul>li]:before:h-1.5 [&>ul>li]:before:bg-blue-500 [&>ul>li]:before:rounded-full
+            [&>ul>li]:before:content-[''] [&>ul>li]:before:absolute [&>ul>li]:before:left-0 [&>ul>li]:before:top-[0.6rem] [&>ul>li]:before:w-1.5 [&>ul>li]:before:h-1.5 [&>ul>li]:before:rounded-full
             [&>ol]:my-8 [&>ol]:pl-6 [&>ol]:space-y-4
-            [&_a]:text-blue-600 [&_a]:font-medium [&_a]:no-underline [&_a:hover]:underline
-            [&>table]:w-full [&>table]:my-10 [&>table]:border-collapse [&>table]:text-[0.9375rem] [&>table]:rounded-lg [&>table]:overflow-hidden [&>table]:border [&>table]:border-slate-200
-            [&_thead]:bg-slate-50
-            [&_th]:p-4 [&_th]:text-left [&_th]:border-b [&_th]:border-slate-200 [&_th]:font-semibold [&_th]:text-slate-800
-            [&_td]:p-4 [&_td]:border-b [&_td]:border-slate-100
+            [&_a]:font-medium [&_a]:no-underline [&_a:hover]:underline
+            [&>table]:w-full [&>table]:my-10 [&>table]:border-collapse [&>table]:text-[0.9375rem] [&>table]:rounded-lg [&>table]:overflow-hidden [&>table]:border
+            [&_th]:p-4 [&_th]:text-left [&_th]:border-b [&_th]:font-semibold
+            [&_td]:p-4 [&_td]:border-b
             [&_tbody_tr:last-child_td]:border-b-0
-            [&_tr:nth-child(even)_td]:bg-slate-50/50
-            [&>blockquote]:my-8 [&>blockquote]:py-4 [&>blockquote]:px-6 [&>blockquote]:bg-blue-50 [&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:rounded-r-lg
-            [&>blockquote_p]:m-0 [&>blockquote_p]:text-blue-900
-            [&>hr]:my-12 [&>hr]:border-0 [&>hr]:border-t [&>hr]:border-slate-200
-            [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
-            [&>p>em:only-child]:text-slate-500 [&>p>em:only-child]:text-sm [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
-            [&_em]:text-slate-500 [&_em]:italic"
+            [&>blockquote]:my-8 [&>blockquote]:py-4 [&>blockquote]:px-6 [&>blockquote]:border-l-4 [&>blockquote]:rounded-r-lg
+            [&>blockquote_p]:m-0
+            [&>hr]:my-12 [&>hr]:border-0 [&>hr]:border-t
+            [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm
+            [&>p>em:only-child]:text-sm [&>p>em:only-child]:block [&>p>em:only-child]:mb-8
+            [&_em]:italic"
+          style={{ color: textColor }}
           dangerouslySetInnerHTML={{ __html: contentHtml }} 
         />
       </main>
       
       {/* Brand link — hide for contextmemo's own memos since visitor is already on the site */}
-      {brand.domain && !brand.domain.toLowerCase().includes('contextmemo') && (
+      {brand.domain && !brand.domain.toLowerCase().includes('contextmemo') && !theme?.header_html && (
         <div className="max-w-3xl mx-auto px-6 pb-12">
-          <div className="border-t border-slate-200 pt-8">
+          <div className="pt-8" style={{ borderTop: `1px solid ${borderColor}` }}>
             <a 
               href={theme?.cta_url || `https://${brand.domain}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
-              style={{ color: theme?.primary_color || '#2563eb' }}
+              style={{ color: accentColor }}
             >
               {theme?.cta_text || `Learn more at ${brand.domain}`}
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -578,33 +614,37 @@ export default async function MemoPage({ params }: Props) {
         </div>
       )}
       
-      {/* Footer */}
-      <footer className="border-t bg-slate-50">
-        <div className="max-w-3xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between text-sm text-slate-400">
-            <div className="flex items-center gap-2">
-              {theme?.logo_url ? (
-                <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto opacity-60" />
-              ) : (
-                <span className="font-medium" style={theme?.primary_text ? { color: theme.primary_text } : undefined}>
-                  {theme?.site_name || brand.name}
-                </span>
-              )}
-              {theme?.site_url && (
-                <>
-                  <span className="text-slate-300">·</span>
-                  <a href={theme.site_url} className="hover:text-slate-500 transition-colors">
-                    {new URL(theme.site_url).hostname}
-                  </a>
-                </>
-              )}
+      {/* Custom footer or default */}
+      {theme?.footer_html ? (
+        <div dangerouslySetInnerHTML={{ __html: theme.footer_html }} />
+      ) : (
+        <footer className="mt-auto" style={{ borderTop: `1px solid ${borderColor}`, background: isDark ? '#0a0a0a' : '#f8fafc' }}>
+          <div className="max-w-3xl mx-auto px-6 py-6">
+            <div className="flex items-center justify-between text-sm" style={{ color: mutedColor }}>
+              <div className="flex items-center gap-2">
+                {theme?.logo_url ? (
+                  <img src={theme.logo_url} alt={brand.name} className="h-5 w-auto opacity-60" />
+                ) : (
+                  <span className="font-medium" style={{ color: theme?.primary_text || mutedColor }}>
+                    {theme?.site_name || brand.name}
+                  </span>
+                )}
+                {theme?.site_url && (
+                  <>
+                    <span style={{ color: borderColor }}>·</span>
+                    <a href={theme.site_url} className="transition-colors hover:opacity-80" style={{ color: mutedColor }}>
+                      {new URL(theme.site_url).hostname}
+                    </a>
+                  </>
+                )}
+              </div>
+              <a href="https://contextmemo.com" className="transition-colors hover:opacity-80 text-xs" style={{ color: mutedColor }}>
+                Powered by Context Memo
+              </a>
             </div>
-            <a href="https://contextmemo.com" className="hover:text-slate-500 transition-colors text-xs">
-              Powered by Context Memo
-            </a>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
       
       {/* AI Traffic Tracking */}
       <AITrafficTracker brandId={brand.id} memoId={memo.id} />

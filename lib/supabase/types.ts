@@ -821,6 +821,8 @@ export interface BrandTheme {
   primary_color?: string      // Hex color e.g. "#0F4C81"
   primary_light?: string      // Lighter variant for backgrounds
   primary_text?: string       // Text color variant of primary
+  bg_color?: string           // Page background color (e.g. "#000000" for dark themes)
+  text_color?: string         // Main body text color (e.g. "#e5e5e5")
   font_family?: string        // Google Font name e.g. "Plus Jakarta Sans"
   font_url?: string           // Google Fonts CSS URL
   logo_url?: string           // Brand logo image URL
@@ -828,6 +830,9 @@ export interface BrandTheme {
   site_url?: string           // Link back to main website
   cta_text?: string           // Call-to-action button text
   cta_url?: string            // Call-to-action button URL
+  header_html?: string        // Custom HTML for page header/nav
+  footer_html?: string        // Custom HTML for page footer
+  external_css_url?: string   // URL to external stylesheet for brand styling
 }
 
 // Brand offers/CTAs extracted from website
