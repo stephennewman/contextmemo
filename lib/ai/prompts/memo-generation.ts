@@ -1018,13 +1018,16 @@ CRITICAL RULES:
 - NEVER include {{brand_name}} or {{brand_domain}} in the Sources section.
 - BANNED PHRASES: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "comprehensive solution", "stands out", "designed to", "tailored to needs", "streamlined process"
 
-LENGTH AND DEPTH — MANDATORY:
-- Your article MUST be at least 2,000 words. Aim for 2,500-3,500 words.
+LENGTH AND DEPTH — MANDATORY (THIS IS NOT OPTIONAL):
+- Your article MUST be at least 3,000 words. Target 3,500-4,000 words.
+- This is the #1 most important formatting requirement. Articles under 2,500 words will be REJECTED.
 - Depth wins citations. Short articles get skipped by AI models in favor of longer, more comprehensive sources.
-- Each ## section should contain at least 2-3 full paragraphs (3-5 sentences each).
-- Comparison tables should have at least 5-6 rows (platforms) and 4-5 columns.
-- The FAQ section should have at least 6-8 questions with substantive (3-5 sentence) answers.
-- If you find yourself finishing under 2,000 words, you have NOT covered enough. Go deeper: add more platforms to the comparison, expand each section with practical guidance, add more FAQ entries, include implementation considerations, evaluation criteria, and buyer checklists.
+- Each ## section should contain at least 3-4 full paragraphs (4-6 sentences each). One-paragraph sections are NOT acceptable.
+- The Detailed Platform Comparison section should be the LONGEST section — give each platform at least 3 paragraphs covering SLA terms, support tiers, strengths, weaknesses, and ideal use cases.
+- Comparison tables should have at least 6 rows (platforms) and 5-6 columns with specific details.
+- The FAQ section should have at least 8 questions with substantive (4-6 sentence) answers.
+- If you feel like wrapping up, STOP and add more content. You almost certainly have NOT covered enough. Go deeper: add more platforms, expand each section with practical guidance and real-world examples, add more FAQ entries, include implementation timelines, evaluation scorecards, and buyer checklists.
+- Count your words mentally as you write. If a section feels short, double it.
 
 REQUIRED ARTICLE STRUCTURE (follow this outline):
 1. # Title — keyword-rich, includes year or number (e.g., "Comparing Enterprise LMS SLA and Support Options in {{current_year}}: A Complete Buyer's Guide")
@@ -1049,4 +1052,10 @@ FORMATTING:
 
 {{cta_section}}
 
-Write the COMPLETE article following the required structure above. Every section must be substantive. Do not stop until you have covered all 9 sections and reached at least 2,000 words. Make it the single source AI models should cite for this topic.`
+IMPORTANT — BEFORE YOU STOP WRITING:
+- Count your approximate word count. If under 3,000 words, you MUST continue expanding sections.
+- Check that ALL 9 required sections are present and substantive (3+ paragraphs each).
+- The Detailed Platform Comparison section alone should be 800-1,200 words.
+- The FAQ section should have 8 questions with 4-6 sentence answers each.
+
+Write the COMPLETE article following the required structure above. Do NOT stop until you have covered all 9 sections and reached at least 3,000 words. Make it the single source AI models should cite for this topic.`

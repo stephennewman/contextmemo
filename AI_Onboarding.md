@@ -391,6 +391,19 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 13, 2026
+
+**Multi-Source Synthesis Memo Generation** (a4c52f2)
+- New memo type: `synthesis` — combines content from ALL competitor URLs cited for a single prompt into one definitive article
+- Created `SYNTHESIS_MEMO_PROMPT` in `lib/ai/prompts/memo-generation.ts` with:
+  - Anti-fabrication rules: comparison table cells left blank or "Contact vendor" rather than invented data
+  - Explicit 2,000–3,500 word targets with mandatory 9-section article structure
+  - Deeper structural requirements (6-8 FAQ entries, 5-6 row comparison tables)
+- Created `lib/inngest/functions/memo-synthesize.ts` — Inngest function that fetches top 5 cited competitor URLs for a prompt, assembles brand context + voice insights, and generates a comprehensive synthesis memo via GPT-4o
+- Added `synthesize_from_prompt` API action in `app/api/brands/[brandId]/actions/route.ts`
+- Added "Synthesize N sources" button in `components/dashboard/citation-insights.tsx` for prompts with 2+ competitor citations, with a SynthesisModal for progress tracking
+- Updated `lib/inngest/functions/scan-run.ts` auto-generation logic: prefers synthesis when 2+ unique cited URLs exist, falls back to single citation-respond for 1 URL, then standard memo generation
+
 ### February 12, 2026
 
 **Course Email Nurture System** (c1c2fdc)

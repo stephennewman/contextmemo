@@ -263,8 +263,10 @@ ${s.content}
 
       const { text, usage } = await generateText({
         model: openrouter(generationModel),
+        system: 'You are an expert B2B content strategist who writes long-form, comprehensive articles. Your articles are always 3,000-4,000+ words with detailed paragraphs in every section. You NEVER write short articles. Complete ALL required sections thoroughly with specific examples and practical guidance before stopping.',
         prompt,
-        temperature: 0.4,
+        temperature: 0.5,
+        maxTokens: 16000,
       })
 
       const durationMs = Date.now() - startTime
