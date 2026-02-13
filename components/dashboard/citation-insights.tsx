@@ -91,6 +91,7 @@ const MEMO_FUNNEL_MAP: Record<string, FunnelStage> = {
   response: 'mid_funnel',
   guide: 'top_funnel',
   gap_fill: 'mid_funnel',
+  synthesis: 'mid_funnel',
 }
 
 type TimeRange = '7d' | '30d' | '90d'
@@ -129,6 +130,15 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
     promptTexts: string[]
   } | null>(null)
 
+  // Synthesis modal state
+  const [synthModal, setSynthModal] = useState<{
+    isOpen: boolean
+    queryId: string
+    queryText: string
+    citationCount: number
+    sourceCount: number
+  } | null>(null)
+
   const handleGenerateMemo = useCallback((url: string, domain: string, citationCount: number, prompts: Query[]) => {
     setGenModal({
       isOpen: true,
@@ -139,8 +149,22 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
     })
   }, [])
 
+  const handleSynthesize = useCallback((queryId: string, queryText: string, citationCount: number, sourceCount: number) => {
+    setSynthModal({
+      isOpen: true,
+      queryId,
+      queryText,
+      citationCount,
+      sourceCount,
+    })
+  }, [])
+
   const closeGenModal = useCallback(() => {
     setGenModal(null)
+  }, [])
+
+  const closeSynthModal = useCallback(() => {
+    setSynthModal(null)
   }, [])
 
   // Build query lookup map
@@ -684,7 +708,14 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
                           {/* Prompt list */}
                           <div className="divide-y">
                             {source.prompts.length > 0 ? (
-                              source.prompts.slice(0, 15).map((prompt) => (
+                              source.prompts.slice(0, 15).map((prompt) => {
+                                // Count how many unique cited URLs this prompt has across all scans
+                                const promptCitedUrls = citationsByUrl.filter(u => 
+                                  u.prompts.some(p => p.id === prompt.id) && !u.isBrand
+                                )
+                                const canSynthesize = promptCitedUrls.length >= 2
+                                
+                                return (
                                 <div key={prompt.id} className="px-3 py-2.5 flex items-start gap-2">
                                   <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                                   <div className="min-w-0 flex-1">
@@ -711,10 +742,29 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
                                           {prompt.persona.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                         </span>
                                       )}
+                                      {canSynthesize && (
+                                        <button
+                                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleSynthesize(
+                                              prompt.id,
+                                              prompt.query_text,
+                                              promptCitedUrls.reduce((sum, u) => sum + u.totalCitations, 0),
+                                              promptCitedUrls.length
+                                            )
+                                          }}
+                                          title={`Synthesize a memo from ${promptCitedUrls.length} cited sources for this prompt`}
+                                        >
+                                          <Sparkles className="h-3 w-3" />
+                                          Synthesize {promptCitedUrls.length} sources
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
-                              ))
+                                )
+                              })
                             ) : (
                               <div className="px-3 py-2 text-sm text-muted-foreground">
                                 Prompt data not available
@@ -1298,6 +1348,23 @@ export function CitationInsights({ brandId, brandName, brandDomain, brandSubdoma
           promptTexts={genModal.promptTexts}
         />
       )}
+
+      {/* Synthesis Modal */}
+      {synthModal && (
+        <SynthesisModal
+          brandId={brandId}
+          brandName={brandName}
+          brandSubdomain={brandSubdomain}
+          brandCustomDomain={brandCustomDomain}
+          brandDomainVerified={brandDomainVerified}
+          isOpen={synthModal.isOpen}
+          onClose={closeSynthModal}
+          queryId={synthModal.queryId}
+          queryText={synthModal.queryText}
+          citationCount={synthModal.citationCount}
+          sourceCount={synthModal.sourceCount}
+        />
+      )}
     </div>
   )
 }
@@ -1644,6 +1711,327 @@ function MemoGenerationModal({
                   <span className="text-sm text-slate-400">Generating memo...</span>
                 </div>
                 <span className="font-mono text-sm text-[#F59E0B]">● GENERATING</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Synthesis modal — multi-source memo generation ────────────────────────────
+
+function SynthesisModal({
+  brandId,
+  brandName,
+  brandSubdomain,
+  brandCustomDomain,
+  brandDomainVerified,
+  isOpen,
+  onClose,
+  queryId,
+  queryText,
+  citationCount,
+  sourceCount,
+}: {
+  brandId: string
+  brandName: string
+  brandSubdomain: string
+  brandCustomDomain?: string | null
+  brandDomainVerified?: boolean | null
+  isOpen: boolean
+  onClose: () => void
+  queryId: string
+  queryText: string
+  citationCount: number
+  sourceCount: number
+}) {
+  const [progressLines, setProgressLines] = useState<ProgressLine[]>([])
+  const [isComplete, setIsComplete] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [generatedMemo, setGeneratedMemo] = useState<{
+    id: string
+    title: string
+    slug: string
+    memo_type: string
+  } | null>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const lineIdRef = useRef(0)
+  const baselineCountRef = useRef(0)
+  const isCompleteRef = useRef(false)
+  const router = useRouter()
+
+  // Auto-scroll
+  useEffect(() => {
+    if (progressRef.current) {
+      progressRef.current.scrollTop = progressRef.current.scrollHeight
+    }
+  }, [progressLines])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+      timersRef.current.forEach(t => clearTimeout(t))
+    }
+  }, [])
+
+  const addLine = useCallback((text: string, type: ProgressLine['type'] = 'info') => {
+    const id = `line-${lineIdRef.current++}`
+    setProgressLines(prev => [...prev, { id, text, type }])
+  }, [])
+
+  // Start synthesis when modal opens
+  useEffect(() => {
+    if (!isOpen || hasStarted) return
+    setHasStarted(true)
+
+    const startSynthesis = async () => {
+      addLine(`▶ SYNTHESIZING MEMO FROM MULTIPLE SOURCES`, 'info')
+      addLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+      addLine(``, 'info')
+      addLine(`Prompt: "${queryText.length > 70 ? queryText.slice(0, 67) + '...' : queryText}"`, 'result')
+      addLine(`Sources to synthesize: ${sourceCount}`, 'result')
+      addLine(`Total citations: ${citationCount}x`, 'result')
+      addLine(``, 'info')
+
+      // Get baseline memo count
+      try {
+        const countRes = await fetch(`/api/brands/${brandId}/memo-count`)
+        if (countRes.ok) {
+          const { count } = await countRes.json()
+          baselineCountRef.current = count
+        }
+      } catch {
+        // Continue anyway
+      }
+
+      // Fire the synthesis API
+      try {
+        addLine(`Sending synthesis request...`, 'working')
+
+        const res = await fetch(`/api/brands/${brandId}/actions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'synthesize_from_prompt',
+            queryId,
+          }),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Synthesis failed')
+        }
+
+        addLine(`Synthesis started`, 'success')
+        addLine(``, 'info')
+
+        // Schedule progress messages
+        const steps = [
+          { delay: 2000, text: 'Loading prompt data and scan results...', type: 'working' as const },
+          { delay: 5000, text: `Fetching content from ${sourceCount} cited source${sourceCount !== 1 ? 's' : ''}...`, type: 'working' as const },
+          { delay: 12000, text: 'Analyzing content structure from each source...', type: 'working' as const },
+          { delay: 20000, text: 'Mapping coverage: topics, claims, data points...', type: 'working' as const },
+          { delay: 30000, text: 'Synthesizing comprehensive article with brand positioning...', type: 'working' as const },
+          { delay: 45000, text: 'Adding comparison tables, FAQs, and expert insights...', type: 'working' as const },
+          { delay: 60000, text: 'Generating meta description and schema...', type: 'working' as const },
+          { delay: 75000, text: 'Publishing and creating version history...', type: 'working' as const },
+        ]
+
+        timersRef.current = steps.map(step =>
+          setTimeout(() => {
+            if (!isCompleteRef.current) addLine(step.text, step.type)
+          }, step.delay)
+        )
+
+        // Poll for completion
+        pollRef.current = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/brands/${brandId}/memo-count?include_latest=true`)
+            if (pollRes.ok) {
+              const { count, latest } = await pollRes.json()
+              if (count > baselineCountRef.current && latest) {
+                if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+                timersRef.current.forEach(t => clearTimeout(t))
+
+                addLine(``, 'info')
+                addLine(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info')
+                addLine(`✓ SYNTHESIS COMPLETE`, 'success')
+                addLine(``, 'info')
+                addLine(`Title: ${latest.title}`, 'result')
+                addLine(`Type: synthesis (${sourceCount} sources combined)`, 'info')
+                addLine(`Status: ${latest.status}`, 'info')
+
+                setGeneratedMemo(latest)
+                isCompleteRef.current = true
+                setIsComplete(true)
+                router.refresh()
+              }
+            }
+          } catch {
+            // Retry silently
+          }
+        }, 4000) // Slightly longer poll interval — synthesis takes more time
+
+        // Timeout after 3 minutes (synthesis is heavier than single-source)
+        timersRef.current.push(
+          setTimeout(() => {
+            if (!isCompleteRef.current && pollRef.current) {
+              clearInterval(pollRef.current)
+              pollRef.current = null
+              addLine(``, 'info')
+              addLine(`⏱ Synthesis is taking longer than expected.`, 'info')
+              addLine(`The memo may still be processing. Check the Memos tab.`, 'info')
+              isCompleteRef.current = true
+              setIsComplete(true)
+            }
+          }, 180000)
+        )
+      } catch (err) {
+        addLine(``, 'info')
+        addLine(`⚠️ Error: ${err instanceof Error ? err.message : 'Unknown error'}`, 'info')
+        setError(err instanceof Error ? err.message : 'Synthesis failed')
+        isCompleteRef.current = true
+        setIsComplete(true)
+      }
+    }
+
+    startSynthesis()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
+
+  const handleClose = () => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    timersRef.current.forEach(t => clearTimeout(t))
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="max-w-2xl p-0 gap-0 border-[3px] border-violet-700 rounded-none overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>Synthesize Memo</DialogTitle>
+        </VisuallyHidden>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 bg-violet-900 text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-violet-500 rounded-lg">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="font-bold tracking-wide">SYNTHESIZE MEMO</h2>
+              <p className="text-sm text-violet-200">{brandName} — {sourceCount} sources → 1 definitive article</p>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="text-violet-300 hover:text-white transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Progress Log */}
+        <div
+          ref={progressRef}
+          className="h-72 overflow-y-auto bg-[#1a1b26] p-4 font-mono text-sm"
+        >
+          {progressLines.map((line) => (
+            <div key={line.id} className="flex items-start gap-2 py-0.5">
+              {line.type === 'working' && !isComplete && (
+                <Loader2 className="h-4 w-4 text-violet-400 animate-spin shrink-0 mt-0.5" />
+              )}
+              {line.type === 'working' && isComplete && (
+                <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
+              )}
+              {line.type === 'success' && (
+                <CheckCircle2 className="h-4 w-4 text-[#10B981] shrink-0 mt-0.5" />
+              )}
+              {line.type === 'info' && line.text && !line.text.startsWith('━') && !line.text.startsWith('▶') && (
+                <span className="text-slate-500 shrink-0">→</span>
+              )}
+              {line.type === 'result' && (
+                <span className="text-violet-400 shrink-0">•</span>
+              )}
+              <span className={
+                line.type === 'success' ? 'text-[#10B981] font-bold' :
+                line.type === 'working' && !isComplete ? 'text-violet-400' :
+                line.type === 'working' && isComplete ? 'text-slate-400' :
+                line.type === 'result' ? 'text-violet-400' :
+                line.text.startsWith('▶') ? 'text-violet-300 font-bold' :
+                line.text.startsWith('━') ? 'text-violet-300' :
+                'text-slate-400'
+              }>
+                {line.text}
+              </span>
+            </div>
+          ))}
+
+          {/* Blinking cursor when running */}
+          {!isComplete && hasStarted && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="w-2 h-4 bg-violet-400 animate-pulse" />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-violet-900 px-4 py-3 border-t border-violet-700">
+          <div className="flex items-center justify-between">
+            {isComplete && generatedMemo ? (
+              <div className="flex items-center gap-2 w-full">
+                <a
+                  href={`/brands/${brandId}/memos/${generatedMemo.id}`}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 text-white text-sm font-semibold rounded hover:bg-violet-600 transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit Memo
+                </a>
+                <a
+                  href={brandCustomDomain && brandDomainVerified ? `https://${brandCustomDomain}/${generatedMemo.slug}` : `/memo/${brandSubdomain}/${generatedMemo.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-violet-700 text-white text-sm font-semibold rounded hover:bg-violet-600 transition-colors"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View Memo
+                </a>
+                <div className="flex-1" />
+                <span className="font-mono text-sm text-[#10B981]">● COMPLETE</span>
+              </div>
+            ) : isComplete && error ? (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-red-400">{error}</span>
+                <button
+                  onClick={handleClose}
+                  className="px-3 py-2 bg-violet-700 text-white text-sm font-semibold rounded hover:bg-violet-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            ) : isComplete ? (
+              <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-violet-200">Check the Memos tab for your synthesized content.</span>
+                <a
+                  href={`/brands/${brandId}/memos`}
+                  className="px-3 py-2 bg-violet-500 text-white text-sm font-semibold rounded hover:bg-violet-600 transition-colors"
+                >
+                  Go to Memos
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
+                  <span className="text-sm text-violet-200">Synthesizing from {sourceCount} sources...</span>
+                </div>
+                <span className="font-mono text-sm text-violet-400">● SYNTHESIZING</span>
               </div>
             )}
           </div>

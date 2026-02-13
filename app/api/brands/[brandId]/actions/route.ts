@@ -1028,6 +1028,42 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: 'Memo generation started for pending content' 
         })
 
+      case 'synthesize_from_prompt': {
+        // Generate a synthesis memo from ALL cited sources for a specific prompt
+        const { queryId: synthQueryId } = body
+        if (!synthQueryId) {
+          return NextResponse.json({ error: 'queryId is required' }, { status: 400 })
+        }
+        if (!isValidUUID(synthQueryId)) {
+          return NextResponse.json({ error: 'Invalid queryId format' }, { status: 400 })
+        }
+
+        // Verify query belongs to this brand
+        const { data: synthQuery, error: synthQueryError } = await supabase
+          .from('queries')
+          .select('id')
+          .eq('id', synthQueryId)
+          .eq('brand_id', brandId)
+          .single()
+
+        if (synthQueryError || !synthQuery) {
+          return NextResponse.json({ error: 'Query not found' }, { status: 404 })
+        }
+
+        await inngest.send({
+          name: 'memo/synthesize',
+          data: {
+            brandId,
+            queryId: synthQueryId,
+          },
+        })
+
+        return NextResponse.json({
+          success: true,
+          message: 'Synthesis memo generation started — combining all cited sources for this prompt',
+        })
+      }
+
       case 'respond_to_citation': {
         // Generate a strategic variation of a specific cited URL
         const { url: citationUrl, queryIds: citationQueryIds } = body

@@ -759,7 +759,7 @@ export const scanRun = inngest.createFunction(
 
         // Group by type and prepare memo generation events
         const memoEvents: Array<{
-          name: 'memo/generate' | 'citation/respond'
+          name: 'memo/generate' | 'citation/respond' | 'memo/synthesize'
           data: {
             brandId: string
             queryId?: string
@@ -787,13 +787,30 @@ export const scanRun = inngest.createFunction(
           }
         }
 
+        // Track which queries have already been queued for synthesis to avoid duplicates
+        const queuedSynthesisQueryIds = new Set<string>()
+
         for (const query of gapQueries) {
-          // Check if there are cited URLs for this gap query — if so, use citation/respond
-          // to create a strategic variation of the winning content
+          // Check if there are cited URLs for this gap query
           const citedUrls = queryCitationMap.get(query.id)
           if (citedUrls && citedUrls.length > 0) {
-            // Pick the top cited URL (first one — typically the most prominent citation)
-            const topCitedUrl = citedUrls[0]
+            const uniqueCitedUrls = [...new Set(citedUrls)]
+
+            if (uniqueCitedUrls.length >= 2 && !queuedSynthesisQueryIds.has(query.id)) {
+              // 2+ unique cited URLs → use synthesis to combine all sources
+              memoEvents.push({
+                name: 'memo/synthesize',
+                data: {
+                  brandId,
+                  queryId: query.id,
+                },
+              })
+              queuedSynthesisQueryIds.add(query.id)
+              continue // Skip single-URL citation response and generic memo type
+            }
+
+            // 1 cited URL → use single-URL citation response
+            const topCitedUrl = uniqueCitedUrls[0]
             if (!queuedCitationUrls.has(topCitedUrl)) {
               memoEvents.push({
                 name: 'citation/respond',
@@ -914,10 +931,11 @@ export const scanRun = inngest.createFunction(
           await inngest.send(memoEvents)
         }
 
+        const synthesisCount = memoEvents.filter(e => e.name === 'memo/synthesize').length
         const citationResponses = memoEvents.filter(e => e.name === 'citation/respond').length
         const standardMemos = memoEvents.filter(e => e.name === 'memo/generate').length
-        console.log(`Memo generation: ${memoEvents.length} queued (${citationResponses} citation responses, ${standardMemos} standard memos), daily cap: ${dailyCap}, already created today: ${memosCreatedToday}`)
-        return { memosQueued: memoEvents.length, citationResponses, standardMemos, dailyCap, memosCreatedToday }
+        console.log(`Memo generation: ${memoEvents.length} queued (${synthesisCount} synthesis, ${citationResponses} citation responses, ${standardMemos} standard memos), daily cap: ${dailyCap}, already created today: ${memosCreatedToday}`)
+        return { memosQueued: memoEvents.length, synthesisCount, citationResponses, standardMemos, dailyCap, memosCreatedToday }
       })
     }
 

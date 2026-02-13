@@ -53,6 +53,7 @@ import { competitorResearch } from '@/lib/inngest/functions/competitor-research'
 import { competitorRevalidate } from '@/lib/inngest/functions/competitor-revalidate'
 import { memoVerifyContent } from '@/lib/inngest/functions/memo-verify'
 import { citationRespond } from '@/lib/inngest/functions/citation-respond'
+import { memoSynthesize } from '@/lib/inngest/functions/memo-synthesize'
 import { deployAnalyze } from '@/lib/inngest/functions/deploy-analyze'
 import { uptimeCheck } from '@/lib/inngest/functions/uptime-check'
 import { courseNurtureCheck, courseNurtureSend } from '@/lib/inngest/functions/course-nurture'
@@ -147,6 +148,9 @@ export const { GET, POST, PUT } = serve({
     
     // Citation response - strategic variations of cited competitor content
     citationRespond,         // Fetch cited URL, generate better version with brand's perspective
+    
+    // Multi-source synthesis - combine ALL cited sources into one definitive article
+    memoSynthesize,          // Fetch multiple cited URLs for a prompt, synthesize into authoritative memo
     
     // Deploy analysis - GitHub webhook → classify → generate product_deploy memos
     deployAnalyze,           // Analyze git commits, classify as publish-worthy, trigger memo gen

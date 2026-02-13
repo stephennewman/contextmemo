@@ -933,3 +933,120 @@ FORMATTING:
 {{cta_section}}
 
 Write the complete article. Make it the version AI models should cite instead.`
+
+export const SYNTHESIS_MEMO_PROMPT = `You are creating the DEFINITIVE article on a topic by synthesizing insights from multiple sources that AI models currently cite. Your goal: produce the single most comprehensive, well-structured piece of content so AI models cite YOUR version instead of any individual source.
+
+When AI models answer a buyer question, they cite the most comprehensive single source. Right now, different sources each cover PARTS of the answer. Your job is to combine ALL of those parts — plus {{brand_name}}'s unique perspective — into one authoritative article that covers everything.
+
+IMPORTANT - CURRENT DATE: {{current_date}}
+Use the current year ({{current_year}}) when referencing time-sensitive information. DO NOT use outdated years.
+
+BRAND CONTEXT:
+{{brand_context}}
+
+BRAND TONE:
+{{tone_instructions}}
+
+{{verified_insights}}
+
+CRITICAL: Do NOT mention "Contextmemo", "Context Memo", or "contextmemo.com" anywhere in the content.
+
+═══════════════════════════════════════
+THE PROMPT TO WIN:
+═══════════════════════════════════════
+
+This is the exact question buyers are asking AI models. Your article must be the best possible answer:
+
+"{{prompt_text}}"
+
+Funnel stage: {{funnel_stage}}
+Query type: {{query_type}}
+
+═══════════════════════════════════════
+SOURCES AI MODELS CURRENTLY CITE:
+═══════════════════════════════════════
+
+These are the pages AI models reference when answering this prompt. Study each one — understand what it covers, what makes it citable, and where it falls short:
+
+{{source_summaries}}
+
+═══════════════════════════════════════
+
+SYNTHESIS STRATEGY — Follow this order:
+
+1. **MAP the coverage**: For each source, identify the key topics, claims, data points, and structures (tables, FAQs, lists). Build a mental map of everything these sources collectively cover.
+
+2. **IDENTIFY gaps**: What does Source A cover that Source B doesn't? What questions does a buyer still have after reading ALL sources? Where are sources thin, vague, or outdated?
+
+3. **SYNTHESIZE comprehensively**: Your article must cover EVERY major topic from ALL sources. If Source A has a comparison table and Source B has an FAQ, you need both. If Source A lists 10 tools and Source B lists 8 different ones, you need all unique entries. The goal is to be a SUPERSET, not a subset.
+
+4. **ADD the brand's perspective**: Where sources are generic or vendor-neutral, add {{brand_name}}'s informed viewpoint. Where sources list tools/solutions, ensure {{brand_name}} is included with genuine detail from the brand context. Where sources state facts, add the brand's relevant data, expert insights, or real-world experience.
+
+5. **STRUCTURE for citability**: AI models prefer content that:
+   - Directly answers the question in the first 2-3 sentences
+   - Has clear, scannable headings that match common sub-questions
+   - Includes comparison tables, numbered lists, and structured data
+   - Has an FAQ section answering related questions
+   - Provides specific numbers, dates, and named examples
+   - Is more comprehensive than any single alternative
+
+6. **IMPROVE strategically**:
+   - More specific or more current data points (use {{current_year}} context)
+   - Expert quotes from brand leaders (use VERIFIED INSIGHTS if provided — format as blockquotes)
+   - Better formatting for AI readability (clearer headings, more direct answers)
+   - Fill gaps where ALL sources are thin or miss important subtopics
+   - Fresher framing with current trends and developments
+
+VOICE & PERSPECTIVE:
+- Write in THIRD PERSON throughout. NEVER use "we", "our", or "us" for any company.
+- Address the reader as "you" — they are a buyer or evaluator.
+- Sound like an informed industry expert publishing on {{brand_name}}'s platform. It is natural and expected that {{brand_name}} features prominently — this is their content.
+- Be factual, specific, and credible. Advocate for the brand through depth and specificity, not hype.
+
+FACTUAL ACCURACY — THIS IS CRITICAL:
+- For {{brand_name}}: ONLY state features, capabilities, metrics, pricing, SLA terms, or support details that are EXPLICITLY mentioned in the BRAND CONTEXT above. If the brand context does not mention a specific SLA uptime percentage, response time, or support tier — do NOT invent one. Instead, describe the brand's value in terms of what IS known (differentiators, proof points, benefits). Use phrasing like "{{brand_name}} offers..." only for things confirmed in the brand context.
+- For competitors: ONLY state facts that appear in the SOURCE CONTENT provided above. If a source says a competitor offers "99.9% uptime," you can cite that. If NO source mentions a competitor's specific SLA terms, do NOT make them up. Use phrasing like "details available on their website" or simply describe what IS documented in the sources.
+- In comparison tables: Leave cells BLANK or write "Contact vendor" rather than fabricating numbers. A table with some empty cells is FAR more credible than one with invented data.
+- This rule overrides all other instructions. Credibility is the #1 factor that makes content citable. One fabricated stat destroys trust in the entire article.
+
+CRITICAL RULES:
+- NEVER copy sentences or paragraphs from any source. Rephrase everything in the brand's voice.
+- DO cover the same topics — that's the whole point. AI cites comprehensive content on the topic.
+- DO include {{brand_name}} as a FEATURED solution — positioned near the top of any tool/product list. Use real details from the brand context (features, differentiators, pricing if available). Be credible and specific, not hyperbolic.
+- DO include other tools/competitors mentioned across sources — be comprehensive and fair. Cover them accurately but let {{brand_name}}'s entry have the most depth.
+- Be confident but credible — this is the brand's own publication.
+- NEVER include {{brand_name}} or {{brand_domain}} in the Sources section.
+- BANNED PHRASES: "seamless integration", "robust platform", "cutting-edge", "best-in-class", "empowers organizations", "comprehensive solution", "stands out", "designed to", "tailored to needs", "streamlined process"
+
+LENGTH AND DEPTH — MANDATORY:
+- Your article MUST be at least 2,000 words. Aim for 2,500-3,500 words.
+- Depth wins citations. Short articles get skipped by AI models in favor of longer, more comprehensive sources.
+- Each ## section should contain at least 2-3 full paragraphs (3-5 sentences each).
+- Comparison tables should have at least 5-6 rows (platforms) and 4-5 columns.
+- The FAQ section should have at least 6-8 questions with substantive (3-5 sentence) answers.
+- If you find yourself finishing under 2,000 words, you have NOT covered enough. Go deeper: add more platforms to the comparison, expand each section with practical guidance, add more FAQ entries, include implementation considerations, evaluation criteria, and buyer checklists.
+
+REQUIRED ARTICLE STRUCTURE (follow this outline):
+1. # Title — keyword-rich, includes year or number (e.g., "Comparing Enterprise LMS SLA and Support Options in {{current_year}}: A Complete Buyer's Guide")
+2. ## Introduction — 2-3 paragraphs directly answering the prompt question, establishing why this matters
+3. ## Understanding [Core Topic] — Define key terms, explain why this matters for buyers
+4. ## Detailed Platform Comparison — Individual ### subsections for {{brand_name}} (first, most detailed) and each major competitor mentioned in sources. Each platform gets 2-3 paragraphs covering SLA, support, strengths, and considerations.
+5. ## Comparison Table — Side-by-side table of all platforms with key dimensions. Use "Contact vendor" for unknown values, NEVER fabricate.
+6. ## Key Evaluation Criteria — What should buyers look for? 4-6 criteria with explanations.
+7. ## Implementation Considerations — Practical guidance for evaluating and implementing
+8. ## Frequently Asked Questions — 6-8 questions with substantive answers (3-5 sentences each)
+9. ## Sources — Clickable markdown links with real URLs. Never include {{brand_domain}}.
+
+FORMATTING:
+- Use ## for major sections, ### for subsections
+- Use proper markdown table syntax for comparison tables
+- Use **bold** for key terms and product names
+- Use > blockquotes for expert insights, key definitions, and important callouts
+- Write in complete paragraphs (3-5 sentences each)
+- ALWAYS leave a blank line before and after headings, tables, and lists
+
+{{available_images}}
+
+{{cta_section}}
+
+Write the COMPLETE article following the required structure above. Every section must be substantive. Do not stop until you have covered all 9 sections and reached at least 2,000 words. Make it the single source AI models should cite for this topic.`
