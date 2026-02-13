@@ -393,6 +393,13 @@ _Most recent deploys first_
 
 ### February 13, 2026
 
+**Synthesis Prompt Tuning — Longer Output + Anti-Fabrication** (06c8bfd)
+- Raised word count targets to 3,000-4,000 (overshoot to land ~2,000 from GPT-4o)
+- Added explicit per-section depth requirements (3-4 paragraphs each)
+- Added "BEFORE YOU STOP WRITING" self-check block at end of prompt
+- Added system message + maxTokens: 16000 + temperature: 0.5 in memo-synthesize.ts
+- Tested end-to-end: output went from 1,167 → 1,972 words with zero fabricated data
+
 **Multi-Source Synthesis Memo Generation** (a4c52f2)
 - New memo type: `synthesis` — combines content from ALL competitor URLs cited for a single prompt into one definitive article
 - Created `SYNTHESIS_MEMO_PROMPT` in `lib/ai/prompts/memo-generation.ts` with:
