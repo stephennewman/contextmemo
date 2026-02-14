@@ -393,6 +393,16 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**IP-to-Company Enrichment via IPinfo API** (aa4fb27)
+- Every bot crawl event now triggers an IP→organization lookup via IPinfo.io free API.
+- New `lib/ip-enrichment.ts`: Edge-compatible enrichment (Web Crypto API for hashing, raw fetch for API + cache). Runs in proxy.ts `after()` callback — zero impact on response time.
+- Supabase-backed cache (`ip_enrichment_cache` table, keyed by IP hash) — avoids redundant API calls for repeated bot IPs. Most bots come from a small set of data center IPs, so cache hit rate should be high.
+- New columns on `bot_crawl_events`: `ip_org_name` (e.g. "Google LLC"), `ip_asn` (e.g. "AS15169").
+- PERFORMANCE tab: org name shown inline on Recent Crawl Events. New "Visitor Organizations" section showing aggregated org counts with category dots and recency.
+- Free tier gives ASN org (ISP/hosting company). Upgrade path to IPinfo Business ($249/mo) for actual company-level identification (company name, domain, type).
+- `IPINFO_TOKEN` env var added — works without a token at lower rate limit (~1000/day). Sign up at ipinfo.io/signup for 50k/month free.
+- **Action needed**: Add `IPINFO_TOKEN` to Vercel env vars for production rate limits.
+
 **Merge TRAFFIC tab into PERFORMANCE — remove redundancy** (9732f85)
 - Removed standalone TRAFFIC tab (was ~60% redundant with PERFORMANCE).
 - Added "Traffic by AI Provider" section to PERFORMANCE — stacked bars showing OpenAI, Anthropic, Perplexity, etc. broken down by training/search/click categories.

@@ -34,7 +34,7 @@ export default async function PerformancePage({ params }: Props) {
       .order('created_at', { ascending: false }),
     supabase
       .from('ai_traffic')
-      .select('id, memo_id, page_url, referrer, referrer_source, country, timestamp')
+      .select('id, memo_id, page_url, referrer, referrer_source, country, timestamp, ip_org_name')
       .eq('brand_id', brandId)
       .gte('timestamp', ninetyDaysAgo.toISOString())
       .order('timestamp', { ascending: false })
@@ -75,6 +75,7 @@ export default async function PerformancePage({ params }: Props) {
         referrer_source: string
         country: string | null
         timestamp: string
+        ip_org_name: string | null
       }>}
       crawlEvents={brandCrawlEvents as Array<{
         id: string

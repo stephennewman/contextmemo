@@ -154,17 +154,54 @@ export async function enrichIP(rawIp: string | null): Promise<IPEnrichment | nul
   return enrichment
 }
 
-// ─── Known datacenter/hosting org patterns ───────────────────────────────────
+// ─── Org Classification ──────────────────────────────────────────────────────
 
+export type OrgType = 'business' | 'isp' | 'datacenter' | 'unknown'
+
+// Known cloud/hosting/datacenter providers
 const DATACENTER_PATTERNS = [
-  /amazon/i, /aws/i, /microsoft/i, /azure/i, /google cloud/i,
+  /amazon\.com/i, /amazon web services/i, /aws/i,
+  /microsoft/i, /azure/i,
+  /google cloud/i, /google llc/i,
   /digitalocean/i, /linode/i, /vultr/i, /hetzner/i, /ovh/i,
   /cloudflare/i, /akamai/i, /fastly/i, /oracle cloud/i,
   /rackspace/i, /scaleway/i, /equinix/i,
+  /alibaba/i, /tencent cloud/i,
+  /heroku/i, /render/i, /fly\.io/i, /vercel/i, /netlify/i,
+  /leaseweb/i, /softlayer/i, /choopa/i, /colocrossing/i,
+  /quadranet/i, /psychz/i, /servercentral/i,
 ]
+
+// Known ISP/residential providers (US + major international)
+const ISP_PATTERNS = [
+  /comcast/i, /xfinity/i, /charter/i, /spectrum/i,
+  /verizon/i, /at&t/i, /att /i, /at&t/i, /bellsouth/i,
+  /t-mobile/i, /sprint/i, /cox /i, /cox comm/i,
+  /centurylink/i, /lumen/i, /frontier/i, /windstream/i,
+  /mediacom/i, /altice/i, /optimum/i, /cablevision/i,
+  /earthlink/i, /hughesnet/i, /starlink/i,
+  /british telecom/i, /bt /i, /vodafone/i, /orange/i,
+  /deutsche telekom/i, /telefonica/i, /telia/i, /swisscom/i,
+  /telstra/i, /ntt /i, /kddi/i, /softbank/i,
+  /rogers/i, /bell canada/i, /telus/i, /shaw/i,
+  /sky broadband/i, /virgin media/i, /talktalk/i,
+]
+
+/** Classify an org name as business, ISP, datacenter, or unknown */
+export function classifyOrg(orgName: string | null): OrgType {
+  if (!orgName) return 'unknown'
+  if (DATACENTER_PATTERNS.some(p => p.test(orgName))) return 'datacenter'
+  if (ISP_PATTERNS.some(p => p.test(orgName))) return 'isp'
+  // If it has a name and isn't a known ISP/datacenter, it's likely a business
+  return 'business'
+}
 
 /** Check if an org name looks like a datacenter/hosting provider */
 export function isDatacenterOrg(orgName: string | null): boolean {
-  if (!orgName) return false
-  return DATACENTER_PATTERNS.some(p => p.test(orgName))
+  return classifyOrg(orgName) === 'datacenter'
+}
+
+/** Check if an org is a real business (not ISP or datacenter) */
+export function isBusinessOrg(orgName: string | null): boolean {
+  return classifyOrg(orgName) === 'business'
 }

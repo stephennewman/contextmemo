@@ -1,0 +1,24 @@
+---
+description: V2 UI is deprecated. All work should target the v1 dashboard under app/(dashboard)/.
+globs:
+  - "**/*.tsx"
+  - "**/*.ts"
+---
+
+# No V2 UI
+
+The V2 UI (`app/v2/`, `components/v2/`) is **deprecated and no longer in use**. Do not build features, fix bugs, or make changes targeting the V2 layout or components.
+
+## Active UI paths
+
+- **Dashboard layout**: `app/(dashboard)/layout.tsx`
+- **Dashboard components**: `components/dashboard/`
+- **Brand settings**: `app/(dashboard)/brands/[brandId]/settings/page.tsx`
+- **Dashboard header**: `components/dashboard/dashboard-header.tsx`
+
+## Deprecated (do not touch)
+
+- `app/v2/` — all routes
+- `components/v2/` — all components (sidebar, usage bar, etc.)
+
+When the user refers to "settings", "dashboard", or any UI page, always target the `app/(dashboard)/` routes and `components/dashboard/` components.

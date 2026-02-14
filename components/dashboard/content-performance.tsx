@@ -22,6 +22,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { AI_SOURCE_LABELS, type AIReferrerSource } from '@/lib/supabase/types'
 import { BOT_CATEGORY_COLORS, BOT_CATEGORY_DESCRIPTIONS, BOT_CATEGORY_LABELS, type BotCategory } from '@/lib/bot-detection'
+import { classifyOrg, type OrgType } from '@/lib/ip-enrichment'
 
 interface Memo {
   id: string
@@ -42,6 +43,7 @@ interface TrafficEvent {
   referrer_source: string
   country: string | null
   timestamp: string
+  ip_org_name: string | null
 }
 
 interface CrawlEvent {
@@ -201,18 +203,32 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
   const totalAIProviderCrawls = sortedProviders.reduce((sum, [, d]) => sum + d.count, 0)
 
   // ── Visitor organizations (IP-to-company intelligence) ──
-  const orgCounts: Record<string, { count: number; categories: Set<string>; lastSeen: string }> = {}
+  // Combine orgs from both bot crawls and human traffic
+  const orgCounts: Record<string, { count: number; orgType: OrgType; sources: Set<string>; lastSeen: string }> = {}
   for (const e of crawlEvents) {
     if (!e.ip_org_name) continue
     if (!orgCounts[e.ip_org_name]) {
-      orgCounts[e.ip_org_name] = { count: 0, categories: new Set(), lastSeen: e.created_at }
+      orgCounts[e.ip_org_name] = { count: 0, orgType: classifyOrg(e.ip_org_name), sources: new Set(), lastSeen: e.created_at }
     }
     orgCounts[e.ip_org_name].count++
-    orgCounts[e.ip_org_name].categories.add(e.bot_category)
+    orgCounts[e.ip_org_name].sources.add(e.bot_category)
   }
-  const sortedOrgs = Object.entries(orgCounts)
+  for (const t of traffic) {
+    if (!t.ip_org_name) continue
+    if (!orgCounts[t.ip_org_name]) {
+      orgCounts[t.ip_org_name] = { count: 0, orgType: classifyOrg(t.ip_org_name), sources: new Set(), lastSeen: t.timestamp }
+    }
+    orgCounts[t.ip_org_name].count++
+    orgCounts[t.ip_org_name].sources.add('human_visit')
+  }
+  // Business orgs first (the interesting ones), then everything else
+  const businessOrgs = Object.entries(orgCounts)
+    .filter(([, d]) => d.orgType === 'business')
     .sort(([, a], [, b]) => b.count - a.count)
-    .slice(0, 12)
+  const otherOrgs = Object.entries(orgCounts)
+    .filter(([, d]) => d.orgType !== 'business')
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 6)
 
   // ── Recent crawl events (for geo-tagged event list) ──
   const recentCrawlEvents = crawlEvents.slice(0, 15)
@@ -512,40 +528,63 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
         </div>
       </div>
 
-      {/* ── Visitor Organizations (IP Intelligence) ── */}
-      {sortedOrgs.length > 0 && (
+      {/* ── Company Intelligence ── */}
+      {(businessOrgs.length > 0 || otherOrgs.length > 0) && (
         <>
           <div className="mx-6 border-t border-zinc-200" />
           <div className="px-6">
-            <SectionHeader icon={<Globe className="h-4 w-4 text-sky-500" />} title="Visitor Organizations" sub="IP-based org detection (ASN)" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
-              {sortedOrgs.map(([org, data]) => {
-                const cats = Array.from(data.categories)
-                return (
-                  <div key={org} className="flex items-center justify-between p-2 border border-zinc-100 rounded">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-zinc-700 truncate">{org}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        {cats.map(cat => (
-                          <div
-                            key={cat}
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: BOT_CATEGORY_COLORS[cat as BotCategory] || '#6B7280' }}
-                            title={BOT_CATEGORY_LABELS[cat as BotCategory] || cat}
-                          />
-                        ))}
-                        <span className="text-[10px] text-zinc-400 ml-0.5">
-                          {formatDistanceToNow(new Date(data.lastSeen), { addSuffix: true })}
-                        </span>
+            {/* Business orgs — the signal */}
+            {businessOrgs.length > 0 && (
+              <>
+                <SectionHeader icon={<Globe className="h-4 w-4 text-sky-500" />} title="Companies Visiting Your Content" sub={`${businessOrgs.length} identified`} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+                  {businessOrgs.slice(0, 12).map(([org, data]) => {
+                    const sources = Array.from(data.sources)
+                    return (
+                      <div key={org} className="flex items-center justify-between p-2.5 border-2 border-sky-100 bg-sky-50/30 rounded">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-zinc-800 truncate">{org}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {sources.map(src => (
+                              <div
+                                key={src}
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: BOT_CATEGORY_COLORS[src as BotCategory] || (src === 'human_visit' ? '#F59E0B' : '#6B7280') }}
+                                title={src === 'human_visit' ? 'Human Visit' : (BOT_CATEGORY_LABELS[src as BotCategory] || src)}
+                              />
+                            ))}
+                            <span className="text-[10px] text-zinc-400 ml-0.5">
+                              {formatDistanceToNow(new Date(data.lastSeen), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold tabular-nums text-sky-700 ml-2">{data.count}</span>
                       </div>
-                    </div>
-                    <span className="text-xs font-semibold tabular-nums text-zinc-600 ml-2">{data.count}</span>
-                  </div>
-                )
-              })}
-            </div>
-            <p className="text-[10px] text-zinc-400 mt-2">
-              Organizations identified from IP ASN data. Upgrade to IPinfo Business for company-level identification.
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Other orgs (ISPs, datacenters) — collapsed context */}
+            {otherOrgs.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  Infrastructure &amp; ISPs
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {otherOrgs.map(([org, data]) => (
+                    <span key={org} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-50 border border-zinc-100 rounded text-[10px] text-zinc-500">
+                      {org}
+                      <span className="font-semibold text-zinc-400">{data.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[10px] text-zinc-400 mt-3">
+              Companies identified via IP network registration (ASN). Corporate network visitors show their company name. Remote workers on home ISPs appear under their ISP.
             </p>
           </div>
         </>

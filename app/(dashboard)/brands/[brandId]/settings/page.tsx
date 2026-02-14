@@ -559,7 +559,7 @@ export default function BrandSettingsPage() {
     const measure = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
-        const remaining = window.innerHeight - rect.top - 16 // 16px bottom breathing room
+        const remaining = window.innerHeight - rect.top - 48 // breathing room for sticky save bar + padding
         setPanelHeight(`${Math.max(remaining, 300)}px`)
       }
     }

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'crypto'
 import { detectAISource } from '@/lib/supabase/types'
 import { isValidUUID, isValidURL, requireServiceRoleKey } from '@/lib/security/validation'
+import { enrichIP } from '@/lib/ip-enrichment'
 
 const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -111,6 +112,9 @@ export async function POST(request: NextRequest) {
     const geo = extractGeo(request)
     const ipHash = ip !== 'unknown' ? hashIp(ip) : null
 
+    // IP-to-company enrichment (cached — typically <50ms)
+    const ipData = await enrichIP(ip !== 'unknown' ? ip : null)
+
     // Insert tracking event
     const supabase = getSupabase()
     const { error } = await supabase
@@ -129,6 +133,8 @@ export async function POST(request: NextRequest) {
         longitude: geo.longitude,
         timezone: geo.timezone,
         ip_hash: ipHash,
+        ip_org_name: ipData?.orgName || null,
+        ip_asn: ipData?.asn || null,
         timestamp: new Date().toISOString(),
       })
 
@@ -191,28 +197,33 @@ export async function GET(request: NextRequest) {
                      'unknown'
           const ipHash = ip !== 'unknown' ? hashIp(ip) : null
                          
-          // Fire and forget - don't block the pixel response
-          try {
-            const supabase = getSupabase()
-            void supabase.from('ai_traffic').insert({
-              brand_id: brandId,
-              memo_id: memoId || null,
-              page_url: decodedUrl,
-              referrer: referrer || null,
-              referrer_source: referrerSource,
-              user_agent: userAgent,
-              country: geo.country,
-              city: geo.city,
-              region: geo.region,
-              latitude: geo.latitude,
-              longitude: geo.longitude,
-              timezone: geo.timezone,
-              ip_hash: ipHash,
-              timestamp: new Date().toISOString(),
-            })
-          } catch (err) {
-            console.error('[track] Failed to insert ai_traffic:', err)
-          }
+          // Fire and forget - enrich IP then insert (don't block pixel response)
+          void (async () => {
+            try {
+              const ipData = await enrichIP(ip !== 'unknown' ? ip : null)
+              const supabase = getSupabase()
+              await supabase.from('ai_traffic').insert({
+                brand_id: brandId,
+                memo_id: memoId || null,
+                page_url: decodedUrl,
+                referrer: referrer || null,
+                referrer_source: referrerSource,
+                user_agent: userAgent,
+                country: geo.country,
+                city: geo.city,
+                region: geo.region,
+                latitude: geo.latitude,
+                longitude: geo.longitude,
+                timezone: geo.timezone,
+                ip_hash: ipHash,
+                ip_org_name: ipData?.orgName || null,
+                ip_asn: ipData?.asn || null,
+                timestamp: new Date().toISOString(),
+              })
+            } catch (err) {
+              console.error('[track] Failed to insert ai_traffic:', err)
+            }
+          })()
         }
       }
     }
