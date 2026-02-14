@@ -146,7 +146,6 @@ export default async function BrandLayout({ params, children }: Props) {
     { slug: 'memos', label: 'MEMOS', count: memoCount },
     { slug: 'entities', label: 'ENTITIES', count: entityCount },
     { slug: 'citations', label: 'CITATIONS', count: citationCount || null },
-    { slug: 'traffic', label: 'TRAFFIC' },
     { slug: 'performance', label: 'PERFORMANCE' },
     { slug: 'settings', label: 'SETTINGS' },
   ]

@@ -17,10 +17,11 @@ import {
   MousePointerClick,
   MessageSquare,
   Database,
+  MapPin,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { AI_SOURCE_LABELS, type AIReferrerSource } from '@/lib/supabase/types'
-import { BOT_CATEGORY_COLORS, BOT_CATEGORY_DESCRIPTIONS, type BotCategory } from '@/lib/bot-detection'
+import { BOT_CATEGORY_COLORS, BOT_CATEGORY_DESCRIPTIONS, BOT_CATEGORY_LABELS, type BotCategory } from '@/lib/bot-detection'
 
 interface Memo {
   id: string
@@ -53,6 +54,11 @@ interface CrawlEvent {
   memo_slug: string | null
   page_path: string
   ip_country: string | null
+  ip_city: string | null
+  ip_region: string | null
+  ip_latitude: number | null
+  ip_longitude: number | null
+  ip_timezone: string | null
   created_at: string
 }
 
@@ -178,6 +184,22 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
     const idx = days7.indexOf(day)
     if (idx !== -1 && sparklineByBot[e.bot_name]) sparklineByBot[e.bot_name][idx]++
   }
+
+  // ── By AI provider (for provider breakdown section) ──
+  const byProvider: Record<string, { count: number; categories: Record<string, number> }> = {}
+  for (const e of crawlEvents) {
+    if (!isAICategory(e.bot_category)) continue
+    if (!byProvider[e.bot_provider]) {
+      byProvider[e.bot_provider] = { count: 0, categories: {} }
+    }
+    byProvider[e.bot_provider].count++
+    byProvider[e.bot_provider].categories[e.bot_category] = (byProvider[e.bot_provider].categories[e.bot_category] || 0) + 1
+  }
+  const sortedProviders = Object.entries(byProvider).sort(([, a], [, b]) => b.count - a.count)
+  const totalAIProviderCrawls = sortedProviders.reduce((sum, [, d]) => sum + d.count, 0)
+
+  // ── Recent crawl events (for geo-tagged event list) ──
+  const recentCrawlEvents = crawlEvents.slice(0, 15)
 
   // Per-memo last AI crawl — index by exact slug AND by base name (after prefix)
   // so "resources/sales-strategies" matches both the exact slug and just "sales-strategies"
@@ -374,6 +396,99 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
       <div className="px-6">
         <SectionHeader icon={<Radar className="h-4 w-4 text-emerald-500" />} title="Bot Crawl Activity" sub={crawlEvents.length > 0 ? `${crawlEvents.length} total crawls detected` : 'Tracking active · crawls will appear here'} />
         <BotCrawlList sortedBots={sortedBots} sparklineByBot={sparklineByBot} days7={days7} />
+      </div>
+
+      {/* ── Traffic by AI Provider + Recent Events ── */}
+      <div className="mx-6 border-t border-zinc-200" />
+      <div className="px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Traffic by AI Provider */}
+        <div>
+          <SectionHeader icon={<Bot className="h-4 w-4 text-emerald-500" />} title="Traffic by AI Provider" sub="Which platforms crawl your content" />
+          {sortedProviders.length > 0 ? (
+            <div className="space-y-3 mt-3">
+              {sortedProviders.map(([provider, data]) => {
+                const percentage = totalAIProviderCrawls > 0 ? Math.round((data.count / totalAIProviderCrawls) * 100) : 0
+                return (
+                  <div key={provider} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-zinc-700">{provider}</span>
+                      <span className="text-zinc-400 tabular-nums text-xs">{data.count} ({percentage}%)</span>
+                    </div>
+                    <div className="h-2 bg-zinc-100 rounded-full overflow-hidden flex">
+                      {Object.entries(data.categories)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([cat, count]) => (
+                          <div
+                            key={cat}
+                            className="h-full first:rounded-l-full last:rounded-r-full"
+                            style={{
+                              width: `${Math.max(2, (count / totalAIProviderCrawls) * 100)}%`,
+                              backgroundColor: BOT_CATEGORY_COLORS[cat as BotCategory] || '#6B7280',
+                            }}
+                            title={`${BOT_CATEGORY_LABELS[cat as BotCategory] || cat}: ${count}`}
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-zinc-100">
+                {(['ai_training', 'ai_search', 'ai_user_browse'] as BotCategory[]).map(cat => (
+                  <div key={cat} className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: BOT_CATEGORY_COLORS[cat] }} />
+                    <span className="text-[10px] text-zinc-400">{BOT_CATEGORY_LABELS[cat]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-400 mt-3">No AI provider crawls detected yet</p>
+          )}
+        </div>
+
+        {/* Recent Crawl Events */}
+        <div>
+          <SectionHeader icon={<MapPin className="h-4 w-4 text-sky-500" />} title="Recent Crawl Events" sub="Latest activity with location" />
+          {recentCrawlEvents.length > 0 ? (
+            <div className="space-y-1.5 mt-3">
+              {recentCrawlEvents.map(event => {
+                const catColor = BOT_CATEGORY_COLORS[event.bot_category as BotCategory] || '#6B7280'
+                const locationParts: string[] = []
+                if (event.ip_city) locationParts.push(event.ip_city)
+                if (event.ip_region) locationParts.push(event.ip_region)
+                if (locationParts.length === 0 && event.ip_country) locationParts.push(event.ip_country)
+                const location = locationParts.length > 0 ? locationParts.join(', ') : null
+                return (
+                  <div key={event.id} className="flex items-center gap-2 py-1">
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-zinc-700 truncate">{event.bot_display_name}</span>
+                        <Badge variant="outline" className="text-[8px] px-1 py-0 shrink-0" style={{ borderColor: catColor, color: catColor }}>
+                          {BOT_CATEGORY_LABELS[event.bot_category as BotCategory] || event.bot_category}
+                        </Badge>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 truncate">
+                        {event.memo_slug || event.page_path}
+                        {location && (
+                          <span className="inline-flex items-center gap-0.5 ml-1">
+                            <MapPin className="h-2.5 w-2.5 inline" />
+                            {location}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 shrink-0" title={new Date(event.created_at).toLocaleString()}>
+                      {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-400 mt-3">No crawl events yet</p>
+          )}
+        </div>
       </div>
 
       {/* ── Traffic by Source + Content Breakdown ── */}
