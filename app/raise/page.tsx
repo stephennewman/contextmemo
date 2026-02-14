@@ -321,10 +321,14 @@ function ResponseSection({ email }: { email: string }) {
 }
 
 // --- SIDEBAR ---
-function Sidebar({ activeSection }: { activeSection: string }) {
+function Sidebar({ activeSection, scrollRef }: { activeSection: string; scrollRef: React.RefObject<HTMLElement | null> }) {
   const handleClick = (id: string) => {
     const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    if (el && scrollRef.current) {
+      const container = scrollRef.current
+      const top = el.offsetTop - container.offsetTop
+      container.scrollTo({ top, behavior: 'smooth' })
+    }
   }
 
   return (
@@ -380,7 +384,7 @@ function Section({ id, children, bg = 'white' }: { id: string; children: React.R
   return (
     <section
       id={id}
-      className={`py-16 lg:py-20 px-8 lg:px-16 border-b last:border-0 ${BG_CLASSES[bg]}`}
+      className={`min-h-screen flex flex-col justify-center py-16 lg:py-20 px-8 lg:px-16 border-b last:border-0 ${BG_CLASSES[bg]}`}
     >
       {children}
     </section>
@@ -390,7 +394,7 @@ function Section({ id, children, bg = 'white' }: { id: string; children: React.R
 // --- MAIN PITCH DECK ---
 function PitchDeck({ email }: { email: string }) {
   const [activeSection, setActiveSection] = useState('title')
-  const contentRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     fetch('/api/raise', {
@@ -401,6 +405,9 @@ function PitchDeck({ email }: { email: string }) {
   }, [email])
 
   useEffect(() => {
+    const root = contentRef.current
+    if (!root) return
+
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.filter(e => e.isIntersecting)
@@ -409,7 +416,7 @@ function PitchDeck({ email }: { email: string }) {
           setActiveSection(best.target.id)
         }
       },
-      { threshold: [0.1, 0.3, 0.5], rootMargin: '-5% 0px -5% 0px' }
+      { root, threshold: [0.1, 0.3, 0.5], rootMargin: '-5% 0px -5% 0px' }
     )
 
     SECTIONS.forEach(({ id }) => {
@@ -422,13 +429,13 @@ function PitchDeck({ email }: { email: string }) {
 
   return (
     <div className="flex min-h-screen bg-[#FAFBFC]">
-      <Sidebar activeSection={activeSection} />
+      <Sidebar activeSection={activeSection} scrollRef={contentRef} />
       <ActiveViewers />
 
-      <main ref={contentRef} className="ml-64 flex-1 overflow-y-auto">
+      <main ref={contentRef} className="ml-64 flex-1 h-screen overflow-y-auto">
 
         {/* ===== TITLE PAGE ===== */}
-        <section id="title" className="py-16 lg:py-20 px-8 lg:px-16 bg-[#0F172A] border-b border-[#1E293B]">
+        <section id="title" className="min-h-screen flex flex-col justify-center py-16 lg:py-20 px-8 lg:px-16 bg-[#0F172A] border-b border-[#1E293B]">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-[#0EA5E9] flex items-center justify-center">
