@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils'
 import { BrandSwitcher } from './brand-switcher'
 import { WORKFLOW_META, type FeedWorkflow } from '@/lib/feed/types'
+import { createClient } from '@/lib/supabase/client'
 
 interface Brand {
   id: string
@@ -30,7 +31,7 @@ interface Brand {
 interface V2SidebarProps {
   brands: Brand[]
   unreadCounts?: Record<FeedWorkflow, number>
-  signOut: () => Promise<void>
+  signOut?: () => Promise<void>
 }
 
 const workflowIcons: Record<FeedWorkflow, React.ComponentType<{ className?: string }>> = {
@@ -54,11 +55,22 @@ const workflowColors: Record<FeedWorkflow, string> = {
 export function V2Sidebar({ 
   brands, 
   unreadCounts: initialUnreadCounts = {} as Record<FeedWorkflow, number>,
-  signOut 
 }: V2SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [unreadCounts, setUnreadCounts] = useState(initialUnreadCounts)
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } catch {
+      setSigningOut(false)
+    }
+  }
   
   // Extract brand ID from URL path: /v2/brands/[brandId]
   const brandIdMatch = pathname.match(/\/v2\/brands\/([^\/]+)/)
@@ -122,7 +134,7 @@ export function V2Sidebar({
   }))
 
   return (
-    <div className="w-64 bg-[#0F172A] min-h-screen flex flex-col border-r border-slate-800 sticky top-0">
+    <div className="w-64 bg-[#0F172A] h-screen flex flex-col border-r border-slate-800 shrink-0">
       {/* Logo */}
       <div className="p-4 border-b border-slate-800">
         <Link href="/v2" className="flex items-center gap-2">
@@ -144,8 +156,8 @@ export function V2Sidebar({
         <BrandSwitcher brands={brands} currentBrandId={currentBrandId} />
       </div>
 
-      {/* Navigation - scrollable */}
-      <nav className="flex-1 p-2 overflow-y-auto min-h-0">
+      {/* Navigation - scrollable with persistent scrollbar */}
+      <nav className="flex-1 p-2 min-h-0 always-show-scrollbar-dark">
         {/* Main navigation */}
         <div className="space-y-1">
           {mainNavItems.map((item) => {
@@ -234,15 +246,15 @@ export function V2Sidebar({
 
       {/* Footer - sticky at bottom of viewport */}
       <div className="sticky bottom-0 p-2 border-t border-slate-800 bg-[#0F172A]">
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors disabled:opacity-50"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>{signingOut ? 'Signing out...' : 'Sign Out'}</span>
+        </button>
       </div>
     </div>
   )

@@ -1,9 +1,10 @@
 import { type NextRequest, after } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { detectBot, resolveMemoPath, logBotCrawl } from '@/lib/bot-detection'
+import { enrichIP } from '@/lib/ip-enrichment'
 
 export async function proxy(request: NextRequest) {
-  // Bot crawl detection — pure string matching (~0ms), DB write runs after response
+  // Bot crawl detection — pure string matching (~0ms), DB write + IP enrichment runs after response
   const bot = detectBot(request.headers.get('user-agent'))
   if (bot) {
     const memoPath = resolveMemoPath(request)
@@ -11,6 +12,11 @@ export async function proxy(request: NextRequest) {
       after(async () => {
         const lat = request.headers.get('x-vercel-ip-latitude')
         const lng = request.headers.get('x-vercel-ip-longitude')
+        const rawIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+
+        // IP enrichment — cached, so only calls IPinfo API on first encounter
+        const ipData = await enrichIP(rawIp)
+
         await logBotCrawl({
           ...bot,
           ...memoPath,
@@ -21,6 +27,8 @@ export async function proxy(request: NextRequest) {
           ipLatitude: lat ? parseFloat(lat) : null,
           ipLongitude: lng ? parseFloat(lng) : null,
           ipTimezone: request.headers.get('x-vercel-ip-timezone') || null,
+          ipOrgName: ipData?.orgName || null,
+          ipAsn: ipData?.asn || null,
         })
       })
     }

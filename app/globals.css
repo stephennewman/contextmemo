@@ -173,12 +173,58 @@
   }
 }
 
-/* Settings panels: always show scrollbars so users know they can scroll */
+/* Always-visible scrollbar (light background) */
+.always-show-scrollbar {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-gutter: stable;
+}
+.always-show-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  -webkit-appearance: none;
+}
+.always-show-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.always-show-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+}
+.always-show-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Always-visible scrollbar (dark sidebar) */
+.always-show-scrollbar-dark {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #1e293b;
+  scrollbar-gutter: stable;
+}
+.always-show-scrollbar-dark::-webkit-scrollbar {
+  width: 6px;
+  -webkit-appearance: none;
+}
+.always-show-scrollbar-dark::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 3px;
+}
+.always-show-scrollbar-dark::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
+}
+.always-show-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Legacy alias */
 .settings-scroll {
   overflow-y: scroll !important;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
-  /* Force classic non-overlay scrollbar on WebKit */
   scrollbar-gutter: stable;
 }
 .settings-scroll::-webkit-scrollbar {

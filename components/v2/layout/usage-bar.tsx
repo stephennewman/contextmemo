@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { ChevronDown, Zap, Settings, User, LogOut, CreditCard, HelpCircle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -23,10 +24,22 @@ interface UsageBarProps {
   signOut?: () => Promise<void>
 }
 
-export function UsageBar({ usage, brandId, user, signOut }: UsageBarProps) {
+export function UsageBar({ usage, brandId, user }: UsageBarProps) {
   const percentUsed = usage.percent_used
   const isLow = percentUsed >= 80
   const isCritical = percentUsed >= 95
+  const [signingOut, setSigningOut] = useState(false)
+
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } catch {
+      setSigningOut(false)
+    }
+  }, [])
 
   // Calculate days until reset
   const resetDate = new Date(usage.reset_date)
@@ -192,16 +205,10 @@ export function UsageBar({ usage, brandId, user, signOut }: UsageBarProps) {
               
               <DropdownMenuSeparator />
               
-              {signOut && (
-                <DropdownMenuItem asChild>
-                  <form action={signOut}>
-                    <button type="submit" className="flex items-center gap-2 w-full text-left">
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </button>
-                  </form>
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem onSelect={handleSignOut} disabled={signingOut}>
+                <LogOut className="h-4 w-4" />
+                {signingOut ? 'Signing out...' : 'Sign Out'}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

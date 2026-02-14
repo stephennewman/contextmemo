@@ -3,13 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 
-async function signOut() {
-  'use server'
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
-}
-
 export default async function DashboardLayout({
   children,
 }: {
@@ -80,7 +73,6 @@ export default async function DashboardLayout({
         user={{ id: user.id, email: user.email || '' }}
         tenant={tenant ? { name: tenant.name } : null}
         brands={brands || []}
-        signOut={signOut}
       />
       
       {/* Main content */}

@@ -41,7 +41,7 @@ export default async function PerformancePage({ params }: Props) {
       .limit(2000),
     supabase
       .from('bot_crawl_events')
-      .select('id, bot_name, bot_category, bot_display_name, bot_provider, brand_subdomain, memo_slug, page_path, ip_country, ip_city, ip_region, ip_latitude, ip_longitude, ip_timezone, created_at')
+      .select('id, bot_name, bot_category, bot_display_name, bot_provider, brand_subdomain, memo_slug, page_path, ip_country, ip_city, ip_region, ip_latitude, ip_longitude, ip_timezone, ip_org_name, ip_asn, created_at')
       .eq('brand_subdomain', brand.subdomain)
       .gte('created_at', ninetyDaysAgo.toISOString())
       .order('created_at', { ascending: false })
@@ -91,6 +91,8 @@ export default async function PerformancePage({ params }: Props) {
         ip_latitude: number | null
         ip_longitude: number | null
         ip_timezone: string | null
+        ip_org_name: string | null
+        ip_asn: string | null
         created_at: string
       }>}
     />

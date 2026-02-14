@@ -393,6 +393,13 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Merge TRAFFIC tab into PERFORMANCE — remove redundancy** (9732f85)
+- Removed standalone TRAFFIC tab (was ~60% redundant with PERFORMANCE).
+- Added "Traffic by AI Provider" section to PERFORMANCE — stacked bars showing OpenAI, Anthropic, Perplexity, etc. broken down by training/search/click categories.
+- Added "Recent Crawl Events" section to PERFORMANCE — latest 15 crawl events with bot name, category badge, and geo location (city, region) when available.
+- PERFORMANCE page now fetches full geo columns (ip_city, ip_region, ip_latitude, ip_longitude, ip_timezone) from bot_crawl_events.
+- Deleted `app/(dashboard)/brands/[brandId]/traffic/page.tsx` and removed tab from nav.
+
 **Add: Feed Events for Deploy Analysis Visibility** (862b7f9)
 - Customers now see deploy analysis results in their activity feed
 - Success: "Deploy memo generating: [title]" when a memo is triggered

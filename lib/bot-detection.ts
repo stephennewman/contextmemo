@@ -236,6 +236,8 @@ export interface BotCrawlData {
   ipLatitude: number | null
   ipLongitude: number | null
   ipTimezone: string | null
+  ipOrgName: string | null
+  ipAsn: string | null
 }
 
 /**
@@ -273,6 +275,8 @@ export async function logBotCrawl(data: BotCrawlData): Promise<void> {
         ip_latitude: data.ipLatitude,
         ip_longitude: data.ipLongitude,
         ip_timezone: data.ipTimezone,
+        ip_org_name: data.ipOrgName,
+        ip_asn: data.ipAsn,
       }),
     })
 

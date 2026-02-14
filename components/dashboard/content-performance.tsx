@@ -59,6 +59,8 @@ interface CrawlEvent {
   ip_latitude: number | null
   ip_longitude: number | null
   ip_timezone: string | null
+  ip_org_name: string | null
+  ip_asn: string | null
   created_at: string
 }
 
@@ -197,6 +199,20 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
   }
   const sortedProviders = Object.entries(byProvider).sort(([, a], [, b]) => b.count - a.count)
   const totalAIProviderCrawls = sortedProviders.reduce((sum, [, d]) => sum + d.count, 0)
+
+  // ── Visitor organizations (IP-to-company intelligence) ──
+  const orgCounts: Record<string, { count: number; categories: Set<string>; lastSeen: string }> = {}
+  for (const e of crawlEvents) {
+    if (!e.ip_org_name) continue
+    if (!orgCounts[e.ip_org_name]) {
+      orgCounts[e.ip_org_name] = { count: 0, categories: new Set(), lastSeen: e.created_at }
+    }
+    orgCounts[e.ip_org_name].count++
+    orgCounts[e.ip_org_name].categories.add(e.bot_category)
+  }
+  const sortedOrgs = Object.entries(orgCounts)
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 12)
 
   // ── Recent crawl events (for geo-tagged event list) ──
   const recentCrawlEvents = crawlEvents.slice(0, 15)
@@ -448,7 +464,7 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
 
         {/* Recent Crawl Events */}
         <div>
-          <SectionHeader icon={<MapPin className="h-4 w-4 text-sky-500" />} title="Recent Crawl Events" sub="Latest activity with location" />
+          <SectionHeader icon={<MapPin className="h-4 w-4 text-sky-500" />} title="Recent Crawl Events" sub="Latest activity with location + org" />
           {recentCrawlEvents.length > 0 ? (
             <div className="space-y-1.5 mt-3">
               {recentCrawlEvents.map(event => {
@@ -467,6 +483,11 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
                         <Badge variant="outline" className="text-[8px] px-1 py-0 shrink-0" style={{ borderColor: catColor, color: catColor }}>
                           {BOT_CATEGORY_LABELS[event.bot_category as BotCategory] || event.bot_category}
                         </Badge>
+                        {event.ip_org_name && (
+                          <span className="text-[9px] text-zinc-500 truncate ml-0.5" title={event.ip_asn ? `${event.ip_asn} ${event.ip_org_name}` : event.ip_org_name}>
+                            {event.ip_org_name}
+                          </span>
+                        )}
                       </div>
                       <p className="text-[10px] text-zinc-400 truncate">
                         {event.memo_slug || event.page_path}
@@ -490,6 +511,45 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
           )}
         </div>
       </div>
+
+      {/* ── Visitor Organizations (IP Intelligence) ── */}
+      {sortedOrgs.length > 0 && (
+        <>
+          <div className="mx-6 border-t border-zinc-200" />
+          <div className="px-6">
+            <SectionHeader icon={<Globe className="h-4 w-4 text-sky-500" />} title="Visitor Organizations" sub="IP-based org detection (ASN)" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+              {sortedOrgs.map(([org, data]) => {
+                const cats = Array.from(data.categories)
+                return (
+                  <div key={org} className="flex items-center justify-between p-2 border border-zinc-100 rounded">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-zinc-700 truncate">{org}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {cats.map(cat => (
+                          <div
+                            key={cat}
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: BOT_CATEGORY_COLORS[cat as BotCategory] || '#6B7280' }}
+                            title={BOT_CATEGORY_LABELS[cat as BotCategory] || cat}
+                          />
+                        ))}
+                        <span className="text-[10px] text-zinc-400 ml-0.5">
+                          {formatDistanceToNow(new Date(data.lastSeen), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold tabular-nums text-zinc-600 ml-2">{data.count}</span>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-[10px] text-zinc-400 mt-2">
+              Organizations identified from IP ASN data. Upgrade to IPinfo Business for company-level identification.
+            </p>
+          </div>
+        </>
+      )}
 
       {/* ── Traffic by Source + Content Breakdown ── */}
       <div className="mx-6 border-t border-zinc-200" />

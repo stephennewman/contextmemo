@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Zap, LogOut } from 'lucide-react'
 import { UsageBadge } from './usage-badge'
+import { createClient } from '@/lib/supabase/client'
 
 interface DashboardHeaderProps {
   user: {
@@ -24,11 +26,23 @@ interface DashboardHeaderProps {
     name: string
     subdomain: string
   }[]
-  signOut: () => Promise<void>
+  signOut?: () => Promise<void>
 }
 
-export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHeaderProps) {
+export function DashboardHeader({ user, tenant, brands }: DashboardHeaderProps) {
   const pathname = usePathname()
+  const [signingOut, setSigningOut] = useState(false)
+
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } catch {
+      setSigningOut(false)
+    }
+  }, [])
 
   // Extract current brandId from URL if on a brand page
   const brandIdMatch = pathname.match(/\/brands\/([^\/]+)/)
@@ -89,14 +103,10 @@ export function DashboardHeader({ user, tenant, brands, signOut }: DashboardHead
                   <p className="text-sm font-bold">{tenant?.name || 'User'}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
-                <form action={signOut}>
-                  <DropdownMenuItem asChild className="rounded-none">
-                    <button type="submit" className="w-full cursor-pointer font-medium">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      SIGN OUT
-                    </button>
-                  </DropdownMenuItem>
-                </form>
+                <DropdownMenuItem onSelect={handleSignOut} disabled={signingOut} className="rounded-none cursor-pointer font-medium">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {signingOut ? 'SIGNING OUT...' : 'SIGN OUT'}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

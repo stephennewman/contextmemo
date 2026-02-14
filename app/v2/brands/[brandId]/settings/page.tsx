@@ -194,7 +194,7 @@ export default function V2BrandSettingsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8">
+    <div className="max-w-3xl mx-auto px-6 pt-8 pb-16">
       {/* Header */}
       <div className="mb-8">
         <Link 

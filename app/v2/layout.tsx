@@ -6,13 +6,6 @@ import { V2Sidebar } from '@/components/v2/layout/v2-sidebar'
 import { UsageBar, DEFAULT_USAGE } from '@/components/v2/layout/usage-bar'
 import type { UsageSummary, FeedWorkflow } from '@/lib/feed/types'
 
-async function signOut() {
-  'use server'
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
-}
-
 export default async function V2Layout({
   children,
 }: {
@@ -143,18 +136,17 @@ export default async function V2Layout({
   }, {} as Record<FeedWorkflow, number>)
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
+      {/* Sidebar - fixed height, internal scroll */}
       <Suspense fallback={<div className="w-64 bg-[#0F172A]" />}>
         <V2Sidebar 
           brands={brands} 
           unreadCounts={unreadCounts}
-          signOut={signOut}
         />
       </Suspense>
       
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* Main content area - constrained to viewport */}
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* Usage bar */}
         <UsageBar 
           usage={usage} 
@@ -162,11 +154,10 @@ export default async function V2Layout({
             email: user.email || '', 
             name: tenant?.company_name || user.user_metadata?.full_name 
           }}
-          signOut={signOut}
         />
         
-        {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        {/* Page content - scrollable */}
+        <main className="flex-1 overflow-y-auto min-h-0 always-show-scrollbar">
           {children}
         </main>
       </div>
