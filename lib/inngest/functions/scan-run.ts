@@ -757,6 +757,30 @@ export const scanRun = inngest.createFunction(
 
         if (!gapQueries || gapQueries.length === 0) return
 
+        // Check which gap queries already have memos (cross-run dedup)
+        // This prevents re-queuing memo generation for gaps that were already addressed
+        const gapQueryIds = gapQueries.map(q => q.id)
+        const { data: existingMemos } = await supabase
+          .from('memos')
+          .select('source_query_id')
+          .eq('brand_id', brandId)
+          .in('source_query_id', gapQueryIds)
+          .not('source_query_id', 'is', null)
+
+        const queriesWithMemos = new Set(
+          (existingMemos || []).map(m => m.source_query_id).filter(Boolean)
+        )
+
+        // Filter out queries that already have memos
+        const filteredGapQueries = gapQueries.filter(q => !queriesWithMemos.has(q.id))
+
+        if (filteredGapQueries.length === 0) {
+          console.log(`All ${gapQueries.length} gap queries already have memos, skipping`)
+          return { memosQueued: 0, reason: 'all_gaps_already_have_memos' }
+        }
+
+        console.log(`${gapQueries.length} gap queries found, ${filteredGapQueries.length} need memos (${queriesWithMemos.size} already have memos)`)
+
         // Group by type and prepare memo generation events
         const memoEvents: Array<{
           name: 'memo/generate' | 'citation/respond' | 'memo/synthesize'
@@ -790,7 +814,7 @@ export const scanRun = inngest.createFunction(
         // Track which queries have already been queued for synthesis to avoid duplicates
         const queuedSynthesisQueryIds = new Set<string>()
 
-        for (const query of gapQueries) {
+        for (const query of filteredGapQueries) {
           // Check if there are cited URLs for this gap query
           const citedUrls = queryCitationMap.get(query.id)
           if (citedUrls && citedUrls.length > 0) {

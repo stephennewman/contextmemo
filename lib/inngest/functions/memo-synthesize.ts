@@ -134,6 +134,30 @@ export const memoSynthesize = inngest.createFunction(
       return { success: false, error: 'No cited URLs found for this query. Run a scan first.' }
     }
 
+    // Check if a synthesis memo already exists for this query
+    const existingSynthesis = await step.run('check-existing-synthesis', async () => {
+      const { data } = await supabase
+        .from('memos')
+        .select('id, slug, title, status')
+        .eq('brand_id', brandId)
+        .eq('source_query_id', queryId)
+        .eq('memo_type', 'synthesis')
+        .limit(1)
+        .single()
+      return data
+    })
+
+    if (existingSynthesis) {
+      console.log(`Synthesis memo already exists for query ${queryId}: "${existingSynthesis.title}" (${existingSynthesis.slug})`)
+      return {
+        success: true,
+        skippedDuplicate: true,
+        existingMemoId: existingSynthesis.id,
+        existingTitle: existingSynthesis.title,
+        reason: 'Synthesis memo already exists for this query',
+      }
+    }
+
     // Track job start
     const jobId = await step.run('track-job-start', async () => {
       return await trackJobStart(brandId, 'generate', {
@@ -347,17 +371,20 @@ ${generated.content.slice(0, 1000)}`,
         .replace(/^-|-$/g, '')
         .slice(0, 60)}`
 
-      // Check slug collision
+      // Check slug collision — if a memo with this slug already exists, skip creation
       const { data: existing } = await supabase
         .from('memos')
-        .select('id, slug')
+        .select('id, slug, title')
         .eq('brand_id', brandId)
         .eq('slug', slug)
         .single()
 
-      const finalSlug = existing
-        ? `${slug}-${Date.now().toString(36)}`
-        : slug
+      if (existing) {
+        console.log(`Memo with slug "${slug}" already exists (id: ${existing.id}), skipping duplicate creation`)
+        return existing // Return existing memo instead of creating duplicate
+      }
+
+      const finalSlug = slug
 
       // Extract FAQs for schema
       const faqMatches = generated.content.matchAll(/###\s+(.+\?)\s*\n+([^#]+?)(?=\n###|\n##|$)/g)

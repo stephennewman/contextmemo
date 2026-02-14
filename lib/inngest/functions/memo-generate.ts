@@ -801,8 +801,23 @@ ${memoContent.content.slice(0, 1000)}`,
       ...(speakableSpec && { speakable: speakableSpec }),
     }
 
-    // Step 6: Save memo to database
-    const memo = await step.run('save-memo', async () => {
+    // Step 6: Save memo to database (with duplicate detection)
+    const { memo, isUpdate } = await step.run('save-memo', async () => {
+      // Check if a memo with this slug already exists for this brand
+      const { data: existingMemo } = await supabase
+        .from('memos')
+        .select('id, slug, status, content_markdown')
+        .eq('brand_id', brandId)
+        .eq('slug', memoContent.slug)
+        .single()
+
+      // If memo already exists and is published, skip the update entirely
+      // This prevents re-publishing the same memo over and over
+      if (existingMemo && existingMemo.status === 'published') {
+        console.log(`Memo already exists and is published: ${existingMemo.slug} (id: ${existingMemo.id}), skipping update`)
+        return { memo: existingMemo, isUpdate: true }
+      }
+
       const { data, error } = await supabase
         .from('memos')
         .upsert({
@@ -821,7 +836,7 @@ ${memoContent.content.slice(0, 1000)}`,
           status: brand.auto_publish ? 'published' : 'draft',
           published_at: brand.auto_publish ? memoDate.toISOString() : null,
           last_verified_at: new Date().toISOString(),
-          version: 1,
+          version: existingMemo ? (existingMemo as { version?: number }).version || 1 : 1,
         }, {
           onConflict: 'brand_id,slug',
         })
@@ -833,8 +848,20 @@ ${memoContent.content.slice(0, 1000)}`,
         throw error
       }
 
-      return data
+      return { memo: data, isUpdate: !!existingMemo }
     })
+
+    // If this was a duplicate (already published), return early — no alerts, no HubSpot, no IndexNow
+    if (isUpdate) {
+      console.log(`Skipping downstream actions for duplicate memo: ${memo.slug}`)
+      return {
+        success: true,
+        memoId: memo.id,
+        slug: memo.slug,
+        skippedDuplicate: true,
+        reason: 'Memo already exists and is published',
+      }
+    }
 
     // Step 7: Save version history
     await step.run('save-version', async () => {

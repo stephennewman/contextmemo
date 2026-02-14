@@ -1237,6 +1237,53 @@ export const competitorContentRespond = inngest.createFunction(
 
     // Step 2: Generate response for each piece of content
     for (const content of pendingContent) {
+      // Pre-check: skip if a response memo already exists for this competitor content
+      const alreadyResponded = await step.run(`check-existing-${content.id}`, async () => {
+        // Check by source_competitor_content_id
+        const { data: byContentId } = await supabase
+          .from('memos')
+          .select('id, slug, title')
+          .eq('brand_id', brandId)
+          .eq('source_competitor_content_id', content.id)
+          .limit(1)
+          .single()
+
+        if (byContentId) return byContentId
+
+        // Also check by slug (topic-based dedup)
+        if (content.universal_topic) {
+          const expectedSlug = `resources/${content.universal_topic
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+            .slice(0, 60)}`
+
+          const { data: bySlug } = await supabase
+            .from('memos')
+            .select('id, slug, title')
+            .eq('brand_id', brandId)
+            .eq('slug', expectedSlug)
+            .limit(1)
+            .single()
+
+          if (bySlug) return bySlug
+        }
+
+        return null
+      })
+
+      if (alreadyResponded) {
+        console.log(`Response memo already exists for content ${content.id}: "${alreadyResponded.title}" (${alreadyResponded.slug}), skipping`)
+        // Mark content as responded so it doesn't keep getting picked up
+        await step.run(`mark-already-responded-${content.id}`, async () => {
+          await supabase
+            .from('competitor_content')
+            .update({ status: 'responded', response_memo_id: alreadyResponded.id })
+            .eq('id', content.id)
+        })
+        continue
+      }
+
       const memo = await step.run(`generate-${content.id}`, async () => {
         if (!content.universal_topic || !content.content_summary) {
           return null
@@ -1423,18 +1470,20 @@ ${memo.content.slice(0, 1000)}`,
 
         const schemaJson = schemas.length === 1 ? schemas[0] : schemas
 
-        // Check if slug already exists
+        // Check if slug already exists — skip creation if it does
         const { data: existing } = await supabase
           .from('memos')
-          .select('id, slug')
+          .select('id, slug, title')
           .eq('brand_id', brandId)
           .eq('slug', memo.slug)
           .single()
 
-        // If exists, add timestamp to slug
-        const finalSlug = existing 
-          ? `${memo.slug}-${Date.now().toString(36)}`
-          : memo.slug
+        if (existing) {
+          console.log(`Memo with slug "${memo.slug}" already exists (id: ${existing.id}), skipping duplicate creation`)
+          return existing // Return existing memo instead of creating duplicate
+        }
+
+        const finalSlug = memo.slug
 
         const { data, error } = await supabase
           .from('memos')

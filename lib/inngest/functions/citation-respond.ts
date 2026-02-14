@@ -49,6 +49,31 @@ export const citationRespond = inngest.createFunction(
       return { success: true, skipped: true, reason: 'budget_exceeded' }
     }
 
+    // Check if a citation response memo already exists for this source URL
+    const existingCitationMemo = await step.run('check-existing-citation-memo', async () => {
+      // Check provenance data for memos generated from this same URL
+      const { data } = await supabase
+        .from('memos')
+        .select('id, slug, title, status')
+        .eq('brand_id', brandId)
+        .eq('memo_type', 'citation_response')
+        .filter('provenance->>source_url', 'eq', url)
+        .limit(1)
+        .single()
+      return data
+    })
+
+    if (existingCitationMemo) {
+      console.log(`Citation response memo already exists for URL ${url}: "${existingCitationMemo.title}" (${existingCitationMemo.slug})`)
+      return {
+        success: true,
+        skippedDuplicate: true,
+        existingMemoId: existingCitationMemo.id,
+        existingTitle: existingCitationMemo.title,
+        reason: `Citation response already exists for this URL`,
+      }
+    }
+
     // Step 1: Fetch the cited page content
     const sourceContent = await step.run('fetch-source', async () => {
       try {
@@ -292,17 +317,20 @@ ${generated.content.slice(0, 1000)}`,
         .replace(/^-|-$/g, '')
         .slice(0, 60)}`
 
-      // Check slug collision
+      // Check slug collision — if a memo with this slug already exists, skip creation
       const { data: existing } = await supabase
         .from('memos')
-        .select('id, slug')
+        .select('id, slug, title')
         .eq('brand_id', brandId)
         .eq('slug', slug)
         .single()
 
-      const finalSlug = existing
-        ? `${slug}-${Date.now().toString(36)}`
-        : slug
+      if (existing) {
+        console.log(`Memo with slug "${slug}" already exists (id: ${existing.id}), skipping duplicate creation`)
+        return existing // Return existing memo instead of creating duplicate
+      }
+
+      const finalSlug = slug
 
       // Extract FAQs for schema
       const faqMatches = generated.content.matchAll(/###\s+(.+\?)\s*\n+([^#]+?)(?=\n###|\n##|$)/g)
