@@ -100,6 +100,20 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
       }
     }
+
+    // Mark authenticated users as internal — excludes their traffic from analytics.
+    // Cookie is cross-subdomain so it's visible on brand subdomains (e.g. checkit.contextmemo.com).
+    if (!request.cookies.get('cm_internal')) {
+      const hostname = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+      const isLocalhost = hostname.includes('localhost')
+      supabaseResponse.cookies.set('cm_internal', '1', {
+        maxAge: 365 * 24 * 60 * 60, // 1 year
+        path: '/',
+        sameSite: 'lax',
+        secure: !isLocalhost,
+        ...(isLocalhost ? {} : { domain: '.contextmemo.com' }),
+      })
+    }
   }
 
   // Get hostname for subdomain routing (check x-forwarded-host for Vercel)

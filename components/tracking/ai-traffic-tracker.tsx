@@ -12,6 +12,9 @@ export function AITrafficTracker({ brandId, memoId }: AITrafficTrackerProps) {
     // Only track on client side
     if (typeof window === 'undefined') return
 
+    // Skip internal traffic (logged-in dashboard users)
+    if (document.cookie.includes('cm_internal')) return
+
     const track = async () => {
       try {
         await fetch('/api/track', {

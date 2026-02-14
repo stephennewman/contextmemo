@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AI_SOURCE_LABELS, AI_SOURCE_COLORS, AIReferrerSource } from '@/lib/supabase/types'
-import { Bot, TrendingUp, Globe, ExternalLink } from 'lucide-react'
+import { Bot, TrendingUp, Globe, ExternalLink, MapPin } from 'lucide-react'
 
 interface TrafficEvent {
   id: string
@@ -12,12 +12,24 @@ interface TrafficEvent {
   referrer: string | null
   referrer_source: AIReferrerSource
   timestamp: string
+  country?: string | null
+  city?: string | null
+  region?: string | null
   memo?: { title: string; slug: string } | null
 }
 
 interface AITrafficViewProps {
   traffic: TrafficEvent[]
   brandName: string
+}
+
+/** Format a visitor location string from available geo data */
+function formatLocation(event: TrafficEvent): string | null {
+  const parts: string[] = []
+  if (event.city) parts.push(event.city)
+  if (event.region) parts.push(event.region)
+  if (parts.length === 0 && event.country) parts.push(event.country)
+  return parts.length > 0 ? parts.join(', ') : null
 }
 
 export function AITrafficView({ traffic, brandName }: AITrafficViewProps) {
@@ -217,6 +229,7 @@ export function AITrafficView({ traffic, brandName }: AITrafficViewProps) {
             <div className="space-y-2">
               {recentAIVisits.map((visit) => {
                 const color = AI_SOURCE_COLORS[visit.referrer_source] || '#6B7280'
+                const location = formatLocation(visit)
                 return (
                   <div key={visit.id} className="flex items-center justify-between p-2 border rounded text-sm">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -230,6 +243,12 @@ export function AITrafficView({ traffic, brandName }: AITrafficViewProps) {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           from {AI_SOURCE_LABELS[visit.referrer_source]}
+                          {location && (
+                            <span className="inline-flex items-center gap-0.5 ml-1.5">
+                              <MapPin className="h-3 w-3 inline" />
+                              {location}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

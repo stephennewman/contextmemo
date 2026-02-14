@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AI_SOURCE_LABELS, AI_SOURCE_COLORS, AIReferrerSource } from '@/lib/supabase/types'
-import { Bot, TrendingUp, Globe, Eye, Users, Loader2, Search } from 'lucide-react'
+import { Bot, TrendingUp, Globe, Eye, Users, Loader2, Search, MapPin } from 'lucide-react'
 
 interface MemoAnalytics {
   summary: {
@@ -23,6 +23,8 @@ interface MemoAnalytics {
     source: AIReferrerSource
     referrer: string | null
     country: string | null
+    city: string | null
+    region: string | null
     timestamp: string
   }>
   seoStats: {
@@ -252,18 +254,28 @@ export function MemoAnalyticsCard({ brandId, memoId }: MemoAnalyticsCardProps) {
                   {recentVisits.slice(0, 5).map((visit) => {
                     const color = AI_SOURCE_COLORS[visit.source] || '#6B7280'
                     const isAI = !['organic', 'direct_nav', 'direct'].includes(visit.source)
+                    const locationParts: string[] = []
+                    if (visit.city) locationParts.push(visit.city)
+                    if (visit.region) locationParts.push(visit.region)
+                    if (locationParts.length === 0 && visit.country) locationParts.push(visit.country)
+                    const location = locationParts.length > 0 ? locationParts.join(', ') : null
                     return (
                       <div key={visit.id} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <div 
-                            className="w-2 h-2 rounded-full"
+                            className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: color }}
                           />
-                          <span className={isAI ? 'font-medium' : 'text-muted-foreground'}>
+                          <span className={`truncate ${isAI ? 'font-medium' : 'text-muted-foreground'}`}>
                             {AI_SOURCE_LABELS[visit.source]}
+                            {location && (
+                              <span className="font-normal text-muted-foreground ml-1">
+                                <MapPin className="h-2.5 w-2.5 inline -mt-px" /> {location}
+                              </span>
+                            )}
                           </span>
                         </div>
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground shrink-0 ml-2">
                           {new Date(visit.timestamp).toLocaleDateString(undefined, { 
                             month: 'short', 
                             day: 'numeric' 

@@ -87,6 +87,8 @@ export async function GET(
       source: t.referrer_source,
       referrer: t.referrer,
       country: t.country,
+      city: t.city || null,
+      region: t.region || null,
       timestamp: t.timestamp,
     }))
 

@@ -45,7 +45,7 @@ export async function GET(
       // All tracked traffic for this brand
       supabase
         .from('ai_traffic')
-        .select('id, memo_id, page_url, referrer, referrer_source, country, timestamp')
+        .select('id, memo_id, page_url, referrer, referrer_source, country, city, region, timestamp')
         .eq('brand_id', brandId)
         .gte('timestamp', startDate.toISOString())
         .order('timestamp', { ascending: false })
@@ -141,6 +141,8 @@ export async function GET(
       source: t.referrer_source,
       referrer: t.referrer,
       country: t.country,
+      city: t.city || null,
+      region: t.region || null,
       timestamp: t.timestamp,
     }))
 
