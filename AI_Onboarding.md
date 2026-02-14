@@ -393,6 +393,10 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Update: Favicon Color from Yellow to Blue** (749ce20)
+- Changed the favicon lightning bolt icon from yellow (`#facc15`) to the site's primary blue (`#0EA5E9`) for brand consistency
+- Modified: `app/icon.tsx`
+
 **Fix: Signup Form Leaking Invite Code in Placeholder** (790cac1)
 - The invite code input field on `/signup` used `"e.g. AMAZING2026"` as placeholder text, exposing a valid invite code to anyone visiting the page
 - Changed placeholder to generic `"Enter your invite code"`

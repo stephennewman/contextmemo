@@ -61,16 +61,8 @@ interface CommitData {
   author: string
 }
 
-// Map repo names to brand IDs. For now just Context Memo.
-// Future: query a config table to support multiple brands/repos.
-const REPO_BRAND_MAP: Record<string, string> = {
-  // Add your repo full names here: 'owner/repo' -> brandId
-}
-
-function getDefaultBrandId(): string {
-  // Context Memo's own brand ID — used when no repo mapping exists
-  return '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
-}
+// Fallback brand ID for the legacy webhook (Context Memo's own brand)
+const LEGACY_BRAND_ID = '9fa32d64-e1c6-4be3-b12c-1be824a6c63f'
 
 export const deployAnalyze = inngest.createFunction(
   {
@@ -80,13 +72,15 @@ export const deployAnalyze = inngest.createFunction(
   },
   { event: 'deploy/analyze' },
   async ({ event, step }) => {
-    const { repo, commits, compareUrl } = event.data as {
+    const { repo, commits, compareUrl, brandId: explicitBrandId } = event.data as {
       repo: string
       commits: CommitData[]
       compareUrl: string
+      brandId?: string
     }
 
-    const brandId = REPO_BRAND_MAP[repo] || getDefaultBrandId()
+    // Use explicit brandId from per-brand webhook, fall back to legacy default
+    const brandId = explicitBrandId || LEGACY_BRAND_ID
 
     // Step 1: Filter out obviously non-publish-worthy commits
     const candidates = await step.run('filter-commits', () => {

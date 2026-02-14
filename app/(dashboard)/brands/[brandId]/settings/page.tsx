@@ -16,7 +16,7 @@ import {
   Settings, Building2, MessageSquare, FileText, Users, Target,
   Plug, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Plus, X, Sparkles, RefreshCw,
   Crown, User, Mic, Swords, ToggleLeft, ToggleRight, Globe, DollarSign,
-  Tag, Percent, Palette
+  Tag, Percent, Palette, GitBranch, Copy, Eye, EyeOff
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { BrandContext, BrandTone, BrandTheme, HubSpotConfig, SearchConsoleConfig, TargetPersona, PersonaSeniority, PromptTheme, MarketFocus, BrandOffer, BrandOffers } from '@/lib/supabase/types'
@@ -60,6 +60,7 @@ const NAV_SECTIONS = [
   { id: 'subfolder-proxy', label: 'Subfolder Proxy', icon: Link2, highlight: true },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'personas', label: 'Target Personas', icon: Users },
+  { id: 'deploy-memos', label: 'Deploy Memos', icon: GitBranch, highlight: true },
   { id: 'integrations', label: 'Integrations', icon: Plug },
   { id: 'privacy', label: 'Data & Privacy', icon: Link2 },
   { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
@@ -237,6 +238,23 @@ export default function BrandSettingsPage() {
   const [brandTheme, setBrandTheme] = useState<BrandTheme>({})
   const [themeSaving, setThemeSaving] = useState(false)
 
+  // GitHub Deploy Memos state
+  const [githubIntegration, setGithubIntegration] = useState<{
+    id: string
+    enabled: boolean
+    webhookSecret: string
+    webhookUrl: string
+    createdAt: string
+  } | null>(null)
+  const [githubLoading, setGithubLoading] = useState(false)
+  const [githubCreating, setGithubCreating] = useState(false)
+  const [githubToggling, setGithubToggling] = useState(false)
+  const [githubRegenerating, setGithubRegenerating] = useState(false)
+  const [githubDeleting, setGithubDeleting] = useState(false)
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false)
+  const [secretCopied, setSecretCopied] = useState(false)
+  const [urlCopied, setUrlCopied] = useState(false)
+
   // Offers state
   const [offers, setOffers] = useState<BrandOffers>({})
   const defaultOffer: BrandOffer = { type: 'demo', label: '' }
@@ -383,6 +401,26 @@ export default function BrandSettingsPage() {
 
     loadBrand()
   }, [brandId, router])
+
+  // Load GitHub integration
+  useEffect(() => {
+    if (!brandId) return
+    const loadGithubIntegration = async () => {
+      setGithubLoading(true)
+      try {
+        const res = await fetch(`/api/brands/${brandId}/github-integration`)
+        if (res.ok) {
+          const data = await res.json()
+          setGithubIntegration(data.integration)
+        }
+      } catch (err) {
+        console.error('Failed to load GitHub integration:', err)
+      } finally {
+        setGithubLoading(false)
+      }
+    }
+    loadGithubIntegration()
+  }, [brandId])
 
   // Load user profile
   useEffect(() => {
@@ -656,6 +694,98 @@ export default function BrandSettingsPage() {
     } else {
       toast.success('Brand deleted')
       router.push('/dashboard')
+    }
+  }
+
+  // GitHub Deploy Memos handlers
+  const handleCreateGithubIntegration = async () => {
+    setGithubCreating(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/github-integration`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setGithubIntegration(data.integration)
+        setShowWebhookSecret(true)
+        toast.success('Deploy Memos enabled — copy your webhook secret below')
+      } else {
+        const err = await res.json()
+        toast.error(err.error || 'Failed to enable Deploy Memos')
+      }
+    } catch {
+      toast.error('Failed to enable Deploy Memos')
+    } finally {
+      setGithubCreating(false)
+    }
+  }
+
+  const handleToggleGithubIntegration = async () => {
+    if (!githubIntegration) return
+    setGithubToggling(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/github-integration`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !githubIntegration.enabled }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setGithubIntegration(data.integration)
+        toast.success(data.integration.enabled ? 'Deploy Memos enabled' : 'Deploy Memos paused')
+      }
+    } catch {
+      toast.error('Failed to update')
+    } finally {
+      setGithubToggling(false)
+    }
+  }
+
+  const handleRegenerateSecret = async () => {
+    if (!confirm('Regenerate webhook secret? You\'ll need to update GitHub with the new secret.')) return
+    setGithubRegenerating(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/github-integration`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ regenerateSecret: true }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setGithubIntegration(data.integration)
+        setShowWebhookSecret(true)
+        toast.success('Webhook secret regenerated — update GitHub with the new secret')
+      }
+    } catch {
+      toast.error('Failed to regenerate secret')
+    } finally {
+      setGithubRegenerating(false)
+    }
+  }
+
+  const handleDeleteGithubIntegration = async () => {
+    if (!confirm('Remove GitHub integration? Deploy Memos will stop being generated from your deployments.')) return
+    setGithubDeleting(true)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/github-integration`, { method: 'DELETE' })
+      if (res.ok) {
+        setGithubIntegration(null)
+        setShowWebhookSecret(false)
+        toast.success('GitHub integration removed')
+      }
+    } catch {
+      toast.error('Failed to remove integration')
+    } finally {
+      setGithubDeleting(false)
+    }
+  }
+
+  const copyToClipboard = (text: string, type: 'secret' | 'url') => {
+    navigator.clipboard.writeText(text)
+    if (type === 'secret') {
+      setSecretCopied(true)
+      setTimeout(() => setSecretCopied(false), 2000)
+    } else {
+      setUrlCopied(true)
+      setTimeout(() => setUrlCopied(false), 2000)
     }
   }
 
@@ -2595,6 +2725,130 @@ function handler(event) {
                 <div className="text-center py-8 text-muted-foreground text-sm">No personas detected yet.</div>
               )}
               
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Deploy Memos Section */}
+        <section id="deploy-memos" ref={(el) => { sectionRefs.current['deploy-memos'] = el }} className="scroll-mt-24">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitBranch className="h-5 w-5" />
+                Deploy Memos
+                <Badge variant="secondary" className="text-xs">New</Badge>
+              </CardTitle>
+              <CardDescription>
+                Automatically generate memos when you ship product updates. Connect your GitHub repo and every meaningful deploy creates a published article about what you shipped.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {githubLoading ? (
+                <div className="flex items-center gap-2 py-4 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : githubIntegration ? (
+                <div className="space-y-4">
+                  {/* Status */}
+                  <div className={`flex items-center gap-3 p-4 rounded-lg border ${githubIntegration.enabled ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                    <CheckCircle2 className={`h-5 w-5 ${githubIntegration.enabled ? 'text-green-600' : 'text-gray-400'}`} />
+                    <div className="flex-1">
+                      <p className={`font-medium ${githubIntegration.enabled ? 'text-green-900' : 'text-gray-700'}`}>
+                        {githubIntegration.enabled ? 'Deploy Memos Active' : 'Deploy Memos Paused'}
+                      </p>
+                      <p className={`text-sm ${githubIntegration.enabled ? 'text-green-700' : 'text-gray-500'}`}>
+                        {githubIntegration.enabled ? 'Significant deploys will generate memos automatically' : 'Webhook is connected but memo generation is paused'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleGithubIntegration}
+                      disabled={githubToggling}
+                    >
+                      {githubToggling ? <Loader2 className="h-4 w-4 animate-spin" /> : githubIntegration.enabled ? 'Pause' : 'Enable'}
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  {/* Webhook URL */}
+                  <div className="space-y-2">
+                    <Label>Webhook URL</Label>
+                    <div className="flex gap-2">
+                      <Input value={githubIntegration.webhookUrl} readOnly className="font-mono text-sm bg-muted" />
+                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(githubIntegration.webhookUrl, 'url')}>
+                        {urlCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Webhook Secret */}
+                  <div className="space-y-2">
+                    <Label>Webhook Secret</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type={showWebhookSecret ? 'text' : 'password'}
+                        value={githubIntegration.webhookSecret}
+                        readOnly
+                        className="font-mono text-sm bg-muted"
+                      />
+                      <Button variant="outline" size="icon" onClick={() => setShowWebhookSecret(!showWebhookSecret)}>
+                        {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(githubIntegration.webhookSecret, 'secret')}>
+                        {secretCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Setup instructions */}
+                  <Alert>
+                    <AlertDescription>
+                      <p className="font-medium mb-2">GitHub Setup</p>
+                      <ol className="list-decimal list-inside space-y-1 text-sm">
+                        <li>Go to your GitHub repo → <strong>Settings</strong> → <strong>Webhooks</strong></li>
+                        <li>Click <strong>Add webhook</strong></li>
+                        <li>Paste the <strong>Webhook URL</strong> above into Payload URL</li>
+                        <li>Set Content type to <code className="bg-muted px-1 rounded">application/json</code></li>
+                        <li>Paste the <strong>Webhook Secret</strong> above into Secret</li>
+                        <li>Under events, select <strong>Just the push event</strong></li>
+                        <li>Click <strong>Add webhook</strong></li>
+                      </ol>
+                      <p className="text-sm mt-3 text-muted-foreground">Only deploys to <code className="bg-muted px-1 rounded">main</code> or <code className="bg-muted px-1 rounded">master</code> with meaningful product changes will generate memos. Bug fixes, refactors, and internal changes are automatically filtered out.</p>
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button variant="outline" size="sm" onClick={handleRegenerateSecret} disabled={githubRegenerating}>
+                      {githubRegenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Regenerate Secret
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleDeleteGithubIntegration} disabled={githubDeleting}>
+                      {githubDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                    <GitBranch className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <h3 className="font-medium mb-2">Connect your GitHub repo</h3>
+                  <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                    Every time you deploy a significant product update, Context Memo will automatically generate a published article about what you shipped — making your product updates visible to AI search engines.
+                  </p>
+                  <Button onClick={handleCreateGithubIntegration} disabled={githubCreating}>
+                    {githubCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <GitBranch className="h-4 w-4 mr-2" />}
+                    Enable Deploy Memos
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
