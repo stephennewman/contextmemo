@@ -393,6 +393,11 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Fix: Signup Form Leaking Invite Code in Placeholder** (790cac1)
+- The invite code input field on `/signup` used `"e.g. AMAZING2026"` as placeholder text, exposing a valid invite code to anyone visiting the page
+- Changed placeholder to generic `"Enter your invite code"`
+- Modified: `app/(auth)/signup/page.tsx`
+
 **Fix: Prompt Instructions Leaking into Memo Sources Sections** (152edac)
 - Bracketed AI instruction text (`[Cite only external third-party sources. EVERY source MUST be...]`) was being output verbatim in the Sources section of published memos
 - Affected 4 prompt templates: Industry, How-To, Gap-Fill, Product Deploy
