@@ -150,21 +150,23 @@ export async function POST(request: NextRequest) {
       })
       .eq('email', normalizedEmail)
 
-    // Increment access_count via raw SQL since Supabase JS doesn't support increment natively
-    await supabase
-      .from('pitch_deck_access')
-      .select('id, access_count')
-      .eq('email', normalizedEmail)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          return supabase
-            .from('pitch_deck_access')
-            .update({ access_count: (data.access_count || 0) + 1 })
-            .eq('id', data.id)
-        }
-      })
-      .catch(() => {})
+    // Increment access_count
+    try {
+      const { data } = await supabase
+        .from('pitch_deck_access')
+        .select('id, access_count')
+        .eq('email', normalizedEmail)
+        .single()
+
+      if (data) {
+        await supabase
+          .from('pitch_deck_access')
+          .update({ access_count: (data.access_count || 0) + 1 })
+          .eq('id', data.id)
+      }
+    } catch {
+      // Non-critical — timestamp already updated
+    }
 
     return NextResponse.json({ success: true })
   }

@@ -7,6 +7,7 @@ import { ScanButton } from '@/components/dashboard/brand-actions'
 import { OnboardingFlow, TerminalWidget } from '@/components/dashboard/onboarding-flow'
 import { ActivityBell } from '@/components/dashboard/activity-bell'
 import { BrandContext } from '@/lib/supabase/types'
+import { getBrandBaseUrl, getBrandDisplayHost } from '@/lib/utils/brand-url'
 import { BrandTabNav } from './brand-tab-nav'
 
 interface Props {
@@ -37,7 +38,7 @@ export default async function BrandLayout({ params, children }: Props) {
   ] = await Promise.all([
     supabase
       .from('brands')
-      .select('id, name, domain, subdomain, custom_domain, domain_verified, verified, is_paused, last_scan_at, context')
+      .select('id, name, domain, subdomain, custom_domain, domain_verified, verified, is_paused, last_scan_at, context, proxy_origin, proxy_base_path')
       .eq('id', brandId)
       .single(),
     supabase
@@ -80,6 +81,7 @@ export default async function BrandLayout({ params, children }: Props) {
   }
 
   const context = brand.context as BrandContext
+  const logoUrl = context?.theme?.logo_url || null
   // Check for actual extracted context (not just the search_console config set at creation)
   const hasContext = context && !!(context.company_name || context.description || context.products?.length)
 
@@ -106,12 +108,12 @@ export default async function BrandLayout({ params, children }: Props) {
               )}
               <span className="text-zinc-400">·</span>
               <a
-                href={brand.custom_domain && brand.domain_verified ? `https://${brand.custom_domain}` : `/memo/${brand.subdomain}`}
+                href={getBrandBaseUrl(brand)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
               >
-                {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}
+                {getBrandDisplayHost(brand)}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -155,7 +157,7 @@ export default async function BrandLayout({ params, children }: Props) {
       {/* Brand Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <BrandLogo domain={brand.domain} name={brand.name} size={40} />
+          <BrandLogo domain={brand.domain} name={brand.name} size={36} />
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
             <div className="flex items-center gap-2 mt-0.5">
@@ -169,12 +171,12 @@ export default async function BrandLayout({ params, children }: Props) {
               )}
               <span className="text-zinc-400">·</span>
               <a
-                href={brand.custom_domain && brand.domain_verified ? `https://${brand.custom_domain}` : `/memo/${brand.subdomain}`}
+                href={getBrandBaseUrl(brand)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-zinc-500 hover:text-[#0EA5E9] flex items-center gap-1 font-medium"
               >
-                {brand.custom_domain && brand.domain_verified ? brand.custom_domain : `${brand.subdomain}.contextmemo.com`}
+                {getBrandDisplayHost(brand)}
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
