@@ -29,8 +29,8 @@ export default function Icon() {
         >
           <path
             d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2Z"
-            fill="#facc15"
-            stroke="#facc15"
+            fill="#0EA5E9"
+            stroke="#0EA5E9"
             strokeWidth="1"
             strokeLinejoin="round"
           />
