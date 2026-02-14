@@ -72,11 +72,12 @@ export const deployAnalyze = inngest.createFunction(
   },
   { event: 'deploy/analyze' },
   async ({ event, step }) => {
-    const { repo, commits, compareUrl, brandId: explicitBrandId } = event.data as {
+    const { repo, commits, compareUrl, brandId: explicitBrandId, pushedAt } = event.data as {
       repo: string
       commits: CommitData[]
       compareUrl: string
       brandId?: string
+      pushedAt?: string
     }
 
     // Use explicit brandId from per-brand webhook, fall back to legacy default
@@ -227,6 +228,9 @@ Respond ONLY with the JSON object, no other text.`
         })
         .join('\n')
 
+      // Determine the deploy date from the most recent candidate commit, or pushedAt
+      const deployDate = candidates[0]?.timestamp || pushedAt || undefined
+
       await inngest.send({
         name: 'memo/generate',
         data: {
@@ -235,6 +239,7 @@ Respond ONLY with the JSON object, no other text.`
           topicTitle: classification.topic_title!,
           topicDescription: classification.topic_description || '',
           deployCommitSummary: commitSummary,
+          deployDate,
         },
       })
     })

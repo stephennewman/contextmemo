@@ -393,6 +393,15 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Feature: Retroactive Deploy Memo Backfill** (561affa)
+- Customers can enter their GitHub repo and import last 30 days of deploys retroactively
+- New backfill endpoint fetches commits from GitHub API, groups by date, runs each batch through deploy-analyze
+- Settings UI shows repo input + "Import" button with status feedback (batches queued, date range)
+- Stores `repo_full_name` and `last_backfill_at` on integration record
+- Works for public repos immediately; private repos can provide a token
+- New files: `app/api/brands/[brandId]/github-integration/backfill/route.ts`
+- Modified: `app/api/brands/[brandId]/github-integration/route.ts`, `app/(dashboard)/brands/[brandId]/settings/page.tsx`
+
 **Feature: Deploy Memos as Customer-Facing Feature** (689f5f8)
 - Exposed the deploy-to-memo pipeline to all customers via Settings > Deploy Memos
 - New `github_integrations` table with per-brand webhook secrets and RLS policies

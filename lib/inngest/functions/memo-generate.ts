@@ -169,7 +169,7 @@ export const memoGenerate = inngest.createFunction(
   },
   { event: 'memo/generate' },
   async ({ event, step }) => {
-    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription, citedUrls, deployCommitSummary } = event.data
+    const { brandId, queryId, memoType, competitorId, topicTitle, topicDescription, citedUrls, deployCommitSummary, deployDate } = event.data
 
     // Step 1: Get brand, query, related data, voice insights, and existing memo IDs
     const { brand, query, competitor, competitors, voiceInsights, existingMemoIds } = await step.run('get-data', async () => {
@@ -234,7 +234,9 @@ export const memoGenerate = inngest.createFunction(
     })
 
     const brandContext = brand.context as BrandContext
-    const today = new Date().toLocaleDateString('en-US', { 
+    // Use deploy date for backfilled memos so the date matches the actual deploy
+    const memoDate = deployDate ? new Date(deployDate) : new Date()
+    const today = memoDate.toLocaleDateString('en-US', { 
       month: 'long', 
       day: 'numeric', 
       year: 'numeric' 
@@ -817,7 +819,7 @@ ${memoContent.content.slice(0, 1000)}`,
             ...(competitor?.domain ? [{ url: `https://${competitor.domain}`, title: competitor.name, accessed_at: today }] : []),
           ],
           status: brand.auto_publish ? 'published' : 'draft',
-          published_at: brand.auto_publish ? new Date().toISOString() : null,
+          published_at: brand.auto_publish ? memoDate.toISOString() : null,
           last_verified_at: new Date().toISOString(),
           version: 1,
         }, {
