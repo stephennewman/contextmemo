@@ -539,7 +539,7 @@ export default function BrandSettingsPage() {
           }
         })
       },
-      { root: container, rootMargin: '-10% 0px -80% 0px' }
+      { root: null, rootMargin: '-10% 0px -80% 0px' }
     )
 
     Object.values(sectionRefs.current).forEach((ref) => {
@@ -554,10 +554,8 @@ export default function BrandSettingsPage() {
 
   const scrollToSection = (sectionId: string) => {
     const section = sectionRefs.current[sectionId]
-    const container = contentRef.current
-    if (section && container) {
-      const offsetTop = section.offsetTop - container.offsetTop
-      container.scrollTo({ top: offsetTop, behavior: 'smooth' })
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
@@ -1363,9 +1361,9 @@ export default function BrandSettingsPage() {
   })
 
   return (
-    <div className="flex gap-8 max-w-6xl mx-auto h-[calc(100vh-8rem)]">
-      {/* Side Navigation - stays in place */}
-      <nav className="w-56 shrink-0 hidden md:block overflow-y-auto">
+    <div className="flex gap-8 max-w-6xl mx-auto">
+      {/* Side Navigation - sticky so it follows scroll */}
+      <nav className="w-56 shrink-0 hidden md:block self-start sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-4">Settings</h2>
 {NAV_SECTIONS.map((section) => {
@@ -1407,8 +1405,8 @@ export default function BrandSettingsPage() {
         </div>
       </nav>
 
-      {/* Main Content - scrolls independently */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto space-y-8 pb-20 pr-4">
+      {/* Main Content - scrolls with the page */}
+      <div ref={contentRef} className="flex-1 space-y-8 pb-20 min-w-0">
         <div>
           <h1 className="text-2xl font-bold">Brand Settings</h1>
           <p className="text-muted-foreground">Manage settings for {brand.name}</p>
