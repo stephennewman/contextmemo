@@ -393,6 +393,16 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Memos Page: Filtering, Expanded Categories, Abstract Visuals** (2b4b2d2)
+- Added client-side filterable memo grid with search input, type filter pills, and sort options (newest/oldest/A-Z)
+- Expanded "Browse by Type" from 3 categories to 7: Product Updates, AI Responses, Citations, Guides, Comparisons, How-To, Original Research — covering all 11 memo types
+- Each category card gets a unique color accent bar and subtle background glow
+- Hero section rebuilt with multi-layer abstract background: overlapping gradients (cyan/violet/emerald), SVG grid pattern, floating geometric shapes, dot pattern accents
+- Memo cards now have per-type color accent bars (3px top border) and per-type SVG background patterns for visual differentiation
+- Filter pills are color-coded per type and show counts, auto-generated from actual data
+- New file: `components/memos/filterable-memo-grid.tsx` (client component)
+- Modified: `app/(public)/memos/page.tsx`
+
 **Research Tab: Market x Competitor Matrix with Buyer Awareness Scoring** (e9d5bbf)
 - New RESEARCH tab in brand dashboard — market intelligence view for CMOs and founders
 - Market x Competitor matrix: rows = industry verticals, columns = competitors ranked by AI share-of-voice

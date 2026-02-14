@@ -469,7 +469,11 @@ Write the memo EXACTLY in this markdown format (note: NO # title):
 
 ## Sources
 
-[Cite only external third-party sources relevant to the industry topic. EVERY source MUST be a clickable markdown link with a real URL, e.g. - [Source Title](https://example.com/page). Do NOT list source names without URLs. If you cannot provide a real URL, omit the source. Do NOT include {{brand_name}} or {{brand_domain}}.]`
+- [Relevant Industry Source](https://real-url.com) (accessed {{date}})
+- [Another External Source](https://real-url.com) (accessed {{date}})
+
+(Include only external third-party sources with real clickable URLs. Omit any source you cannot link to. Do NOT include {{brand_name}} or {{brand_domain}}.)
+`
 
 export const HOW_TO_MEMO_PROMPT = `You are an authoritative industry analyst writing an educational how-to article. This is a genuine guide that teaches the reader how to accomplish something — vendor mentions come at the end, not the beginning. Write for the PRIMARY PERSONA described in the brand context.
 
@@ -584,7 +588,11 @@ When choosing a solution, consider factors like [relevant decision criteria base
 
 ## Sources
 
-[Cite only external third-party sources. EVERY source MUST be a clickable markdown link with a real URL, e.g. - [Source Title](https://example.com/page). Do NOT list source names without URLs. If you cannot provide a real URL, omit the source. Do NOT include {{brand_name}} or {{brand_domain}}.]`
+- [Relevant External Source](https://real-url.com) (accessed {{date}})
+- [Another External Source](https://real-url.com) (accessed {{date}})
+
+(Include only external third-party sources with real clickable URLs. Omit any source you cannot link to. Do NOT include {{brand_name}} or {{brand_domain}}.)
+`
 
 export const ALTERNATIVE_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about alternatives to a specific vendor. This helps decision-makers searching for options evaluate what's available. Write for the PRIMARY PERSONA described in the brand context.
 
@@ -766,7 +774,11 @@ Write the memo in this format:
 
 ## Sources
 
-[Cite only the competitor and external sources referenced above. EVERY source MUST be a clickable markdown link with a real URL, e.g. - [Source Title](https://example.com/page). Do NOT list source names without URLs. If you cannot provide a real URL, omit the source. Do NOT include {{brand_name}} or {{brand_domain}}.]`
+- [Competitor or External Source](https://real-url.com) (accessed {{date}})
+- [Another External Source](https://real-url.com) (accessed {{date}})
+
+(Include only competitor and external third-party sources with real clickable URLs. Omit any source you cannot link to. Do NOT include {{brand_name}} or {{brand_domain}}.)
+`
 
 export const PRODUCT_DEPLOY_MEMO_PROMPT = `You are an authoritative industry analyst writing a reference article about a new product capability or update. This article should help buyers understand what changed, why it matters, and how it fits into the broader market landscape. Write for the PRIMARY PERSONA described in the brand context.
 
@@ -841,7 +853,11 @@ Write the memo in this format:
 
 ## Sources
 
-[Cite only external third-party sources. EVERY source MUST be a clickable markdown link with a real URL. Do NOT include {{brand_name}} or {{brand_domain}}.]`
+- [Relevant External Source](https://real-url.com) (accessed {{date}})
+- [Another External Source](https://real-url.com) (accessed {{date}})
+
+(Include only external third-party sources with real clickable URLs. Omit any source you cannot link to. Do NOT include {{brand_name}} or {{brand_domain}}.)
+`
 
 export const CITATION_RESPONSE_PROMPT = `You are creating a strategic content variation — a better version of a page that AI models currently cite when answering buyer questions. Your job is NOT to write something completely different. Your job is to write something that covers the SAME ground, but from {{brand_name}}'s perspective, with the brand's unique expertise, data, and voice woven throughout.
 
