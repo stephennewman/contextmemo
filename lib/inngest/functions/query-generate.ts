@@ -15,6 +15,8 @@ interface GeneratedQuery {
   priority: number
   related_competitor: string | null
   funnel_stage?: 'top_funnel' | 'mid_funnel' | 'bottom_funnel' | null
+  vertical?: string | null
+  query_framing?: 'problem' | 'solution' | null
 }
 
 export const queryGenerate = inngest.createFunction(
@@ -55,12 +57,21 @@ export const queryGenerate = inngest.createFunction(
         .map(p => `${p.title}: ${p.description}`)
         .join('; ') || 'Not specified'
 
+      // Build verticals text from corporate positioning or markets
+      const verticalsList = context.corporate_positioning?.primary_verticals
+        || context.markets
+        || []
+      // Clean vertical strings (remove bullet points like "• Healthcare - hospitals")
+      const cleanVerticals = verticalsList.map((v: string) => v.replace(/^[•\-\s]+/, '').trim())
+      const verticalsText = cleanVerticals.join(', ') || 'Not specified'
+
       const prompt = FUNNEL_QUERY_GENERATION_PROMPT
         .replace(/\{\{company_name\}\}/g, context.company_name || brand.name)
         .replace('{{description}}', descriptionText)
         .replace('{{products}}', (context.products || []).join(', ') || 'Not specified')
         .replace('{{markets}}', (context.markets || []).join(', ') || 'Not specified')
         .replace('{{personas}}', personasText)
+        .replace(/\{\{verticals\}\}/g, verticalsText)
 
       const { text, usage } = await generateText({
         model: openai('gpt-4o'),
@@ -115,6 +126,8 @@ export const queryGenerate = inngest.createFunction(
         is_active: true,
         persona: null,
         funnel_stage: q.funnel_stage || null,
+        vertical: q.vertical || null,
+        query_framing: (q.query_framing === 'problem' || q.query_framing === 'solution') ? q.query_framing : null,
       }))
 
       // Use upsert to avoid duplicates

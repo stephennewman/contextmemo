@@ -393,6 +393,16 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Wire TRAFFIC Tab to Real Data (bot_crawl_events)** (49ff01a)
+- Rewired the TRAFFIC tab to use `bot_crawl_events` (1,428+ real server-side events) as the primary data source instead of `ai_traffic` (30 client-side test events).
+- Database migration: added `ip_city`, `ip_region`, `ip_latitude`, `ip_longitude`, `ip_timezone` columns to `bot_crawl_events`.
+- Updated `proxy.ts` middleware to capture full Vercel geo headers (city, region, lat/lng, timezone) on every bot crawl going forward.
+- Updated `BotCrawlData` interface and `logBotCrawl()` in `lib/bot-detection.ts` to accept and insert new geo fields.
+- Traffic page now fetches brand subdomain and queries `bot_crawl_events` filtered by it (same pattern as PERFORMANCE tab).
+- Rewrote `AITrafficView` component with: AI funnel stats (Training/Search/Click), funnel bar chart, traffic by AI provider with category-colored stacked bars, top pages with per-category breakdowns, recent crawl events with bot name + category badge + geo location, full bot breakdown.
+- Kept `ai_traffic` as supplementary "Human Visitor Traffic" section for organic/direct/JS-tracked visits.
+- Updated `brand-tabs.tsx` to match new props interface.
+
 **Visitor Intelligence Phase 1: Internal Traffic Exclusion + Geo Data Capture** (ef273b1)
 - Added `cm_internal` cookie-based internal traffic exclusion — automatically set on authenticated dashboard users via middleware, checked both client-side (AITrafficTracker) and server-side (POST/GET track endpoints). Excludes your own browsing from analytics.
 - Now capturing Vercel geo headers (city, region, lat/lng, timezone) on every tracked visit — previously only country was stored. These are free on every Vercel request.

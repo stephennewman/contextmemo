@@ -18,6 +18,7 @@ import { AttributionDashboard } from './attribution-dashboard'
 import { PromptIntelligenceFeed } from './prompt-intelligence-feed'
 import { ModelInsightsPanel } from './model-insights-panel'
 import { PushToHubSpotButton } from './brand-actions'
+import { ResearchView } from './research-view'
 
 interface BrandTabsProps {
   brandId: string
@@ -117,6 +118,7 @@ export function BrandTabs({
         <TabsTrigger value="search" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">SEARCH</TabsTrigger>
         <TabsTrigger value="traffic" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">AI TRAFFIC</TabsTrigger>
         <TabsTrigger value="intelligence" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">INTELLIGENCE</TabsTrigger>
+        <TabsTrigger value="research" className="rounded-none border-0 data-[state=active]:bg-[#0EA5E9] data-[state=active]:text-white px-6 py-3 font-bold text-sm tracking-wide">RESEARCH</TabsTrigger>
       </TabsList>
 
       {/* Profile Tab - Always loaded */}
@@ -359,6 +361,13 @@ export function BrandTabs({
               totalScans={((tabData.modelInsights as { totalScans?: number })?.totalScans) || 0}
             />
           </>
+        )}
+      </TabsContent>
+
+      {/* Research Tab - loads its own data */}
+      <TabsContent value="research" className="space-y-6">
+        {activeTab === 'research' && (
+          <ResearchView brandId={brandId} brandName={brandName} />
         )}
       </TabsContent>
 

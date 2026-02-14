@@ -649,6 +649,7 @@ All other types should have should_be_active=false.
 Respond ONLY with valid JSON array, no explanations.`
 
 // Structured funnel-based query generation: exactly 30 prompts (10 TOF / 10 MOF / 10 BOF)
+// Each query is tagged with a vertical (industry) and framing (problem vs solution)
 export const FUNNEL_QUERY_GENERATION_PROMPT = `You are generating search prompts that potential BUYERS would ask AI assistants (ChatGPT, Claude, Perplexity) at different stages of their buying journey.
 
 IMPORTANT: Do NOT include the brand name "{{company_name}}" in any prompt.
@@ -659,6 +660,18 @@ Description: {{description}}
 Products/Services: {{products}}
 Target Markets: {{markets}}
 Target Personas: {{personas}}
+Target Verticals: {{verticals}}
+
+## VERTICAL DISTRIBUTION
+You MUST distribute queries across the brand's target verticals: {{verticals}}
+
+For each vertical, generate a MIX of problem-framed and solution-framed queries:
+- **problem**: Asks about challenges, pain points, risks, or trends — does NOT mention tools/solutions/software
+- **solution**: Asks about tools, platforms, approaches, or evaluates specific solution categories
+
+Each vertical should get a roughly equal share of the 30 queries. If there are 3 verticals, aim for ~10 per vertical. If 2 verticals, aim for ~15 each. If 4+, distribute as evenly as possible.
+
+Within each vertical, aim for roughly HALF problem-framed and HALF solution-framed.
 
 ## GENERATE EXACTLY 30 PROMPTS — 10 per funnel stage:
 
@@ -668,15 +681,16 @@ These are people learning about the PROBLEMS and OPPORTUNITIES in the market. Th
 Think: "What challenges exist?" / "What's changing in this space?" / "How do companies handle X?"
 
 Examples of good TOF prompts:
-- "What are the biggest challenges in managing product lifecycle data across global teams?"
-- "How are manufacturing companies handling digital transformation of their engineering processes?"
-- "What happens when companies outgrow their current PLM system?"
+- "What are the biggest challenges in managing product lifecycle data across global teams?" (vertical: Manufacturing, framing: problem)
+- "How are manufacturing companies handling digital transformation of their engineering processes?" (vertical: Manufacturing, framing: problem)
+- "What tools help healthcare organizations manage compliance training at scale?" (vertical: Healthcare, framing: solution)
 
 Rules for TOF:
-- Focus on PROBLEMS, TRENDS, and MARKET DYNAMICS — not solutions
+- Focus on PROBLEMS, TRENDS, and MARKET DYNAMICS — not solutions (for problem-framed)
+- For solution-framed TOF: ask about general approaches and tool categories
 - Use educational/exploratory language
 - Reference specific industries, roles, or situations relevant to this brand
-- NO product category names, NO solution types, NO brand names
+- NO brand names
 - Think: what would someone Google BEFORE they knew this solution category existed?
 - Priority: 40-60
 
@@ -686,13 +700,13 @@ These people know they have a problem and are exploring what kinds of solutions 
 Think: "What tools exist for X?" / "How do companies solve Y?" / "What should I look for in Z?"
 
 Examples of good MOF prompts:
-- "What software do enterprise manufacturers use to manage product data across their supply chain?"
-- "How do companies choose between building custom tools vs buying a PLM platform?"
-- "What are the most important features to look for in a product lifecycle management solution?"
+- "What software do enterprise manufacturers use to manage product data across their supply chain?" (vertical: Manufacturing, framing: solution)
+- "What are the emerging risks in corporate investigations for healthcare organizations?" (vertical: Healthcare, framing: problem)
+- "What are the most important features to look for in a product lifecycle management solution?" (vertical: Manufacturing, framing: solution)
 
 Rules for MOF:
-- Focus on SOLUTION CATEGORIES and EVALUATION CRITERIA
-- Reference the problem space and what types of solutions exist
+- Focus on SOLUTION CATEGORIES and EVALUATION CRITERIA (for solution-framed)
+- For problem-framed MOF: go deeper on specific pain points and challenges in each vertical
 - Include "what should I look for", "how do companies choose", "what are the options for"
 - Can mention solution categories (e.g., "PLM software") but NOT specific brand names
 - Priority: 60-80
@@ -703,9 +717,9 @@ These people are actively evaluating specific solutions. They have requirements 
 Think: "Which X works best for Y?" / "Recommend a Z that does W" / "What's the best option for my situation?"
 
 Examples of good BOF prompts:
-- "Recommend a PLM platform that supports both mechanical and software engineering workflows"
-- "What's the best product lifecycle management tool for a mid-size manufacturer with 500+ engineers?"
-- "Which enterprise PLM solutions offer the best integration with ERP systems like SAP?"
+- "Recommend a PLM platform that supports both mechanical and software engineering workflows" (vertical: Manufacturing, framing: solution)
+- "What's the best product lifecycle management tool for a mid-size manufacturer with 500+ engineers?" (vertical: Manufacturing, framing: solution)
+- "What are the biggest compliance risks when choosing an LMS for healthcare training?" (vertical: Healthcare, framing: problem)
 
 Rules for BOF:
 - Focus on SPECIFIC REQUIREMENTS, USE CASES, and BUYING CRITERIA
@@ -722,7 +736,9 @@ Respond with a JSON array of exactly 30 objects:
     "query_type": "top_funnel" | "mid_funnel" | "bottom_funnel",
     "priority": 40-95 (based on funnel stage ranges above),
     "funnel_stage": "top_funnel" | "mid_funnel" | "bottom_funnel",
-    "related_competitor": null
+    "related_competitor": null,
+    "vertical": "The specific vertical/industry this query targets (use exact vertical names from the list above)",
+    "query_framing": "problem" | "solution"
   }
 ]
 
@@ -732,7 +748,11 @@ Respond with a JSON array of exactly 30 objects:
 3. Each prompt must be UNIQUE — no near-duplicates
 4. Prompts should sound NATURAL — like a real person typing into ChatGPT
 5. Be SPECIFIC to this brand's market, not generic business questions
-6. TOF prompts should NOT mention solution categories
+6. TOF prompts should NOT mention solution categories (when problem-framed)
 7. BOF prompts should include specific situational details
+8. EVERY query must have a "vertical" that matches one of the target verticals
+9. EVERY query must have a "query_framing" of either "problem" or "solution"
+10. Distribute queries EVENLY across verticals
+11. Within each vertical, aim for ~50/50 problem vs solution split
 
 Respond ONLY with valid JSON array, no explanations.`

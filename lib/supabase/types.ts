@@ -11,6 +11,7 @@ export type QueryStatus = 'never_scanned' | 'gap' | 'cited' | 'lost_citation'
 export type QuerySourceType = 'original' | 'expanded' | 'competitor_inspired' | 'greenspace' | 'manual' | 'auto' | 'verification'
 export type QueryExcludedReason = 'irrelevant' | 'duplicate' | 'low_value' | 'other' | 'manual'
 export type FunnelStage = 'top_funnel' | 'mid_funnel' | 'bottom_funnel'
+export type QueryFraming = 'problem' | 'solution'
 
 // Funnel stage display metadata
 export const FUNNEL_STAGE_META: Record<FunnelStage, { label: string; shortLabel: string; color: string; bgColor: string; description: string }> = {
@@ -194,6 +195,9 @@ export interface Database {
           excluded_reason: QueryExcludedReason | null
           // Prompt score
           prompt_score: number
+          // Research: vertical + problem/solution framing
+          vertical: string | null
+          query_framing: QueryFraming | null
         }
         Insert: {
           id?: string
@@ -225,6 +229,9 @@ export interface Database {
           excluded_reason?: QueryExcludedReason | null
           // Prompt score
           prompt_score?: number
+          // Research: vertical + problem/solution framing
+          vertical?: string | null
+          query_framing?: QueryFraming | null
         }
         Update: {
           id?: string
@@ -256,6 +263,9 @@ export interface Database {
           excluded_reason?: QueryExcludedReason | null
           // Prompt score
           prompt_score?: number
+          // Research: vertical + problem/solution framing
+          vertical?: string | null
+          query_framing?: QueryFraming | null
         }
       }
       scan_results: {
