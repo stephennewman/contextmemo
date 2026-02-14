@@ -391,6 +391,17 @@ When the AI assistant deploys changes, it should:
 
 _Most recent deploys first_
 
+### February 14, 2026
+
+**Visitor Intelligence Phase 1: Internal Traffic Exclusion + Geo Data Capture** (ef273b1)
+- Added `cm_internal` cookie-based internal traffic exclusion — automatically set on authenticated dashboard users via middleware, checked both client-side (AITrafficTracker) and server-side (POST/GET track endpoints). Excludes your own browsing from analytics.
+- Now capturing Vercel geo headers (city, region, lat/lng, timezone) on every tracked visit — previously only country was stored. These are free on every Vercel request.
+- IP addresses are hashed (SHA-256, truncated to 16 chars) and stored as `ip_hash` for future company enrichment without storing raw PII.
+- Database migration: added `ip_hash`, `city`, `region`, `latitude`, `longitude`, `timezone` columns to `ai_traffic` with geo and IP hash indexes.
+- Analytics APIs (memo analytics, brand performance) now return city/region in recent visit responses.
+- UI components (AITrafficView, MemoAnalyticsCard) display visitor location with MapPin icon alongside AI source labels (e.g., "from ChatGPT · Dallas, TX").
+- Foundation for Phase 2 (IP-to-company enrichment via IPinfo.io) — `ip_hash` column enables cache-based lookup without redundant API calls.
+
 ### February 13, 2026
 
 **AI Visibility Audit Page — Trojan Horse** (45bdc98)
