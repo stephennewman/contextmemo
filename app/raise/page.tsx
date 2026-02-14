@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Zap, ArrowRight, Send, ChevronRight, Check, X, MessageSquare, DollarSign, ExternalLink, Eye, ShieldCheck, TrendingUp, Globe, BarChart3, Target } from 'lucide-react'
+import { Zap, ArrowRight, Send, ChevronRight, Check, X, MessageSquare, DollarSign, ExternalLink, Eye, ShieldCheck, Globe, BarChart3, Target } from 'lucide-react'
 
 // --- SECTIONS CONFIG ---
 const SECTIONS = [
@@ -434,7 +434,7 @@ function PitchDeck({ email }: { email: string }) {
               that lives on <span className="text-[#0EA5E9]">your domain.</span>
             </h1>
             <p className="text-[#94A3B8] text-xl leading-relaxed mb-12 max-w-2xl">
-              We deploy citation-optimized content directly on your brand&apos;s domain, verify it gets cited by AI, and attribute the revenue. The only closed-loop platform in the category.
+              We analyze your brand, discover where AI is citing your competitors instead of you, and continuously deploy white-labeled content on your domain to fill the gaps. Then we verify AI is consuming it.
             </p>
             <div className="flex items-center gap-8 text-sm">
               <div>
@@ -515,8 +515,8 @@ function PitchDeck({ email }: { email: string }) {
                     <BarChart3 className="w-5 h-5 text-[#10B981]" />
                   </div>
                   <div>
-                    <h3 className="text-[#0F172A] font-bold text-xl mb-2">No one can prove ROI</h3>
-                    <p className="text-[#64748B] leading-relaxed">Even if a brand gets cited, there&apos;s no way to connect that citation to a website visit, a CRM contact, or a closed deal. The CFO asks &ldquo;What did AI bring us?&rdquo; and the answer is silence. Without attribution, there&apos;s no budget.</p>
+                    <h3 className="text-[#0F172A] font-bold text-xl mb-2">No way to verify what&apos;s working</h3>
+                    <p className="text-[#64748B] leading-relaxed">Even if a brand publishes content, there&apos;s no way to confirm AI is actually consuming it or citing it. No verification. No before/after proof. No way to know if your investment is working or wasted. Without measurable outcomes, there&apos;s no budget.</p>
                   </div>
                 </div>
               </div>
@@ -532,31 +532,31 @@ function PitchDeck({ email }: { email: string }) {
               Context Memo
             </h2>
             <p className="text-[#94A3B8] text-xl mb-16 max-w-2xl">
-              We make brands visible in AI — and prove it drives revenue. One platform that monitors, creates, deploys, verifies, and attributes.
+              An autonomous AI visibility engine. We analyze your brand, discover where competitors are being cited instead of you, and continuously deploy white-labeled content on your domain to fill the gaps — then verify AI is consuming it.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-6 mb-12">
               <div className="border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                <Globe className="w-6 h-6 text-[#0EA5E9] mb-4" />
-                <h3 className="text-white font-bold mb-2">Deploy on your domain</h3>
-                <p className="text-[#94A3B8] text-sm leading-relaxed">Content lives at <span className="text-[#0EA5E9] font-mono text-xs">ai.yourbrand.com</span> — inheriting your authority, your backlinks, your trust.</p>
+                <Target className="w-6 h-6 text-[#0EA5E9] mb-4" />
+                <h3 className="text-white font-bold mb-2">Analyze &amp; discover</h3>
+                <p className="text-[#94A3B8] text-sm leading-relaxed">We learn your brand positioning, reverse-engineer the prompts that matter, and map the competitive landscape AI actually sees.</p>
               </div>
               <div className="border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                <ShieldCheck className="w-6 h-6 text-[#10B981] mb-4" />
-                <h3 className="text-white font-bold mb-2">Verify it works</h3>
-                <p className="text-[#94A3B8] text-sm leading-relaxed">We re-scan after deployment to prove your content is being cited. Timestamped. Measurable. Not a guess.</p>
+                <Globe className="w-6 h-6 text-[#10B981] mb-4" />
+                <h3 className="text-white font-bold mb-2">Generate &amp; deploy</h3>
+                <p className="text-[#94A3B8] text-sm leading-relaxed">White-labeled memos — matching your brand&apos;s tone, design, and personality — deployed on your domain via HubSpot, subdomain, or folder path.</p>
               </div>
               <div className="border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                <TrendingUp className="w-6 h-6 text-[#8B5CF6] mb-4" />
-                <h3 className="text-white font-bold mb-2">Attribute the revenue</h3>
-                <p className="text-[#94A3B8] text-sm leading-relaxed">AI citation → website visit → HubSpot contact → closed deal. Full funnel. First-party data.</p>
+                <ShieldCheck className="w-6 h-6 text-[#8B5CF6] mb-4" />
+                <h3 className="text-white font-bold mb-2">Monitor &amp; verify</h3>
+                <p className="text-[#94A3B8] text-sm leading-relaxed">Continuous monitoring of AI consumption, competitor activity, and content gaps — with verified proof that AI is citing your content.</p>
               </div>
             </div>
 
             <div className="border border-[#1E293B] bg-[#0F172A] p-8">
               <p className="text-[#64748B] text-sm uppercase tracking-wider mb-3">The Difference</p>
               <p className="text-white text-lg leading-relaxed">
-                The competitors raised $100M+ to build <span className="text-[#64748B]">monitoring dashboards</span>. We build <span className="text-[#0EA5E9] font-bold">infrastructure that lives on the customer&apos;s domain</span> — compounding in authority every day it runs.
+                The competitors raised $100M+ to build <span className="text-[#64748B]">monitoring dashboards</span>. We build an <span className="text-[#0EA5E9] font-bold">autonomous content engine that lives on the customer&apos;s domain</span> — analyzing gaps, generating memos, and compounding in authority every day it runs.
               </p>
             </div>
           </div>
@@ -566,39 +566,39 @@ function PitchDeck({ email }: { email: string }) {
         <Section id="product">
           <div className="max-w-3xl">
             <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Product</p>
-            <h2 className="text-4xl font-bold text-[#0F172A] mb-4">One platform. Five capabilities.</h2>
-            <p className="text-[#64748B] text-lg mb-12">Each builds on the last. Together they form a closed loop no one else has.</p>
+            <h2 className="text-4xl font-bold text-[#0F172A] mb-4">How it actually works.</h2>
+            <p className="text-[#64748B] text-lg mb-12">Five steps — from brand analysis to continuous, autonomous content deployment.</p>
 
             <div className="space-y-6">
               {[
                 {
                   num: '01',
-                  title: 'AI Visibility Monitoring',
-                  desc: 'Daily scans across 9 AI models — GPT-4o, Claude, Gemini, Perplexity, Grok, and more — plus Google AI Overviews. Track brand mentions, competitor citations, and visibility trends over time.',
+                  title: 'Analyze your brand',
+                  desc: 'We ingest your brand positioning — mission, messaging, tone, personality, competitive claims. This becomes the foundation for every piece of content we generate. Every memo sounds like you, not like a template.',
                   color: '#0EA5E9',
                 },
                 {
                   num: '02',
-                  title: 'Competitive Intelligence',
-                  desc: 'AI responses reveal your actual competitive landscape — not what your sales team thinks. We discover and classify competitors, partners, aggregators, and publishers automatically from what AI cites.',
+                  title: 'Reverse-engineer the prompts that matter',
+                  desc: 'We generate and scan the prompts your buyers are actually asking AI — across one model or nine, 50 prompts or 5,000. This creates the baseline: where you show up, where you don\'t, and who\'s being cited instead.',
                   color: '#8B5CF6',
                 },
                 {
                   num: '03',
-                  title: 'Content Generation & Domain Deployment',
-                  desc: 'Citation-optimized memos deployed on your subdomain or folder path. Structured for AI consumption with Schema.org, llms.txt, and semantic HTML. Your domain authority. Your trust signals.',
+                  title: 'Map the landscape',
+                  desc: 'AI responses reveal your actual competitive dynamics — competitors, aggregators, publishers, and resources that are winning citations. We classify each entity and identify exactly which content gaps are costing you visibility.',
                   color: '#10B981',
                 },
                 {
                   num: '04',
-                  title: 'Citation Verification',
-                  desc: 'After deployment, we re-scan to prove your content is being cited. Time-to-citation tracking. Verification dashboard. Not a vanity metric — a measurable outcome.',
+                  title: 'Deploy white-labeled memos on your domain',
+                  desc: 'We generate citation-optimized memos that match your brand\'s tone, personality, and design — then deploy them directly on your site via HubSpot, subdomain, folder path, or our hosted pages. Structured for AI with Schema.org, llms.txt, and semantic HTML. Your domain authority. Your trust signals.',
                   color: '#F59E0B',
                 },
                 {
                   num: '05',
-                  title: 'Revenue Attribution',
-                  desc: 'Native HubSpot integration connects AI traffic to CRM contacts and closed-won deals. The CFO slide writes itself: "AI citations drove $X in pipeline this quarter."',
+                  title: 'Continuously monitor and fill gaps',
+                  desc: 'The engine doesn\'t stop. We monitor AI consumption, competitor activity, and deployment results to automatically generate new memos — filling content gaps and addressing opportunities as the landscape shifts. One memo a day or a hundred. You control the pace.',
                   color: '#EC4899',
                 },
               ].map((step) => (
@@ -613,6 +613,13 @@ function PitchDeck({ email }: { email: string }) {
                 </div>
               ))}
             </div>
+
+            <div className="mt-8 bg-[#F1F5F9] border border-[#E2E8F0] p-6">
+              <p className="text-[#0F172A] font-bold mb-2">Scale up or down as you need.</p>
+              <p className="text-[#64748B] leading-relaxed">
+                Analyze across a single AI model or all nine. Run 50 prompts or 5,000. Generate one new memo a day or 100. Monitor one competitor or fifty. Everything is controlled, configurable, and built around your consumption — not a fixed plan.
+              </p>
+            </div>
           </div>
         </Section>
 
@@ -625,45 +632,47 @@ function PitchDeck({ email }: { email: string }) {
 
             <div className="space-y-6 mb-12">
               <div className="bg-white border border-[#E2E8F0] p-8">
+                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Autonomous content engine, not a dashboard</h3>
+                <p className="text-[#64748B] leading-relaxed mb-4">
+                  Every competitor in the category sells monitoring — a dashboard that tells you what&apos;s happening. We&apos;re the only platform that actually <em>does something about it</em>. Context Memo continuously generates, deploys, and optimizes white-labeled content without manual intervention.
+                </p>
+                <p className="text-[#64748B] leading-relaxed">
+                  The content engine learns your brand&apos;s tone, matches your design, and fills gaps as fast as the landscape shifts. That&apos;s not a feature you bolt on — it&apos;s a fundamentally different architecture.
+                </p>
+              </div>
+
+              <div className="bg-white border border-[#E2E8F0] p-8">
                 <h3 className="text-[#0F172A] font-bold text-xl mb-3">Domain-level deployment</h3>
                 <p className="text-[#64748B] leading-relaxed mb-4">
                   Content lives on <span className="font-mono text-[#0EA5E9] text-sm bg-[#0EA5E9]/5 px-1.5 py-0.5">ai.yourbrand.com</span> or <span className="font-mono text-[#0EA5E9] text-sm bg-[#0EA5E9]/5 px-1.5 py-0.5">yourbrand.com/ai/</span>. It inherits the customer&apos;s domain authority, backlink profile, and trust signals — the same signals AI models use to determine citation-worthiness.
                 </p>
                 <p className="text-[#64748B] leading-relaxed">
-                  Monitoring tools recommend content. We <em>are</em> the content layer. Once deployed, removing it means losing indexed pages, breaking citation chains, and forfeiting historical data. That&apos;s switching cost.
+                  Once deployed, removing it means losing indexed pages, breaking citation chains, and forfeiting historical data. That&apos;s switching cost that grows every day.
                 </p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Closed-loop verification</h3>
+                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Verified AI consumption</h3>
                 <p className="text-[#64748B] leading-relaxed">
-                  We&apos;re the only platform that proves content actually works by re-scanning after deployment. Every other tool stops at &ldquo;here&apos;s your visibility score.&rdquo; We measure time-to-citation and show before/after proof. That builds trust — and retention.
+                  We re-scan after deployment to verify AI models are actually consuming and citing the content. Time-to-citation tracking. Before/after proof. Every other tool stops at &ldquo;here&apos;s your visibility score.&rdquo; We show you it&apos;s working — with timestamps.
                 </p>
               </div>
 
               <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Revenue attribution via HubSpot</h3>
+                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Historical intelligence that compounds</h3>
                 <p className="text-[#64748B] leading-relaxed">
-                  No one else connects AI citation → website visit → CRM contact → closed deal. We do, natively through HubSpot — which also serves as our distribution channel (200K+ B2B teams). First-party data that justifies the investment to the CFO.
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Historical citation intelligence</h3>
-                <p className="text-[#64748B] leading-relaxed">
-                  Every day of scanning compounds the data moat. Per-prompt citation history, entity relationships, and competitive trends are impossible to recreate retroactively. The earlier a brand starts, the more intelligence they accumulate.
+                  Every day of scanning builds the data moat. Per-prompt citation history, entity relationships, competitive trends, and content performance data are impossible to recreate retroactively. The earlier a brand starts, the more intelligence they accumulate — and the harder it is to switch.
                 </p>
               </div>
             </div>
 
-            {/* Lighter competitive positioning */}
             <div className="bg-[#F1F5F9] border border-[#E2E8F0] p-8">
               <p className="text-[#64748B] text-sm uppercase tracking-wider mb-4">Competitive Landscape</p>
               <p className="text-[#0F172A] leading-relaxed mb-4">
                 Profound ($58.5M from Sequoia), Peec AI ($29M), and Scrunch ($19M) have validated the category with over $110M in combined funding. They&apos;ve proven demand for AI visibility.
               </p>
               <p className="text-[#0F172A] leading-relaxed">
-                But they&apos;re all monitoring dashboards. None of them generate content, deploy on the customer&apos;s domain, verify citations, or attribute revenue. We operate at a different layer of the stack — infrastructure, not analytics.
+                But they&apos;re all monitoring dashboards — they tell you the problem, then leave you to solve it. We&apos;re the only platform that analyzes, generates, deploys, and verifies. Different layer of the stack. Different value prop.
               </p>
             </div>
           </div>
@@ -760,7 +769,7 @@ function PitchDeck({ email }: { email: string }) {
             <div className="border border-[#1E293B] bg-[#0F172A] p-8">
               <p className="text-[#64748B] text-sm uppercase tracking-wider mb-3">The Pitch</p>
               <p className="text-white text-lg leading-relaxed italic">
-                &ldquo;They raised $100M+ to build dashboards. We need $2.5M and 18 months — because we deploy infrastructure on the customer&apos;s domain, verify it drives citations, and prove the revenue. Capital-efficient. Differentiated. With a distribution wedge they don&apos;t have.&rdquo;
+                &ldquo;They raised $100M+ to build dashboards that show you the problem. We need $2.5M and 18 months — because we built the engine that fixes it. Analyze, generate, deploy, verify. On the customer&apos;s domain. Autonomous. With a distribution wedge they don&apos;t have.&rdquo;
               </p>
             </div>
           </div>
@@ -772,7 +781,7 @@ function PitchDeck({ email }: { email: string }) {
             <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">Your Move</p>
             <h2 className="text-4xl font-bold text-[#0F172A] mb-4">What do you think?</h2>
             <p className="text-[#64748B] text-lg mb-12">
-              The window to lead this category is now. We&apos;re looking for investors who understand infrastructure bets.
+              The category is validated. The demand is proven. We&apos;re the only ones building the engine, not just the dashboard.
             </p>
             <ResponseSection email={email} />
 
