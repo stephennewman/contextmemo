@@ -47,12 +47,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const serviceClient = createServiceRoleClient()
   const { data: integration } = await serviceClient
     .from('github_integrations')
-    .select('id, repo_full_name, github_token')
+    .select('id, repo_full_name, github_token, last_backfill_at')
     .eq('brand_id', brandId)
     .single()
 
   if (!integration) {
     return NextResponse.json({ error: 'No GitHub integration found' }, { status: 404 })
+  }
+
+  // Cooldown: prevent running more than once per 24 hours
+  if (integration.last_backfill_at) {
+    const hoursSinceLast = (Date.now() - new Date(integration.last_backfill_at).getTime()) / (1000 * 60 * 60)
+    if (hoursSinceLast < 24) {
+      const hoursLeft = Math.ceil(24 - hoursSinceLast)
+      return NextResponse.json({
+        error: `Backfill can only run once every 24 hours. Try again in ~${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}.`,
+      }, { status: 429 })
+    }
   }
 
   // Accept repo name from body (first-time setup) or use stored one
@@ -78,8 +89,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     .update(updates)
     .eq('brand_id', brandId)
 
-  // Fetch recent commits from GitHub API (last 30 days, up to 100)
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  // Guardrails
+  const MAX_LOOKBACK_DAYS = 30
+  const MAX_BATCHES = 10  // At most 10 daily batches sent to deploy-analyze
+  const MAX_COMMITS = 100
+
+  const since = new Date(Date.now() - MAX_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const headers: Record<string, string> = {
     'Accept': 'application/vnd.github+json',
     'User-Agent': 'ContextMemo-Backfill',
@@ -90,12 +105,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   let commits: GitHubCommit[]
   try {
-    const url = `https://api.github.com/repos/${repoFullName}/commits?sha=main&since=${since}&per_page=100`
+    const url = `https://api.github.com/repos/${repoFullName}/commits?sha=main&since=${since}&per_page=${MAX_COMMITS}`
     const res = await fetch(url, { headers })
 
     if (res.status === 404) {
       // Try master branch
-      const masterUrl = `https://api.github.com/repos/${repoFullName}/commits?sha=master&since=${since}&per_page=100`
+      const masterUrl = `https://api.github.com/repos/${repoFullName}/commits?sha=master&since=${since}&per_page=${MAX_COMMITS}`
       const masterRes = await fetch(masterUrl, { headers })
       if (!masterRes.ok) {
         const isPrivate = masterRes.status === 404 || masterRes.status === 403
@@ -133,8 +148,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     byDate.get(date)!.push(commit)
   }
 
-  // Send each day's batch to deploy-analyze (most recent first)
-  const sortedDates = [...byDate.keys()].sort().reverse()
+  // Send each day's batch to deploy-analyze (most recent first, capped)
+  const sortedDates = [...byDate.keys()].sort().reverse().slice(0, MAX_BATCHES)
   let batchesSent = 0
 
   for (const date of sortedDates) {
@@ -163,6 +178,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     batchesSent++
   }
 
+  const allDates = [...byDate.keys()].length
+  const wasCapped = allDates > MAX_BATCHES
+
   return NextResponse.json({
     ok: true,
     batches: batchesSent,
@@ -171,6 +189,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       from: sortedDates[sortedDates.length - 1],
       to: sortedDates[0],
     },
-    message: `Queued ${batchesSent} deploy batches for analysis. Significant deploys will generate memos within a few minutes.`,
+    capped: wasCapped,
+    message: wasCapped
+      ? `Queued ${batchesSent} of ${allDates} deploy days (most recent ${MAX_BATCHES} only). Significant deploys will generate memos within a few minutes.`
+      : `Queued ${batchesSent} deploy batches for analysis. Significant deploys will generate memos within a few minutes.`,
   })
 }

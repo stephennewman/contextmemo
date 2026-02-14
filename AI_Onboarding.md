@@ -393,6 +393,12 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Fix: Backfilled Deploy Memos Use Actual Deploy Date** (e2602f4)
+- `deployDate` now passes through `deploy-analyze` → `memo/generate` pipeline
+- Memo `published_at` and the in-content date reference match the original deploy date, not when the backfill ran
+- Non-deploy memos unaffected (falls back to `new Date()`)
+- Modified: `lib/inngest/functions/deploy-analyze.ts`, `lib/inngest/functions/memo-generate.ts`
+
 **Feature: Retroactive Deploy Memo Backfill** (561affa)
 - Customers can enter their GitHub repo and import last 30 days of deploys retroactively
 - New backfill endpoint fetches commits from GitHub API, groups by date, runs each batch through deploy-analyze
