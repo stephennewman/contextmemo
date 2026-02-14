@@ -1,8 +1,8 @@
 # Context Memo - Project Documentation
 
-> **Last Updated:** February 13, 2026  
-> **Version:** 0.26.0  
-> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course + Course Email Nurture System + AI Visibility Audit
+> **Last Updated:** February 14, 2026  
+> **Version:** 0.27.0  
+> **Status:** MVP Complete + V2 Feed UI + Usage Tracking & Billing + Corporate Positioning Framework + Memo-First Branding + Daily Digest Email + Content Coverage Audit + Premium Invite-Only Positioning + Custom Domain Support + Reverse Proxy Embedding + AI Search Mastery Course + Course Email Nurture System + AI Visibility Audit + Research Tab (Market Intelligence)
 
 ---
 
@@ -392,6 +392,19 @@ When the AI assistant deploys changes, it should:
 _Most recent deploys first_
 
 ### February 14, 2026
+
+**Research Tab: Market x Competitor Matrix with Buyer Awareness Scoring** (e9d5bbf)
+- New RESEARCH tab in brand dashboard — market intelligence view for CMOs and founders
+- Market x Competitor matrix: rows = industry verticals, columns = competitors ranked by AI share-of-voice
+- Buyer awareness scoring per market (unaware / problem-aware / solution-aware / product-aware) derived from problem vs. solution query framing
+- Summary cards: Markets Discovered, Entities Tracked, Queries Monitored, Scans Analyzed + insight cards for Strongest Market, Weakest Market, Biggest Opportunity
+- Cell drill-down: click any cell to see detailed competitor metrics, SOV breakdown, market context, and strategic insight
+- Database: added `vertical` (text) and `query_framing` (problem/solution) columns to `queries` table with indexes
+- Modified query generation prompt to distribute queries across brand verticals with problem/solution framing
+- Updated `query-generate.ts` to parse and store vertical + query_framing fields
+- Created backfill API route (`/api/backfill-query-verticals`) for AI-based classification of existing queries
+- Backfilled all 1,308 active queries across 14 brands with vertical + framing tags via SQL
+- New files: `research-view.tsx`, `research-summary.tsx`, `market-matrix.tsx`, `/api/brands/[brandId]/research/route.ts`
 
 **Wire TRAFFIC Tab to Real Data (bot_crawl_events)** (49ff01a)
 - Rewired the TRAFFIC tab to use `bot_crawl_events` (1,428+ real server-side events) as the primary data source instead of `ai_traffic` (30 client-side test events).
