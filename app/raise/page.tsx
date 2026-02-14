@@ -364,16 +364,23 @@ function Sidebar({ activeSection }: { activeSection: string }) {
   )
 }
 
-// --- SECTION WRAPPER (light background) ---
-function Section({ id, children, dark = false }: { id: string; children: React.ReactNode; dark?: boolean }) {
+// --- SECTION WRAPPER ---
+type SectionBg = 'white' | 'warm' | 'cool' | 'slate' | 'dark' | 'navy'
+
+const BG_CLASSES: Record<SectionBg, string> = {
+  white: 'bg-white border-[#F1F5F9]',
+  warm: 'bg-[#FAFBFC] border-[#F1F5F9]',
+  cool: 'bg-[#F8FAFC] border-[#E2E8F0]',
+  slate: 'bg-[#F1F5F9] border-[#E2E8F0]',
+  dark: 'bg-[#0F172A] border-[#1E293B]',
+  navy: 'bg-[#0B1120] border-[#1E293B]',
+}
+
+function Section({ id, children, bg = 'white' }: { id: string; children: React.ReactNode; bg?: SectionBg }) {
   return (
     <section
       id={id}
-      className={`min-h-screen py-24 px-8 lg:px-16 border-b last:border-0 ${
-        dark
-          ? 'bg-[#0F172A] border-[#1E293B]'
-          : 'bg-[#FAFBFC] border-[#E2E8F0]'
-      }`}
+      className={`py-16 lg:py-20 px-8 lg:px-16 border-b last:border-0 ${BG_CLASSES[bg]}`}
     >
       {children}
     </section>
@@ -402,7 +409,7 @@ function PitchDeck({ email }: { email: string }) {
           setActiveSection(best.target.id)
         }
       },
-      { threshold: [0.2, 0.5, 0.8], rootMargin: '-10% 0px -10% 0px' }
+      { threshold: [0.1, 0.3, 0.5], rootMargin: '-5% 0px -5% 0px' }
     )
 
     SECTIONS.forEach(({ id }) => {
@@ -421,27 +428,27 @@ function PitchDeck({ email }: { email: string }) {
       <main ref={contentRef} className="ml-64 flex-1 overflow-y-auto">
 
         {/* ===== TITLE PAGE ===== */}
-        <section id="title" className="min-h-screen flex items-center py-24 px-8 lg:px-16 bg-[#0F172A] border-b border-[#1E293B]">
+        <section id="title" className="py-16 lg:py-20 px-8 lg:px-16 bg-[#0F172A] border-b border-[#1E293B]">
           <div className="max-w-3xl">
-            <div className="flex items-center gap-3 mb-12">
-              <div className="w-12 h-12 bg-[#0EA5E9] flex items-center justify-center">
-                <Zap className="w-7 h-7 text-white" fill="white" />
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-[#0EA5E9] flex items-center justify-center">
+                <Zap className="w-6 h-6 text-white" fill="white" />
               </div>
-              <span className="text-white text-2xl font-bold tracking-tight">CONTEXT MEMO</span>
+              <span className="text-white text-xl font-bold tracking-tight">CONTEXT MEMO</span>
             </div>
-            <h1 className="text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-6">
+            <h1 className="text-4xl lg:text-5xl font-bold text-white leading-[1.1] mb-5">
               The AI visibility layer<br />
               that lives on <span className="text-[#0EA5E9]">your domain.</span>
             </h1>
-            <p className="text-[#94A3B8] text-xl leading-relaxed mb-12 max-w-2xl">
-              We analyze your brand, discover where AI is citing your competitors instead of you, and continuously deploy white-labeled content on your domain to fill the gaps. Then we verify AI is consuming it.
+            <p className="text-[#94A3B8] text-lg leading-relaxed mb-8 max-w-2xl">
+              We analyze your brand, discover where AI cites your competitors instead of you, and continuously deploy white-labeled content on your domain to fill the gaps. Then we verify AI is consuming it.
             </p>
             <div className="flex items-center gap-8 text-sm">
               <div>
                 <p className="text-[#0EA5E9] font-bold text-lg">$2.5M</p>
                 <p className="text-[#64748B]">Seed Round</p>
               </div>
-              <div className="w-px h-10 bg-[#1E293B]" />
+              <div className="w-px h-8 bg-[#1E293B]" />
               <div>
                 <p className="text-white font-bold text-lg">Confidential</p>
                 <p className="text-[#64748B]">February 2026</p>
@@ -451,72 +458,72 @@ function PitchDeck({ email }: { email: string }) {
         </section>
 
         {/* ===== THE SHIFT ===== */}
-        <Section id="shift">
+        <Section id="shift" bg="white">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Shift</p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-[#0F172A] leading-tight mb-8">
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Shift</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] leading-tight mb-4">
               B2B buyers stopped Googling.<br />
               <span className="text-[#94A3B8]">They started asking AI.</span>
             </h2>
-            <p className="text-[#64748B] text-lg leading-relaxed mb-12">
+            <p className="text-[#64748B] text-base leading-relaxed mb-8">
               When a buyer asks ChatGPT &ldquo;What&apos;s the best CRM for small teams?&rdquo;, the AI doesn&apos;t show ten blue links. It gives one answer — with citations. The brands that get cited win. Everyone else is invisible.
             </p>
-            <div className="grid sm:grid-cols-3 gap-6">
-              <div className="bg-white border border-[#E2E8F0] p-6">
-                <p className="text-[#0F172A] text-3xl font-bold mb-1">700M+</p>
-                <p className="text-[#64748B] text-sm">weekly ChatGPT users</p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5">
+                <p className="text-[#0F172A] text-2xl font-bold mb-1">700M+</p>
+                <p className="text-[#64748B] text-xs">weekly ChatGPT users</p>
               </div>
-              <div className="bg-white border border-[#E2E8F0] p-6">
-                <p className="text-[#0F172A] text-3xl font-bold mb-1">50%</p>
-                <p className="text-[#64748B] text-sm">predicted decline in organic search by 2028 (Gartner)</p>
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5">
+                <p className="text-[#0F172A] text-2xl font-bold mb-1">50%</p>
+                <p className="text-[#64748B] text-xs">predicted decline in organic search by 2028 (Gartner)</p>
               </div>
-              <div className="bg-white border border-[#E2E8F0] p-6">
-                <p className="text-[#0F172A] text-3xl font-bold mb-1">0%</p>
-                <p className="text-[#64748B] text-sm">of B2B brands can measure their AI visibility today</p>
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5">
+                <p className="text-[#0F172A] text-2xl font-bold mb-1">0%</p>
+                <p className="text-[#64748B] text-xs">of B2B brands can measure their AI visibility today</p>
               </div>
             </div>
           </div>
         </Section>
 
         {/* ===== THE PROBLEM ===== */}
-        <Section id="problem">
+        <Section id="problem" bg="warm">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Problem</p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-[#0F172A] leading-tight mb-12">
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Problem</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] leading-tight mb-8">
               Three problems no one<br />
               <span className="text-[#94A3B8]">has solved together.</span>
             </h2>
-            <div className="space-y-8">
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-[#FEF2F2] flex items-center justify-center shrink-0 mt-1">
-                    <Eye className="w-5 h-5 text-[#EF4444]" />
+            <div className="space-y-4">
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#FEF2F2] flex items-center justify-center shrink-0 mt-0.5">
+                    <Eye className="w-4 h-4 text-[#EF4444]" />
                   </div>
                   <div>
-                    <h3 className="text-[#0F172A] font-bold text-xl mb-2">Brands are blind</h3>
-                    <p className="text-[#64748B] leading-relaxed">They have no idea how they appear — or don&apos;t appear — across ChatGPT, Claude, Gemini, or Perplexity. There&apos;s no &ldquo;Google Search Console&rdquo; for AI. No visibility data. No competitive benchmarks. They can&apos;t fix what they can&apos;t see.</p>
+                    <h3 className="text-[#0F172A] font-bold text-base mb-1">Brands are blind</h3>
+                    <p className="text-[#64748B] text-sm leading-relaxed">No visibility into how they appear across ChatGPT, Claude, Gemini, or Perplexity. No &ldquo;Search Console&rdquo; for AI. They can&apos;t fix what they can&apos;t see.</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-[#FFF7ED] flex items-center justify-center shrink-0 mt-1">
-                    <Target className="w-5 h-5 text-[#F59E0B]" />
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#FFF7ED] flex items-center justify-center shrink-0 mt-0.5">
+                    <Target className="w-4 h-4 text-[#F59E0B]" />
                   </div>
                   <div>
-                    <h3 className="text-[#0F172A] font-bold text-xl mb-2">Content doesn&apos;t reach AI</h3>
-                    <p className="text-[#64748B] leading-relaxed">Blog posts and marketing pages aren&apos;t structured for AI consumption. They&apos;re written for humans and optimized for Google. AI models need factual, structured, citation-worthy content on authoritative domains — and most brands have none.</p>
+                    <h3 className="text-[#0F172A] font-bold text-base mb-1">Content doesn&apos;t reach AI</h3>
+                    <p className="text-[#64748B] text-sm leading-relaxed">Blog posts are written for humans and optimized for Google. AI models need factual, structured, citation-worthy content on authoritative domains — most brands have none.</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-[#F0FDF4] flex items-center justify-center shrink-0 mt-1">
-                    <BarChart3 className="w-5 h-5 text-[#10B981]" />
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#F0FDF4] flex items-center justify-center shrink-0 mt-0.5">
+                    <BarChart3 className="w-4 h-4 text-[#10B981]" />
                   </div>
                   <div>
-                    <h3 className="text-[#0F172A] font-bold text-xl mb-2">No way to verify what&apos;s working</h3>
-                    <p className="text-[#64748B] leading-relaxed">Even if a brand publishes content, there&apos;s no way to confirm AI is actually consuming it or citing it. No verification. No before/after proof. No way to know if your investment is working or wasted. Without measurable outcomes, there&apos;s no budget.</p>
+                    <h3 className="text-[#0F172A] font-bold text-base mb-1">No way to verify what&apos;s working</h3>
+                    <p className="text-[#64748B] text-sm leading-relaxed">No verification that AI is consuming or citing published content. No before/after proof. Without measurable outcomes, there&apos;s no budget.</p>
                   </div>
                 </div>
               </div>
@@ -525,249 +532,236 @@ function PitchDeck({ email }: { email: string }) {
         </Section>
 
         {/* ===== THE SOLUTION ===== */}
-        <Section id="solution" dark>
+        <Section id="solution" bg="dark">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Solution</p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Solution</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-white leading-tight mb-3">
               Context Memo
             </h2>
-            <p className="text-[#94A3B8] text-xl mb-16 max-w-2xl">
+            <p className="text-[#94A3B8] text-base mb-8 max-w-2xl">
               An autonomous AI visibility engine. We analyze your brand, discover where competitors are being cited instead of you, and continuously deploy white-labeled content on your domain to fill the gaps — then verify AI is consuming it.
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-6 mb-12">
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                <Target className="w-6 h-6 text-[#0EA5E9] mb-4" />
+            <div className="grid sm:grid-cols-3 gap-4 mb-8">
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <Target className="w-5 h-5 text-[#0EA5E9] mb-3" />
                 <h3 className="text-white font-bold mb-2">Analyze &amp; discover</h3>
                 <p className="text-[#94A3B8] text-sm leading-relaxed">We learn your brand positioning, reverse-engineer the prompts that matter, and map the competitive landscape AI actually sees.</p>
               </div>
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                <Globe className="w-6 h-6 text-[#10B981] mb-4" />
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <Globe className="w-5 h-5 text-[#10B981] mb-3" />
                 <h3 className="text-white font-bold mb-2">Generate &amp; deploy</h3>
                 <p className="text-[#94A3B8] text-sm leading-relaxed">White-labeled memos — matching your brand&apos;s tone, design, and personality — deployed on your domain via HubSpot, subdomain, or folder path.</p>
               </div>
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                <ShieldCheck className="w-6 h-6 text-[#8B5CF6] mb-4" />
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <ShieldCheck className="w-5 h-5 text-[#8B5CF6] mb-3" />
                 <h3 className="text-white font-bold mb-2">Monitor &amp; verify</h3>
                 <p className="text-[#94A3B8] text-sm leading-relaxed">Continuous monitoring of AI consumption, competitor activity, and content gaps — with verified proof that AI is citing your content.</p>
               </div>
             </div>
 
-            <div className="border border-[#1E293B] bg-[#0F172A] p-8">
-              <p className="text-[#64748B] text-sm uppercase tracking-wider mb-3">The Difference</p>
-              <p className="text-white text-lg leading-relaxed">
-                The competitors raised $100M+ to build <span className="text-[#64748B]">monitoring dashboards</span>. We build an <span className="text-[#0EA5E9] font-bold">autonomous content engine that lives on the customer&apos;s domain</span> — analyzing gaps, generating memos, and compounding in authority every day it runs.
+            <div className="border border-[#1E293B] bg-[#0F172A] p-5">
+              <p className="text-[#64748B] text-xs uppercase tracking-wider mb-2">The Difference</p>
+              <p className="text-white text-base leading-relaxed">
+                They raised $100M+ to build <span className="text-[#64748B]">dashboards</span>. We build an <span className="text-[#0EA5E9] font-bold">autonomous engine on the customer&apos;s domain</span> — analyzing gaps, generating memos, compounding in authority every day.
               </p>
             </div>
           </div>
         </Section>
 
         {/* ===== THE PRODUCT ===== */}
-        <Section id="product">
+        <Section id="product" bg="cool">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Product</p>
-            <h2 className="text-4xl font-bold text-[#0F172A] mb-4">How it actually works.</h2>
-            <p className="text-[#64748B] text-lg mb-12">Five steps — from brand analysis to continuous, autonomous content deployment.</p>
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Product</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] mb-3">How it actually works.</h2>
+            <p className="text-[#64748B] text-base mb-8">Five steps — from brand analysis to continuous, autonomous content deployment.</p>
 
             <div className="space-y-6">
               {[
                 {
                   num: '01',
                   title: 'Analyze your brand',
-                  desc: 'We ingest your brand positioning — mission, messaging, tone, personality, competitive claims. This becomes the foundation for every piece of content we generate. Every memo sounds like you, not like a template.',
+                  desc: 'We ingest your positioning — mission, messaging, tone, personality. Every memo sounds like you, not a template.',
                   color: '#0EA5E9',
                 },
                 {
                   num: '02',
                   title: 'Reverse-engineer the prompts that matter',
-                  desc: 'We generate and scan the prompts your buyers are actually asking AI — across one model or nine, 50 prompts or 5,000. This creates the baseline: where you show up, where you don\'t, and who\'s being cited instead.',
+                  desc: 'Scan the prompts your buyers ask AI — one model or nine, 50 prompts or 5,000. Where you show up, where you don\'t, who gets cited instead.',
                   color: '#8B5CF6',
                 },
                 {
                   num: '03',
                   title: 'Map the landscape',
-                  desc: 'AI responses reveal your actual competitive dynamics — competitors, aggregators, publishers, and resources that are winning citations. We classify each entity and identify exactly which content gaps are costing you visibility.',
+                  desc: 'AI responses reveal your real competitive dynamics. We classify competitors, aggregators, and publishers — and identify the content gaps costing you visibility.',
                   color: '#10B981',
                 },
                 {
                   num: '04',
                   title: 'Deploy white-labeled memos on your domain',
-                  desc: 'We generate citation-optimized memos that match your brand\'s tone, personality, and design — then deploy them directly on your site via HubSpot, subdomain, folder path, or our hosted pages. Structured for AI with Schema.org, llms.txt, and semantic HTML. Your domain authority. Your trust signals.',
+                  desc: 'Citation-optimized memos matching your brand — deployed via HubSpot, subdomain, folder path, or hosted pages. Your domain authority. Your trust signals.',
                   color: '#F59E0B',
                 },
                 {
                   num: '05',
                   title: 'Continuously monitor and fill gaps',
-                  desc: 'The engine doesn\'t stop. We monitor AI consumption, competitor activity, and deployment results to automatically generate new memos — filling content gaps and addressing opportunities as the landscape shifts. One memo a day or a hundred. You control the pace.',
+                  desc: 'The engine doesn\'t stop. Monitor AI consumption, competitor activity, and results — automatically generating new memos as the landscape shifts. One a day or a hundred.',
                   color: '#EC4899',
                 },
               ].map((step) => (
-                <div key={step.num} className="bg-white border border-[#E2E8F0] p-6 flex gap-6">
+                <div key={step.num} className="bg-white border border-[#E2E8F0] p-4 flex gap-4">
                   <div className="shrink-0">
-                    <span className="font-mono text-sm font-bold" style={{ color: step.color }}>{step.num}</span>
+                    <span className="font-mono text-xs font-bold" style={{ color: step.color }}>{step.num}</span>
                   </div>
                   <div>
-                    <h3 className="text-[#0F172A] font-bold text-lg mb-2">{step.title}</h3>
-                    <p className="text-[#64748B] leading-relaxed">{step.desc}</p>
+                    <h3 className="text-[#0F172A] font-bold text-sm mb-1">{step.title}</h3>
+                    <p className="text-[#64748B] text-sm leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 bg-[#F1F5F9] border border-[#E2E8F0] p-6">
-              <p className="text-[#0F172A] font-bold mb-2">Scale up or down as you need.</p>
-              <p className="text-[#64748B] leading-relaxed">
-                Analyze across a single AI model or all nine. Run 50 prompts or 5,000. Generate one new memo a day or 100. Monitor one competitor or fifty. Everything is controlled, configurable, and built around your consumption — not a fixed plan.
+            <div className="mt-5 bg-white border border-[#E2E8F0] p-4">
+              <p className="text-[#0F172A] font-bold text-sm mb-1">Scale up or down as you need.</p>
+              <p className="text-[#64748B] text-sm">
+                1 model or 9. 50 prompts or 5,000. 1 memo/day or 100. Everything is configurable and built around your consumption.
               </p>
             </div>
           </div>
         </Section>
 
         {/* ===== THE MOAT ===== */}
-        <Section id="moat">
+        <Section id="moat" bg="slate">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Moat</p>
-            <h2 className="text-4xl font-bold text-[#0F172A] mb-4">Why this is hard to replicate.</h2>
-            <p className="text-[#64748B] text-lg mb-12">We don&apos;t just have features others lack. We have structural advantages that compound over time.</p>
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Moat</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] mb-3">Why this is hard to replicate.</h2>
+            <p className="text-[#64748B] text-base mb-8">Structural advantages that compound over time.</p>
 
-            <div className="space-y-6 mb-12">
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Autonomous content engine, not a dashboard</h3>
-                <p className="text-[#64748B] leading-relaxed mb-4">
-                  Every competitor in the category sells monitoring — a dashboard that tells you what&apos;s happening. We&apos;re the only platform that actually <em>does something about it</em>. Context Memo continuously generates, deploys, and optimizes white-labeled content without manual intervention.
-                </p>
-                <p className="text-[#64748B] leading-relaxed">
-                  The content engine learns your brand&apos;s tone, matches your design, and fills gaps as fast as the landscape shifts. That&apos;s not a feature you bolt on — it&apos;s a fundamentally different architecture.
+            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">Autonomous content engine</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">
+                  Competitors sell monitoring dashboards. We continuously generate, deploy, and optimize white-labeled content — learning your brand&apos;s tone and filling gaps as the landscape shifts.
                 </p>
               </div>
-
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Domain-level deployment</h3>
-                <p className="text-[#64748B] leading-relaxed mb-4">
-                  Content lives on <span className="font-mono text-[#0EA5E9] text-sm bg-[#0EA5E9]/5 px-1.5 py-0.5">ai.yourbrand.com</span> or <span className="font-mono text-[#0EA5E9] text-sm bg-[#0EA5E9]/5 px-1.5 py-0.5">yourbrand.com/ai/</span>. It inherits the customer&apos;s domain authority, backlink profile, and trust signals — the same signals AI models use to determine citation-worthiness.
-                </p>
-                <p className="text-[#64748B] leading-relaxed">
-                  Once deployed, removing it means losing indexed pages, breaking citation chains, and forfeiting historical data. That&apos;s switching cost that grows every day.
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">Domain-level deployment</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">
+                  Content lives on <span className="font-mono text-[#0EA5E9] text-xs">ai.yourbrand.com</span>. Inherits domain authority and trust signals. Removing it means losing indexed pages and citation chains.
                 </p>
               </div>
-
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Verified AI consumption</h3>
-                <p className="text-[#64748B] leading-relaxed">
-                  We re-scan after deployment to verify AI models are actually consuming and citing the content. Time-to-citation tracking. Before/after proof. Every other tool stops at &ldquo;here&apos;s your visibility score.&rdquo; We show you it&apos;s working — with timestamps.
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">Verified AI consumption</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">
+                  Re-scan after deployment to verify AI is citing your content. Time-to-citation tracking. Before/after proof with timestamps. Not guesswork.
                 </p>
               </div>
-
-              <div className="bg-white border border-[#E2E8F0] p-8">
-                <h3 className="text-[#0F172A] font-bold text-xl mb-3">Historical intelligence that compounds</h3>
-                <p className="text-[#64748B] leading-relaxed">
-                  Every day of scanning builds the data moat. Per-prompt citation history, entity relationships, competitive trends, and content performance data are impossible to recreate retroactively. The earlier a brand starts, the more intelligence they accumulate — and the harder it is to switch.
+              <div className="bg-white border border-[#E2E8F0] p-5">
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">Compounding intelligence</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">
+                  Every day of scanning builds the data moat. Per-prompt history, entity relationships, and competitive trends — impossible to recreate retroactively.
                 </p>
               </div>
             </div>
 
-            <div className="bg-[#F1F5F9] border border-[#E2E8F0] p-8">
-              <p className="text-[#64748B] text-sm uppercase tracking-wider mb-4">Competitive Landscape</p>
-              <p className="text-[#0F172A] leading-relaxed mb-4">
-                Profound ($58.5M from Sequoia), Peec AI ($29M), and Scrunch ($19M) have validated the category with over $110M in combined funding. They&apos;ve proven demand for AI visibility.
-              </p>
-              <p className="text-[#0F172A] leading-relaxed">
-                But they&apos;re all monitoring dashboards — they tell you the problem, then leave you to solve it. We&apos;re the only platform that analyzes, generates, deploys, and verifies. Different layer of the stack. Different value prop.
+            <div className="bg-white border border-[#E2E8F0] p-5">
+              <p className="text-[#64748B] text-xs uppercase tracking-wider mb-2">Competitive Landscape</p>
+              <p className="text-[#0F172A] text-sm leading-relaxed">
+                Profound ($58.5M), Peec AI ($29M), and Scrunch ($19M) validated the category with $110M+ in funding. But they&apos;re all dashboards — they tell you the problem, then leave you to solve it. We analyze, generate, deploy, and verify. Different stack. Different value.
               </p>
             </div>
           </div>
         </Section>
 
         {/* ===== TRACTION ===== */}
-        <Section id="traction" dark>
+        <Section id="traction" bg="navy">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">Traction</p>
-            <h2 className="text-4xl font-bold text-white mb-12">Live product. Paying customer. Verified results.</h2>
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">Traction</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-8">Live product. Paying customer. Verified results.</h2>
 
-            {/* Hero stat */}
-            <div className="border border-[#0EA5E9]/30 bg-[#0EA5E9]/5 p-12 text-center mb-8">
-              <p className="text-[#0EA5E9] text-7xl lg:text-8xl font-bold mb-4">&lt; 24h</p>
-              <p className="text-white text-xl font-medium">From memo deployed to verified AI citation</p>
-              <p className="text-[#94A3B8] mt-2">Traditional SEO takes weeks. We take hours.</p>
+            <div className="border border-[#0EA5E9]/30 bg-[#0EA5E9]/5 p-8 text-center mb-6">
+              <p className="text-[#0EA5E9] text-6xl font-bold mb-2">&lt; 24h</p>
+              <p className="text-white text-lg font-medium">From memo deployed to verified AI citation</p>
+              <p className="text-[#94A3B8] text-sm mt-1">Traditional SEO takes weeks. We take hours.</p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-8">
-                <p className="text-[#10B981] text-3xl font-bold mb-2">$5K</p>
-                <p className="text-white font-medium">First customer contract</p>
-                <p className="text-[#94A3B8] text-sm mt-1">Pre-funding. Zero marketing spend.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <p className="text-[#10B981] text-2xl font-bold mb-1">$5K</p>
+                <p className="text-white text-sm font-medium">First customer contract</p>
+                <p className="text-[#94A3B8] text-xs mt-1">Pre-funding. Zero marketing spend.</p>
               </div>
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-8">
-                <p className="text-white text-3xl font-bold mb-2">v0.26</p>
-                <p className="text-white font-medium">Production-deployed</p>
-                <p className="text-[#94A3B8] text-sm mt-1">Live at contextmemo.com. Shipping daily.</p>
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <p className="text-white text-2xl font-bold mb-1">v0.26</p>
+                <p className="text-white text-sm font-medium">Production-deployed</p>
+                <p className="text-[#94A3B8] text-xs mt-1">Live at contextmemo.com</p>
               </div>
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-8">
-                <p className="text-white text-3xl font-bold mb-2">9</p>
-                <p className="text-white font-medium">AI models scanned</p>
-                <p className="text-[#94A3B8] text-sm mt-1">GPT-4o, Claude, Gemini, Perplexity, Grok, and more.</p>
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <p className="text-white text-2xl font-bold mb-1">9</p>
+                <p className="text-white text-sm font-medium">AI models scanned</p>
+                <p className="text-[#94A3B8] text-xs mt-1">GPT-4o, Claude, Gemini, Perplexity, Grok+</p>
               </div>
-              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-8">
-                <p className="text-white text-3xl font-bold mb-2">Full Loop</p>
-                <p className="text-white font-medium">Closed-loop operational</p>
-                <p className="text-[#94A3B8] text-sm mt-1">Scan → Generate → Deploy → Verify → Attribute.</p>
+              <div className="border border-[#1E293B] bg-[#1E293B]/50 p-5">
+                <p className="text-white text-2xl font-bold mb-1">Full Loop</p>
+                <p className="text-white text-sm font-medium">Closed-loop operational</p>
+                <p className="text-[#94A3B8] text-xs mt-1">Analyze → Deploy → Verify</p>
               </div>
             </div>
           </div>
         </Section>
 
         {/* ===== THE MARKET ===== */}
-        <Section id="market">
+        <Section id="market" bg="white">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Market</p>
-            <h2 className="text-4xl font-bold text-[#0F172A] mb-4">AI search is the next SEO.</h2>
-            <p className="text-[#64748B] text-xl mb-12">And it&apos;s year one.</p>
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Market</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] mb-2">AI search is the next SEO.</h2>
+            <p className="text-[#64748B] text-base mb-8">And it&apos;s year one.</p>
 
-            <div className="space-y-6 mb-12">
-              <div className="bg-white border-l-4 border-[#0EA5E9] border-y border-r border-[#E2E8F0] p-6">
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="bg-[#F8FAFC] border-l-4 border-[#0EA5E9] border-y border-r border-[#E2E8F0] p-5">
                 <p className="text-[#0F172A] text-2xl font-bold">$50B+</p>
-                <p className="text-[#64748B]">spent annually on SEO and content marketing. AI visibility is the next budget line.</p>
+                <p className="text-[#64748B] text-sm">annual SEO & content spend. AI visibility is the next budget line.</p>
               </div>
-              <div className="bg-white border-l-4 border-[#8B5CF6] border-y border-r border-[#E2E8F0] p-6">
+              <div className="bg-[#F8FAFC] border-l-4 border-[#8B5CF6] border-y border-r border-[#E2E8F0] p-5">
                 <p className="text-[#0F172A] text-2xl font-bold">$110M+</p>
-                <p className="text-[#64748B]">already invested in AI visibility tools. The category is validated — by Sequoia, Kleiner Perkins, and Decibel.</p>
+                <p className="text-[#64748B] text-sm">invested in AI visibility. Category validated by Sequoia, KP, Decibel.</p>
               </div>
-              <div className="bg-white border-l-4 border-[#10B981] border-y border-r border-[#E2E8F0] p-6">
+              <div className="bg-[#F8FAFC] border-l-4 border-[#10B981] border-y border-r border-[#E2E8F0] p-5">
                 <p className="text-[#0F172A] text-2xl font-bold">200K+</p>
-                <p className="text-[#64748B]">B2B teams on HubSpot — our primary distribution channel. None of the funded competitors have this integration.</p>
+                <p className="text-[#64748B] text-sm">B2B teams on HubSpot — our primary distribution. No competitor has it.</p>
               </div>
             </div>
           </div>
         </Section>
 
         {/* ===== THE ASK ===== */}
-        <Section id="ask" dark>
+        <Section id="ask" bg="dark">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">The Ask</p>
-            <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Ask</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-white leading-tight mb-3">
               $2.5M to own AI visibility<br />
               <span className="text-[#94A3B8]">before the market wakes up.</span>
             </h2>
-            <p className="text-[#94A3B8] text-lg mb-12">Seed round. 18 months of runway. Three clear milestones.</p>
+            <p className="text-[#94A3B8] text-base mb-8">Seed round. 18 months of runway. Three clear milestones.</p>
 
-            <div className="space-y-6 mb-12">
+            <div className="space-y-3 mb-8">
               {[
-                { title: 'Launch HubSpot Marketplace', desc: 'First AI citation tool in the marketplace. 200K+ B2B teams as organic distribution. First 50 paying customers.', pct: '40%' },
-                { title: 'Scale the moat', desc: 'Expand verification engine, entity intelligence, and revenue attribution. Build the switching cost that compounds daily.', pct: '35%' },
-                { title: 'GTM hire + enterprise expansion', desc: 'One GTM hire to convert marketplace inbound. Move upmarket to $10K–$50K/year enterprise contracts.', pct: '25%' },
+                { title: 'Launch HubSpot Marketplace', desc: 'First AI citation tool in the marketplace. 200K+ B2B teams as organic distribution.', pct: '40%' },
+                { title: 'Scale the moat', desc: 'Expand verification engine, entity intelligence, and content automation. Switching cost that compounds daily.', pct: '35%' },
+                { title: 'GTM + enterprise expansion', desc: 'One GTM hire for marketplace inbound. Move upmarket to $10K–$50K/year contracts.', pct: '25%' },
               ].map((item) => (
-                <div key={item.title} className="flex gap-6 border border-[#1E293B] bg-[#1E293B]/50 p-6">
-                  <span className="text-[#0EA5E9] font-mono text-sm mt-1 shrink-0">{item.pct}</span>
+                <div key={item.title} className="flex gap-4 border border-[#1E293B] bg-[#1E293B]/50 p-4">
+                  <span className="text-[#0EA5E9] font-mono text-xs mt-0.5 shrink-0">{item.pct}</span>
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-1">{item.title}</h3>
-                    <p className="text-[#94A3B8]">{item.desc}</p>
+                    <h3 className="text-white font-bold text-sm mb-0.5">{item.title}</h3>
+                    <p className="text-[#94A3B8] text-sm">{item.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="border border-[#1E293B] bg-[#0F172A] p-8">
-              <p className="text-[#64748B] text-sm uppercase tracking-wider mb-3">The Pitch</p>
+            <div className="border border-[#1E293B] bg-[#0F172A] p-5">
+              <p className="text-[#64748B] text-xs uppercase tracking-wider mb-2">The Pitch</p>
               <p className="text-white text-lg leading-relaxed italic">
                 &ldquo;They raised $100M+ to build dashboards that show you the problem. We need $2.5M and 18 months — because we built the engine that fixes it. Analyze, generate, deploy, verify. On the customer&apos;s domain. Autonomous. With a distribution wedge they don&apos;t have.&rdquo;
               </p>
@@ -776,16 +770,16 @@ function PitchDeck({ email }: { email: string }) {
         </Section>
 
         {/* ===== YOUR MOVE ===== */}
-        <Section id="respond">
+        <Section id="respond" bg="warm">
           <div className="max-w-3xl">
-            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-6">Your Move</p>
-            <h2 className="text-4xl font-bold text-[#0F172A] mb-4">What do you think?</h2>
-            <p className="text-[#64748B] text-lg mb-12">
+            <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">Your Move</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] mb-3">What do you think?</h2>
+            <p className="text-[#64748B] text-base mb-8">
               The category is validated. The demand is proven. We&apos;re the only ones building the engine, not just the dashboard.
             </p>
             <ResponseSection email={email} />
 
-            <div className="mt-16 pt-8 border-t border-[#E2E8F0] flex items-center justify-between">
+            <div className="mt-10 pt-6 border-t border-[#E2E8F0] flex items-center justify-between">
               <div>
                 <p className="text-[#94A3B8] text-sm">Questions? Reach out directly.</p>
                 <a href="mailto:stephen@contextmemo.com" className="text-[#0EA5E9] hover:underline flex items-center gap-1 text-sm mt-1">
