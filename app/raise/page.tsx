@@ -321,13 +321,7 @@ function ResponseSection({ email }: { email: string }) {
 }
 
 // --- SIDEBAR ---
-function Sidebar({ activeSection }: { activeSection: string }) {
-  const handleClick = (id: string) => {
-    const el = document.getElementById(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }
+function Sidebar({ activeSection, onNavigate }: { activeSection: string; onNavigate: (id: string) => void }) {
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0F172A] border-r border-[#1E293B] flex flex-col z-50">
@@ -344,7 +338,7 @@ function Sidebar({ activeSection }: { activeSection: string }) {
         {SECTIONS.map((section) => (
           <button
             key={section.id}
-            onClick={() => handleClick(section.id)}
+            onClick={() => onNavigate(section.id)}
             className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
               activeSection === section.id
                 ? 'text-[#0EA5E9] bg-[#0EA5E9]/10'
@@ -393,6 +387,7 @@ function Section({ id, children, bg = 'white' }: { id: string; children: React.R
 function PitchDeck({ email }: { email: string }) {
   const [activeSection, setActiveSection] = useState('title')
   const contentRef = useRef<HTMLElement>(null)
+  const isScrolling = useRef(false)
 
   useEffect(() => {
     fetch('/api/raise', {
@@ -402,32 +397,50 @@ function PitchDeck({ email }: { email: string }) {
     }).catch(() => {})
   }, [email])
 
+  // Track which section is in view on scroll
   useEffect(() => {
-    const root = contentRef.current
-    if (!root) return
+    const container = contentRef.current
+    if (!container) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter(e => e.isIntersecting)
-        if (visible.length > 0) {
-          const best = visible.reduce((a, b) => a.intersectionRatio > b.intersectionRatio ? a : b)
-          setActiveSection(best.target.id)
+    const handleScroll = () => {
+      if (isScrolling.current) return
+      const scrollTop = container.scrollTop
+      const containerHeight = container.clientHeight
+
+      let current = 'title'
+      for (const { id } of SECTIONS) {
+        const el = document.getElementById(id)
+        if (!el) continue
+        // Section is "active" when its top is within the top 40% of the viewport
+        if (el.offsetTop <= scrollTop + containerHeight * 0.4) {
+          current = id
         }
-      },
-      { root, threshold: [0.1, 0.3, 0.5], rootMargin: '-5% 0px -5% 0px' }
-    )
+      }
+      setActiveSection(current)
+    }
 
-    SECTIONS.forEach(({ id }) => {
-      const el = document.getElementById(id)
-      if (el) observer.observe(el)
-    })
-
-    return () => observer.disconnect()
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleNavigate = (id: string) => {
+    const el = document.getElementById(id)
+    const container = contentRef.current
+    if (!el || !container) return
+
+    // Immediately update the active section
+    setActiveSection(id)
+    isScrolling.current = true
+
+    container.scrollTo({ top: el.offsetTop, behavior: 'smooth' })
+
+    // Re-enable scroll tracking after animation completes
+    setTimeout(() => { isScrolling.current = false }, 800)
+  }
 
   return (
     <div className="flex min-h-screen bg-[#FAFBFC]">
-      <Sidebar activeSection={activeSection} />
+      <Sidebar activeSection={activeSection} onNavigate={handleNavigate} />
       <ActiveViewers />
 
       <main ref={contentRef} className="ml-64 flex-1 h-screen overflow-y-auto">
