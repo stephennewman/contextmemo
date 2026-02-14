@@ -438,11 +438,15 @@ export default function MemoEditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/brands/${brandId}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Link>
+          <Button variant="ghost" size="sm" onClick={() => {
+            if (window.history.length > 1) {
+              router.back()
+            } else {
+              router.push(`/brands/${brandId}/memos`)
+            }
+          }}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
           </Button>
           <div>
             <h1 className="text-xl font-semibold">Edit Memo</h1>

@@ -329,14 +329,89 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
         </CardDescription>
       </CardHeader>
 
-      {/* ── Summary Stats ── */}
-      <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <InlineStat label="Published" value={published.length} color="#0EA5E9" sub={drafts.length > 0 ? `${drafts.length} draft${drafts.length !== 1 ? 's' : ''}` : undefined} />
-        <InlineStat label="Visitors" value={traffic.length} color="#8B5CF6" sub={hasTraffic ? 'last 90 days' : 'awaiting'} />
-        <InlineStat label="Companies" value={businessOrgs.length} color="#0EA5E9" sub={businessOrgs.length > 0 ? 'identified' : 'awaiting traffic'} />
-        <InlineStat label="AI Referrals" value={aiTraffic.length} color="#10B981" sub={hasTraffic && traffic.length > 0 ? `${Math.round((aiTraffic.length / traffic.length) * 100)}% of visitors` : undefined} />
-      </div>
+      {/* ── Summary Stats (only show non-zero) ── */}
+      {(() => {
+        const stats: { label: string; value: number; color: string; sub?: string }[] = []
+        if (published.length > 0) stats.push({ label: 'Published', value: published.length, color: '#0EA5E9', sub: drafts.length > 0 ? `${drafts.length} draft${drafts.length !== 1 ? 's' : ''}` : undefined })
+        if (traffic.length > 0) stats.push({ label: 'Visitors', value: traffic.length, color: '#8B5CF6', sub: 'last 90 days' })
+        if (businessOrgs.length > 0) stats.push({ label: 'Companies', value: businessOrgs.length, color: '#0EA5E9', sub: 'identified' })
+        if (aiTraffic.length > 0) stats.push({ label: 'AI Referrals', value: aiTraffic.length, color: '#10B981', sub: traffic.length > 0 ? `${Math.round((aiTraffic.length / traffic.length) * 100)}% of visitors` : undefined })
+        if (stats.length === 0) return null
+        const colClass = stats.length <= 2 ? 'grid-cols-2' : stats.length === 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-4'
+        return (
+          <>
+            <div className="mx-6 border-t border-zinc-200" />
+            <div className={`px-6 grid ${colClass} gap-4`}>
+              {stats.map(s => <InlineStat key={s.label} label={s.label} value={s.value} color={s.color} sub={s.sub} />)}
+            </div>
+          </>
+        )
+      })()}
+
+      {/* ── Trending Bot Activity (prominent charts for bots with data) ── */}
+      {(() => {
+        // Get bots with actual crawl data, ChatGPT User first
+        const trendingBots = sortedBots
+          .filter(([, info]) => info.count > 0)
+          .sort(([nameA, a], [nameB, b]) => {
+            // ChatGPT User always first
+            if (nameA === 'chatgpt-user') return -1
+            if (nameB === 'chatgpt-user') return 1
+            return b.count - a.count
+          })
+          .slice(0, 6)
+        if (trendingBots.length === 0) return null
+        return (
+          <>
+            <div className="mx-6 border-t border-zinc-200" />
+            <div className="px-6">
+              <SectionHeader icon={<Radar className="h-4 w-4 text-emerald-500" />} title="Trending Activity" sub="7-day bot crawl trends" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+                {trendingBots.map(([botName, info]) => {
+                  const sparkline = sparklineByBot[botName] || days7.map(() => 0)
+                  const sparkMax = Math.max(1, ...sparkline)
+                  const categoryColor = BOT_CATEGORY_COLORS[info.category] || '#6B7280'
+                  return (
+                    <div key={botName} className="border border-zinc-100 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <Scan className="h-3.5 w-3.5" style={{ color: categoryColor }} />
+                          <span className="text-xs font-semibold text-zinc-700">{info.displayName}</span>
+                          <Badge variant="outline" className="text-[8px] font-medium px-1 py-0" style={{ borderColor: categoryColor, color: categoryColor }}>
+                            {CATEGORY_LABEL[info.category] || info.category}
+                          </Badge>
+                        </div>
+                        <span className="text-sm font-bold tabular-nums" style={{ color: categoryColor }}>{info.count}</span>
+                      </div>
+                      <div className="flex items-end gap-1 h-10">
+                        {sparkline.map((val, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                            <div
+                              className="w-full rounded-sm"
+                              style={{
+                                height: val > 0 ? `${Math.max(15, (val / sparkMax) * 100)}%` : '2px',
+                                backgroundColor: val > 0 ? categoryColor : '#e4e4e7',
+                                opacity: val > 0 ? 0.6 : 0.25,
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[9px] text-zinc-300">{days7[0].slice(5)}</span>
+                        <span className="text-[9px] text-zinc-300">{days7[6].slice(5)}</span>
+                      </div>
+                      {info.lastSeen && (
+                        <p className="text-[10px] text-zinc-400 mt-1">Last seen {formatDistanceToNow(new Date(info.lastSeen), { addSuffix: true })}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* ── Company Intelligence (hero section) ── */}
       {(businessOrgs.length > 0 || otherOrgs.length > 0) && (
@@ -400,10 +475,10 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
 
       {/* ── Visitor Traffic by Source + Content Breakdown ── */}
       <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <SectionHeader icon={<MousePointerClick className="h-4 w-4 text-amber-500" />} title="Visitor Sources" sub="Last 90 days" />
-          {hasTraffic && Object.keys(bySource).length > 0 ? (
+      <div className={`px-6 grid grid-cols-1 ${hasTraffic ? 'md:grid-cols-2' : ''} gap-8`}>
+        {hasTraffic && Object.keys(bySource).length > 0 && (
+          <div>
+            <SectionHeader icon={<MousePointerClick className="h-4 w-4 text-amber-500" />} title="Visitor Sources" sub="Last 90 days" />
             <div className="space-y-2 mt-3">
               {Object.entries(bySource).sort(([, a], [, b]) => b - a).map(([source, count]) => (
                 <div key={source} className="flex items-center justify-between">
@@ -421,13 +496,8 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="mt-3">
-              <p className="text-sm text-zinc-400">No visitor traffic recorded yet</p>
-              <p className="text-[10px] text-zinc-300 mt-1">Tracks when real people visit your content — from ChatGPT, Perplexity, Google, or direct links.</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div>
           <SectionHeader icon={<FileText className="h-4 w-4 text-[#0EA5E9]" />} title="Content Breakdown" />
@@ -541,19 +611,27 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
         )}
       </div>
 
-      {/* ── AI Visibility (collapsed infrastructure section) ── */}
-      <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6">
-        <SectionHeader icon={<Radar className="h-4 w-4 text-zinc-400" />} title="AI Platform Activity" sub={`${crawlEvents.length} bot crawls detected`} />
-        <AIFunnel crawlEvents={crawlEvents} publishedCount={published.length} publishedSlugs={new Set(published.map(m => m.slug))} />
-      </div>
+      {/* ── AI Visibility (only show if there are crawl events) ── */}
+      {crawlEvents.length > 0 && (
+        <>
+          <div className="mx-6 border-t border-zinc-200" />
+          <div className="px-6">
+            <SectionHeader icon={<Radar className="h-4 w-4 text-zinc-400" />} title="AI Platform Activity" sub={`${crawlEvents.length} bot crawls detected`} />
+            <AIFunnel crawlEvents={crawlEvents} publishedCount={published.length} publishedSlugs={new Set(published.map(m => m.slug))} />
+          </div>
+        </>
+      )}
 
-      {/* ── Bot Crawl Activity ── */}
-      <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6">
-        <SectionHeader icon={<Radar className="h-4 w-4 text-zinc-400" />} title="Bot Crawl Details" sub="Individual bot activity" />
-        <BotCrawlList sortedBots={sortedBots} sparklineByBot={sparklineByBot} days7={days7} />
-      </div>
+      {/* ── Bot Crawl Activity (only show if there are active bots) ── */}
+      {sortedBots.some(([, info]) => info.count > 0) && (
+        <>
+          <div className="mx-6 border-t border-zinc-200" />
+          <div className="px-6">
+            <SectionHeader icon={<Radar className="h-4 w-4 text-zinc-400" />} title="Bot Crawl Details" sub="Individual bot activity" />
+            <BotCrawlList sortedBots={sortedBots} sparklineByBot={sparklineByBot} days7={days7} />
+          </div>
+        </>
+      )}
 
       {/* ── Footer note ── */}
       <div className="mx-6 border-t border-zinc-200" />
@@ -724,24 +802,23 @@ function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents
               </div>
             </div>
           </div>
-          {/* AI Discovered bar */}
-          <div className="flex items-center gap-3">
-            <div className="w-24 shrink-0 text-right">
-              <p className="text-xs font-medium text-zinc-700">AI Discovered</p>
-            </div>
-            <div className="flex-1 relative h-7 bg-zinc-50 rounded overflow-hidden">
-              <div
-                className="absolute inset-y-0 left-0 rounded flex items-center px-2"
-                style={{ width: `${Math.max(2, (discoveredMemos / Math.max(1, publishedCount)) * 100)}%`, backgroundColor: '#6366F118', minWidth: discoveredMemos > 0 ? '24px' : '0px' }}
-              >
-                <span className="text-xs font-bold tabular-nums" style={{ color: '#6366F1' }}>{discoveredMemos}</span>
+          {/* AI Discovered bar (only show if discovered > 0) */}
+          {discoveredMemos > 0 && (
+            <div className="flex items-center gap-3">
+              <div className="w-24 shrink-0 text-right">
+                <p className="text-xs font-medium text-zinc-700">AI Discovered</p>
               </div>
-              {discoveredMemos === 0 && (
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-zinc-300">0</span>
-              )}
+              <div className="flex-1 relative h-7 bg-zinc-50 rounded overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 rounded flex items-center px-2"
+                  style={{ width: `${Math.max(2, (discoveredMemos / Math.max(1, publishedCount)) * 100)}%`, backgroundColor: '#6366F118', minWidth: '24px' }}
+                >
+                  <span className="text-xs font-bold tabular-nums" style={{ color: '#6366F1' }}>{discoveredMemos}</span>
+                </div>
+              </div>
+              <span className="text-[10px] tabular-nums text-zinc-400 w-10 text-right shrink-0">{discoveryPct}%</span>
             </div>
-            <span className="text-[10px] tabular-nums text-zinc-400 w-10 text-right shrink-0">{discoveryPct}%</span>
-          </div>
+          )}
         </div>
         <p className="text-[10px] text-zinc-400 mt-2 ml-[calc(6rem+0.75rem)]">
           {discoveredMemos} of {publishedCount} pages found by AI
@@ -749,16 +826,18 @@ function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents
         </p>
       </div>
 
-      {/* Chart 2: AI Engagement */}
+      {/* Chart 2: AI Engagement (only show rows with data) */}
       <div>
         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">AI Engagement</p>
         {(() => {
-          const engagementMax = Math.max(1, trainingCrawls, searchQueries, clickThroughs)
-          const rows = [
+          const allRows = [
             { label: 'Training Crawls', value: trainingCrawls, color: '#6366F1', sub: 'GPTBot, Google AI, etc.' },
             { label: 'Search Queries', value: searchQueries, color: '#10B981', sub: 'PerplexityBot, ChatGPT Search' },
             { label: 'Click-throughs', value: clickThroughs, color: '#F59E0B', sub: 'Real users from AI apps' },
           ]
+          const rows = allRows.filter(row => row.value > 0)
+          if (rows.length === 0) return <p className="text-xs text-zinc-300">No AI engagement yet</p>
+          const engagementMax = Math.max(1, ...rows.map(r => r.value))
           return (
             <div className="space-y-2">
               {rows.map(row => (
@@ -770,24 +849,18 @@ function AIFunnel({ crawlEvents, publishedCount, publishedSlugs }: { crawlEvents
                     <div
                       className="absolute inset-y-0 left-0 rounded flex items-center px-2"
                       style={{
-                        width: row.value > 0 ? `${Math.max(8, (row.value / engagementMax) * 100)}%` : '0%',
+                        width: `${Math.max(8, (row.value / engagementMax) * 100)}%`,
                         backgroundColor: `${row.color}18`,
-                        minWidth: row.value > 0 ? '24px' : '0px',
+                        minWidth: '24px',
                       }}
                     >
-                      {row.value > 0 && (
-                        <span className="text-xs font-bold tabular-nums" style={{ color: row.color }}>{row.value}</span>
-                      )}
+                      <span className="text-xs font-bold tabular-nums" style={{ color: row.color }}>{row.value}</span>
                     </div>
-                    {row.value === 0 && (
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-zinc-300">0</span>
-                    )}
                   </div>
                 </div>
               ))}
               <p className="text-[10px] text-zinc-400 mt-1 ml-[calc(6rem+0.75rem)]">
-                Raw event counts
-                {trainingCrawls + searchQueries + clickThroughs > 0 && ` · ${trainingCrawls + searchQueries + clickThroughs} total AI interactions`}
+                {rows.reduce((sum, r) => sum + r.value, 0)} total AI interactions
               </p>
             </div>
           )

@@ -393,6 +393,14 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Fix: Prevent Duplicate Memo Generation Across All Creation Paths** (ff7fe00)
+- `memo-generate.ts`: Detects when a memo with the same slug already exists and is published — skips all downstream side effects (alerts, HubSpot sync, IndexNow submission) instead of silently overwriting and re-triggering everything.
+- `memo-synthesize.ts`: Pre-checks for existing synthesis memo on the same query before spending AI tokens on generation. Changed slug collision behavior from "append timestamp" (creating true duplicates) to "skip creation."
+- `citation-respond.ts`: Pre-checks provenance data for existing citation response memos from the same source URL. Same slug collision fix.
+- `competitor-content.ts`: Pre-checks for existing response memos by both `source_competitor_content_id` and topic-based slug. Marks already-responded content so it stops appearing in the pending queue.
+- `scan-run.ts`: Before queuing memo generation events, queries the DB for existing memos linked to gap queries. Filters them out so the same gap doesn't trigger redundant generation across scan runs.
+- Net effect: eliminates duplicate memos from all 5 automated creation paths (scan gaps, synthesis, citation response, competitor content response, and standard memo generation).
+
 **Full IP-to-Company Intelligence with Org Classification** (73d78bb)
 - IP enrichment now runs on BOTH data sources: bot_crawl_events (server-side middleware) and ai_traffic (client-side JS tracking via /api/track).
 - New org classifier (`classifyOrg()`) categorizes every org as `business`, `isp`, or `datacenter` using pattern matching against ~50 known ISPs and cloud providers.
