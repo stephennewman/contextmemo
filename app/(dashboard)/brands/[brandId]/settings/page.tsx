@@ -1363,9 +1363,9 @@ export default function BrandSettingsPage() {
   })
 
   return (
-    <div className="flex gap-8 max-w-6xl mx-auto h-[calc(100vh-6rem)]">
+    <div className="flex gap-8 max-w-6xl mx-auto h-[calc(100vh-8rem)]">
       {/* Side Navigation - stays in place */}
-      <nav className="w-56 shrink-0 hidden md:block">
+      <nav className="w-56 shrink-0 hidden md:block overflow-y-auto">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-4">Settings</h2>
 {NAV_SECTIONS.map((section) => {

@@ -393,6 +393,15 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Add: Feed Events for Deploy Analysis Visibility** (862b7f9)
+- Customers now see deploy analysis results in their activity feed
+- Success: "Deploy memo generating: [title]" when a memo is triggered
+- Info: "Deploy analyzed: no significant changes" when AI classifies as not publish-worthy
+- Info: "Deploy analyzed: similar memo exists" for duplicate detection with link to existing memo
+- Routine pre-filter skips (bug fixes, docs) are silent to avoid feed noise
+- Refactored tenant_id fetch to a separate step for reuse across feed events + usage logging
+- Modified: `lib/inngest/functions/deploy-analyze.ts`
+
 **Update: Reorganize Deploy Memos Settings UI** (db54642)
 - Reordered to "easy path first": Step 1 is Import (just enter repo), Step 2 is webhook for ongoing
 - Added "How it works" explainer (what generates memos vs what's skipped)
