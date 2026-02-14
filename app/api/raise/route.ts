@@ -142,18 +142,29 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim()
 
+    // Increment access count and update timestamp
     await supabase
       .from('pitch_deck_access')
       .update({
         last_accessed_at: new Date().toISOString(),
-        access_count: supabase.rpc ? undefined : undefined, // handled below
       })
       .eq('email', normalizedEmail)
 
-    // Increment access count
-    await supabase.rpc('increment_pitch_access_count', { p_email: normalizedEmail }).catch(() => {
-      // Fallback: just update timestamp
-    })
+    // Increment access_count via raw SQL since Supabase JS doesn't support increment natively
+    await supabase
+      .from('pitch_deck_access')
+      .select('id, access_count')
+      .eq('email', normalizedEmail)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          return supabase
+            .from('pitch_deck_access')
+            .update({ access_count: (data.access_count || 0) + 1 })
+            .eq('id', data.id)
+        }
+      })
+      .catch(() => {})
 
     return NextResponse.json({ success: true })
   }
