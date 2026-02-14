@@ -1380,7 +1380,7 @@ export default function BrandSettingsPage() {
   return (
     <div ref={containerRef} className="flex gap-8 max-w-6xl mx-auto" style={{ height: panelHeight }}>
       {/* Side Navigation - scrolls independently */}
-      <nav className="w-56 shrink-0 hidden md:block overflow-y-auto">
+      <nav className="w-56 shrink-0 hidden md:block overflow-y-auto settings-scroll">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-4">Settings</h2>
 {NAV_SECTIONS.map((section) => {
@@ -1423,7 +1423,7 @@ export default function BrandSettingsPage() {
       </nav>
 
       {/* Main Content - scrolls independently */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto space-y-8 pb-20 pr-4">
+      <div ref={contentRef} className="flex-1 overflow-y-auto space-y-8 pb-20 pr-4 settings-scroll">
         <div>
           <h1 className="text-2xl font-bold">Brand Settings</h1>
           <p className="text-muted-foreground">Manage settings for {brand.name}</p>
