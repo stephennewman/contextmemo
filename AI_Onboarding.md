@@ -393,6 +393,14 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Full IP-to-Company Intelligence with Org Classification** (73d78bb)
+- IP enrichment now runs on BOTH data sources: bot_crawl_events (server-side middleware) and ai_traffic (client-side JS tracking via /api/track).
+- New org classifier (`classifyOrg()`) categorizes every org as `business`, `isp`, or `datacenter` using pattern matching against ~50 known ISPs and cloud providers.
+- "Companies Visiting Your Content" section on PERFORMANCE tab: business orgs displayed in prominent sky-blue highlight cards with visit counts and recency. ISPs/datacenters collapsed into compact "Infrastructure & ISPs" tag row.
+- Combines org data from both data sources for complete picture.
+- Migration: added `ip_org_name`, `ip_asn` to `ai_traffic` table.
+- When someone on a corporate network (e.g. Salesforce, JP Morgan, Goldman Sachs) visits content, their company name appears automatically. Remote workers on home ISPs appear under their ISP name (Comcast, Verizon, etc.) and are filtered to the infrastructure section.
+
 **IP-to-Company Enrichment via IPinfo API** (aa4fb27)
 - Every bot crawl event now triggers an IP→organization lookup via IPinfo.io free API.
 - New `lib/ip-enrichment.ts`: Edge-compatible enrichment (Web Crypto API for hashing, raw fetch for API + cache). Runs in proxy.ts `after()` callback — zero impact on response time.
