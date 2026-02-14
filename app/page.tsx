@@ -10,16 +10,11 @@ import {
   Sparkles,
   RefreshCw,
   Eye,
-
   MessageSquare,
   FileText,
   TrendingUp,
   Shield,
   BookOpen,
-  DollarSign,
-  UserPlus,
-  Briefcase,
-  Trophy,
   BarChart3,
 } from "lucide-react";
 
@@ -30,7 +25,7 @@ export default function Home() {
     '@type': 'Organization',
     name: 'Context Memo',
     url: 'https://contextmemo.com',
-    description: 'AI visibility platform for B2B teams. Monitor, win, and prove ROI in ChatGPT, Claude, Perplexity, and Grok.',
+    description: 'The autonomous AI visibility engine for B2B teams. Analyze your brand, deploy content on your domain, and verify AI is consuming it.',
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'support@contextmemo.com',
@@ -43,7 +38,7 @@ export default function Home() {
     '@type': 'WebSite',
     name: 'Context Memo',
     url: 'https://contextmemo.com',
-    description: 'The premium AI visibility platform for B2B marketing teams. Track, analyze, and improve your brand presence in AI-powered search engines. The full closed loop from scan to revenue.',
+    description: 'The autonomous AI visibility engine for B2B marketing teams. Analyze your brand, deploy white-labeled content on your domain, and verify AI is consuming it.',
   }
 
   return (
@@ -95,14 +90,14 @@ export default function Home() {
           </div>
           
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight max-w-5xl mx-auto leading-[0.9]">
-            MONITOR, WIN, AND PROVE ROI IN{" "}
+            GET YOUR BRAND CITED IN{" "}
             <span className="text-[#0EA5E9]">AI SEARCH</span>
           </h1>
           
           <p className="mt-8 text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            Track your brand across multiple AI models. 
-            Generate content that gets cited. Verify it worked. 
-            Attribute the revenue back to your CRM.
+            We analyze your brand, discover where AI cites your competitors instead of you, 
+            and continuously deploy white-labeled content on your domain to fill the gaps.
+            Then we verify AI is consuming it.
           </p>
           
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
@@ -191,10 +186,10 @@ export default function Home() {
               <Zap className="h-4 w-4" />
               THE SOLUTION
             </div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">CONTEXT MEMO GIVES YOU THE FULL PICTURE</h2>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">AN AUTONOMOUS AI VISIBILITY ENGINE</h2>
             <p className="mt-4 text-xl text-slate-400 max-w-3xl mx-auto">
-              We scan AI models for your brand every day, show you exactly where you&apos;re cited and where you&apos;re not, 
-              generate content that fills the gaps, then verify it worked. One platform, closed loop.
+              We analyze your brand positioning, reverse-engineer the prompts that matter, map the competitive landscape AI actually sees, 
+              and continuously deploy white-labeled content on your domain to fill the gaps. Then we verify AI is consuming it.
             </p>
           </div>
 
@@ -282,9 +277,9 @@ export default function Home() {
                   
                   <div className="bg-linear-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 p-4 rounded-lg relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-                    <p className="text-[10px] text-emerald-400 font-bold tracking-wider mb-1.5">AI REVENUE</p>
-                    <p className="text-4xl font-black text-emerald-400 leading-none">$47K</p>
-                    <p className="text-[11px] text-slate-500 mt-2">3 deals attributed</p>
+                    <p className="text-[10px] text-emerald-400 font-bold tracking-wider mb-1.5">AI TRAFFIC</p>
+                    <p className="text-4xl font-black text-emerald-400 leading-none">847</p>
+                    <p className="text-[11px] text-slate-500 mt-2">visits from AI this month</p>
                   </div>
                 </div>
 
@@ -461,68 +456,66 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Revenue Attribution */}
+      {/* Verified AI Consumption */}
       <section className="py-24 bg-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#0EA5E9]/20 border border-[#0EA5E9]/30 text-[#0EA5E9] text-sm font-bold tracking-wide mb-6">
-              <DollarSign className="h-4 w-4" />
-              REVENUE ATTRIBUTION
+              <Shield className="h-4 w-4" />
+              VERIFIED RESULTS
             </div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">FROM AI MENTION TO CLOSED DEAL</h2>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">PROOF THAT IT&apos;S WORKING</h2>
             <p className="mt-4 text-xl text-slate-400 max-w-2xl mx-auto">
-              The only platform that connects AI visibility to actual revenue.
+              We don&apos;t just deploy content and hope. We verify AI is consuming it — with timestamps, before/after data, and measurable outcomes.
             </p>
           </div>
 
-          {/* Attribution Flow */}
+          {/* Verification Flow */}
           <div className="flex flex-wrap items-center justify-center gap-2 mb-16 text-sm font-bold">
-            <span className="px-4 py-2 bg-white/10 border border-white/20">AI CITES YOUR BRAND</span>
+            <span className="px-4 py-2 bg-white/10 border border-white/20">MEMO DEPLOYED</span>
             <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
-            <span className="px-4 py-2 bg-white/10 border border-white/20">VISITOR LANDS ON SITE</span>
+            <span className="px-4 py-2 bg-white/10 border border-white/20">AI MODELS RE-SCANNED</span>
             <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
-            <span className="px-4 py-2 bg-white/10 border border-white/20">MATCHED TO HUBSPOT</span>
+            <span className="px-4 py-2 bg-white/10 border border-white/20">CITATION VERIFIED</span>
             <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
-            <span className="px-4 py-2 bg-white/10 border border-white/20">PIPELINE INFLUENCED</span>
-            <ArrowRight className="h-4 w-4 text-[#0EA5E9] hidden sm:block" />
-            <span className="px-4 py-2 bg-[#0EA5E9] border border-[#0EA5E9]">REVENUE ATTRIBUTED</span>
+            <span className="px-4 py-2 bg-[#0EA5E9] border border-[#0EA5E9]">AI CONSUMING YOUR CONTENT</span>
           </div>
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-2 border-white/20">
             <div className="p-8 border-b-2 sm:border-b-2 lg:border-b-0 sm:border-r-2 lg:border-r-2 border-white/20">
               <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
-                <Bot className="h-6 w-6 text-[#0EA5E9]" />
+                <RefreshCw className="h-6 w-6 text-[#0EA5E9]" />
               </div>
-              <h3 className="font-black text-lg mb-2">AI TRAFFIC SOURCES</h3>
+              <h3 className="font-black text-lg mb-2">RE-SCAN AFTER DEPLOY</h3>
               <p className="text-slate-400 text-sm">
-                Track visitors from ChatGPT, Perplexity, Claude, Gemini, Copilot, Meta AI, Poe, You.com, and Phind. See exactly which AI platforms drive traffic.
+                24-72 hours after deployment, we re-scan across multiple AI models to check if your content is now being cited. Automated, not manual.
               </p>
             </div>
             <div className="p-8 border-b-2 lg:border-b-0 lg:border-r-2 border-white/20">
               <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
-                <UserPlus className="h-6 w-6 text-[#0EA5E9]" />
+                <CheckCircle2 className="h-6 w-6 text-[#0EA5E9]" />
               </div>
-              <h3 className="font-black text-lg mb-2">CONTACT ATTRIBUTION</h3>
+              <h3 className="font-black text-lg mb-2">TIME-TO-CITATION</h3>
               <p className="text-slate-400 text-sm">
-                AI visitors matched to HubSpot contacts automatically. Know which contacts discovered you through AI.
+                Measure how long it takes from deployment to first verified citation. Track the speed of AI adoption for each memo.
               </p>
             </div>
             <div className="p-8 border-b-2 sm:border-b-0 sm:border-r-2 lg:border-r-2 border-white/20">
               <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
-                <Briefcase className="h-6 w-6 text-[#0EA5E9]" />
+                <BarChart3 className="h-6 w-6 text-[#0EA5E9]" />
               </div>
-              <h3 className="font-black text-lg mb-2">PIPELINE INFLUENCED</h3>
+              <h3 className="font-black text-lg mb-2">BEFORE &amp; AFTER</h3>
               <p className="text-slate-400 text-sm">
-                Follow AI-sourced contacts through your sales pipeline. See deals influenced by AI visibility.
+                See visibility scores before and after memo deployment. Concrete proof that your content is moving the needle.
               </p>
             </div>
             <div className="p-8">
               <div className="w-12 h-12 bg-[#0EA5E9]/20 flex items-center justify-center mb-4">
-                <Trophy className="h-6 w-6 text-[#0EA5E9]" />
+                <Bot className="h-6 w-6 text-[#0EA5E9]" />
               </div>
-              <h3 className="font-black text-lg mb-2">REVENUE CLOSED</h3>
+              <h3 className="font-black text-lg mb-2">AI TRAFFIC TRACKING</h3>
               <p className="text-slate-400 text-sm">
-                Attribute closed-won revenue back to AI as a channel. Report the number your CMO actually cares about.
+                Track visitors from ChatGPT, Perplexity, Claude, and more. See which AI platforms are sending traffic to your content.
               </p>
             </div>
           </div>
@@ -533,9 +526,9 @@ export default function Home() {
       <section id="how-it-works" className="py-24 bg-white text-[#0F172A]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">THE FULL CLOSED LOOP</h2>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">HOW IT WORKS</h2>
             <p className="mt-4 text-xl text-slate-600 max-w-2xl mx-auto">
-              Most tools stop at monitoring. Context Memo closes the loop from discovery to revenue.
+              Five steps — from brand analysis to continuous, autonomous content deployment.
             </p>
           </div>
           
@@ -545,9 +538,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 1
               </div>
-              <h3 className="font-black text-lg mb-3">SCAN</h3>
+              <h3 className="font-black text-lg mb-3">ANALYZE</h3>
               <p className="text-slate-600 text-sm">
-                Recurring automated scans across ChatGPT, Claude, Perplexity, and Grok. See exactly where your brand gets cited — and where it doesn&apos;t.
+                We ingest your brand positioning — mission, messaging, tone, personality. This becomes the foundation for every piece of content. Every memo sounds like you.
               </p>
             </div>
             
@@ -556,9 +549,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 2
               </div>
-              <h3 className="font-black text-lg mb-3">DISCOVER</h3>
+              <h3 className="font-black text-lg mb-3">SCAN</h3>
               <p className="text-slate-600 text-sm">
-                AI surfaces your real competitive landscape. Competitors, aggregators, publishers — all organically discovered from actual AI responses, not self-reported.
+                We reverse-engineer the prompts your buyers ask AI — across one model or nine, 50 prompts or 5,000. This creates the baseline: where you show up, where you don&apos;t, and who gets cited instead.
               </p>
             </div>
             
@@ -567,9 +560,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 3
               </div>
-              <h3 className="font-black text-lg mb-3">GENERATE</h3>
+              <h3 className="font-black text-lg mb-3">MAP</h3>
               <p className="text-slate-600 text-sm">
-                For every gap, we generate structured memos in your brand&apos;s voice. 9 content types built for how AI actually reads.
+                AI responses reveal your real competitive dynamics — competitors, aggregators, publishers winning citations. We classify each and identify the exact content gaps costing you visibility.
               </p>
             </div>
             
@@ -578,9 +571,9 @@ export default function Home() {
               <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 4
               </div>
-              <h3 className="font-black text-lg mb-3">VERIFY</h3>
+              <h3 className="font-black text-lg mb-3">DEPLOY</h3>
               <p className="text-slate-600 text-sm">
-                24-72 hours after publish, we re-scan across 3 models to confirm your brand is now getting cited. Closed-loop proof, not guesswork.
+                White-labeled memos matching your brand&apos;s tone and design — deployed on your site via HubSpot, subdomain, or folder path. Your domain authority. Your trust signals.
               </p>
             </div>
             
@@ -589,17 +582,19 @@ export default function Home() {
               <div className="w-14 h-14 bg-[#0EA5E9] text-white flex items-center justify-center font-black text-xl mb-5">
                 5
               </div>
-              <h3 className="font-black text-lg mb-3">ATTRIBUTE</h3>
+              <h3 className="font-black text-lg mb-3">MONITOR</h3>
               <p className="text-slate-600 text-sm">
-                Track AI-sourced traffic from 9 platforms. Match visitors to HubSpot contacts. Follow them through pipeline to closed-won revenue. Prove the ROI.
+                The engine doesn&apos;t stop. We monitor AI consumption, competitor activity, and results to continuously generate new memos — filling gaps as the landscape shifts. One memo a day or a hundred.
               </p>
             </div>
           </div>
           
-          {/* Automation Note */}
-          <div className="mt-8 flex items-center justify-center gap-3 text-slate-500 font-semibold">
-            <RefreshCw className="h-5 w-5" />
-            <span>RUNS AUTOMATICALLY — RECURRING SCANS, CONTINUOUS OPTIMIZATION, REVENUE PROOF</span>
+          {/* Scale Note */}
+          <div className="mt-8 p-6 bg-slate-100 border-2 border-[#0F172A] text-center">
+            <p className="text-slate-700 font-bold">
+              SCALE UP OR DOWN AS YOU NEED — 1 MODEL OR 9 · 50 PROMPTS OR 5,000 · 1 MEMO/DAY OR 100
+            </p>
+            <p className="text-slate-500 text-sm mt-2">Everything is controlled, configurable, and built around your consumption.</p>
           </div>
         </div>
       </section>
@@ -1002,7 +997,7 @@ export default function Home() {
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">YOUR COMPETITORS ARE ALREADY IN AI RECOMMENDATIONS</h2>
           <p className="text-xl text-white/80 mb-10 max-w-xl mx-auto">
             You can monitor that. Or you can do something about it.
-            Context Memo gives you the full closed loop — scan, discover, generate, verify, attribute.
+            Context Memo analyzes your brand, deploys content on your domain, and verifies AI is consuming it. Continuously.
           </p>
           <Button size="lg" asChild className="bg-[#0F172A] hover:bg-[#0F172A]/90 text-white font-bold text-lg rounded-none px-10 py-6 h-auto">
             <Link href="/request-access">
@@ -1026,7 +1021,7 @@ export default function Home() {
                 <span className="font-black text-lg tracking-tight">CONTEXT MEMO</span>
               </div>
               <p className="text-sm text-slate-500 leading-relaxed">
-                The AI visibility platform for B2B teams. Monitor, win, and prove ROI in AI search.
+                The autonomous AI visibility engine for B2B teams. Analyze, deploy, and verify — on your domain.
               </p>
             </div>
             
@@ -1066,7 +1061,7 @@ export default function Home() {
               &copy; 2026 CONTEXT MEMO. ALL RIGHTS RESERVED.
             </p>
             <p className="text-xs text-slate-600">
-              The full closed loop for AI visibility.
+              The autonomous AI visibility engine.
             </p>
           </div>
         </div>
