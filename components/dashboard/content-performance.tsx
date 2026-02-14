@@ -333,16 +333,134 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
       <div className="mx-6 border-t border-zinc-200" />
       <div className="px-6 grid grid-cols-2 md:grid-cols-4 gap-4">
         <InlineStat label="Published" value={published.length} color="#0EA5E9" sub={drafts.length > 0 ? `${drafts.length} draft${drafts.length !== 1 ? 's' : ''}` : undefined} />
-        <InlineStat label="Total Views" value={traffic.length} color="#8B5CF6" sub={hasTraffic ? 'last 90 days' : 'awaiting'} />
-        <InlineStat label="AI Traffic" value={aiTraffic.length} color="#10B981" sub={hasTraffic && traffic.length > 0 ? `${Math.round((aiTraffic.length / traffic.length) * 100)}%` : undefined} />
-        <InlineStat label="Organic" value={organicTraffic.length} color="#F59E0B" sub={hasTraffic && traffic.length > 0 ? `${Math.round((organicTraffic.length / traffic.length) * 100)}%` : undefined} />
+        <InlineStat label="Visitors" value={traffic.length} color="#8B5CF6" sub={hasTraffic ? 'last 90 days' : 'awaiting'} />
+        <InlineStat label="Companies" value={businessOrgs.length} color="#0EA5E9" sub={businessOrgs.length > 0 ? 'identified' : 'awaiting traffic'} />
+        <InlineStat label="AI Referrals" value={aiTraffic.length} color="#10B981" sub={hasTraffic && traffic.length > 0 ? `${Math.round((aiTraffic.length / traffic.length) * 100)}% of visitors` : undefined} />
       </div>
 
-      {/* ── AI Visibility Funnel ── */}
+      {/* ── Company Intelligence (hero section) ── */}
+      {(businessOrgs.length > 0 || otherOrgs.length > 0) && (
+        <>
+          <div className="mx-6 border-t border-zinc-200" />
+          <div className="px-6">
+            {businessOrgs.length > 0 && (
+              <>
+                <SectionHeader icon={<Globe className="h-4 w-4 text-sky-500" />} title="Companies Visiting Your Content" sub={`${businessOrgs.length} identified`} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+                  {businessOrgs.slice(0, 12).map(([org, data]) => {
+                    const sources = Array.from(data.sources)
+                    return (
+                      <div key={org} className="flex items-center justify-between p-2.5 border-2 border-sky-100 bg-sky-50/30 rounded">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-zinc-800 truncate">{org}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {sources.map(src => (
+                              <div
+                                key={src}
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: BOT_CATEGORY_COLORS[src as BotCategory] || (src === 'human_visit' ? '#F59E0B' : '#6B7280') }}
+                                title={src === 'human_visit' ? 'Human Visit' : (BOT_CATEGORY_LABELS[src as BotCategory] || src)}
+                              />
+                            ))}
+                            <span className="text-[10px] text-zinc-400 ml-0.5">
+                              {formatDistanceToNow(new Date(data.lastSeen), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold tabular-nums text-sky-700 ml-2">{data.count}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {otherOrgs.length > 0 && (
+              <div className={businessOrgs.length > 0 ? 'mt-4' : ''}>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                  Infrastructure &amp; ISPs
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {otherOrgs.map(([org, data]) => (
+                    <span key={org} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-50 border border-zinc-100 rounded text-[10px] text-zinc-500">
+                      {org}
+                      <span className="font-semibold text-zinc-400">{data.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[10px] text-zinc-400 mt-3">
+              Companies identified via IP network registration. Corporate network visitors show their company name. Remote/home workers show under their ISP.
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* ── Visitor Traffic by Source + Content Breakdown ── */}
       <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6">
-        <SectionHeader icon={<Radar className="h-4 w-4 text-emerald-500" />} title="AI Visibility Funnel" sub="How AI platforms interact with your content" />
-        <AIFunnel crawlEvents={crawlEvents} publishedCount={published.length} publishedSlugs={new Set(published.map(m => m.slug))} />
+      <div className="px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <SectionHeader icon={<MousePointerClick className="h-4 w-4 text-amber-500" />} title="Visitor Sources" sub="Last 90 days" />
+          {hasTraffic && Object.keys(bySource).length > 0 ? (
+            <div className="space-y-2 mt-3">
+              {Object.entries(bySource).sort(([, a], [, b]) => b - a).map(([source, count]) => (
+                <div key={source} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {!['organic', 'direct_nav', 'direct'].includes(source) ? <Bot className="h-3.5 w-3.5 text-emerald-500" /> : <Globe className="h-3.5 w-3.5 text-amber-500" />}
+                    <span className="text-sm text-zinc-600">{AI_SOURCE_LABELS[source as AIReferrerSource] || source}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 bg-zinc-100 rounded-full h-1.5">
+                      <div className={`h-1.5 rounded-full ${!['organic', 'direct_nav', 'direct'].includes(source) ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                        style={{ width: `${Math.max(8, (count / traffic.length) * 100)}%` }} />
+                    </div>
+                    <span className="text-sm font-medium text-zinc-700 w-8 text-right">{count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3">
+              <p className="text-sm text-zinc-400">No visitor traffic recorded yet</p>
+              <p className="text-[10px] text-zinc-300 mt-1">Tracks when real people visit your content — from ChatGPT, Perplexity, Google, or direct links.</p>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <SectionHeader icon={<FileText className="h-4 w-4 text-[#0EA5E9]" />} title="Content Breakdown" />
+          <div className="space-y-2 mt-3">
+            {Object.entries(byType).sort(([, a], [, b]) => b - a).map(([type, count]) => (
+              <div key={type} className="flex items-center justify-between">
+                <span className="text-sm text-zinc-600">{TYPE_LABELS[type] || type}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-16 bg-zinc-100 rounded-full h-1.5">
+                    <div className="bg-[#0EA5E9] h-1.5 rounded-full" style={{ width: `${Math.max(8, (count / memos.length) * 100)}%` }} />
+                  </div>
+                  <span className="text-sm font-medium text-zinc-700 w-8 text-right">{count}</span>
+                </div>
+              </div>
+            ))}
+            <div className="pt-2 space-y-1.5 border-t border-zinc-100 mt-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#0EA5E9]" /><span className="text-zinc-500">contextmemo.com</span></div>
+                <span className="font-medium text-zinc-700">{onContextMemo.length}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#F97316]" /><span className="text-zinc-500">HubSpot</span></div>
+                <span className="font-medium text-zinc-700">{onHubSpot.length}</span>
+              </div>
+              {drafts.length > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-zinc-300" /><span className="text-zinc-500">Drafts</span></div>
+                  <span className="font-medium text-zinc-700">{drafts.length}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── Memo Performance ── */}
@@ -423,246 +541,26 @@ export function ContentPerformance({ brandId, brandName, brandSubdomain, brandCu
         )}
       </div>
 
+      {/* ── AI Visibility (collapsed infrastructure section) ── */}
+      <div className="mx-6 border-t border-zinc-200" />
+      <div className="px-6">
+        <SectionHeader icon={<Radar className="h-4 w-4 text-zinc-400" />} title="AI Platform Activity" sub={`${crawlEvents.length} bot crawls detected`} />
+        <AIFunnel crawlEvents={crawlEvents} publishedCount={published.length} publishedSlugs={new Set(published.map(m => m.slug))} />
+      </div>
+
       {/* ── Bot Crawl Activity ── */}
       <div className="mx-6 border-t border-zinc-200" />
       <div className="px-6">
-        <SectionHeader icon={<Radar className="h-4 w-4 text-emerald-500" />} title="Bot Crawl Activity" sub={crawlEvents.length > 0 ? `${crawlEvents.length} total crawls detected` : 'Tracking active · crawls will appear here'} />
+        <SectionHeader icon={<Radar className="h-4 w-4 text-zinc-400" />} title="Bot Crawl Details" sub="Individual bot activity" />
         <BotCrawlList sortedBots={sortedBots} sparklineByBot={sparklineByBot} days7={days7} />
-      </div>
-
-      {/* ── Traffic by AI Provider + Recent Events ── */}
-      <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Traffic by AI Provider */}
-        <div>
-          <SectionHeader icon={<Bot className="h-4 w-4 text-emerald-500" />} title="Traffic by AI Provider" sub="Which platforms crawl your content" />
-          {sortedProviders.length > 0 ? (
-            <div className="space-y-3 mt-3">
-              {sortedProviders.map(([provider, data]) => {
-                const percentage = totalAIProviderCrawls > 0 ? Math.round((data.count / totalAIProviderCrawls) * 100) : 0
-                return (
-                  <div key={provider} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-zinc-700">{provider}</span>
-                      <span className="text-zinc-400 tabular-nums text-xs">{data.count} ({percentage}%)</span>
-                    </div>
-                    <div className="h-2 bg-zinc-100 rounded-full overflow-hidden flex">
-                      {Object.entries(data.categories)
-                        .sort(([, a], [, b]) => b - a)
-                        .map(([cat, count]) => (
-                          <div
-                            key={cat}
-                            className="h-full first:rounded-l-full last:rounded-r-full"
-                            style={{
-                              width: `${Math.max(2, (count / totalAIProviderCrawls) * 100)}%`,
-                              backgroundColor: BOT_CATEGORY_COLORS[cat as BotCategory] || '#6B7280',
-                            }}
-                            title={`${BOT_CATEGORY_LABELS[cat as BotCategory] || cat}: ${count}`}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                )
-              })}
-              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-zinc-100">
-                {(['ai_training', 'ai_search', 'ai_user_browse'] as BotCategory[]).map(cat => (
-                  <div key={cat} className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: BOT_CATEGORY_COLORS[cat] }} />
-                    <span className="text-[10px] text-zinc-400">{BOT_CATEGORY_LABELS[cat]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-400 mt-3">No AI provider crawls detected yet</p>
-          )}
-        </div>
-
-        {/* Recent Crawl Events */}
-        <div>
-          <SectionHeader icon={<MapPin className="h-4 w-4 text-sky-500" />} title="Recent Crawl Events" sub="Latest activity with location + org" />
-          {recentCrawlEvents.length > 0 ? (
-            <div className="space-y-1.5 mt-3">
-              {recentCrawlEvents.map(event => {
-                const catColor = BOT_CATEGORY_COLORS[event.bot_category as BotCategory] || '#6B7280'
-                const locationParts: string[] = []
-                if (event.ip_city) locationParts.push(event.ip_city)
-                if (event.ip_region) locationParts.push(event.ip_region)
-                if (locationParts.length === 0 && event.ip_country) locationParts.push(event.ip_country)
-                const location = locationParts.length > 0 ? locationParts.join(', ') : null
-                return (
-                  <div key={event.id} className="flex items-center gap-2 py-1">
-                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-medium text-zinc-700 truncate">{event.bot_display_name}</span>
-                        <Badge variant="outline" className="text-[8px] px-1 py-0 shrink-0" style={{ borderColor: catColor, color: catColor }}>
-                          {BOT_CATEGORY_LABELS[event.bot_category as BotCategory] || event.bot_category}
-                        </Badge>
-                        {event.ip_org_name && (
-                          <span className="text-[9px] text-zinc-500 truncate ml-0.5" title={event.ip_asn ? `${event.ip_asn} ${event.ip_org_name}` : event.ip_org_name}>
-                            {event.ip_org_name}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-zinc-400 truncate">
-                        {event.memo_slug || event.page_path}
-                        {location && (
-                          <span className="inline-flex items-center gap-0.5 ml-1">
-                            <MapPin className="h-2.5 w-2.5 inline" />
-                            {location}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-zinc-400 shrink-0" title={new Date(event.created_at).toLocaleString()}>
-                      {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-400 mt-3">No crawl events yet</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Company Intelligence ── */}
-      {(businessOrgs.length > 0 || otherOrgs.length > 0) && (
-        <>
-          <div className="mx-6 border-t border-zinc-200" />
-          <div className="px-6">
-            {/* Business orgs — the signal */}
-            {businessOrgs.length > 0 && (
-              <>
-                <SectionHeader icon={<Globe className="h-4 w-4 text-sky-500" />} title="Companies Visiting Your Content" sub={`${businessOrgs.length} identified`} />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
-                  {businessOrgs.slice(0, 12).map(([org, data]) => {
-                    const sources = Array.from(data.sources)
-                    return (
-                      <div key={org} className="flex items-center justify-between p-2.5 border-2 border-sky-100 bg-sky-50/30 rounded">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-zinc-800 truncate">{org}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            {sources.map(src => (
-                              <div
-                                key={src}
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: BOT_CATEGORY_COLORS[src as BotCategory] || (src === 'human_visit' ? '#F59E0B' : '#6B7280') }}
-                                title={src === 'human_visit' ? 'Human Visit' : (BOT_CATEGORY_LABELS[src as BotCategory] || src)}
-                              />
-                            ))}
-                            <span className="text-[10px] text-zinc-400 ml-0.5">
-                              {formatDistanceToNow(new Date(data.lastSeen), { addSuffix: true })}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-sm font-bold tabular-nums text-sky-700 ml-2">{data.count}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* Other orgs (ISPs, datacenters) — collapsed context */}
-            {otherOrgs.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">
-                  Infrastructure &amp; ISPs
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {otherOrgs.map(([org, data]) => (
-                    <span key={org} className="inline-flex items-center gap-1 px-2 py-1 bg-zinc-50 border border-zinc-100 rounded text-[10px] text-zinc-500">
-                      {org}
-                      <span className="font-semibold text-zinc-400">{data.count}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <p className="text-[10px] text-zinc-400 mt-3">
-              Companies identified via IP network registration (ASN). Corporate network visitors show their company name. Remote workers on home ISPs appear under their ISP.
-            </p>
-          </div>
-        </>
-      )}
-
-      {/* ── Traffic by Source + Content Breakdown ── */}
-      <div className="mx-6 border-t border-zinc-200" />
-      <div className="px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Traffic by Source */}
-        <div>
-          <SectionHeader icon={<Bot className="h-4 w-4 text-emerald-500" />} title="Human Traffic" sub="Last 90 days" />
-          {hasTraffic && Object.keys(bySource).length > 0 ? (
-            <div className="space-y-2 mt-3">
-              {Object.entries(bySource).sort(([, a], [, b]) => b - a).map(([source, count]) => (
-                <div key={source} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {!['organic', 'direct_nav', 'direct'].includes(source) ? <Bot className="h-3.5 w-3.5 text-emerald-500" /> : <Globe className="h-3.5 w-3.5 text-amber-500" />}
-                    <span className="text-sm text-zinc-600">{AI_SOURCE_LABELS[source as AIReferrerSource] || source}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 bg-zinc-100 rounded-full h-1.5">
-                      <div className={`h-1.5 rounded-full ${!['organic', 'direct_nav', 'direct'].includes(source) ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                        style={{ width: `${Math.max(8, (count / traffic.length) * 100)}%` }} />
-                    </div>
-                    <span className="text-sm font-medium text-zinc-700 w-8 text-right">{count}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-3">
-              <p className="text-sm text-zinc-400">No human visitors from AI platforms yet</p>
-              <p className="text-[10px] text-zinc-300 mt-1">Bot crawls (above) show AI platforms indexing your content. This section tracks when a real person clicks through from ChatGPT, Perplexity, etc.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Content Breakdown */}
-        <div>
-          <SectionHeader icon={<FileText className="h-4 w-4 text-[#0EA5E9]" />} title="Content Breakdown" />
-          <div className="space-y-2 mt-3">
-            {Object.entries(byType).sort(([, a], [, b]) => b - a).map(([type, count]) => (
-              <div key={type} className="flex items-center justify-between">
-                <span className="text-sm text-zinc-600">{TYPE_LABELS[type] || type}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 bg-zinc-100 rounded-full h-1.5">
-                    <div className="bg-[#0EA5E9] h-1.5 rounded-full" style={{ width: `${Math.max(8, (count / memos.length) * 100)}%` }} />
-                  </div>
-                  <span className="text-sm font-medium text-zinc-700 w-8 text-right">{count}</span>
-                </div>
-              </div>
-            ))}
-            <div className="pt-2 space-y-1.5 border-t border-zinc-100 mt-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#0EA5E9]" /><span className="text-zinc-500">contextmemo.com</span></div>
-                <span className="font-medium text-zinc-700">{onContextMemo.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#F97316]" /><span className="text-zinc-500">HubSpot</span></div>
-                <span className="font-medium text-zinc-700">{onHubSpot.length}</span>
-              </div>
-              {drafts.length > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-zinc-300" /><span className="text-zinc-500">Drafts</span></div>
-                  <span className="font-medium text-zinc-700">{drafts.length}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Footer note ── */}
       <div className="mx-6 border-t border-zinc-200" />
       <div className="px-6 pb-5 text-[11px] text-zinc-400">
         <span className="font-semibold text-zinc-500">Tracking:</span>{' '}
-        Bot crawls detected server-side. Human views tracked via referrer on {brandCustomDomain && brandDomainVerified ? brandCustomDomain : `${brandSubdomain}.contextmemo.com`}.
-        HubSpot content tracked in HubSpot analytics.
+        Visitor traffic tracked via client-side JS on {brandCustomDomain && brandDomainVerified ? brandCustomDomain : `${brandSubdomain}.contextmemo.com`}.
+        Company identification via IP network registration. Bot crawls detected server-side.
       </div>
     </Card>
   )
