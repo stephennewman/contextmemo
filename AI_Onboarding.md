@@ -393,6 +393,13 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Add: Guardrails for Deploy Memo Backfill** (ce60711)
+- 24-hour cooldown between backfill runs (returns 429 with hours remaining)
+- Max 10 daily batches per backfill (most recent 10 days only)
+- 30-day lookback window, 100 commit cap (now explicit named constants)
+- Response tells user if batches were capped
+- Modified: `app/api/brands/[brandId]/github-integration/backfill/route.ts`
+
 **Fix: Backfilled Deploy Memos Use Actual Deploy Date** (e2602f4)
 - `deployDate` now passes through `deploy-analyze` → `memo/generate` pipeline
 - Memo `published_at` and the in-content date reference match the original deploy date, not when the backfill ran

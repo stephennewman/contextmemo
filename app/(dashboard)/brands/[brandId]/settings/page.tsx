@@ -2816,64 +2816,23 @@ function handler(event) {
                     </Button>
                   </div>
 
-                  <Separator />
-
-                  {/* Webhook URL */}
-                  <div className="space-y-2">
-                    <Label>Webhook URL</Label>
-                    <div className="flex gap-2">
-                      <Input value={githubIntegration.webhookUrl} readOnly className="font-mono text-sm bg-muted" />
-                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(githubIntegration.webhookUrl, 'url')}>
-                        {urlCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Webhook Secret */}
-                  <div className="space-y-2">
-                    <Label>Webhook Secret</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type={showWebhookSecret ? 'text' : 'password'}
-                        value={githubIntegration.webhookSecret}
-                        readOnly
-                        className="font-mono text-sm bg-muted"
-                      />
-                      <Button variant="outline" size="icon" onClick={() => setShowWebhookSecret(!showWebhookSecret)}>
-                        {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(githubIntegration.webhookSecret, 'secret')}>
-                        {secretCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
+                  {/* How it works */}
+                  <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                    <p className="text-sm font-medium">How it works</p>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• New features, integrations, and significant improvements → memo generated</li>
+                      <li>• Bug fixes, refactors, styling tweaks, internal changes → automatically skipped</li>
+                      <li>• Each memo is published to your subdomain with the date of the actual deploy</li>
+                    </ul>
                   </div>
 
                   <Separator />
 
-                  {/* Setup instructions */}
-                  <Alert>
-                    <AlertDescription>
-                      <p className="font-medium mb-2">GitHub Setup</p>
-                      <ol className="list-decimal list-inside space-y-1 text-sm">
-                        <li>Go to your GitHub repo → <strong>Settings</strong> → <strong>Webhooks</strong></li>
-                        <li>Click <strong>Add webhook</strong></li>
-                        <li>Paste the <strong>Webhook URL</strong> above into Payload URL</li>
-                        <li>Set Content type to <code className="bg-muted px-1 rounded">application/json</code></li>
-                        <li>Paste the <strong>Webhook Secret</strong> above into Secret</li>
-                        <li>Under events, select <strong>Just the push event</strong></li>
-                        <li>Click <strong>Add webhook</strong></li>
-                      </ol>
-                      <p className="text-sm mt-3 text-muted-foreground">Only deploys to <code className="bg-muted px-1 rounded">main</code> or <code className="bg-muted px-1 rounded">master</code> with meaningful product changes will generate memos. Bug fixes, refactors, and internal changes are automatically filtered out.</p>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Separator />
-
-                  {/* Backfill from past deploys */}
+                  {/* STEP 1: Import past deploys — easy path first */}
                   <div className="space-y-3">
                     <div>
-                      <Label>Import Past Deploys</Label>
-                      <p className="text-sm text-muted-foreground">Enter your GitHub repo to generate memos from your last 30 days of deploys.</p>
+                      <p className="font-medium text-sm">Step 1: Import recent deploys</p>
+                      <p className="text-sm text-muted-foreground">Enter your public GitHub repo to generate memos from up to the last 30 days of deploys. Each day&apos;s commits are analyzed — only significant product changes produce memos.</p>
                     </div>
                     <div className="flex gap-2">
                       <Input
@@ -2892,7 +2851,7 @@ function handler(event) {
                       </Button>
                     </div>
                     {githubIntegration.lastBackfillAt && !backfillResult && (
-                      <p className="text-xs text-muted-foreground">Last imported: {new Date(githubIntegration.lastBackfillAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">Last imported: {new Date(githubIntegration.lastBackfillAt).toLocaleDateString()} · Can run once every 24 hours</p>
                     )}
                     {backfillResult && (
                       <Alert>
@@ -2901,20 +2860,74 @@ function handler(event) {
                         </AlertDescription>
                       </Alert>
                     )}
-                    <p className="text-xs text-muted-foreground">Works with public repos. For private repos, contact us to set up a token.</p>
+                    <p className="text-xs text-muted-foreground">Analyzes up to 10 most recent deploy days · Public repos only · Private repo? <a href="mailto:support@contextmemo.com" className="underline">Contact us</a></p>
                   </div>
 
                   <Separator />
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <Button variant="outline" size="sm" onClick={handleRegenerateSecret} disabled={githubRegenerating}>
-                      {githubRegenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                      Regenerate Secret
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleDeleteGithubIntegration} disabled={githubDeleting}>
+                  {/* STEP 2: Webhook for ongoing automation */}
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-medium text-sm">Step 2: Auto-generate on every future deploy</p>
+                      <p className="text-sm text-muted-foreground">Add a webhook to your GitHub repo so memos are created automatically whenever you push to <code className="bg-muted px-1 rounded text-xs">main</code> or <code className="bg-muted px-1 rounded text-xs">master</code>.</p>
+                    </div>
+
+                    {/* Webhook URL */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Payload URL</Label>
+                      <div className="flex gap-2">
+                        <Input value={githubIntegration.webhookUrl} readOnly className="font-mono text-xs bg-muted" />
+                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(githubIntegration.webhookUrl, 'url')}>
+                          {urlCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Webhook Secret */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Secret</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type={showWebhookSecret ? 'text' : 'password'}
+                          value={githubIntegration.webhookSecret}
+                          readOnly
+                          className="font-mono text-xs bg-muted"
+                        />
+                        <Button variant="outline" size="icon" onClick={() => setShowWebhookSecret(!showWebhookSecret)}>
+                          {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(githubIntegration.webhookSecret, 'secret')}>
+                          {secretCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Setup steps */}
+                    <div className="rounded-lg border p-3 space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">GitHub setup (one-time, ~2 min)</p>
+                      <ol className="list-decimal list-inside space-y-0.5 text-xs text-muted-foreground">
+                        <li>Repo → <strong>Settings</strong> → <strong>Webhooks</strong> → <strong>Add webhook</strong></li>
+                        <li>Paste the Payload URL above</li>
+                        <li>Set Content type to <code className="bg-muted px-1 rounded">application/json</code></li>
+                        <li>Paste the Secret above</li>
+                        <li>Select <strong>Just the push event</strong> → <strong>Add webhook</strong></li>
+                      </ol>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Manage */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={handleRegenerateSecret} disabled={githubRegenerating}>
+                        {githubRegenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        Regenerate Secret
+                      </Button>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleDeleteGithubIntegration} disabled={githubDeleting}>
                       {githubDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                      Remove
+                      Remove Integration
                     </Button>
                   </div>
                 </div>
