@@ -393,6 +393,22 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Fix: Prompt Instructions Leaking into Memo Sources Sections** (152edac)
+- Bracketed AI instruction text (`[Cite only external third-party sources. EVERY source MUST be...]`) was being output verbatim in the Sources section of published memos
+- Affected 4 prompt templates: Industry, How-To, Gap-Fill, Product Deploy
+- Replaced bracketed instructions with example format entries so the AI generates real sources instead of dumping raw instructions
+- Retroactively cleaned 6 existing `product_deploy` memos in the database that had the leaked text
+- Modified: `lib/ai/prompts/memo-generation.ts`
+
+**Unique-Per-Memo Abstract Hero Backgrounds** (39f3f70)
+- Each memo detail page now gets a unique abstract background in the hero section, seeded by the memo's UUID
+- Hash function derives deterministic shape positions, sizes, gradient angles from memo ID — same memo always renders same visual
+- Per-type color palettes: emerald (product_deploy), blue (response), violet (citation_response), amber (guide), pink (comparison), sky (how_to), purple (gap_fill)
+- Each hero renders: 4 floating circles + 2 rotated rectangles + grid pattern + dual-angle gradients — all unique per memo
+- Fully retroactive: all 130 existing memos get unique visuals with zero data changes
+- Server-rendered SVG, no runtime cost, no external images
+- Modified: `lib/memo/render.tsx` (added `MemoHeroBackground`, `hashString`, `seededValues`, `TYPE_COLORS`)
+
 **Memos Page: Filtering, Expanded Categories, Abstract Visuals** (2b4b2d2)
 - Added client-side filterable memo grid with search input, type filter pills, and sort options (newest/oldest/A-Z)
 - Expanded "Browse by Type" from 3 categories to 7: Product Updates, AI Responses, Citations, Guides, Comparisons, How-To, Original Research — covering all 11 memo types

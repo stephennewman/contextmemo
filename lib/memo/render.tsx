@@ -518,20 +518,20 @@ function MemoHeroBackground({ memoId, memoType }: { memoId: string; memoType: st
     <div className="absolute inset-0">
       {/* Primary gradient — angle varies per memo */}
       <div
-        className="absolute inset-0 opacity-[0.15]"
+        className="absolute inset-0"
         style={{
-          background: `linear-gradient(${gradAngle}deg, ${colors.primary}40, transparent 60%)`,
+          background: `linear-gradient(${gradAngle}deg, ${colors.primary}50, transparent 70%)`,
         }}
       />
       {/* Secondary gradient — opposite corner */}
       <div
-        className="absolute inset-0 opacity-[0.10]"
+        className="absolute inset-0"
         style={{
-          background: `linear-gradient(${(gradAngle + 180) % 360}deg, ${colors.secondary}30, transparent 50%)`,
+          background: `linear-gradient(${(gradAngle + 180) % 360}deg, ${colors.secondary}35, transparent 55%)`,
         }}
       />
       {/* Grid pattern */}
-      <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
+      <svg className="absolute inset-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id={`grid-${memoId.slice(0, 8)}`} width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
@@ -540,7 +540,7 @@ function MemoHeroBackground({ memoId, memoType }: { memoId: string; memoType: st
         <rect width="100%" height="100%" fill={`url(#grid-${memoId.slice(0, 8)})`} />
       </svg>
       {/* Unique floating shapes */}
-      <svg className="absolute inset-0 w-full h-full opacity-[0.06]" viewBox="0 0 900 400" preserveAspectRatio="xMidYMid slice">
+      <svg className="absolute inset-0 w-full h-full opacity-[0.15]" viewBox="0 0 900 400" preserveAspectRatio="xMidYMid slice">
         {circles.map((c, i) => (
           <circle
             key={`c${i}`}

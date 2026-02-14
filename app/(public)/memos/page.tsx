@@ -313,11 +313,11 @@ export default async function MemosIndexPage() {
           {/* Multi-layer abstract background */}
           <div className="absolute inset-0">
             {/* Base gradient */}
-            <div className="absolute inset-0 bg-linear-to-br from-[#0EA5E9]/15 via-[#8B5CF6]/8 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-[#0EA5E9]/30 via-[#8B5CF6]/15 to-transparent" />
             {/* Secondary gradient */}
-            <div className="absolute inset-0 bg-linear-to-tl from-[#10B981]/10 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-tl from-[#10B981]/20 via-transparent to-transparent" />
             {/* Grid pattern */}
-            <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+            <svg className="absolute inset-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="hero-grid" width="40" height="40" patternUnits="userSpaceOnUse">
                   <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
@@ -326,14 +326,14 @@ export default async function MemosIndexPage() {
               <rect width="100%" height="100%" fill="url(#hero-grid)" />
             </svg>
             {/* Floating abstract shapes */}
-            <svg className="absolute right-0 top-0 w-[500px] h-[500px] opacity-[0.06]" viewBox="0 0 500 500">
+            <svg className="absolute right-0 top-0 w-[500px] h-[500px] opacity-[0.14]" viewBox="0 0 500 500">
               <circle cx="350" cy="100" r="120" fill="#0EA5E9" />
               <circle cx="420" cy="280" r="80" fill="#8B5CF6" />
               <circle cx="200" cy="350" r="60" fill="#10B981" />
               <rect x="100" y="50" width="150" height="150" rx="20" fill="#F59E0B" transform="rotate(15 175 125)" />
             </svg>
             {/* Dot pattern accent */}
-            <svg className="absolute left-0 bottom-0 w-[300px] h-[200px] opacity-[0.05]" viewBox="0 0 300 200">
+            <svg className="absolute left-0 bottom-0 w-[300px] h-[200px] opacity-[0.10]" viewBox="0 0 300 200">
               {Array.from({ length: 8 }).map((_, row) =>
                 Array.from({ length: 12 }).map((_, col) => (
                   <circle
