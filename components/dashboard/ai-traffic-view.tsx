@@ -263,6 +263,62 @@ export function AITrafficView({ traffic, brandName }: AITrafficViewProps) {
         </Card>
       )}
 
+      {/* Recent Visits (all sources) */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Recent Visits
+          </CardTitle>
+          <CardDescription>All visitor traffic with location data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {traffic.length > 0 ? (
+            <div className="space-y-2">
+              {traffic.slice(0, 15).map((visit) => {
+                const isAI = !['organic', 'direct_nav', 'direct'].includes(visit.referrer_source)
+                const color = AI_SOURCE_COLORS[visit.referrer_source] || '#6B7280'
+                const location = formatLocation(visit)
+                return (
+                  <div key={visit.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div 
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: color }}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
+                          {visit.memo?.title || visit.page_url}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {isAI ? (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mr-1.5">AI</Badge>
+                          ) : null}
+                          {AI_SOURCE_LABELS[visit.referrer_source] || visit.referrer_source}
+                          {location && (
+                            <span className="inline-flex items-center gap-0.5 ml-1.5">
+                              <MapPin className="h-3 w-3 inline" />
+                              {location}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {new Date(visit.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No visits recorded yet
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Embed Code */}
       <Card>
         <CardHeader className="pb-2">
