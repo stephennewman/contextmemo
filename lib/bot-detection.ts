@@ -231,6 +231,11 @@ export interface BotCrawlData {
   pagePath: string
   userAgent: string
   ipCountry: string | null
+  ipCity: string | null
+  ipRegion: string | null
+  ipLatitude: number | null
+  ipLongitude: number | null
+  ipTimezone: string | null
 }
 
 /**
@@ -263,6 +268,11 @@ export async function logBotCrawl(data: BotCrawlData): Promise<void> {
         page_path: data.pagePath,
         user_agent: data.userAgent,
         ip_country: data.ipCountry,
+        ip_city: data.ipCity,
+        ip_region: data.ipRegion,
+        ip_latitude: data.ipLatitude,
+        ip_longitude: data.ipLongitude,
+        ip_timezone: data.ipTimezone,
       }),
     })
 

@@ -327,8 +327,9 @@ export function BrandTabs({
       <TabsContent value="traffic">
         {loading === 'traffic' ? <TabLoader /> : (
           <AITrafficView
+            crawlEvents={[]}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            traffic={(tabData.aiTraffic || []) as any}
+            humanTraffic={(tabData.aiTraffic || []) as any}
             brandName={brandName}
           />
         )}

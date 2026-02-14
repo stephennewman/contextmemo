@@ -9,11 +9,18 @@ export async function proxy(request: NextRequest) {
     const memoPath = resolveMemoPath(request)
     if (memoPath) {
       after(async () => {
+        const lat = request.headers.get('x-vercel-ip-latitude')
+        const lng = request.headers.get('x-vercel-ip-longitude')
         await logBotCrawl({
           ...bot,
           ...memoPath,
           userAgent: request.headers.get('user-agent') || '',
           ipCountry: request.headers.get('x-vercel-ip-country') || null,
+          ipCity: request.headers.get('x-vercel-ip-city') || null,
+          ipRegion: request.headers.get('x-vercel-ip-country-region') || null,
+          ipLatitude: lat ? parseFloat(lat) : null,
+          ipLongitude: lng ? parseFloat(lng) : null,
+          ipTimezone: request.headers.get('x-vercel-ip-timezone') || null,
         })
       })
     }

@@ -11,27 +11,57 @@ export default async function TrafficPage({ params }: Props) {
   const { brandId } = await params
   const supabase = await createClient()
 
+  // Fetch brand with subdomain for bot_crawl_events filtering
   const { data: brand, error } = await supabase
     .from('brands')
-    .select('name')
+    .select('name, subdomain, custom_domain, domain_verified')
     .eq('id', brandId)
     .single()
 
   if (error || !brand) notFound()
 
-  // Fetch last 90 days of traffic
   const ninetyDaysAgo = new Date()
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
 
-  const { data: traffic } = await supabase
-    .from('ai_traffic')
-    .select('id, memo_id, page_url, referrer, referrer_source, country, city, region, timestamp, memo:memo_id(title, slug)')
-    .eq('brand_id', brandId)
-    .gte('timestamp', ninetyDaysAgo.toISOString())
-    .order('timestamp', { ascending: false })
-    .limit(500)
+  // Fetch both data sources in parallel
+  const [{ data: crawlEvents }, { data: traffic }] = await Promise.all([
+    // Primary: bot_crawl_events (server-side middleware detection)
+    supabase
+      .from('bot_crawl_events')
+      .select('id, bot_name, bot_category, bot_display_name, bot_provider, brand_subdomain, memo_slug, page_path, ip_country, ip_city, ip_region, ip_latitude, ip_longitude, ip_timezone, created_at')
+      .eq('brand_subdomain', brand.subdomain)
+      .gte('created_at', ninetyDaysAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5000),
+    // Supplementary: ai_traffic (client-side JS tracking)
+    supabase
+      .from('ai_traffic')
+      .select('id, memo_id, page_url, referrer, referrer_source, country, city, region, timestamp, memo:memo_id(title, slug)')
+      .eq('brand_id', brandId)
+      .gte('timestamp', ninetyDaysAgo.toISOString())
+      .order('timestamp', { ascending: false })
+      .limit(500),
+  ])
 
-  const trafficEvents = (traffic || []).map(t => ({
+  const typedCrawlEvents = (crawlEvents || []) as Array<{
+    id: string
+    bot_name: string
+    bot_category: string
+    bot_display_name: string
+    bot_provider: string
+    brand_subdomain: string | null
+    memo_slug: string | null
+    page_path: string
+    ip_country: string | null
+    ip_city: string | null
+    ip_region: string | null
+    ip_latitude: number | null
+    ip_longitude: number | null
+    ip_timezone: string | null
+    created_at: string
+  }>
+
+  const humanTraffic = (traffic || []).map(t => ({
     id: t.id as string,
     memo_id: t.memo_id as string | null,
     page_url: t.page_url as string,
@@ -46,7 +76,8 @@ export default async function TrafficPage({ params }: Props) {
 
   return (
     <AITrafficView
-      traffic={trafficEvents}
+      crawlEvents={typedCrawlEvents}
+      humanTraffic={humanTraffic}
       brandName={brand.name}
     />
   )
