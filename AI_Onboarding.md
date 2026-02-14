@@ -393,6 +393,14 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Update: Reorganize Deploy Memos Settings UI** (db54642)
+- Reordered to "easy path first": Step 1 is Import (just enter repo), Step 2 is webhook for ongoing
+- Added "How it works" explainer (what generates memos vs what's skipped)
+- Surfaced guardrails in UI (30-day window, 24h cooldown, 10 batch max)
+- Condensed webhook setup from 7 steps to 5, smaller/less prominent text
+- Moved Remove to right-aligned ghost button, cleaner layout
+- Modified: `app/(dashboard)/brands/[brandId]/settings/page.tsx`
+
 **Add: Guardrails for Deploy Memo Backfill** (ce60711)
 - 24-hour cooldown between backfill runs (returns 429 with hours remaining)
 - Max 10 daily batches per backfill (most recent 10 days only)

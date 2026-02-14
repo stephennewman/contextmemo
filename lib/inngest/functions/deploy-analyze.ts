@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { generateText } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { logSingleUsage } from '@/lib/utils/usage-logger'
+import { emitFeedEvent } from '@/lib/feed/emit'
 
 const supabase = createServiceRoleClient()
 
@@ -83,6 +84,21 @@ export const deployAnalyze = inngest.createFunction(
     // Use explicit brandId from per-brand webhook, fall back to legacy default
     const brandId = explicitBrandId || LEGACY_BRAND_ID
 
+    // Get tenant_id for feed events and usage logging
+    const tenantId = await step.run('get-tenant', async () => {
+      const { data: brand } = await supabase
+        .from('brands')
+        .select('tenant_id')
+        .eq('id', brandId)
+        .single()
+      return brand?.tenant_id || null
+    })
+
+    // Format a deploy date label for feed events
+    const deployDateLabel = pushedAt
+      ? new Date(pushedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : 'recent'
+
     // Step 1: Filter out obviously non-publish-worthy commits
     const candidates = await step.run('filter-commits', () => {
       return commits.filter(commit => {
@@ -102,6 +118,7 @@ export const deployAnalyze = inngest.createFunction(
     })
 
     if (candidates.length === 0) {
+      // No feed event for pre-filter skip — these are routine (bug fixes, docs, etc.)
       return { status: 'skipped', reason: 'No publish-worthy commits after filtering', totalCommits: commits.length }
     }
 
@@ -155,16 +172,9 @@ Respond ONLY with the JSON object, no other text.`
         temperature: 0.1,
       })
 
-      // Get tenant_id for usage logging
-      const { data: brand } = await supabase
-        .from('brands')
-        .select('tenant_id')
-        .eq('id', brandId)
-        .single()
-
-      if (brand?.tenant_id) {
+      if (tenantId) {
         await logSingleUsage(
-          brand.tenant_id, brandId, 'deploy_analyze',
+          tenantId, brandId, 'deploy_analyze',
           'gpt-4o-mini', usage?.inputTokens || 0, usage?.outputTokens || 0
         )
       }
@@ -186,6 +196,20 @@ Respond ONLY with the JSON object, no other text.`
     })
 
     if (!classification.publish_worthy || !classification.topic_title) {
+      // Feed event: deploy analyzed but nothing significant
+      if (tenantId) {
+        await step.run('feed-not-publish-worthy', () =>
+          emitFeedEvent({
+            tenant_id: tenantId,
+            brand_id: brandId,
+            workflow: 'system',
+            event_type: 'setup_complete',
+            title: `Deploy analyzed (${deployDateLabel}): no significant changes`,
+            description: `${candidates.length} commit${candidates.length === 1 ? '' : 's'} reviewed — ${classification.reasoning}`,
+            severity: 'info',
+          })
+        )
+      }
       return {
         status: 'not_publish_worthy',
         reasoning: classification.reasoning,
@@ -208,6 +232,21 @@ Respond ONLY with the JSON object, no other text.`
     })
 
     if (isDuplicate) {
+      if (tenantId) {
+        await step.run('feed-duplicate', () =>
+          emitFeedEvent({
+            tenant_id: tenantId,
+            brand_id: brandId,
+            workflow: 'system',
+            event_type: 'setup_complete',
+            title: `Deploy analyzed (${deployDateLabel}): similar memo exists`,
+            description: `"${isDuplicate.title}" already covers this topic`,
+            severity: 'info',
+            related_memo_id: isDuplicate.id,
+            action_available: ['view_memo'],
+          })
+        )
+      }
       return {
         status: 'duplicate',
         existingMemoId: isDuplicate.id,
@@ -243,6 +282,21 @@ Respond ONLY with the JSON object, no other text.`
         },
       })
     })
+
+    // Feed event: memo being generated
+    if (tenantId) {
+      await step.run('feed-memo-triggered', () =>
+        emitFeedEvent({
+          tenant_id: tenantId,
+          brand_id: brandId,
+          workflow: 'core_discovery',
+          event_type: 'scan_complete',
+          title: `Deploy memo generating: "${classification.topic_title}"`,
+          description: `${deployDateLabel} deploy — ${classification.reasoning}`,
+          severity: 'success',
+        })
+      )
+    }
 
     return {
       status: 'memo_triggered',
