@@ -456,6 +456,117 @@ export const brandedMemoContentStyles = `memo-content text-slate-300 text-[1.062
   [&>p>img]:block [&>p>img]:mx-auto
   [&>p:has(>img)+p>em:only-child]:mt-[-1.5rem] [&>p:has(>img)+p>em:only-child]:mb-6 [&>p:has(>img)+p>em:only-child]:text-[11px] [&>p:has(>img)+p>em:only-child]:text-slate-500`
 
+// Simple hash function to derive stable numbers from a string
+function hashString(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return Math.abs(hash)
+}
+
+// Generate deterministic values from a seed
+function seededValues(seed: string, count: number): number[] {
+  const base = hashString(seed)
+  return Array.from({ length: count }, (_, i) => {
+    const h = hashString(`${seed}-${i}-${base}`)
+    return (h % 1000) / 1000 // 0..1
+  })
+}
+
+// Per-type color palettes
+const TYPE_COLORS: Record<string, { primary: string; secondary: string }> = {
+  product_deploy: { primary: '#10B981', secondary: '#059669' },
+  response: { primary: '#3B82F6', secondary: '#2563EB' },
+  citation_response: { primary: '#8B5CF6', secondary: '#7C3AED' },
+  guide: { primary: '#F59E0B', secondary: '#D97706' },
+  industry: { primary: '#F59E0B', secondary: '#D97706' },
+  comparison: { primary: '#EC4899', secondary: '#DB2777' },
+  alternative: { primary: '#EC4899', secondary: '#DB2777' },
+  how_to: { primary: '#0EA5E9', secondary: '#0284C7' },
+  gap_fill: { primary: '#A855F7', secondary: '#9333EA' },
+  resource: { primary: '#6366F1', secondary: '#4F46E5' },
+  synthesis: { primary: '#14B8A6', secondary: '#0D9488' },
+}
+
+// Generate unique abstract SVG background per memo
+function MemoHeroBackground({ memoId, memoType }: { memoId: string; memoType: string }) {
+  const vals = seededValues(memoId, 20)
+  const colors = TYPE_COLORS[memoType] || { primary: '#0EA5E9', secondary: '#0284C7' }
+
+  // Seeded shape positions and sizes
+  const circles = Array.from({ length: 4 }, (_, i) => ({
+    cx: 200 + vals[i] * 600,
+    cy: 50 + vals[i + 4] * 300,
+    r: 40 + vals[i + 8] * 100,
+  }))
+
+  const rects = Array.from({ length: 2 }, (_, i) => ({
+    x: 100 + vals[i + 12] * 500,
+    y: 30 + vals[i + 14] * 200,
+    w: 60 + vals[i + 16] * 120,
+    h: 60 + vals[i + 18] * 120,
+    rot: vals[i + 10] * 45 - 10,
+  }))
+
+  // Seeded gradient angle
+  const gradAngle = Math.round(vals[0] * 360)
+
+  return (
+    <div className="absolute inset-0">
+      {/* Primary gradient — angle varies per memo */}
+      <div
+        className="absolute inset-0 opacity-[0.15]"
+        style={{
+          background: `linear-gradient(${gradAngle}deg, ${colors.primary}40, transparent 60%)`,
+        }}
+      />
+      {/* Secondary gradient — opposite corner */}
+      <div
+        className="absolute inset-0 opacity-[0.10]"
+        style={{
+          background: `linear-gradient(${(gradAngle + 180) % 360}deg, ${colors.secondary}30, transparent 50%)`,
+        }}
+      />
+      {/* Grid pattern */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id={`grid-${memoId.slice(0, 8)}`} width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#grid-${memoId.slice(0, 8)})`} />
+      </svg>
+      {/* Unique floating shapes */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.06]" viewBox="0 0 900 400" preserveAspectRatio="xMidYMid slice">
+        {circles.map((c, i) => (
+          <circle
+            key={`c${i}`}
+            cx={c.cx}
+            cy={c.cy}
+            r={c.r}
+            fill={i % 2 === 0 ? colors.primary : colors.secondary}
+          />
+        ))}
+        {rects.map((r, i) => (
+          <rect
+            key={`r${i}`}
+            x={r.x}
+            y={r.y}
+            width={r.w}
+            height={r.h}
+            rx={12}
+            fill={i % 2 === 0 ? colors.secondary : colors.primary}
+            transform={`rotate(${r.rot} ${r.x + r.w / 2} ${r.y + r.h / 2})`}
+          />
+        ))}
+      </svg>
+    </div>
+  )
+}
+
 // Context Memo branded memo page - "Bold Electric" theme
 export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPageProps) {
   return (
@@ -489,9 +600,9 @@ export function BrandedMemoPageContent({ memo, brand, contentHtml }: MemoPagePro
         </div>
       </header>
       
-      {/* Hero */}
+      {/* Hero with unique-per-memo abstract background */}
       <div className="border-b-2 border-white/10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-b from-[#0EA5E9]/10 to-transparent" />
+        <MemoHeroBackground memoId={memo.id} memoType={memo.memo_type} />
         <div className="max-w-4xl mx-auto px-6 py-16 relative">
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight mb-6">
             {memo.title}
