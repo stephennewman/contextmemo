@@ -41,7 +41,7 @@ export default async function TrafficPage({ params }: Props) {
     city: t.city as string | null,
     region: t.region as string | null,
     timestamp: t.timestamp as string,
-    memo: t.memo as { title: string; slug: string } | null,
+    memo: Array.isArray(t.memo) ? t.memo[0] as { title: string; slug: string } : t.memo as { title: string; slug: string } | null,
   }))
 
   return (
