@@ -393,6 +393,17 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Feature: Deploy Memos as Customer-Facing Feature** (689f5f8)
+- Exposed the deploy-to-memo pipeline to all customers via Settings > Deploy Memos
+- New `github_integrations` table with per-brand webhook secrets and RLS policies
+- Per-brand webhook endpoint at `/api/webhooks/github/[brandId]`
+- Management API (`GET/POST/PATCH/DELETE`) for creating, toggling, and regenerating integrations
+- Settings UI section with webhook URL + secret copy buttons, step-by-step GitHub setup instructions, pause/enable/remove controls
+- Updated `deploy-analyze.ts` to accept `brandId` from event data instead of hardcoded brand map
+- Backward compatible: existing Context Memo webhook continues to work via legacy endpoint
+- New files: `app/api/webhooks/github/[brandId]/route.ts`, `app/api/brands/[brandId]/github-integration/route.ts`
+- Modified: `app/(dashboard)/brands/[brandId]/settings/page.tsx`, `lib/inngest/functions/deploy-analyze.ts`
+
 **Update: Favicon Color from Yellow to Blue** (749ce20)
 - Changed the favicon lightning bolt icon from yellow (`#facc15`) to the site's primary blue (`#0EA5E9`) for brand consistency
 - Modified: `app/icon.tsx`

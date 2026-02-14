@@ -244,6 +244,8 @@ export default function BrandSettingsPage() {
     enabled: boolean
     webhookSecret: string
     webhookUrl: string
+    repoFullName?: string
+    lastBackfillAt?: string
     createdAt: string
   } | null>(null)
   const [githubLoading, setGithubLoading] = useState(false)
@@ -254,6 +256,9 @@ export default function BrandSettingsPage() {
   const [showWebhookSecret, setShowWebhookSecret] = useState(false)
   const [secretCopied, setSecretCopied] = useState(false)
   const [urlCopied, setUrlCopied] = useState(false)
+  const [repoInput, setRepoInput] = useState('')
+  const [backfilling, setBackfilling] = useState(false)
+  const [backfillResult, setBackfillResult] = useState<{ batches: number; totalCommits: number; message: string } | null>(null)
 
   // Offers state
   const [offers, setOffers] = useState<BrandOffers>({})
@@ -412,6 +417,9 @@ export default function BrandSettingsPage() {
         if (res.ok) {
           const data = await res.json()
           setGithubIntegration(data.integration)
+          if (data.integration?.repoFullName) {
+            setRepoInput(data.integration.repoFullName)
+          }
         }
       } catch (err) {
         console.error('Failed to load GitHub integration:', err)
@@ -775,6 +783,43 @@ export default function BrandSettingsPage() {
       toast.error('Failed to remove integration')
     } finally {
       setGithubDeleting(false)
+    }
+  }
+
+  const handleBackfill = async () => {
+    const repo = repoInput.trim() || githubIntegration?.repoFullName
+    if (!repo) {
+      toast.error('Enter your GitHub repo (e.g. owner/repo)')
+      return
+    }
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) {
+      toast.error('Invalid format. Use owner/repo (e.g. acme/product)')
+      return
+    }
+    setBackfilling(true)
+    setBackfillResult(null)
+    try {
+      const res = await fetch(`/api/brands/${brandId}/github-integration/backfill`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoFullName: repo }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setBackfillResult(data)
+        setGithubIntegration(prev => prev ? { ...prev, repoFullName: repo, lastBackfillAt: new Date().toISOString() } : prev)
+        if (data.batches > 0) {
+          toast.success(`Queued ${data.batches} deploy batches for analysis`)
+        } else {
+          toast.info(data.message || 'No commits found in the last 30 days')
+        }
+      } else {
+        toast.error(data.error || 'Backfill failed')
+      }
+    } catch {
+      toast.error('Failed to run backfill')
+    } finally {
+      setBackfilling(false)
     }
   }
 
@@ -2821,6 +2866,45 @@ function handler(event) {
                       <p className="text-sm mt-3 text-muted-foreground">Only deploys to <code className="bg-muted px-1 rounded">main</code> or <code className="bg-muted px-1 rounded">master</code> with meaningful product changes will generate memos. Bug fixes, refactors, and internal changes are automatically filtered out.</p>
                     </AlertDescription>
                   </Alert>
+
+                  <Separator />
+
+                  {/* Backfill from past deploys */}
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Import Past Deploys</Label>
+                      <p className="text-sm text-muted-foreground">Enter your GitHub repo to generate memos from your last 30 days of deploys.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={repoInput || githubIntegration.repoFullName || ''}
+                        onChange={(e) => setRepoInput(e.target.value)}
+                        placeholder="owner/repo (e.g. acme/product)"
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={handleBackfill}
+                        disabled={backfilling}
+                      >
+                        {backfilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        {backfilling ? 'Analyzing...' : 'Import'}
+                      </Button>
+                    </div>
+                    {githubIntegration.lastBackfillAt && !backfillResult && (
+                      <p className="text-xs text-muted-foreground">Last imported: {new Date(githubIntegration.lastBackfillAt).toLocaleDateString()}</p>
+                    )}
+                    {backfillResult && (
+                      <Alert>
+                        <AlertDescription>
+                          <p className="text-sm">{backfillResult.message}</p>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <p className="text-xs text-muted-foreground">Works with public repos. For private repos, contact us to set up a token.</p>
+                  </div>
+
+                  <Separator />
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 pt-2">

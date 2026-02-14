@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { data: integration } = await supabase
     .from('github_integrations')
-    .select('id, webhook_secret, enabled, created_at, updated_at')
+    .select('id, webhook_secret, enabled, repo_full_name, last_backfill_at, created_at, updated_at')
     .eq('brand_id', brandId)
     .single()
 
@@ -57,6 +57,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       enabled: integration.enabled,
       webhookSecret: integration.webhook_secret,
       webhookUrl,
+      repoFullName: integration.repo_full_name,
+      lastBackfillAt: integration.last_backfill_at,
       createdAt: integration.created_at,
       updatedAt: integration.updated_at,
     },
@@ -168,11 +170,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     updates.webhook_secret = generateWebhookSecret()
   }
 
+  if (typeof body.repoFullName === 'string') {
+    updates.repo_full_name = body.repoFullName || null
+  }
+
   const { data: integration, error } = await supabase
     .from('github_integrations')
     .update(updates)
     .eq('brand_id', brandId)
-    .select('id, webhook_secret, enabled, created_at, updated_at')
+    .select('id, webhook_secret, enabled, repo_full_name, last_backfill_at, created_at, updated_at')
     .single()
 
   if (error) {
@@ -189,6 +195,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       enabled: integration.enabled,
       webhookSecret: integration.webhook_secret,
       webhookUrl,
+      repoFullName: integration.repo_full_name,
+      lastBackfillAt: integration.last_backfill_at,
       createdAt: integration.created_at,
       updatedAt: integration.updated_at,
     },
