@@ -599,62 +599,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Partnership Section */}
-      <section className="py-24 bg-[#0EA5E9]">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-6">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">RELATIONSHIPS OVER REVENUE</h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              We don&apos;t hand you a login and wish you luck. Every account is a design partnership — 
-              we&apos;re building this with you, not just for you.
-            </p>
-          </div>
-          
-          <div className="grid sm:grid-cols-2 gap-0 border-2 border-white/30 mt-12">
-            <div className="p-8 sm:p-10 border-b-2 sm:border-b-0 sm:border-r-2 border-white/30">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-xl mb-3">PERSONALIZED ONBOARDING</h3>
-              <p className="text-white/70 text-sm leading-relaxed">
-                We set up your brand, configure your competitive landscape, and run your first scan together. 
-                No self-serve guesswork. You walk away understanding exactly where you stand.
-              </p>
-            </div>
-            <div className="p-8 sm:p-10 border-b-2 sm:border-b-0 border-white/30">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
-                <MessageSquare className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-xl mb-3">TEXT-BASED ACCESS</h3>
-              <p className="text-white/70 text-sm leading-relaxed">
-                No ticket queues. No 3-day SLAs. You get direct access to the team — text us a question, 
-                get an answer. We move at the speed you need.
-              </p>
-            </div>
-            <div className="p-8 sm:p-10 border-t-0 sm:border-t-2 sm:border-r-2 border-white/30">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
-                <Eye className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-xl mb-3">INTIMATE FEEDBACK REVIEWS</h3>
-              <p className="text-white/70 text-sm leading-relaxed">
-                Your scan results aren&apos;t a dashboard you check alone. We walk through findings with you — 
-                what&apos;s working, what&apos;s not, and what to do next.
-              </p>
-            </div>
-            <div className="p-8 sm:p-10 border-t-2 border-white/30">
-              <div className="w-12 h-12 bg-white/20 flex items-center justify-center mb-5">
-                <Sparkles className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-black text-xl mb-3">DESIGN PARTNERSHIP</h3>
-              <p className="text-white/70 text-sm leading-relaxed">
-                Your feedback shapes the product. Early access members aren&apos;t just users — you&apos;re co-building 
-                the platform with us. Features you request get prioritized.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Memos Section */}
       <section className="py-24 bg-[#0F172A]">
         <div className="max-w-5xl mx-auto px-6">
