@@ -393,6 +393,14 @@ _Most recent deploys first_
 
 ### February 14, 2026
 
+**Performance Tab: Hide Zero-Data Sections + Trending Bot Charts** (67dd553)
+- Summary stats now only render for non-zero values — no more "Visitors: 0" or "Companies: 0 awaiting traffic" cluttering the view.
+- Visitor Sources section hidden entirely when no traffic data exists.
+- AI Engagement funnel rows (Training Crawls, Search Queries, Click-throughs) hidden when their value is 0.
+- Content Discovery "AI Discovered" bar hidden when no memos discovered yet.
+- AI Platform Activity and Bot Crawl Details sections hidden entirely when there's no crawl data.
+- New "Trending Activity" section at the top of the page showing 7-day sparkline trend cards for active bots, with ChatGPT User always displayed first, followed by next most active bots (up to 6).
+
 **Fix: Prevent Duplicate Memo Generation Across All Creation Paths** (ff7fe00)
 - `memo-generate.ts`: Detects when a memo with the same slug already exists and is published — skips all downstream side effects (alerts, HubSpot sync, IndexNow submission) instead of silently overwriting and re-triggering everything.
 - `memo-synthesize.ts`: Pre-checks for existing synthesis memo on the same query before spending AI tokens on generation. Changed slug collision behavior from "append timestamp" (creating true duplicates) to "skip creation."
