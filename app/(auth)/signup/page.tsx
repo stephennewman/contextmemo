@@ -202,7 +202,7 @@ export default function SignupPage() {
                 <input
                   id="inviteCode"
                   type="text"
-                  placeholder="e.g. AMAZING2026"
+                  placeholder="Enter your invite code"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                   required
