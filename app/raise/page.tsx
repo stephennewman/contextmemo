@@ -321,13 +321,11 @@ function ResponseSection({ email }: { email: string }) {
 }
 
 // --- SIDEBAR ---
-function Sidebar({ activeSection, scrollRef }: { activeSection: string; scrollRef: React.RefObject<HTMLElement | null> }) {
+function Sidebar({ activeSection }: { activeSection: string }) {
   const handleClick = (id: string) => {
     const el = document.getElementById(id)
-    if (el && scrollRef.current) {
-      const container = scrollRef.current
-      const top = el.offsetTop - container.offsetTop
-      container.scrollTo({ top, behavior: 'smooth' })
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
@@ -429,7 +427,7 @@ function PitchDeck({ email }: { email: string }) {
 
   return (
     <div className="flex min-h-screen bg-[#FAFBFC]">
-      <Sidebar activeSection={activeSection} scrollRef={contentRef} />
+      <Sidebar activeSection={activeSection} />
       <ActiveViewers />
 
       <main ref={contentRef} className="ml-64 flex-1 h-screen overflow-y-auto">
@@ -562,24 +560,21 @@ function PitchDeck({ email }: { email: string }) {
         <Section id="product" bg="cool">
           <div className="max-w-3xl">
             <p className="text-[#0EA5E9] text-sm font-semibold uppercase tracking-wider mb-4">The Product</p>
-            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] mb-3">How it actually works.</h2>
-            <p className="text-[#64748B] text-base mb-8">Analyze your brand. Scan AI. Deploy content on your domain. Verify it&apos;s working. Scale as you need — 1 model or 9, 50 prompts or 5,000, 1 memo/day or 100.</p>
+            <h2 className="text-3xl lg:text-4xl font-bold text-[#0F172A] mb-3">What makes it different.</h2>
+            <p className="text-[#64748B] text-base mb-8">Not a dashboard. Not a report. An engine that lives on your domain, deploys content autonomously, and scales with you.</p>
 
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="bg-white border border-[#E2E8F0] p-5">
-                <span className="font-mono text-xs font-bold text-[#0EA5E9]">01</span>
-                <h3 className="text-[#0F172A] font-bold text-sm mt-3 mb-2">Analyze &amp; scan</h3>
-                <p className="text-[#64748B] text-sm leading-relaxed">Ingest your brand positioning. Reverse-engineer the prompts buyers ask AI. Map where you show up, where you don&apos;t, and who gets cited instead.</p>
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">White-labeled memos</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">AI-optimized content matching your brand&apos;s tone, voice, and design. Published on <span className="font-mono text-[#0EA5E9] text-xs">yourdomain.com</span> — not ours. Your authority. Your trust signals.</p>
               </div>
               <div className="bg-white border border-[#E2E8F0] p-5">
-                <span className="font-mono text-xs font-bold text-[#10B981]">02</span>
-                <h3 className="text-[#0F172A] font-bold text-sm mt-3 mb-2">Deploy on your domain</h3>
-                <p className="text-[#64748B] text-sm leading-relaxed">Generate citation-optimized memos matching your brand&apos;s tone and design. Deploy via HubSpot, subdomain, or folder path. Your domain authority. Your trust signals.</p>
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">Flexible deployment</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">Deploy via HubSpot blog, subdomain, or folder path. Scan 1 AI model or 9. Run 50 prompts or 5,000. Generate 1 memo/day or 100. You control the pace.</p>
               </div>
               <div className="bg-white border border-[#E2E8F0] p-5">
-                <span className="font-mono text-xs font-bold text-[#8B5CF6]">03</span>
-                <h3 className="text-[#0F172A] font-bold text-sm mt-3 mb-2">Monitor &amp; fill gaps</h3>
-                <p className="text-[#64748B] text-sm leading-relaxed">Verify AI is consuming your content. Track competitors. Automatically generate new memos as the landscape shifts. The engine doesn&apos;t stop.</p>
+                <h3 className="text-[#0F172A] font-bold text-sm mb-2">Verified consumption</h3>
+                <p className="text-[#64748B] text-sm leading-relaxed">Re-scan after deployment to confirm AI is citing your content. Time-to-citation tracking. Before/after proof with timestamps. Not guesswork.</p>
               </div>
             </div>
           </div>
