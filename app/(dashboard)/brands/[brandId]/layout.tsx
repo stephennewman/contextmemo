@@ -157,7 +157,7 @@ export default async function BrandLayout({ params, children }: Props) {
       {/* Brand Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <BrandLogo domain={brand.domain} name={brand.name} size={36} />
+          <BrandLogo domain={brand.domain} name={brand.name} size={36} logoUrl={logoUrl} brandId={brandId} editable />
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">{brand.name.toUpperCase()}</h1>
             <div className="flex items-center gap-2 mt-0.5">

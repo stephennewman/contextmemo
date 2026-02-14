@@ -709,6 +709,16 @@ export default function RaisePage() {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
+    // Check for direct access code in URL
+    const params = new URLSearchParams(window.location.search)
+    const accessCode = params.get('access')
+    if (accessCode === 'SEED2026') {
+      setEmail('direct-access@contextmemo.com')
+      setVerified(true)
+      setChecking(false)
+      return
+    }
+
     // Check if already verified
     const storedEmail = localStorage.getItem('pitch_email')
     const storedVerified = localStorage.getItem('pitch_verified')
